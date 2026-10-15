@@ -75,15 +75,19 @@ def find_blocks(text):
   items = list(walk(text))
   blocks = []
   for i, (kind, value, start, end, depth, prev) in enumerate(items):
-    if kind != "ident" or value != "buffers":
+    if kind != "ident" or value not in ("buffers", "kernel"):
       continue
     if depth != 0 or prev not in (";", "}"):
       continue
-    if i + 1 >= len(items):
-      continue
-    after = items[i + 1]
-    if after[0] == "punct" and after[1] == "{":
-      blocks.append(("buffers", start, after[2]))
+    j = i + 1
+    if value == "kernel":
+      if j >= len(items) or items[j][0] != "ident":
+        continue
+      j += 1
+      while j < len(items) and items[j][0] == "ident":
+        j += 1
+    if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
+      blocks.append((value, start, items[j][2]))
   return blocks
 
 
