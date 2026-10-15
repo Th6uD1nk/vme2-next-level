@@ -106,11 +106,14 @@ def block_end(text, items, open_index, start):
   raise ValueError(f"line {line}: unterminated block")
 
 
-def render(text, blocks):
-  out = []
+def render(text, blocks, path):
+  quoted = path.replace("\\", "\\\\").replace('"', '\\"')
+  out = [f'#line 1 "{quoted}"\n']
   pos = 0
   for _, start, _, end in blocks:
+    line = text.count("\n", 0, end) + 1
     out.append(text[pos:start])
+    out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(text[pos:])
   return "".join(out)
@@ -142,7 +145,7 @@ def main(argv=None):
 
   output = args.output or default_output(args.input)
   with open(output, "w", encoding="utf-8", newline="") as f:
-    f.write(render(text, blocks))
+    f.write(render(text, blocks, args.input))
   return 0
 
 
