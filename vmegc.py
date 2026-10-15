@@ -56,6 +56,21 @@ def default_output(path):
   return name[:-len(SUFFIX)] + ".c"
 
 
+def walk(text):
+  depth = 0
+  prev = ";"
+  for kind, value, start, end in tokens(text):
+    yield (kind, value, start, end, depth, prev)
+    if kind == "pp":
+      prev = ";"
+      continue
+    if kind == "punct" and value == "{":
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth = max(0, depth - 1)
+    prev = value
+
+
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmegc")
   parser.add_argument("input")
