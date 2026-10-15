@@ -203,6 +203,20 @@ def parse_expr(p):
     left = ("bin", op, left, parse_term(p))
 
 
+PE_NAME = re.compile(r"pe([0-9]+)$")
+
+
+def parse_target(p):
+  m = PE_NAME.match(p.peek()[1]) if p.peek() is not None else None
+  if m is None:
+    p.error("expected a processing element (pe0 to pe3)")
+  if int(m.group(1)) > 3:
+    p.error("processing element out of range (pe0 to pe3)")
+  p.ident()
+  p.expect(".")
+  return ("target", int(m.group(1)), p.ident())
+
+
 def parse_const(p):
   p.expect("const")
   name = p.ident()
