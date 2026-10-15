@@ -322,13 +322,29 @@ def parse_body(p):
   return statements
 
 
+def generate(text, block):
+  kind, start, open_pos, _ = block
+  if kind != "kernel":
+    return ""
+  words = text[start:open_pos].split()
+  name, options = words[1], words[2:]
+  if "direct" not in options:
+    return ""
+  return f"void {name}() {{ vmeLibStart(); vmeLibFinish(); }}"
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
   pos = 0
-  for _, start, _, end in blocks:
-    line = text.count("\n", 0, end) + 1
+  for block in blocks:
+    _, start, _, end = block
+    code = generate(text, block)
     out.append(text[pos:start])
+    if code:
+      first = text.count("\n", 0, start) + 1
+      out.append(f'\n#line {first} "{quoted}"\n{code}')
+    line = text.count("\n", 0, end) + 1
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(text[pos:])
