@@ -467,6 +467,19 @@ def buffer_ref(expr):
   return None
 
 
+def parse_buffer_target(p):
+  start = p.peek()
+  if start is None:
+    p.error("expected a buffer (top0 to top3, base0 to base3)")
+  try:
+    ref = buffer_ref(fold(parse_expr(p), {}))
+  except ValueError as e:
+    p.error(str(e), start)
+  if ref is None:
+    p.error("expected a buffer (top0 to top3, base0 to base3)", start)
+  return ref
+
+
 def constant(expr, what):
   if expr[0] != "num":
     raise ValueError(f"{what} must be a number")
