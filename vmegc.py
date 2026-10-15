@@ -263,9 +263,21 @@ def parse_for_header(p):
   return ("for", var, low, high)
 
 
+def parse_for(p):
+  _, var, low, high = parse_for_header(p)
+  body = []
+  while not p.accept("}"):
+    if p.peek() is None:
+      p.error("expected '}'")
+    body.append(parse_statement(p))
+  return ("for", var, low, high, body)
+
+
 def parse_statement(p):
   tok = p.peek()
   if tok[0] == "ident":
+    if tok[1] == "for":
+      return parse_for(p)
     if tok[1] == "icn":
       return parse_icn(p)
     if tok[1] == "const":
