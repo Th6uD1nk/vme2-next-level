@@ -212,14 +212,22 @@ PE_NAME = re.compile(r"pe([0-9]+)$")
 
 
 def parse_target(p):
-  m = PE_NAME.match(p.peek()[1]) if p.peek() is not None else None
-  if m is None:
-    p.error("expected a processing element (pe0 to pe3)")
-  if int(m.group(1)) > 3:
-    p.error("processing element out of range (pe0 to pe3)")
-  p.ident()
+  tok = p.peek()
+  if tok is not None and tok[0] == "ident" and tok[1] == "pe":
+    p.ident()
+    p.expect("[")
+    index = parse_expr(p)
+    p.expect("]")
+  else:
+    m = PE_NAME.match(tok[1]) if tok is not None else None
+    if m is None:
+      p.error("expected a processing element (pe0 to pe3)")
+    if int(m.group(1)) > 3:
+      p.error("processing element out of range (pe0 to pe3)")
+    p.ident()
+    index = ("num", int(m.group(1)))
   p.expect(".")
-  return ("target", int(m.group(1)), p.ident())
+  return ("target", index, p.ident())
 
 
 def parse_params(p):
