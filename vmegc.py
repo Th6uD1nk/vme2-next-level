@@ -6,7 +6,7 @@ import sys
 SUFFIX = ".vmeg.c"
 
 IDENT = re.compile(r"[A-Za-z_]\w*")
-NUMBER = re.compile(r"[0-9][\w.]*")
+NUMBER = re.compile(r"[0-9]\w*(?:\.(?!\.)\w*)?")
 STRING = re.compile(r'"(?:[^"\\\n]|\\[\s\S])*"|\'(?:[^\'\\\n]|\\[\s\S])*\'')
 DIRECTIVE = re.compile(r"#(?:\\\r?\n|\\.|[^\n\\])*")
 BLANK = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)+", re.S)
@@ -249,6 +249,18 @@ def parse_const(p):
   value = parse_expr(p)
   p.expect(";")
   return ("const", name, value)
+
+
+def parse_for_header(p):
+  p.expect("for")
+  var = p.ident()
+  p.expect("in")
+  low = parse_expr(p)
+  p.expect(".")
+  p.expect(".")
+  high = parse_expr(p)
+  p.expect("{")
+  return ("for", var, low, high)
 
 
 def parse_statement(p):
