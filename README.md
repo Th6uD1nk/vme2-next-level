@@ -25,4 +25,6 @@ All code submitted to this repository must be compatible with the MIT License. D
 This project and code are provided as-is without warranty. Users assume full responsibility for any implementation or consequences. Use at your own discretion and risk
 
 
-*Hey, Hi! Leverage AI. Stay wise! Th6uD1nk.*
+*Hey, Hi! Leverage AI. Stay in charge, stay wise!*
+
+*Th6uD1nk.*

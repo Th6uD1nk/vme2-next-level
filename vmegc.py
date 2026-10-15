@@ -557,7 +557,10 @@ def emit_statement(statement, env, lines):
       after = 2
     lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), {fu});")
     if len(operations) > after and operations[after][0] == "clamp":
+      _, low, high = operations[after]
       lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP));")
+      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, A), {to_c(('num', high))});")
+      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, B), {to_c(('num', low))});")
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):
