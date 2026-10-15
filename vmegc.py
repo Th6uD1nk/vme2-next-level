@@ -87,8 +87,23 @@ def find_blocks(text):
       while j < len(items) and items[j][0] == "ident":
         j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
-      blocks.append((value, start, items[j][2]))
+      blocks.append((value, start, items[j][2], block_end(text, items, j, start)))
   return blocks
+
+
+def block_end(text, items, open_index, start):
+  level = 0
+  for kind, value, _, end, _, _ in items[open_index:]:
+    if kind != "punct":
+      continue
+    if value == "{":
+      level += 1
+    elif value == "}":
+      level -= 1
+      if level == 0:
+        return end
+  line = text.count("\n", 0, start) + 1
+  raise ValueError(f"line {line}: unterminated block")
 
 
 def main(argv=None):
