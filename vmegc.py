@@ -7,6 +7,7 @@ SUFFIX = ".vmeg.c"
 
 IDENT = re.compile(r"[A-Za-z_]\w*")
 NUMBER = re.compile(r"[0-9][\w.]*")
+STRING = re.compile(r'"(?:[^"\\\n]|\\[\s\S])*"|\'(?:[^\'\\\n]|\\[\s\S])*\'')
 BLANK = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)+", re.S)
 
 
@@ -21,6 +22,14 @@ def tokens(text):
     if text.startswith("/*", pos):
       line = text.count("\n", 0, pos) + 1
       raise ValueError(f"line {line}: unterminated comment")
+    m = STRING.match(text, pos)
+    if m:
+      yield ("str", m.group(), m.start(), m.end())
+      pos = m.end()
+      continue
+    if text[pos] in "\"'":
+      line = text.count("\n", 0, pos) + 1
+      raise ValueError(f"line {line}: unterminated literal")
     m = IDENT.match(text, pos)
     kind = "ident"
     if not m:
