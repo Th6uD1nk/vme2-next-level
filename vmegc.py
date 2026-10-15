@@ -378,6 +378,11 @@ def to_c(expr):
 
 
 READ_PARAMS = ("count", "offset", "mode", "step")
+AGU_PARAMS = {
+  "top": READ_PARAMS,
+  "base": READ_PARAMS,
+  "write": READ_PARAMS + ("cyc",),
+}
 
 
 def generate_agu(target, params, env):
@@ -388,12 +393,12 @@ def generate_agu(target, params, env):
   if not 0 <= pe <= 3:
     raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
   agu = target[2]
-  if agu not in ("top", "base"):
+  if agu not in AGU_PARAMS:
     return []
   values = {}
   for key, value in params[1]:
-    if key not in READ_PARAMS:
-      raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(READ_PARAMS)})")
+    if key not in AGU_PARAMS[agu]:
+      raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[agu])})")
     if key in values:
       raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
     values[key] = to_c(fold(value, env))
@@ -402,6 +407,8 @@ def generate_agu(target, params, env):
   mode = f"agu_mode({values['mode']})" if "mode" in values else "VME_DEF_MODE"
   if "offset" in values:
     mode += f", {values['offset']}"
+  if "cyc" in values:
+    mode += f", vme_cyc({values['cyc']})"
   step = f"agu_step({values['step']})" if "step" in values else "VME_DEF_STEP"
   return [
     f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
