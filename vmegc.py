@@ -324,15 +324,16 @@ def parse_for(p):
 
 def parse_statement(p):
   tok = p.peek()
+  line = p.text.count("\n", 0, tok[2]) + 1
   if tok[0] == "ident":
     if tok[1] == "for":
-      return parse_for(p)
+      return parse_for(p) + (line,)
     if tok[1] == "icn":
-      return parse_icn(p)
+      return parse_icn(p) + (line,)
     if tok[1] == "const":
-      return parse_const(p)
+      return parse_const(p) + (line,)
     if tok[1] == "pe" or PE_NAME.match(tok[1]):
-      return parse_pe_statement(p)
+      return parse_pe_statement(p) + (line,)
   p.error(f"unknown statement '{tok[1]}'")
 
 
@@ -376,18 +377,19 @@ def substitute_target(target, env):
 
 def substitute(statement, env):
   kind = statement[0]
+  line = statement[-1]
   if kind == "icn":
-    return ("icn", [(name, fold(value, env)) for name, value in statement[1]])
+    return ("icn", [(name, fold(value, env)) for name, value in statement[1]], line)
   if kind == "const":
-    return ("const", statement[1], fold(statement[2], env))
+    return ("const", statement[1], fold(statement[2], env), line)
   if kind == "agu":
     params = [(key, fold(value, env)) for key, value in statement[2][1]]
-    return ("agu", substitute_target(statement[1], env), ("params", params))
+    return ("agu", substitute_target(statement[1], env), ("params", params), line)
   if kind == "assign":
-    return ("assign", substitute_target(statement[1], env), fold(statement[2], env))
+    return ("assign", substitute_target(statement[1], env), fold(statement[2], env), line)
   var, low, high, body = statement[1], statement[2], statement[3], statement[4]
   inner = {name: value for name, value in env.items() if name != var}
-  return ("for", var, fold(low, env), fold(high, env), [substitute(s, inner) for s in body])
+  return ("for", var, fold(low, env), fold(high, env), [substitute(s, inner) for s in body], line)
 
 
 def to_c(expr):
@@ -444,7 +446,7 @@ KERNEL_OPTIONS = ("direct",)
 
 
 def unroll(loop):
-  _, var, low, high, body = loop
+  _, var, low, high, body, _ = loop
   if low[0] != "num" or high[0] != "num":
     raise ValueError(f"for {var}: bounds must be numbers")
   out = []
@@ -462,6 +464,15 @@ def unroll(loop):
 
 
 def emit(statement, env, lines):
+  try:
+    emit_statement(statement, env, lines)
+  except ValueError as e:
+    if str(e).startswith("line "):
+      raise
+    raise ValueError(f"line {statement[-1]}: {e}") from None
+
+
+def emit_statement(statement, env, lines):
   kind = statement[0]
   if kind == "const":
     if statement[1] in env:
@@ -473,7 +484,7 @@ def emit(statement, env, lines):
   elif kind == "agu":
     lines.extend(generate_agu(statement[1], statement[2], env))
   elif kind == "for":
-    loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4])
+    loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):
       emit(inner, env, lines)
 
