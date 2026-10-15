@@ -436,6 +436,9 @@ def generate_agu(target, params, env):
   ]
 
 
+KERNEL_OPTIONS = ("direct",)
+
+
 def unroll(loop):
   _, var, low, high, body = loop
   if low[0] != "num" or high[0] != "num":
@@ -475,8 +478,16 @@ def generate(text, block):
   kind, start, open_pos, _ = block
   if kind != "kernel":
     return ""
-  words = text[start:open_pos].split()
-  name, options = words[1], words[2:]
+  header = text[start:open_pos]
+  words = [(value, start + s) for _, value, s, _ in tokens(header)]
+  name, options = words[1][0], []
+  for word, pos in words[2:]:
+    line = text.count("\n", 0, pos) + 1
+    if word not in KERNEL_OPTIONS:
+      raise ValueError(f"line {line}: unknown kernel option '{word}' ({', '.join(KERNEL_OPTIONS)})")
+    if word in options:
+      raise ValueError(f"line {line}: duplicate kernel option '{word}'")
+    options.append(word)
   if "direct" not in options:
     return ""
   toks, limit = body_tokens(text, block)
