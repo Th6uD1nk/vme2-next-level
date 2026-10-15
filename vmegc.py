@@ -129,8 +129,11 @@ class Parser:
     self.limit = limit
     self.i = 0
 
-  def error(self, message):
-    pos = self.toks[self.i][2] if self.i < len(self.toks) else self.limit
+  def error(self, message, token=None):
+    if token is not None:
+      pos = token[2]
+    else:
+      pos = self.toks[self.i][2] if self.i < len(self.toks) else self.limit
     line = self.text.count("\n", 0, pos) + 1
     raise ValueError(f"line {line}: {message}")
 
@@ -273,9 +276,12 @@ def parse_params(p):
 
 def parse_pe_statement(p):
   target = parse_target(p)
+  name_token = p.toks[p.i - 1]
   p.expect("=")
   tok = p.peek()
   if tok is not None and tok[0] == "punct" and tok[1] == "{":
+    if target[2] not in AGU_PARAMS:
+      p.error(f"unknown agu '{target[2]}' ({', '.join(AGU_PARAMS)})", name_token)
     kind = "agu"
     value = parse_params(p)
   else:
@@ -413,8 +419,6 @@ def generate_agu(target, params, env):
   if not 0 <= pe <= 3:
     raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
   agu = target[2]
-  if agu not in AGU_PARAMS:
-    return []
   values = {}
   for key, value in params[1]:
     if key not in AGU_PARAMS[agu]:
