@@ -364,6 +364,26 @@ def fold(expr, env):
   return expr
 
 
+def substitute_target(target, env):
+  return ("target", fold(target[1], env), target[2])
+
+
+def substitute(statement, env):
+  kind = statement[0]
+  if kind == "icn":
+    return ("icn", [(name, fold(value, env)) for name, value in statement[1]])
+  if kind == "const":
+    return ("const", statement[1], fold(statement[2], env))
+  if kind == "agu":
+    params = [(key, fold(value, env)) for key, value in statement[2][1]]
+    return ("agu", substitute_target(statement[1], env), ("params", params))
+  if kind == "assign":
+    return ("assign", substitute_target(statement[1], env), fold(statement[2], env))
+  var, low, high, body = statement[1], statement[2], statement[3], statement[4]
+  inner = {name: value for name, value in env.items() if name != var}
+  return ("for", var, fold(low, env), fold(high, env), [substitute(s, inner) for s in body])
+
+
 def to_c(expr):
   kind = expr[0]
   if kind == "num":
