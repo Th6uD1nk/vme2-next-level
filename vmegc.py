@@ -71,6 +71,22 @@ def walk(text):
     prev = value
 
 
+def find_blocks(text):
+  items = list(walk(text))
+  blocks = []
+  for i, (kind, value, start, end, depth, prev) in enumerate(items):
+    if kind != "ident" or value != "buffers":
+      continue
+    if depth != 0 or prev not in (";", "}"):
+      continue
+    if i + 1 >= len(items):
+      continue
+    after = items[i + 1]
+    if after[0] == "punct" and after[1] == "{":
+      blocks.append(("buffers", start, after[2]))
+  return blocks
+
+
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmegc")
   parser.add_argument("input")
