@@ -285,6 +285,8 @@ def parse_pe_statement(p):
     kind = "agu"
     value = parse_params(p)
   else:
+    if target[2] != "out":
+      p.error(f"cannot assign an expression to '{target[2]}', only to 'out'", name_token)
     kind = "assign"
     value = parse_expr(p)
   p.expect(";")
