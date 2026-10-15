@@ -164,7 +164,7 @@ def parse_icn(p):
   while True:
     name = p.ident()
     p.expect("=")
-    items.append((name, p.number()))
+    items.append((name, parse_expr(p)))
     if not p.accept(","):
       break
   p.expect(";")
@@ -207,7 +207,7 @@ def parse_const(p):
   p.expect("const")
   name = p.ident()
   p.expect("=")
-  value = p.number()
+  value = parse_expr(p)
   p.expect(";")
   return ("const", name, value)
 
