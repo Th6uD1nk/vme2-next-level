@@ -8,6 +8,7 @@ SUFFIX = ".vmeg.c"
 IDENT = re.compile(r"[A-Za-z_]\w*")
 NUMBER = re.compile(r"[0-9][\w.]*")
 STRING = re.compile(r'"(?:[^"\\\n]|\\[\s\S])*"|\'(?:[^\'\\\n]|\\[\s\S])*\'')
+DIRECTIVE = re.compile(r"#(?:\\\r?\n|\\.|[^\n\\])*")
 BLANK = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)+", re.S)
 
 
@@ -30,6 +31,11 @@ def tokens(text):
     if text[pos] in "\"'":
       line = text.count("\n", 0, pos) + 1
       raise ValueError(f"line {line}: unterminated literal")
+    if text[pos] == "#" and text[text.rfind("\n", 0, pos) + 1:pos].strip() == "":
+      m = DIRECTIVE.match(text, pos)
+      yield ("pp", m.group(), m.start(), m.end())
+      pos = m.end()
+      continue
     m = IDENT.match(text, pos)
     kind = "ident"
     if not m:
