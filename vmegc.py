@@ -526,16 +526,20 @@ def unroll(loop):
   return out
 
 
-def emit(statement, env, lines):
+def swen_mask(pes):
+  return sum(1 << (3 - pe) for pe in pes)
+
+
+def emit(statement, env, lines, state):
   try:
-    emit_statement(statement, env, lines)
+    emit_statement(statement, env, lines, state)
   except ValueError as e:
     if str(e).startswith("line "):
       raise
     raise ValueError(f"line {statement[-1]}: {e}") from None
 
 
-def emit_statement(statement, env, lines):
+def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "const":
     if statement[1] in env:
@@ -543,6 +547,8 @@ def emit_statement(statement, env, lines):
     env[statement[1]] = fold(statement[2], env)
   elif kind == "icn":
     for icn, value in statement[1]:
+      if icn == "swen":
+        state["swen"] = True
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
   elif kind == "agu":
     lines.extend(generate_agu(statement[1], statement[2], env))
@@ -558,13 +564,14 @@ def emit_statement(statement, env, lines):
     lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), {fu});")
     if len(operations) > after and operations[after][0] == "clamp":
       _, low, high = operations[after]
+      state["secondary"].add(pe)
       lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP));")
       lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, A), {to_c(('num', high))});")
       lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, B), {to_c(('num', low))});")
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):
-      emit(inner, env, lines)
+      emit(inner, env, lines, state)
 
 
 def generate(text, block):
@@ -587,8 +594,11 @@ def generate(text, block):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
+  state = {"swen": False, "secondary": set()}
   for statement in statements:
-    emit(statement, env, lines)
+    emit(statement, env, lines, state)
+  if state["secondary"] and not state["swen"]:
+    lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   lines.append("vmeLibFinish();")
   body = "".join(f"  {line}\n" for line in lines)
   return f"void {name}() {{\n{body}}}"
