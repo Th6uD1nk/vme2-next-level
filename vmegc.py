@@ -480,6 +480,18 @@ def parse_buffer_target(p):
   return ref
 
 
+def parse_buffer_count(p):
+  p.expect(",")
+  start = p.peek()
+  count = fold(parse_expr(p), {})
+  if count[0] != "num":
+    p.error("the number of words must be a number", start)
+  if count[1] < 1:
+    p.error("the number of words must be at least 1", start)
+  p.expect("words")
+  return count[1]
+
+
 def constant(expr, what):
   if expr[0] != "num":
     raise ValueError(f"{what} must be a number")
