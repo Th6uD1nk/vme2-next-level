@@ -181,8 +181,23 @@ def parse_primary(p):
   return ("num", p.number())
 
 
+def parse_term(p):
+  left = parse_primary(p)
+  while p.accept("*"):
+    left = ("bin", "*", left, parse_primary(p))
+  return left
+
+
 def parse_expr(p):
-  return parse_primary(p)
+  left = parse_term(p)
+  while True:
+    if p.accept("+"):
+      op = "+"
+    elif p.accept("-"):
+      op = "-"
+    else:
+      return left
+    left = ("bin", op, left, parse_term(p))
 
 
 def parse_const(p):
