@@ -436,6 +436,41 @@ def generate_agu(target, params, env):
   ]
 
 
+def unroll(loop):
+  _, var, low, high, body = loop
+  if low[0] != "num" or high[0] != "num":
+    raise ValueError(f"for {var}: bounds must be numbers")
+  out = []
+  for value in range(low[1], high[1] + 1):
+    env = {var: ("num", value)}
+    for statement in body:
+      statement = substitute(statement, env)
+      if statement[0] == "const":
+        env[statement[1]] = statement[2]
+      elif statement[0] == "for":
+        out.extend(unroll(statement))
+      else:
+        out.append(statement)
+  return out
+
+
+def emit(statement, env, lines):
+  kind = statement[0]
+  if kind == "const":
+    if statement[1] in env:
+      raise ValueError(f"'{statement[1]}' is defined twice")
+    env[statement[1]] = fold(statement[2], env)
+  elif kind == "icn":
+    for icn, value in statement[1]:
+      lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
+  elif kind == "agu":
+    lines.extend(generate_agu(statement[1], statement[2], env))
+  elif kind == "for":
+    loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4])
+    for inner in unroll(loop):
+      emit(inner, env, lines)
+
+
 def generate(text, block):
   kind, start, open_pos, _ = block
   if kind != "kernel":
@@ -449,15 +484,7 @@ def generate(text, block):
   lines = ["vmeLibStart();"]
   env = {}
   for statement in statements:
-    if statement[0] == "const":
-      if statement[1] in env:
-        raise ValueError(f"'{statement[1]}' is defined twice")
-      env[statement[1]] = fold(statement[2], env)
-    elif statement[0] == "icn":
-      for icn, value in statement[1]:
-        lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
-    elif statement[0] == "agu":
-      lines.extend(generate_agu(statement[1], statement[2], env))
+    emit(statement, env, lines)
   lines.append("vmeLibFinish();")
   body = "".join(f"  {line}\n" for line in lines)
   return f"void {name}() {{\n{body}}}"
