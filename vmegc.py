@@ -139,6 +139,37 @@ class Parser:
     if not self.accept(value):
       self.error(f"expected '{value}'")
 
+  def ident(self):
+    tok = self.peek()
+    if tok is None or tok[0] != "ident":
+      self.error("expected a name")
+    self.i += 1
+    return tok[1]
+
+  def number(self):
+    tok = self.peek()
+    if tok is None or tok[0] != "num":
+      self.error("expected a number")
+    try:
+      value = int(tok[1], 0)
+    except ValueError:
+      self.error(f"invalid number '{tok[1]}'")
+    self.i += 1
+    return value
+
+
+def parse_icn(p):
+  p.expect("icn")
+  items = []
+  while True:
+    name = p.ident()
+    p.expect("=")
+    items.append((name, p.number()))
+    if not p.accept(","):
+      break
+  p.expect(";")
+  return ("icn", items)
+
 
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
