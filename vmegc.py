@@ -234,6 +234,14 @@ def parse_params(p):
   return ("params", items)
 
 
+def parse_agu(p):
+  target = parse_target(p)
+  p.expect("=")
+  params = parse_params(p)
+  p.expect(";")
+  return ("agu", target, params)
+
+
 def parse_const(p):
   p.expect("const")
   name = p.ident()
