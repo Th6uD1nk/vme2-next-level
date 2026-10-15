@@ -1,8 +1,34 @@
 import argparse
 import os
+import re
 import sys
 
 SUFFIX = ".vmeg.c"
+
+IDENT = re.compile(r"[A-Za-z_]\w*")
+NUMBER = re.compile(r"[0-9][\w.]*")
+BLANK = re.compile(r"\s+")
+
+
+def tokens(text):
+  pos = 0
+  size = len(text)
+  while pos < size:
+    m = BLANK.match(text, pos)
+    if m:
+      pos = m.end()
+      continue
+    m = IDENT.match(text, pos)
+    kind = "ident"
+    if not m:
+      m = NUMBER.match(text, pos)
+      kind = "num"
+    if not m:
+      yield ("punct", text[pos], pos, pos + 1)
+      pos += 1
+      continue
+    yield (kind, m.group(), m.start(), m.end())
+    pos = m.end()
 
 
 def default_output(path):
