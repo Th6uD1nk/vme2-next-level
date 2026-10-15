@@ -171,6 +171,20 @@ def parse_icn(p):
   return ("icn", items)
 
 
+def parse_primary(p):
+  if p.accept("("):
+    expr = parse_expr(p)
+    p.expect(")")
+    return expr
+  if p.accept("-"):
+    return ("neg", parse_primary(p))
+  return ("num", p.number())
+
+
+def parse_expr(p):
+  return parse_primary(p)
+
+
 def parse_const(p):
   p.expect("const")
   name = p.ident()
