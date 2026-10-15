@@ -106,6 +106,40 @@ def block_end(text, items, open_index, start):
   raise ValueError(f"line {line}: unterminated block")
 
 
+def body_tokens(text, block):
+  _, _, open_pos, end = block
+  offset = open_pos + 1
+  body = text[offset:end - 1]
+  return [(k, v, s + offset, e + offset) for k, v, s, e in tokens(body)], end - 1
+
+
+class Parser:
+  def __init__(self, text, toks, limit):
+    self.text = text
+    self.toks = toks
+    self.limit = limit
+    self.i = 0
+
+  def error(self, message):
+    pos = self.toks[self.i][2] if self.i < len(self.toks) else self.limit
+    line = self.text.count("\n", 0, pos) + 1
+    raise ValueError(f"line {line}: {message}")
+
+  def peek(self):
+    return self.toks[self.i] if self.i < len(self.toks) else None
+
+  def accept(self, value):
+    tok = self.peek()
+    if tok is not None and tok[0] != "str" and tok[1] == value:
+      self.i += 1
+      return True
+    return False
+
+  def expect(self, value):
+    if not self.accept(value):
+      self.error(f"expected '{value}'")
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
