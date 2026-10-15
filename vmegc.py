@@ -377,7 +377,7 @@ def to_c(expr):
   raise ValueError(f"'{kind}' expression not supported here")
 
 
-TOP_PARAMS = ("count", "offset", "mode")
+READ_PARAMS = ("count", "offset", "mode")
 
 
 def generate_agu(target, params, env):
@@ -387,23 +387,24 @@ def generate_agu(target, params, env):
   pe = index[1]
   if not 0 <= pe <= 3:
     raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
-  if target[2] != "top":
+  agu = target[2]
+  if agu not in ("top", "base"):
     return []
   values = {}
   for key, value in params[1]:
-    if key not in TOP_PARAMS:
-      raise ValueError(f"pe{pe}.top: unknown parameter '{key}' ({', '.join(TOP_PARAMS)})")
+    if key not in READ_PARAMS:
+      raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(READ_PARAMS)})")
     if key in values:
-      raise ValueError(f"pe{pe}.top: duplicate parameter '{key}'")
+      raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
     values[key] = to_c(fold(value, env))
   if "count" not in values:
-    raise ValueError(f"pe{pe}.top: 'count' is required")
+    raise ValueError(f"pe{pe}.{agu}: 'count' is required")
   mode = f"agu_mode({values['mode']})" if "mode" in values else "VME_DEF_MODE"
   if "offset" in values:
     mode += f", {values['offset']}"
   return [
-    f"vme_pe{pe}(agu_top(MODE), {mode});",
-    f"vme_pe{pe}(agu_top(COUNT), VME_DEF_STEP, {values['count']});",
+    f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
+    f"vme_pe{pe}(agu_{agu}(COUNT), VME_DEF_STEP, {values['count']});",
   ]
 
 
