@@ -180,7 +180,12 @@ def parse_primary(p):
     return ("neg", parse_primary(p))
   tok = p.peek()
   if tok is not None and tok[0] == "ident":
-    return ("name", p.ident())
+    name = p.ident()
+    if p.accept("["):
+      index = parse_expr(p)
+      p.expect("]")
+      return ("index", name, index)
+    return ("name", name)
   return ("num", p.number())
 
 
