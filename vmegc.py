@@ -106,6 +106,16 @@ def block_end(text, items, open_index, start):
   raise ValueError(f"line {line}: unterminated block")
 
 
+def render(text, blocks):
+  out = []
+  pos = 0
+  for _, start, _, end in blocks:
+    out.append(text[pos:start])
+    pos = end
+  out.append(text[pos:])
+  return "".join(out)
+
+
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmegc")
   parser.add_argument("input")
@@ -116,12 +126,13 @@ def main(argv=None):
   with open(args.input, encoding="utf-8", newline="") as f:
     text = f.read()
 
+  try:
+    blocks = find_blocks(text)
+  except ValueError as e:
+    print(f"{args.input}: {e}", file=sys.stderr)
+    return 1
+
   if args.list:
-    try:
-      blocks = find_blocks(text)
-    except ValueError as e:
-      print(f"{args.input}: {e}", file=sys.stderr)
-      return 1
     for kind, start, open_pos, end in blocks:
       first = text.count("\n", 0, start) + 1
       last = text.count("\n", 0, end - 1) + 1
@@ -131,7 +142,7 @@ def main(argv=None):
 
   output = args.output or default_output(args.input)
   with open(output, "w", encoding="utf-8", newline="") as f:
-    f.write(text)
+    f.write(render(text, blocks))
   return 0
 
 
