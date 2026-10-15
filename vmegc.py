@@ -492,10 +492,10 @@ def generate(text, block):
     if word in options:
       raise ValueError(f"line {line}: duplicate kernel option '{word}'")
     options.append(word)
-  if "direct" not in options:
-    return ""
   toks, limit = body_tokens(text, block)
   statements = parse_body(Parser(text, toks, limit))
+  if "direct" not in options:
+    return ""
   lines = ["vmeLibStart();"]
   env = {}
   for statement in statements:
