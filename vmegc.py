@@ -217,6 +217,23 @@ def parse_target(p):
   return ("target", int(m.group(1)), p.ident())
 
 
+def parse_params(p):
+  p.expect("{")
+  items = []
+  if not p.accept("}"):
+    while True:
+      name = p.ident()
+      if p.accept(":"):
+        value = parse_expr(p)
+      else:
+        value = ("name", name)
+      items.append((name, value))
+      if not p.accept(","):
+        break
+    p.expect("}")
+  return ("params", items)
+
+
 def parse_const(p):
   p.expect("const")
   name = p.ident()
