@@ -415,13 +415,18 @@ AGU_PARAMS = {
 }
 
 
-def generate_agu(target, params, env):
+def target_pe(target, env):
   index = fold(target[1], env)
   if index[0] != "num":
     raise ValueError("processing element index must be a number")
   pe = index[1]
   if not 0 <= pe <= 3:
     raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
+  return pe
+
+
+def generate_agu(target, params, env):
+  pe = target_pe(target, env)
   agu = target[2]
   values = {}
   for key, value in params[1]:
@@ -541,6 +546,11 @@ def emit_statement(statement, env, lines):
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
   elif kind == "agu":
     lines.extend(generate_agu(statement[1], statement[2], env))
+  elif kind == "assign":
+    pe = target_pe(statement[1], env)
+    operations = flatten(fold(statement[2], env))
+    _, front, back = operations[0]
+    lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), vme_mux({front}, {back}), fu_code(OP_ADD));")
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):
