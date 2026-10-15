@@ -171,6 +171,15 @@ def parse_icn(p):
   return ("icn", items)
 
 
+def parse_const(p):
+  p.expect("const")
+  name = p.ident()
+  p.expect("=")
+  value = p.number()
+  p.expect(";")
+  return ("const", name, value)
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
