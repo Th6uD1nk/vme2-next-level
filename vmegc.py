@@ -377,7 +377,7 @@ def to_c(expr):
   raise ValueError(f"'{kind}' expression not supported here")
 
 
-READ_PARAMS = ("count", "offset", "mode")
+READ_PARAMS = ("count", "offset", "mode", "step")
 
 
 def generate_agu(target, params, env):
@@ -402,9 +402,10 @@ def generate_agu(target, params, env):
   mode = f"agu_mode({values['mode']})" if "mode" in values else "VME_DEF_MODE"
   if "offset" in values:
     mode += f", {values['offset']}"
+  step = f"agu_step({values['step']})" if "step" in values else "VME_DEF_STEP"
   return [
     f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
-    f"vme_pe{pe}(agu_{agu}(COUNT), VME_DEF_STEP, {values['count']});",
+    f"vme_pe{pe}(agu_{agu}(COUNT), {step}, {values['count']});",
   ]
 
 
