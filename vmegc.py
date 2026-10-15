@@ -185,6 +185,15 @@ def parse_primary(p):
       index = parse_expr(p)
       p.expect("]")
       return ("index", name, index)
+    if p.accept("("):
+      args = []
+      if not p.accept(")"):
+        while True:
+          args.append(parse_expr(p))
+          if not p.accept(","):
+            break
+        p.expect(")")
+      return ("call", name, args)
     return ("name", name)
   return ("num", p.number())
 

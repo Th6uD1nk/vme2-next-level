@@ -1,1 +1,1 @@
-Hey, Hi! Leverage AI. Don't let it take the lead!
+Hey, Hi! Leverage AI. Stay wise!
