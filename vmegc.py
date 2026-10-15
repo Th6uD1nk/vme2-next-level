@@ -11,6 +11,12 @@ STRING = re.compile(r'"(?:[^"\\\n]|\\[\s\S])*"|\'(?:[^\'\\\n]|\\[\s\S])*\'')
 DIRECTIVE = re.compile(r"#(?:\\\r?\n|\\.|[^\n\\])*")
 BLANK = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)+", re.S)
 
+ICN_NAMES = {
+  "top": "AGU_TOP",
+  "base": "AGU_BASE",
+  "write": "AGU_WRITE",
+}
+
 
 def tokens(text):
   pos = 0
@@ -162,6 +168,12 @@ def parse_icn(p):
   p.expect("icn")
   items = []
   while True:
+    tok = p.peek()
+    if tok is not None and tok[0] == "ident":
+      if tok[1] not in ICN_NAMES:
+        p.error(f"unknown interconnect '{tok[1]}' ({', '.join(ICN_NAMES)})")
+      if any(tok[1] == done for done, _ in items):
+        p.error(f"duplicate interconnect '{tok[1]}'")
     name = p.ident()
     p.expect("=")
     items.append((name, parse_expr(p)))
@@ -322,6 +334,19 @@ def parse_body(p):
   return statements
 
 
+def to_c(expr):
+  kind = expr[0]
+  if kind == "num":
+    return hex(expr[1]) if expr[1] >= 10 else str(expr[1])
+  if kind == "name":
+    return expr[1]
+  if kind == "neg":
+    return f"(-{to_c(expr[1])})"
+  if kind == "bin":
+    return f"({to_c(expr[2])} {expr[1]} {to_c(expr[3])})"
+  raise ValueError(f"'{kind}' expression not supported here")
+
+
 def generate(text, block):
   kind, start, open_pos, _ = block
   if kind != "kernel":
@@ -330,7 +355,16 @@ def generate(text, block):
   name, options = words[1], words[2:]
   if "direct" not in options:
     return ""
-  return f"void {name}() {{ vmeLibStart(); vmeLibFinish(); }}"
+  toks, limit = body_tokens(text, block)
+  statements = parse_body(Parser(text, toks, limit))
+  lines = ["vmeLibStart();"]
+  for statement in statements:
+    if statement[0] == "icn":
+      for icn, value in statement[1]:
+        lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(value)});")
+  lines.append("vmeLibFinish();")
+  body = "".join(f"  {line}\n" for line in lines)
+  return f"void {name}() {{\n{body}}}"
 
 
 def render(text, blocks, path):
@@ -375,9 +409,15 @@ def main(argv=None):
       print(f"{args.input}:{first}-{last}: {header}")
     return 0
 
+  try:
+    result = render(text, blocks, args.input)
+  except ValueError as e:
+    print(f"{args.input}: {e}", file=sys.stderr)
+    return 1
+
   output = args.output or default_output(args.input)
   with open(output, "w", encoding="utf-8", newline="") as f:
-    f.write(render(text, blocks, args.input))
+    f.write(result)
   return 0
 
 
