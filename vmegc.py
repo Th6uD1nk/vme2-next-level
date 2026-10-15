@@ -551,9 +551,13 @@ def emit_statement(statement, env, lines):
     operations = flatten(fold(statement[2], env))
     _, front, back = operations[0]
     fu = f"vme_mux({front}, {back}), fu_code(OP_ADD)"
+    after = 1
     if len(operations) > 1 and operations[1][0] == "sat":
       fu += f", fu_sat({operations[1][1]})"
+      after = 2
     lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), {fu});")
+    if len(operations) > after and operations[after][0] == "clamp":
+      lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP));")
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):
