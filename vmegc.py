@@ -12,9 +12,12 @@ DIRECTIVE = re.compile(r"#(?:\\\r?\n|\\.|[^\n\\])*")
 BLANK = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)+", re.S)
 
 ICN_NAMES = {
+  "swen": "SWEN",
   "top": "AGU_TOP",
   "base": "AGU_BASE",
   "write": "AGU_WRITE",
+  "xpcr": "XPCR",
+  "skew": "SKEW",
 }
 
 
