@@ -337,6 +337,33 @@ def parse_body(p):
   return statements
 
 
+OPERATORS = {
+  "+": lambda a, b: a + b,
+  "-": lambda a, b: a - b,
+  "*": lambda a, b: a * b,
+}
+
+
+def fold(expr, env):
+  kind = expr[0]
+  if kind == "name":
+    return env.get(expr[1], expr)
+  if kind == "neg":
+    inner = fold(expr[1], env)
+    return ("num", -inner[1]) if inner[0] == "num" else ("neg", inner)
+  if kind == "bin":
+    left = fold(expr[2], env)
+    right = fold(expr[3], env)
+    if left[0] == "num" and right[0] == "num":
+      return ("num", OPERATORS[expr[1]](left[1], right[1]))
+    return ("bin", expr[1], left, right)
+  if kind == "index":
+    return ("index", expr[1], fold(expr[2], env))
+  if kind == "call":
+    return ("call", expr[1], [fold(arg, env) for arg in expr[2]])
+  return expr
+
+
 def to_c(expr):
   kind = expr[0]
   if kind == "num":
@@ -361,10 +388,15 @@ def generate(text, block):
   toks, limit = body_tokens(text, block)
   statements = parse_body(Parser(text, toks, limit))
   lines = ["vmeLibStart();"]
+  env = {}
   for statement in statements:
-    if statement[0] == "icn":
+    if statement[0] == "const":
+      if statement[1] in env:
+        raise ValueError(f"'{statement[1]}' is defined twice")
+      env[statement[1]] = fold(statement[2], env)
+    elif statement[0] == "icn":
       for icn, value in statement[1]:
-        lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(value)});")
+        lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
   lines.append("vmeLibFinish();")
   body = "".join(f"  {line}\n" for line in lines)
   return f"void {name}() {{\n{body}}}"
