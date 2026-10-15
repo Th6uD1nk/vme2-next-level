@@ -251,6 +251,25 @@ def parse_const(p):
   return ("const", name, value)
 
 
+def parse_statement(p):
+  tok = p.peek()
+  if tok[0] == "ident":
+    if tok[1] == "icn":
+      return parse_icn(p)
+    if tok[1] == "const":
+      return parse_const(p)
+    if PE_NAME.match(tok[1]):
+      return parse_agu(p)
+  p.error(f"unknown statement '{tok[1]}'")
+
+
+def parse_body(p):
+  statements = []
+  while p.peek() is not None:
+    statements.append(parse_statement(p))
+  return statements
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
