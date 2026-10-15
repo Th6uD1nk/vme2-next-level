@@ -550,7 +550,10 @@ def emit_statement(statement, env, lines):
     pe = target_pe(statement[1], env)
     operations = flatten(fold(statement[2], env))
     _, front, back = operations[0]
-    lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), vme_mux({front}, {back}), fu_code(OP_ADD));")
+    fu = f"vme_mux({front}, {back}), fu_code(OP_ADD)"
+    if len(operations) > 1 and operations[1][0] == "sat":
+      fu += f", fu_sat({operations[1][1]})"
+    lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), {fu});")
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):
