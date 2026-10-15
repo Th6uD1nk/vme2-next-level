@@ -110,12 +110,26 @@ def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmegc")
   parser.add_argument("input")
   parser.add_argument("-o", "--output")
+  parser.add_argument("--list", action="store_true")
   args = parser.parse_args(argv)
-
-  output = args.output or default_output(args.input)
 
   with open(args.input, encoding="utf-8", newline="") as f:
     text = f.read()
+
+  if args.list:
+    try:
+      blocks = find_blocks(text)
+    except ValueError as e:
+      print(f"{args.input}: {e}", file=sys.stderr)
+      return 1
+    for kind, start, open_pos, end in blocks:
+      first = text.count("\n", 0, start) + 1
+      last = text.count("\n", 0, end - 1) + 1
+      header = " ".join(text[start:open_pos].split())
+      print(f"{args.input}:{first}-{last}: {header}")
+    return 0
+
+  output = args.output or default_output(args.input)
   with open(output, "w", encoding="utf-8", newline="") as f:
     f.write(text)
   return 0
