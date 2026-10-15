@@ -256,12 +256,18 @@ def parse_params(p):
   return ("params", items)
 
 
-def parse_agu(p):
+def parse_pe_statement(p):
   target = parse_target(p)
   p.expect("=")
-  params = parse_params(p)
+  tok = p.peek()
+  if tok is not None and tok[0] == "punct" and tok[1] == "{":
+    kind = "agu"
+    value = parse_params(p)
+  else:
+    kind = "assign"
+    value = parse_expr(p)
   p.expect(";")
-  return ("agu", target, params)
+  return (kind, target, value)
 
 
 def parse_const(p):
@@ -304,8 +310,8 @@ def parse_statement(p):
       return parse_icn(p)
     if tok[1] == "const":
       return parse_const(p)
-    if PE_NAME.match(tok[1]):
-      return parse_agu(p)
+    if tok[1] == "pe" or PE_NAME.match(tok[1]):
+      return parse_pe_statement(p)
   p.error(f"unknown statement '{tok[1]}'")
 
 
