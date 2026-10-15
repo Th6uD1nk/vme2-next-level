@@ -444,6 +444,24 @@ def generate_agu(target, params, env):
   ]
 
 
+BUFFER_NAME = re.compile(r"(top|base)([0-3])$")
+
+
+def buffer_ref(expr):
+  if expr[0] == "name":
+    m = BUFFER_NAME.match(expr[1])
+    if m:
+      return f"{m.group(1).upper()}_{m.group(2)}"
+    return None
+  if expr[0] == "index" and expr[1] in ("top", "base"):
+    if expr[2][0] != "num":
+      raise ValueError(f"{expr[1]}[...]: buffer index must be a number")
+    if not 0 <= expr[2][1] <= 3:
+      raise ValueError(f"{expr[1]}[{expr[2][1]}]: buffer index out of range (0 to 3)")
+    return f"{expr[1].upper()}_{expr[2][1]}"
+  return None
+
+
 KERNEL_OPTIONS = ("direct",)
 
 
