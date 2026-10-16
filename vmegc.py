@@ -909,7 +909,7 @@ def function_body(text, block):
     elif kind == "punct" and value == ";" and depth == 1 and pending:
       declaration = start + 1
       pending = False
-  return declaration if declaration is not None else open_at + 1
+  return (declaration if declaration is not None else open_at + 1), open_at + 1
 
 
 def on_process_bodies(toks):
@@ -970,9 +970,10 @@ def local_uploads(text, block):
   return calls
 
 
-def call_edits(text, blocks, quoted):
+def call_edits(text, blocks, quoted, on_process_starts):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
   edits = []
+  merged = set()
   for block in blocks:
     if block[0] != "decorator":
       continue
@@ -985,11 +986,14 @@ def call_edits(text, blocks, quoted):
       lines += local_uploads(text, kernels[name])
       lines.append(f"{name}();")
     lines.append("vmeLibDisable();")
+    at, start = function_body(text, block)
+    if start in on_process_starts:
+      lines.insert(1, "vmegUploadGlobals();")
+      merged.add(start)
     calls = "".join(f"\n  {code}" for code in lines)
-    at = function_body(text, block)
     resume = text.count("\n", 0, at - 1) + 1
     edits.append((at, 0, f'{calls}\n#line {resume} "{quoted}"\n'))
-  return edits
+  return edits, merged
 
 
 def check_global_sources(text, blocks, toks):
@@ -1068,9 +1072,10 @@ def translate(text, blocks, path):
   check_decorators(text, blocks)
   check_global_sources(text, blocks, toks)
   check_local_sources(text, blocks)
-  edits = [on_process] if on_process else []
+  calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set())
+  edits = [on_process] if on_process and on_process[0] not in merged else []
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
-  edits += call_edits(text, blocks, quoted)
+  edits += calls
   edits.sort(key=lambda edit: edit[0])
   pos = 0
   for block, code in zip(blocks, codes):

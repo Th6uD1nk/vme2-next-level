@@ -160,6 +160,21 @@ class RenderTest(unittest.TestCase):
       render(twice, find_blocks(twice), "t.vmeg.c")
     self.assertIn("line 2", str(ctx.exception))
 
+  def test_one_block_when_on_process_carries_the_kernel(self):
+    text = "kernel k direct {\n  local buffers {\n    top0, 4 words, from a;\n  }\n}\n@kernel k\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertEqual(out.count("vmeLibEnable();"), 1)
+    self.assertEqual(out.count("vmeLibDisable();"), 1)
+    expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmegUploadGlobals();",
+      "vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);", "k();", "vmeLibDisable();", "go();"]
+    position = out.index("void meLibOnProcess")
+    for piece in expected:
+      position = out.index(piece, position) + len(piece)
+    other = "kernel k direct {\n}\n@kernel k\nvoid run() { }\nvoid meLibOnProcess(void) { }\n"
+    out = render(other, find_blocks(other), "t.vmeg.c")
+    self.assertEqual(out.count("vmeLibEnable();"), 2)
+    self.assertEqual(out.count("vmegUploadGlobals();"), 1)
+
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:
