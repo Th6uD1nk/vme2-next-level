@@ -703,12 +703,22 @@ def passthrough(text, begin, end, positions):
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
 
 
-def check_volatile(text, toks, blocks):
+def check_buffers(text, toks, blocks):
+  depth = 0
   for i, (kind, value, start, _) in enumerate(toks):
-    if kind != "ident" or value != "Buffer":
-      continue
     if any(b[1] <= start < b[3] for b in blocks):
       continue
+    if kind == "punct" and value == "(":
+      depth += 1
+    elif kind == "punct" and value == ")":
+      depth = max(0, depth - 1)
+    if kind != "ident" or value != "Buffer":
+      continue
+    line = text.count("\n", 0, start) + 1
+    if depth > 0:
+      raise ValueError(f"line {line}: Buffer only declares a variable, it cannot be used in a parameter or a cast")
+    if i + 1 >= len(toks) or toks[i + 1][0] != "ident":
+      raise ValueError(f"line {line}: Buffer must be followed by a variable name (volatile Buffer name[...])")
     found = False
     j = i - 1
     while j >= 0 and toks[j][0] == "ident" and toks[j][1] in DECLARATION_QUALIFIERS:
@@ -716,7 +726,6 @@ def check_volatile(text, toks, blocks):
         found = True
       j -= 1
     if not found:
-      line = text.count("\n", 0, start) + 1
       raise ValueError(f"line {line}: Buffer must be volatile (volatile Buffer name[...])")
 
 
@@ -724,7 +733,7 @@ def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
   toks = list(tokens(text))
-  check_volatile(text, toks, blocks)
+  check_buffers(text, toks, blocks)
   positions = [s for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   pos = 0
   for block in blocks:
