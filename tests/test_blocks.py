@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmegc import find_blocks, render
+from vmegc import find_blocks, render, translate
 
 
 def found(text):
@@ -137,6 +137,13 @@ class RenderTest(unittest.TestCase):
     for piece in expected:
       position = body.index(piece, position) + len(piece)
     self.assertLess(body.index("vmeLibDisable();"), body.index("go();"))
+
+  def test_summary_of_a_file(self):
+    text = "volatile Buffer g[4];\nkernel a direct {\n  global buffers {\n    base1, 4 words, at OFFSET + 4, from g;\n    top2, 4 words, from g;\n  }\n}\n@kernel a\nvoid f() { }\nvoid meLibOnProcess(void) { }\n"
+    _, info = translate(text, find_blocks(text), "t.vmeg.c")
+    self.assertEqual(info, "vmeg-info\t1\nsource\tt.vmeg.c\nglobal\tBASE_1\t4\t(OFFSET + 4)\tg\t4\nglobal\tTOP_2\t4\t\tg\t5\non-process\t10\n")
+    plain = "int x;\n"
+    self.assertEqual(translate(plain, find_blocks(plain), "p.vmeg.c")[1], "vmeg-info\t1\nsource\tp.vmeg.c\n")
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"

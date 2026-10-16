@@ -4,6 +4,7 @@ import re
 import sys
 
 SUFFIX = ".vmeg.c"
+INFO_SUFFIX = ".vmeg-info"
 
 IDENT = re.compile(r"[A-Za-z_]\w*")
 NUMBER = re.compile(r"[0-9]\w*(?:\.(?!\.)\w*)?")
@@ -1028,7 +1029,21 @@ def check_local_sources(text, blocks):
             raise ValueError(f"line {line}: '{source}' is not declared with Buffer in the function marked with @kernel {kernel} at line {where} (local buffers)")
 
 
+def summary(path, text, toks, blocks, cache):
+  rows = ["vmeg-info\t1", f"source\t{path}"]
+  for target, count, offset, source, line in global_lines(text, blocks, cache):
+    where = "" if offset is None else to_c(offset)
+    rows.append(f"global\t{target}\t{count}\t{where}\t{source}\t{line}")
+  for at in on_process_bodies(toks):
+    rows.append(f"on-process\t{text.count(chr(10), 0, at) + 1}")
+  return "\n".join(rows) + "\n"
+
+
 def render(text, blocks, path):
+  return translate(text, blocks, path)[0]
+
+
+def translate(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
   toks = list(tokens(text))
@@ -1051,7 +1066,7 @@ def render(text, blocks, path):
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
-  return "".join(out)
+  return "".join(out), summary(path, text, toks, blocks, {})
 
 
 def main(argv=None):
@@ -1079,7 +1094,7 @@ def main(argv=None):
     return 0
 
   try:
-    result = render(text, blocks, args.input)
+    result, info = translate(text, blocks, args.input)
   except ValueError as e:
     print(f"{args.input}: {e}", file=sys.stderr)
     return 1
@@ -1087,6 +1102,9 @@ def main(argv=None):
   output = args.output or default_output(args.input)
   with open(output, "w", encoding="utf-8", newline="") as f:
     f.write(result)
+  base = output[:-2] if output.endswith(".c") else output
+  with open(base + INFO_SUFFIX, "w", encoding="utf-8", newline="") as f:
+    f.write(info)
   return 0
 
 
