@@ -80,6 +80,18 @@ class RenderTest(unittest.TestCase):
     self.assertIn("line 3", str(ctx.exception))
     self.assertIn("'z'", str(ctx.exception))
 
+  def test_decorator_with_a_list_of_kernels(self):
+    kernels = "kernel a {\n}\nkernel b {\n}\nkernel c {\n}\n"
+    ok = kernels + "@kernel a, b\nvoid r1() { }\n@kernel c\nvoid r2() { }\n"
+    out = render(ok, find_blocks(ok), "t.vmeg.c")
+    self.assertNotIn("@", out)
+    again = kernels + "@kernel a, a, b\nvoid r() { }\n@kernel c\nvoid s() { }\n"
+    render(again, find_blocks(again), "t.vmeg.c")
+    for text in [kernels + "@kernel a, z\nvoid r() { }\n", kernels + "@kernel a, b\nvoid r() { }\n"]:
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError):
+          render(text, find_blocks(text), "t.vmeg.c")
+
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k {\n  icn top = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:

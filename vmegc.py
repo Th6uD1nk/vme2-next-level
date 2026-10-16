@@ -85,11 +85,16 @@ def read_decorator(text, items, index):
   line = text.count("\n", 0, start) + 1
   if index + 2 >= len(items) or items[index + 1][1] != "kernel" or items[index + 2][0] != "ident":
     raise ValueError(f"line {line}: expected '@kernel name'")
-  name_end = items[index + 2][3]
+  last = index + 2
+  while last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
+    if last + 2 >= len(items) or items[last + 2][0] != "ident":
+      raise ValueError(f"line {line}: expected a kernel name after ','")
+    last += 2
+  name_end = items[last][3]
   parens = 0
   seen = False
   words = 0
-  for kind, value, _, _, _, _ in items[index + 3:]:
+  for kind, value, _, _, _, _ in items[last + 1:]:
     if kind == "ident" and not seen:
       words += 1
     if kind == "punct" and value == "(":
@@ -766,8 +771,8 @@ def kernel_name(text, block):
   return [value for _, value, _, _ in tokens(text[block[1]:block[2]])][1]
 
 
-def decorator_name(text, block):
-  return [value for _, value, _, _ in tokens(text[block[1]:block[3]])][2]
+def decorator_names(text, block):
+  return [value for _, value, _, _ in tokens(text[block[1]:block[3]])][2::2]
 
 
 def check_decorators(text, blocks):
@@ -776,12 +781,12 @@ def check_decorators(text, blocks):
   for block in blocks:
     if block[0] != "decorator":
       continue
-    name = decorator_name(text, block)
-    if name not in kernels:
-      line = text.count("\n", 0, block[1]) + 1
-      known = f"kernels: {', '.join(kernels)}" if kernels else "there is no kernel in this file"
-      raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({known})")
-    decorated.add(name)
+    line = text.count("\n", 0, block[1]) + 1
+    for name in decorator_names(text, block):
+      if name not in kernels:
+        known = f"kernels: {', '.join(kernels)}" if kernels else "there is no kernel in this file"
+        raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({known})")
+      decorated.add(name)
   for name, block in kernels.items():
     if name not in decorated:
       line = text.count("\n", 0, block[1]) + 1
