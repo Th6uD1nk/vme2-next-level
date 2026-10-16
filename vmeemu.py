@@ -7,6 +7,10 @@ CONTEXT_WORDS = 112
 DMAC_BASE = 0x440ff000
 DMAC_REGISTER_COUNT = 17
 PHYSICAL_MASK = 0x1fffffff
+DMAC_CONTROL = 2
+DMAC_MEMORY_ADDRESS = 4
+CONTEXT_TRANSFER_MASK = 0x4c
+CONTEXT_TRANSFER_BITS = 0x0c
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -110,7 +114,14 @@ class Emulator:
       self.scratchpad.write_address(address, value)
     else:
       registers, index = located
-      registers[index] = value & 0xffffffff
+      value &= 0xffffffff
+      if registers is self.dmac and index == DMAC_CONTROL:
+        self.run_control(value)
+      registers[index] = value
+
+  def run_control(self, value):
+    if value & CONTEXT_TRANSFER_MASK == CONTEXT_TRANSFER_BITS:
+      self.load_context(self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], CONTEXT_WORDS))
 
   def put_memory(self, address, words):
     first = self.memory_address(address)
