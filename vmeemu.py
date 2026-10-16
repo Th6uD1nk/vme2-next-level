@@ -43,3 +43,16 @@ class Scratchpad:
     if self.slot(offset + count - 1) - first != count - 1:
       raise ValueError(f"a transfer of {count} words at offset {offset:#x} does not fit in the base or top buffers")
     self.words[first:first + count] = [value & 0xffffff for value in values]
+
+
+def dump_base_buffers(scratchpad, count):
+  if count <= 0 or count > BUFFER_WORDS or count % 4:
+    raise ValueError(f"the dump needs a number of words that is a multiple of 4, at most {BUFFER_WORDS}, not {count}")
+  rows = []
+  for n in range(BUFFER_COUNT):
+    rows.append(f"Buffer: BASE {n}")
+    first = BASE_OFFSET + n * BUFFER_WORDS
+    for i in range(0, count, 4):
+      rows.append(", ".join(f"0x{scratchpad.read(first + i + k):08x}" for k in range(4)) + ",")
+    rows.append("")
+  return "\n".join(rows) + "\n"
