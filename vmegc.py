@@ -118,7 +118,10 @@ def read_decorator(text, items, index):
 def find_blocks(text):
   items = list(walk(text))
   blocks = []
+  skip = 0
   for i, (kind, value, start, end, depth, prev) in enumerate(items):
+    if start < skip:
+      continue
     if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
       blocks.append(read_decorator(text, items, i))
       continue
@@ -135,6 +138,7 @@ def find_blocks(text):
         j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
       blocks.append(("buffers" if value == "buffers" else "kernel", start, items[j][2], block_end(text, items, j, start)))
+      skip = blocks[-1][3]
   return blocks
 
 
