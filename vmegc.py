@@ -314,13 +314,24 @@ def parse_for_header(p):
   return ("for", var, low, high)
 
 
+def parse_buffers_block(p):
+  qualifier = p.ident()
+  p.expect("buffers")
+  p.expect("{")
+  return ("buffers", qualifier, parse_buffers(p, True))
+
+
 def parse_for(p):
   _, var, low, high = parse_for_header(p)
   body = []
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
-    body.append(parse_statement(p))
+    start = p.peek()
+    statement = parse_statement(p)
+    if statement[0] == "buffers":
+      p.error("buffers cannot be inside a for", start)
+    body.append(statement)
   return ("for", var, low, high, body)
 
 
@@ -336,6 +347,10 @@ def parse_statement(p):
       return parse_const(p) + (line,)
     if tok[1] == "pe" or PE_NAME.match(tok[1]):
       return parse_pe_statement(p) + (line,)
+    if tok[1] in ("global", "local"):
+      return parse_buffers_block(p) + (line,)
+    if tok[1] == "buffers":
+      p.error("buffers needs a qualifier: global buffers or local buffers")
   p.error(f"unknown statement '{tok[1]}'")
 
 
@@ -512,9 +527,16 @@ def parse_buffer_source(p):
   return p.ident()
 
 
-def parse_buffers(p):
+def parse_buffers(p, closed=False):
   entries = []
-  while p.peek() is not None:
+  while True:
+    if closed:
+      if p.accept("}"):
+        break
+      if p.peek() is None:
+        p.error("expected '}'")
+    elif p.peek() is None:
+      break
     line = p.text.count("\n", 0, p.peek()[2]) + 1
     target = parse_buffer_target(p)
     count = parse_buffer_count(p)
