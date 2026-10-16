@@ -911,6 +911,25 @@ def function_body(text, block):
   return declaration if declaration is not None else open_at + 1
 
 
+def kernel_statements(text, block, cache):
+  statements = cache.get(block[1])
+  if statements is None:
+    body, limit = body_tokens(text, block)
+    statements = cache[block[1]] = parse_body(Parser(text, body, limit))
+  return statements
+
+
+def global_lines(text, blocks, cache):
+  lines = []
+  for block in blocks:
+    if block[0] != "kernel":
+      continue
+    for statement in kernel_statements(text, block, cache):
+      if statement[0] == "buffers" and statement[1] == "global":
+        lines += statement[2]
+  return lines
+
+
 def local_uploads(text, block):
   body, limit = body_tokens(text, block)
   calls = []
