@@ -4,6 +4,8 @@ SCRATCHPAD_BASE = 0x44000000
 DATAPATH_BASE = 0x440f8000
 REGISTER_COUNT = 106
 CONTEXT_WORDS = 112
+DMAC_BASE = 0x440ff000
+DMAC_REGISTER_COUNT = 17
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -81,28 +83,32 @@ class Emulator:
   def __init__(self):
     self.scratchpad = Scratchpad()
     self.registers = [0] * REGISTER_COUNT
+    self.dmac = [0] * DMAC_REGISTER_COUNT
 
   def locate(self, address):
-    if DATAPATH_BASE <= address < DATAPATH_BASE + 4 * REGISTER_COUNT:
-      if address & 3:
-        raise ValueError(f"register address {address:#x} is not aligned on 4 bytes")
-      return (address - DATAPATH_BASE) >> 2
+    for first, count, registers in ((DATAPATH_BASE, REGISTER_COUNT, self.registers), (DMAC_BASE, DMAC_REGISTER_COUNT, self.dmac)):
+      if first <= address < first + 4 * count:
+        if address & 3:
+          raise ValueError(f"register address {address:#x} is not aligned on 4 bytes")
+        return registers, (address - first) >> 2
     if SCRATCHPAD_BASE <= address < DATAPATH_BASE:
       return None
     raise ValueError(f"address {address:#x} is not mapped")
 
   def read(self, address):
-    index = self.locate(address)
-    if index is None:
+    located = self.locate(address)
+    if located is None:
       return self.scratchpad.read_address(address)
-    return self.registers[index]
+    registers, index = located
+    return registers[index]
 
   def write(self, address, value):
-    index = self.locate(address)
-    if index is None:
+    located = self.locate(address)
+    if located is None:
       self.scratchpad.write_address(address, value)
     else:
-      self.registers[index] = value & 0xffffffff
+      registers, index = located
+      registers[index] = value & 0xffffffff
 
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:
