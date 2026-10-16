@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmegc import find_blocks, merge_globals, render, translate
+from vmegc import check_on_process, find_blocks, merge_globals, render, translate
 
 
 def found(text):
@@ -188,6 +188,21 @@ class RenderTest(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
           merge_globals([a, info("b.vmeg.c", other)])
         self.assertEqual(str(ctx.exception), "b.vmeg.c:9: top0 is already loaded at the same offset by a.vmeg.c:4 with a different source or size")
+
+  def test_on_process_over_the_summaries(self):
+    def info(source, globals_=(), on_process=()):
+      return {"source": source, "globals": list(globals_), "on_process": list(on_process)}
+    lines = [("TOP_0", 16, "", "x", 40)]
+    check_on_process([info("a.vmeg.c", lines), info("b.vmeg.c", on_process=[7])])
+    check_on_process([info("a.vmeg.c", lines, [7])])
+    check_on_process([info("a.vmeg.c"), info("b.vmeg.c")])
+    check_on_process([info("a.vmeg.c", on_process=[3])])
+    with self.assertRaises(ValueError) as ctx:
+      check_on_process([info("a.vmeg.c", lines), info("b.vmeg.c")])
+    self.assertEqual(str(ctx.exception), "a.vmeg.c:40: global buffers need a function meLibOnProcess in one of the files, none defines it")
+    with self.assertRaises(ValueError) as ctx:
+      check_on_process([info("a.vmeg.c", on_process=[3]), info("b.vmeg.c", on_process=[12])])
+    self.assertEqual(str(ctx.exception), "meLibOnProcess is defined more than once: a.vmeg.c:3 and b.vmeg.c:12")
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"

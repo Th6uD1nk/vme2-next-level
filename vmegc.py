@@ -1094,6 +1094,20 @@ def merge_globals(infos):
   return merged
 
 
+def check_on_process(infos):
+  defined = []
+  first_global = None
+  for info in infos:
+    defined += [(info["source"], line) for line in info["on_process"]]
+    if first_global is None and info["globals"]:
+      first_global = (info["source"], info["globals"][0][4])
+  if len(defined) > 1:
+    places = " and ".join(f"{source}:{line}" for source, line in defined)
+    raise ValueError(f"meLibOnProcess is defined more than once: {places}")
+  if not defined and first_global is not None:
+    raise ValueError(f"{first_global[0]}:{first_global[1]}: global buffers need a function meLibOnProcess in one of the files, none defines it")
+
+
 def render(text, blocks, path):
   return translate(text, blocks, path)[0]
 
