@@ -1174,15 +1174,18 @@ def merged_file(merged):
   return "\n".join(rows) + "\n"
 
 
-def merge_command(paths, output, includes):
+def merge_command(paths):
   infos = []
   for path in paths:
     with open(path, encoding="utf-8", newline="") as f:
       infos.append(read_summary(f.read(), path))
   merged = merge_globals(infos)
   check_on_process(infos)
-  with open(output, "w", encoding="utf-8", newline="") as f:
-    f.write(merged_file(merged))
+  for path, info in zip(paths, infos):
+    if info["on_process"]:
+      target = os.path.join(os.path.dirname(path), globals_header(info["source"]))
+      with open(target, "w", encoding="utf-8", newline="") as f:
+        f.write(merged_file(merged))
 
 
 def render(text, blocks, path):
@@ -1236,8 +1239,10 @@ def main(argv=None):
   args = parser.parse_args(argv)
 
   if args.merge:
+    if args.output:
+      parser.error("--merge does not take -o, the header is written next to the .vmeg-info of the file with meLibOnProcess")
     try:
-      merge_command(args.inputs, args.output or "vmeg-globals.c", args.include)
+      merge_command(args.inputs)
     except (ValueError, OSError) as e:
       print(e, file=sys.stderr)
       return 1
