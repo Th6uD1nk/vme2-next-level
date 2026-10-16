@@ -1,0 +1,3 @@
+[submodule "vme-ext"]
+	path = vme-ext
+	url = https://github.com/mcidclan/psp-virtual-mobile-engine-ext
