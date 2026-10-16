@@ -20,3 +20,29 @@ function(vmegc_translate out_c out_info input)
   set(${out_c} "${c}" PARENT_SCOPE)
   set(${out_info} "${info}" PARENT_SCOPE)
 endfunction()
+
+function(vmegc_sources target)
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    message(FATAL_ERROR "vmegc_sources needs cmake 3.11 or newer")
+  endif()
+  cmake_parse_arguments(ARG "" "" "SOURCES;INCLUDE" ${ARGN})
+  set(generated "")
+  set(infos "")
+  foreach(source ${ARG_SOURCES})
+    vmegc_translate(c info "${source}")
+    list(APPEND generated "${c}")
+    list(APPEND infos "${info}")
+  endforeach()
+  set(globals "${CMAKE_CURRENT_BINARY_DIR}/${target}.vmeg-globals.c")
+  set(include_args "")
+  foreach(header ${ARG_INCLUDE})
+    list(APPEND include_args --include "${header}")
+  endforeach()
+  add_custom_command(
+    OUTPUT "${globals}"
+    COMMAND "${VMEGC_PYTHON}" "${VMEGC_SCRIPT}" --merge ${infos} -o "${globals}" ${include_args}
+    DEPENDS ${infos} "${VMEGC_SCRIPT}"
+    COMMENT "vmegc merge ${target}"
+    VERBATIM)
+  target_sources(${target} PRIVATE ${generated} "${globals}")
+endfunction()
