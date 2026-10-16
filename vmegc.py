@@ -776,6 +776,48 @@ def file_buffer_names(toks):
   return names
 
 
+def function_tokens(text, block):
+  begin = block[3]
+  parens = 0
+  found = False
+  depth = 0
+  body = []
+  for kind, value, start, end in tokens(text[begin:]):
+    token = (kind, value, start + begin, end + begin)
+    if not found:
+      if kind == "punct" and value == "(":
+        parens += 1
+      elif kind == "punct" and value == ")":
+        parens -= 1
+      elif kind == "punct" and value == "{" and parens == 0:
+        found = True
+        depth = 1
+        body.append(token)
+      continue
+    body.append(token)
+    if kind == "punct" and value == "{":
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth -= 1
+      if depth == 0:
+        break
+  return body
+
+
+def function_buffer_names(text, block):
+  toks = function_tokens(text, block)
+  names = set()
+  depth = 0
+  for i, (kind, value, _, _) in enumerate(toks):
+    if kind == "punct" and value == "{":
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth -= 1
+    elif kind == "ident" and value == "Buffer" and depth == 1:
+      names.update(declarator_names(toks, i))
+  return names
+
+
 def check_buffers(text, toks, blocks):
   depth = 0
   for i, (kind, value, start, _) in enumerate(toks):
