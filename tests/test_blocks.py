@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmegc import check_on_process, find_blocks, merged_file, merge_globals, render, translate
+from vmegc import check_on_process, default_output, find_blocks, merged_file, merge_globals, render, translate
 
 
 def found(text):
@@ -212,6 +212,12 @@ class RenderTest(unittest.TestCase):
     expected = "#include <x.h>\nextern volatile u32 inA[];\nextern volatile u32 inB[];\nvoid vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n"
     self.assertEqual(merged_file(merged, ["<x.h>"]), expected)
     self.assertEqual(merged_file([], []), "void vmegUploadGlobals(void) {\n}\n")
+
+  def test_output_names(self):
+    self.assertEqual(default_output("dir/a.vmeg.c"), "a.c")
+    self.assertEqual(default_output("dir/a.vmeg.cpp"), "a.cpp")
+    with self.assertRaises(SystemExit):
+      default_output("a.cpp")
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"

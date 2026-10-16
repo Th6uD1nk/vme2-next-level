@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-SUFFIX = ".vmeg.c"
+SUFFIXES = ((".vmeg.cpp", ".cpp"), (".vmeg.c", ".c"))
 INFO_SUFFIX = ".vmeg-info"
 
 IDENT = re.compile(r"[A-Za-z_]\w*")
@@ -61,9 +61,10 @@ def tokens(text):
 
 def default_output(path):
   name = os.path.basename(path)
-  if not name.endswith(SUFFIX):
-    raise SystemExit(f"vmegc: input must end with {SUFFIX} (or pass -o)")
-  return name[:-len(SUFFIX)] + ".c"
+  for source, result in SUFFIXES:
+    if name.endswith(source):
+      return name[:-len(source)] + result
+  raise SystemExit("vmegc: input must end with .vmeg.c or .vmeg.cpp (or pass -o)")
 
 
 def walk(text):
@@ -1213,7 +1214,7 @@ def main(argv=None):
   output = args.output or default_output(args.input)
   with open(output, "w", encoding="utf-8", newline="") as f:
     f.write(result)
-  base = output[:-2] if output.endswith(".c") else output
+  base = output[:-4] if output.endswith(".cpp") else output[:-2] if output.endswith(".c") else output
   with open(base + INFO_SUFFIX, "w", encoding="utf-8", newline="") as f:
     f.write(info)
   return 0
