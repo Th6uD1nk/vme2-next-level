@@ -19,3 +19,7 @@ kernel runContext direct {
   pe0.base  = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
   pe0.write = { count, cyc: 0x09 };
 }
+
+@kernel runContext
+void run(void) {
+}

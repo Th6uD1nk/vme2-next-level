@@ -762,6 +762,32 @@ def check_buffers(text, toks, blocks):
       raise ValueError(f"line {line}: Buffer must be volatile (volatile Buffer name[...])")
 
 
+def kernel_name(text, block):
+  return [value for _, value, _, _ in tokens(text[block[1]:block[2]])][1]
+
+
+def decorator_name(text, block):
+  return [value for _, value, _, _ in tokens(text[block[1]:block[3]])][2]
+
+
+def check_decorators(text, blocks):
+  kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
+  decorated = set()
+  for block in blocks:
+    if block[0] != "decorator":
+      continue
+    name = decorator_name(text, block)
+    if name not in kernels:
+      line = text.count("\n", 0, block[1]) + 1
+      known = f"kernels: {', '.join(kernels)}" if kernels else "there is no kernel in this file"
+      raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({known})")
+    decorated.add(name)
+  for name, block in kernels.items():
+    if name not in decorated:
+      line = text.count("\n", 0, block[1]) + 1
+      raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name}")
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
@@ -779,6 +805,7 @@ def render(text, blocks, path):
     line = text.count("\n", 0, end) + 1
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
+  check_decorators(text, blocks)
   out.append(passthrough(text, pos, len(text), positions))
   return "".join(out)
 
