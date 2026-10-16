@@ -1235,7 +1235,6 @@ def main(argv=None):
   parser.add_argument("-o", "--output")
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--merge", action="store_true")
-  parser.add_argument("--include", action="append", default=[])
   args = parser.parse_args(argv)
 
   if args.merge:
