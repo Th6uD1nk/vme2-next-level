@@ -151,7 +151,7 @@ def find_blocks(text):
   return blocks
 
 
-def block_end(text, items, open_index, start):
+def block_end(text, items, open_index, start, name="block"):
   level = 0
   for kind, value, _, end, _, _ in items[open_index:]:
     if kind != "punct":
@@ -163,7 +163,7 @@ def block_end(text, items, open_index, start):
       if level == 0:
         return end
   line = text.count("\n", 0, start) + 1
-  raise ValueError(f"line {line}: unterminated block")
+  raise ValueError(f"line {line}: unterminated {name}")
 
 
 def body_tokens(text, block):
