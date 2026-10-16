@@ -29,25 +29,19 @@ function(vmegc_sources target)
   cmake_parse_arguments(ARG "" "" "SOURCES;INCLUDE" ${ARGN})
   set(generated "")
   set(infos "")
-  set(extension c)
   foreach(source ${ARG_SOURCES})
     vmegc_translate(c info "${source}")
     list(APPEND generated "${c}")
     list(APPEND infos "${info}")
-    if(source MATCHES "\\.vmeg\\.cpp$")
-      set(extension cpp)
-    endif()
   endforeach()
-  set(globals "${CMAKE_CURRENT_BINARY_DIR}/${target}.vmeg-globals.${extension}")
-  set(include_args "")
-  foreach(header ${ARG_INCLUDE})
-    list(APPEND include_args --include "${header}")
-  endforeach()
+  set(merged "${CMAKE_CURRENT_BINARY_DIR}/${target}.vmeg-merged")
   add_custom_command(
-    OUTPUT "${globals}"
-    COMMAND "${VMEGC_PYTHON}" "${VMEGC_SCRIPT}" --merge ${infos} -o "${globals}" ${include_args}
+    OUTPUT "${merged}"
+    COMMAND "${VMEGC_PYTHON}" "${VMEGC_SCRIPT}" --merge ${infos}
+    COMMAND "${CMAKE_COMMAND}" -E touch "${merged}"
     DEPENDS ${infos} "${VMEGC_SCRIPT}"
     COMMENT "vmegc merge ${target}"
     VERBATIM)
-  target_sources(${target} PRIVATE ${generated} "${globals}")
+  set_source_files_properties(${generated} PROPERTIES OBJECT_DEPENDS "${merged}")
+  target_sources(${target} PRIVATE ${generated})
 endfunction()
