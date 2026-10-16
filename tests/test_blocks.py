@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmegc import find_blocks, render, translate
+from vmegc import find_blocks, merge_globals, render, translate
 
 
 def found(text):
@@ -174,6 +174,20 @@ class RenderTest(unittest.TestCase):
     out = render(other, find_blocks(other), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 2)
     self.assertEqual(out.count("vmegUploadGlobals();"), 1)
+
+  def test_merge_of_global_lines(self):
+    def info(source, *lines):
+      return {"source": source, "globals": list(lines), "on_process": []}
+    a = info("a.vmeg.c", ("TOP_0", 16, "", "x", 4), ("BASE_0", 16, "OFF", "w", 5))
+    same = info("b.vmeg.c", ("TOP_0", 16, "0", "x", 9), ("BASE_0", 16, "OFF", "w", 10), ("TOP_1", 8, "", "y", 11))
+    self.assertEqual(merge_globals([a, same]), [("TOP_0", 16, "", "x"), ("BASE_0", 16, "OFF", "w"), ("TOP_1", 8, "", "y")])
+    apart = info("b.vmeg.c", ("BASE_0", 16, "8", "w", 3))
+    self.assertEqual(len(merge_globals([a, apart])), 3)
+    for other in [("TOP_0", 16, "", "other", 9), ("TOP_0", 8, "", "x", 9)]:
+      with self.subTest(other=other):
+        with self.assertRaises(ValueError) as ctx:
+          merge_globals([a, info("b.vmeg.c", other)])
+        self.assertEqual(str(ctx.exception), "b.vmeg.c:9: top0 is already loaded at the same offset by a.vmeg.c:4 with a different source or size")
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"

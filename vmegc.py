@@ -1078,6 +1078,22 @@ def read_summary(text, name):
   return info
 
 
+def merge_globals(infos):
+  seen = {}
+  merged = []
+  for info in infos:
+    for target, count, offset, source, line in info["globals"]:
+      key = (target, offset or "0")
+      first = seen.get(key)
+      if first is None:
+        seen[key] = (count, source, info["source"], line)
+        merged.append((target, count, offset, source))
+      elif first[:2] != (count, source):
+        name = target.replace("_", "").lower()
+        raise ValueError(f"{info['source']}:{line}: {name} is already loaded at the same offset by {first[2]}:{first[3]} with a different source or size")
+  return merged
+
+
 def render(text, blocks, path):
   return translate(text, blocks, path)[0]
 
