@@ -911,6 +911,15 @@ def function_body(text, block):
   return declaration if declaration is not None else open_at + 1
 
 
+def local_uploads(text, block):
+  body, limit = body_tokens(text, block)
+  calls = []
+  for statement in parse_body(Parser(text, body, limit)):
+    if statement[0] == "buffers" and statement[1] == "local":
+      calls += [upload_call(entry) for entry in statement[2]]
+  return calls
+
+
 def call_edits(text, blocks, quoted):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
   edits = []
@@ -918,12 +927,15 @@ def call_edits(text, blocks, quoted):
     if block[0] != "decorator":
       continue
     line = text.count("\n", 0, block[1]) + 1
-    calls = ""
+    lines = ["vmeLibEnable();"]
     for name in decorator_names(text, block):
       words = [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])]
       if "direct" not in words[2:]:
         raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
-      calls += f"\n  {name}();"
+      lines += local_uploads(text, kernels[name])
+      lines.append(f"{name}();")
+    lines.append("vmeLibDisable();")
+    calls = "".join(f"\n  {code}" for code in lines)
     at = function_body(text, block)
     resume = text.count("\n", 0, at - 1) + 1
     edits.append((at, 0, f'{calls}\n#line {resume} "{quoted}"\n'))

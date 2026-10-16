@@ -62,7 +62,7 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 6 "t.vmeg.c"', out)
-    self.assertTrue(out.endswith('void f(void) {\n  k();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
+    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  k();\n  vmeLibDisable();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
     text = "kernel k direct {\n}\n@kernel k\n\n/* c */\nstatic void run(int a) { }\n"
@@ -125,6 +125,18 @@ class RenderTest(unittest.TestCase):
         self.assertIn("local buffers", str(ctx.exception))
     both = kernel + "@kernel k\n" + declared + "@kernel k\n" + declared.replace("f()", "g()")
     render(both, find_blocks(both), "t.vmeg.c")
+
+  def test_local_buffers_are_uploaded_in_the_decorated_function(self):
+    text = "kernel k direct {\n  local buffers {\n    top0, 4 words, from a;\n    base1, 2 words, at 8, from b;\n  }\n}\n@kernel k\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    body = out[out.index("void f() {"):]
+    expected = ["void f() {", "volatile u32 __attribute__((aligned(64))) a[4], b[2];", "vmeLibEnable();",
+      "vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);",
+      "vmeLibMemoryToRingBuffer((void*)b, VME_BASE_BUFF1_WOFF + 8, 2);", "k();", "vmeLibDisable();"]
+    position = 0
+    for piece in expected:
+      position = body.index(piece, position) + len(piece)
+    self.assertLess(body.index("vmeLibDisable();"), body.index("go();"))
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"
