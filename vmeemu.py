@@ -3,6 +3,7 @@ import vmegc
 SCRATCHPAD_BASE = 0x44000000
 DATAPATH_BASE = 0x440f8000
 REGISTER_COUNT = 106
+CONTEXT_WORDS = 112
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -102,3 +103,8 @@ class Emulator:
       self.scratchpad.write_address(address, value)
     else:
       self.registers[index] = value & 0xffffffff
+
+  def load_context(self, words):
+    if len(words) != CONTEXT_WORDS:
+      raise ValueError(f"a context has {CONTEXT_WORDS} words, not {len(words)}")
+    self.registers[:] = [word & 0xffffffff for word in words[:REGISTER_COUNT]]
