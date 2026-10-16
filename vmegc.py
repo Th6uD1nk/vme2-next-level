@@ -890,9 +890,26 @@ def decorator_names(text, block):
   return [value for _, value, _, _ in tokens(text[block[1]:block[3]])][2::2]
 
 
-def check_decorators(text, blocks):
+def vme_calls(toks, blocks, names):
+  events = [(b[3], 1) if b[0] == "vme" else (b[1], -1) for b in blocks if b[0] in ("vme", "vme-end")]
+  called = set()
+  if not events or not names:
+    return called
+  depth = 0
+  e = 0
+  size = len(toks)
+  for i, (kind, value, start, _) in enumerate(toks):
+    while e < len(events) and events[e][0] <= start:
+      depth += events[e][1]
+      e += 1
+    if depth and kind == "ident" and value in names and i + 1 < size and toks[i + 1][1] == "(":
+      called.add(value)
+  return called
+
+
+def check_decorators(text, toks, blocks):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
-  decorated = set()
+  decorated = vme_calls(toks, blocks, kernels)
   for block in blocks:
     if block[0] != "decorator":
       continue
@@ -905,7 +922,7 @@ def check_decorators(text, blocks):
   for name, block in kernels.items():
     if name not in decorated:
       line = text.count("\n", 0, block[1]) + 1
-      raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name}")
+      raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or call {name}() in a @vme block")
 
 
 def function_body(text, block):
@@ -1175,7 +1192,7 @@ def translate(text, blocks, path):
   out = [(WEAK_DEFAULT if on_process else "") + f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
-  check_decorators(text, blocks)
+  check_decorators(text, toks, blocks)
   check_global_sources(text, blocks, toks)
   check_local_sources(text, blocks)
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set())
