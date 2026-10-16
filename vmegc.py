@@ -350,6 +350,15 @@ def parse_for_header(p):
   return ("for", var, low, high)
 
 
+def upload_call(entry):
+  target, count, offset, source, _ = entry
+  kind, index = target.split("_")
+  destination = f"VME_{kind}_BUFF{index}_WOFF"
+  if offset is not None:
+    destination += f" + {to_c(offset)}"
+  return f"vmeLibMemoryToRingBuffer((void*){source}, {destination}, {count});"
+
+
 def parse_buffers_block(p):
   qualifier = p.ident()
   p.expect("buffers")
