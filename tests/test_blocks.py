@@ -58,9 +58,9 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "int a;\nkernel k direct {\n  global buffers {\n    top0, 1 words, from x;\n  }\n}\n@kernel k\nvoid f(void) { }\nint b;\n"
+    text = "volatile Buffer x[1];\nkernel k direct {\n  global buffers {\n    top0, 1 words, from x;\n  }\n}\n@kernel k\nvoid f(void) { }\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
-    self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nint a;\n'))
+    self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 6 "t.vmeg.c"', out)
     self.assertTrue(out.endswith('void f(void) {\n  k();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
 
@@ -94,6 +94,18 @@ class RenderTest(unittest.TestCase):
       with self.subTest(text=text):
         with self.assertRaises(ValueError):
           render(text, find_blocks(text), "t.vmeg.c")
+
+  def test_global_sources_must_be_declared_with_buffer(self):
+    def build(declarations):
+      return declarations + "kernel k direct {\n  global buffers {\n    top0, 1 words, from x;\n    top1, 1 words, from y;\n  }\n}\n@kernel k\nvoid f() { }\n"
+    ok = build("volatile Buffer x[1], y[1];\n")
+    render(ok, find_blocks(ok), "t.vmeg.c")
+    for declarations in ["", "volatile Buffer x[1];\n", "volatile Buffer x[1], z[1];\n", "volatile u32 x[1], y[1];\n"]:
+      text = build(declarations)
+      with self.subTest(declarations=declarations):
+        with self.assertRaises(ValueError) as ctx:
+          render(text, find_blocks(text), "t.vmeg.c")
+        self.assertIn("global buffers", str(ctx.exception))
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"

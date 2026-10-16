@@ -921,6 +921,20 @@ def call_edits(text, blocks, quoted):
   return edits
 
 
+def check_global_sources(text, blocks, toks):
+  declared = file_buffer_names(toks)
+  for block in blocks:
+    if block[0] != "kernel":
+      continue
+    body, limit = body_tokens(text, block)
+    for statement in parse_body(Parser(text, body, limit)):
+      if statement[0] != "buffers" or statement[1] != "global":
+        continue
+      for _, _, _, source, line in statement[2]:
+        if source not in declared:
+          raise ValueError(f"line {line}: '{source}' is not declared with Buffer at the top level of the file (global buffers)")
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
@@ -928,6 +942,7 @@ def render(text, blocks, path):
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, blocks)
+  check_global_sources(text, blocks, toks)
   edits = [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += call_edits(text, blocks, quoted)
   edits.sort(key=lambda edit: edit[0])
