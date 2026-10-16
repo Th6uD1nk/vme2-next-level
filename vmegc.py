@@ -85,7 +85,7 @@ def walk(text):
 def read_decorator(text, items, index):
   start = items[index][2]
   line = text.count("\n", 0, start) + 1
-  if index + 2 >= len(items) or items[index + 1][1] != "kernel" or items[index + 2][0] != "ident":
+  if index + 2 >= len(items) or items[index + 1][1] not in ("kernel", "context") or items[index + 2][0] != "ident":
     raise ValueError(f"line {line}: expected '@kernel name'")
   last = index + 2
   while last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
@@ -122,19 +122,19 @@ def find_blocks(text):
     if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
       blocks.append(read_decorator(text, items, i))
       continue
-    if kind != "ident" or value not in ("buffers", "kernel"):
+    if kind != "ident" or value not in ("buffers", "kernel", "context"):
       continue
     if depth != 0 or prev not in (";", "}"):
       continue
     j = i + 1
-    if value == "kernel":
+    if value != "buffers":
       if j >= len(items) or items[j][0] != "ident":
         continue
       j += 1
       while j < len(items) and items[j][0] == "ident":
         j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
-      blocks.append((value, start, items[j][2], block_end(text, items, j, start)))
+      blocks.append(("buffers" if value == "buffers" else "kernel", start, items[j][2], block_end(text, items, j, start)))
   return blocks
 
 

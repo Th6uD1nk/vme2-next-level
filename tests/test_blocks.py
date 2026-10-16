@@ -215,6 +215,16 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(merged_file(merged, ["<x.h>"]), expected)
     self.assertEqual(merged_file([], []), begin + "void vmegUploadGlobals(void) {\n}\n" + end)
 
+  def test_context_is_an_alias_of_kernel(self):
+    mixed = "kernel a direct {\n}\ncontext b direct {\n}\n@context a, b\nvoid run() { }\n"
+    blocks = find_blocks(mixed)
+    self.assertEqual([block[0] for block in blocks], ["kernel", "kernel", "decorator"])
+    out = render(mixed, blocks, "t.vmeg.c")
+    self.assertNotIn("@", out)
+    self.assertEqual(out.count("a();") + out.count("b();"), 2)
+    plain = "struct context { int x; };\nint context_count = 0;\ntypedef struct { int a; } context_t;\ncontext_t c = { 1 };\n"
+    self.assertEqual(find_blocks(plain), [])
+
   def test_output_names(self):
     self.assertEqual(default_output("dir/a.vmeg.c"), "a.c")
     self.assertEqual(default_output("dir/a.vmeg.cpp"), "a.cpp")
