@@ -1,3 +1,6 @@
+#include <me-core-mapper/me-core.h>
+#include <me-core-mapper/vme-fu-opcodes.h>
+
 #define SHARED_BASE_0_INPUT_OFFSET 32
 
 volatile Buffer sharedTop0[16] = {
