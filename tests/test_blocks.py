@@ -148,7 +148,7 @@ class RenderTest(unittest.TestCase):
   def test_global_uploads_in_on_process(self):
     text = "int before;\nvoid meLibOnProcess(void)\n{\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
-    weak = "__attribute__((weak)) void vmegUploadGlobals(void) { }\n"
+    weak = '#ifdef __cplusplus\nextern "C" {\n#endif\n__attribute__((weak)) void vmegUploadGlobals(void) { }\n#ifdef __cplusplus\n}\n#endif\n'
     self.assertTrue(out.startswith(weak + '#line 1 "t.vmeg.c"\n'))
     self.assertEqual(out.count("vmegUploadGlobals();"), 1)
     self.assertIn("{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
@@ -209,9 +209,11 @@ class RenderTest(unittest.TestCase):
 
   def test_merged_file(self):
     merged = [("TOP_0", 4, "", "inA"), ("BASE_1", 8, "OFFSET + 2", "inB"), ("TOP_2", 4, "", "inA")]
-    expected = "#include <x.h>\nextern volatile u32 inA[];\nextern volatile u32 inB[];\nvoid vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n"
+    begin = '#ifdef __cplusplus\nextern "C" {\n#endif\n'
+    end = "#ifdef __cplusplus\n}\n#endif\n"
+    expected = "#include <x.h>\nextern volatile u32 inA[];\nextern volatile u32 inB[];\n" + begin + "void vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n" + end
     self.assertEqual(merged_file(merged, ["<x.h>"]), expected)
-    self.assertEqual(merged_file([], []), "void vmegUploadGlobals(void) {\n}\n")
+    self.assertEqual(merged_file([], []), begin + "void vmegUploadGlobals(void) {\n}\n" + end)
 
   def test_output_names(self):
     self.assertEqual(default_output("dir/a.vmeg.c"), "a.c")

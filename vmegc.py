@@ -1038,7 +1038,9 @@ def check_local_sources(text, blocks):
             raise ValueError(f"line {line}: '{source}' is not declared with Buffer in the function marked with @kernel {kernel} at line {where} (local buffers)")
 
 
-WEAK_DEFAULT = "__attribute__((weak)) void vmegUploadGlobals(void) { }\n"
+C_LINKAGE_BEGIN = "#ifdef __cplusplus\nextern \"C\" {\n#endif\n"
+C_LINKAGE_END = "#ifdef __cplusplus\n}\n#endif\n"
+WEAK_DEFAULT = C_LINKAGE_BEGIN + "__attribute__((weak)) void vmegUploadGlobals(void) { }\n" + C_LINKAGE_END
 
 
 def on_process_edit(text, toks, quoted):
@@ -1117,9 +1119,9 @@ def merged_file(merged, includes):
   rows = [f"#include {header}" for header in includes]
   for source in dict.fromkeys(source for _, _, _, source in merged):
     rows.append(f"extern volatile u32 {source}[];")
-  rows.append("void vmegUploadGlobals(void) {")
+  rows.append(C_LINKAGE_BEGIN + "void vmegUploadGlobals(void) {")
   rows += [f"  {upload_text(*entry)}" for entry in merged]
-  rows.append("}")
+  rows.append("}\n" + C_LINKAGE_END.rstrip("\n"))
   return "\n".join(rows) + "\n"
 
 
