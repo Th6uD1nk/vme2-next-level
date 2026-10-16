@@ -945,12 +945,16 @@ def on_process_bodies(toks):
   depth = 0
   i = 0
   size = len(toks)
+  open_body = False
   while i < size:
     kind, value, start, end = toks[i]
     if kind == "punct" and value == "{":
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
+      if depth == 0 and open_body:
+        bodies[-1][1] = start
+        open_body = False
     elif kind == "ident" and value == "meLibOnProcess" and depth == 0 and i + 1 < size and toks[i + 1][1] == "(":
       nest = 0
       j = i + 1
@@ -963,7 +967,8 @@ def on_process_bodies(toks):
             break
         j += 1
       if j + 1 < size and toks[j + 1][0] == "punct" and toks[j + 1][1] == "{":
-        bodies.append(toks[j + 1][3])
+        bodies.append([toks[j + 1][3], toks[-1][3]])
+        open_body = True
         depth += 1
         i = j + 1
     i += 1
@@ -1069,13 +1074,13 @@ WEAK_DEFAULT = C_LINKAGE_BEGIN + "__attribute__((weak)) void vmegUploadGlobals(v
 def on_process_edit(text, toks, quoted):
   bodies = on_process_bodies(toks)
   if len(bodies) > 1:
-    line = text.count("\n", 0, bodies[1]) + 1
+    line = text.count("\n", 0, bodies[1][0]) + 1
     raise ValueError(f"line {line}: meLibOnProcess is defined twice in this file")
   if not bodies:
     return None
-  at = bodies[0]
+  at, end = bodies[0]
   resume = text.count("\n", 0, at - 1) + 1
-  return (at, 0, f'\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n')
+  return (at, 0, f'\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
 
 
 def summary(path, text, toks, blocks, cache):
@@ -1083,7 +1088,7 @@ def summary(path, text, toks, blocks, cache):
   for target, count, offset, source, line in global_lines(text, blocks, cache):
     where = "" if offset is None else to_c(offset)
     rows.append(f"global\t{target}\t{count}\t{where}\t{source}\t{line}")
-  for at in on_process_bodies(toks):
+  for at, _ in on_process_bodies(toks):
     rows.append(f"on-process\t{text.count(chr(10), 0, at) + 1}")
   return "\n".join(rows) + "\n"
 
@@ -1166,7 +1171,7 @@ def render(text, blocks, path):
 def translate(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
-  on_process = on_process_edit(text, toks, quoted)
+  on_process, on_end = on_process_edit(text, toks, quoted) or (None, None)
   out = [(WEAK_DEFAULT if on_process else "") + f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
@@ -1174,7 +1179,13 @@ def translate(text, blocks, path):
   check_global_sources(text, blocks, toks)
   check_local_sources(text, blocks)
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set())
-  edits = [on_process] if on_process and on_process[0] not in merged else []
+  edits = []
+  if on_process and on_process[0] not in merged:
+    first = next((k for k, block in enumerate(blocks) if block[0] == "vme" and on_process[0] <= block[1] < on_end), None)
+    if first is None:
+      edits.append(on_process)
+    else:
+      codes[first] += " vmeLibWipe(); vmegUploadGlobals();"
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += calls
   edits.sort(key=lambda edit: edit[0])
