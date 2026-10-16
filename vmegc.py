@@ -1058,6 +1058,26 @@ def summary(path, text, toks, blocks, cache):
   return "\n".join(rows) + "\n"
 
 
+def read_summary(text, name):
+  rows = text.split("\n")
+  if rows and rows[-1] == "":
+    rows.pop()
+  if not rows or rows[0].split("\t") != ["vmeg-info", "1"]:
+    raise ValueError(f"{name}:1: not a vmeg-info file of version 1")
+  info = {"source": name, "globals": [], "on_process": []}
+  for number, row in enumerate(rows[1:], 2):
+    fields = row.split("\t")
+    if fields[0] == "source" and len(fields) == 2:
+      info["source"] = fields[1]
+    elif fields[0] == "global" and len(fields) == 6 and fields[2].isdigit() and fields[5].isdigit():
+      info["globals"].append((fields[1], int(fields[2]), fields[3], fields[4], int(fields[5])))
+    elif fields[0] == "on-process" and len(fields) == 2 and fields[1].isdigit():
+      info["on_process"].append(int(fields[1]))
+    else:
+      raise ValueError(f"{name}:{number}: unknown or malformed line")
+  return info
+
+
 def render(text, blocks, path):
   return translate(text, blocks, path)[0]
 
