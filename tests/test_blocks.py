@@ -145,6 +145,21 @@ class RenderTest(unittest.TestCase):
     plain = "int x;\n"
     self.assertEqual(translate(plain, find_blocks(plain), "p.vmeg.c")[1], "vmeg-info\t1\nsource\tp.vmeg.c\n")
 
+  def test_global_uploads_in_on_process(self):
+    text = "int before;\nvoid meLibOnProcess(void)\n{\n  go();\n}\n"
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    weak = "__attribute__((weak)) void vmegUploadGlobals(void) { }\n"
+    self.assertTrue(out.startswith(weak + '#line 1 "t.vmeg.c"\n'))
+    self.assertEqual(out.count("vmegUploadGlobals();"), 1)
+    self.assertIn("{\n  vmeLibEnable();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
+    self.assertLess(out.index("vmeLibDisable();"), out.index("go();"))
+    plain = "void f() { meLibOnProcess(); }\nvoid meLibOnProcess(void);\n"
+    self.assertNotIn("vmegUploadGlobals", render(plain, find_blocks(plain), "t.vmeg.c"))
+    twice = "void meLibOnProcess(void) { }\nvoid meLibOnProcess(int x) { }\n"
+    with self.assertRaises(ValueError) as ctx:
+      render(twice, find_blocks(twice), "t.vmeg.c")
+    self.assertIn("line 2", str(ctx.exception))
+
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:

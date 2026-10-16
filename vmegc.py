@@ -1029,6 +1029,21 @@ def check_local_sources(text, blocks):
             raise ValueError(f"line {line}: '{source}' is not declared with Buffer in the function marked with @kernel {kernel} at line {where} (local buffers)")
 
 
+WEAK_DEFAULT = "__attribute__((weak)) void vmegUploadGlobals(void) { }\n"
+
+
+def on_process_edit(text, toks, quoted):
+  bodies = on_process_bodies(toks)
+  if len(bodies) > 1:
+    line = text.count("\n", 0, bodies[1]) + 1
+    raise ValueError(f"line {line}: meLibOnProcess is defined twice in this file")
+  if not bodies:
+    return None
+  at = bodies[0]
+  resume = text.count("\n", 0, at - 1) + 1
+  return (at, 0, f'\n  vmeLibEnable();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n')
+
+
 def summary(path, text, toks, blocks, cache):
   rows = ["vmeg-info\t1", f"source\t{path}"]
   for target, count, offset, source, line in global_lines(text, blocks, cache):
@@ -1045,14 +1060,16 @@ def render(text, blocks, path):
 
 def translate(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
-  out = [f'#line 1 "{quoted}"\n']
   toks = list(tokens(text))
+  on_process = on_process_edit(text, toks, quoted)
+  out = [(WEAK_DEFAULT if on_process else "") + f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, blocks)
   check_global_sources(text, blocks, toks)
   check_local_sources(text, blocks)
-  edits = [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
+  edits = [on_process] if on_process else []
+  edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += call_edits(text, blocks, quoted)
   edits.sort(key=lambda edit: edit[0])
   pos = 0
