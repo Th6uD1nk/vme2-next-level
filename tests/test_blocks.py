@@ -58,9 +58,15 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "int a;\nbuffers {\n  top0, 1 words, from x;\n}\nint b;\n"
+    text = "int a;\nkernel k {\n  local buffers {\n    top0, 1 words, from x;\n  }\n}\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
-    self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 4 "t.vmeg.c"\n\nint b;\n')
+    self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 6 "t.vmeg.c"\n\nint b;\n')
+
+  def test_top_level_buffers_is_refused(self):
+    text = "int a;\nbuffers {\n  top0, 1 words, from x;\n}\n"
+    with self.assertRaises(ValueError) as ctx:
+      render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("line 2", str(ctx.exception))
 
 
 if __name__ == "__main__":

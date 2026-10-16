@@ -657,9 +657,8 @@ def emit_statement(statement, env, lines, state):
 def generate(text, block):
   kind, start, open_pos, _ = block
   if kind == "buffers":
-    toks, limit = body_tokens(text, block)
-    parse_buffers(Parser(text, toks, limit))
-    return ""
+    line = text.count("\n", 0, start) + 1
+    raise ValueError(f"line {line}: buffers must be inside a kernel (global buffers or local buffers)")
   header = text[start:open_pos]
   words = [(value, start + s) for _, value, s, _ in tokens(header)]
   name, options = words[1][0], []
