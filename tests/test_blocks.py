@@ -63,10 +63,22 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 6 "t.vmeg.c"\n\nint b;\n')
 
   def test_buffer_keyword(self):
-    text = 'volatile Buffer a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) { Buffer b[2]; }\n'
+    text = 'volatile Buffer a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) { static volatile Buffer b[2]; }\n'
     out = render(text, [], "t.vmeg.c")
     t = "u32 __attribute__((aligned(64)))"
-    self.assertEqual(out, f'#line 1 "t.vmeg.c"\nvolatile {t} a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) {{ {t} b[2]; }}\n')
+    self.assertEqual(out, f'#line 1 "t.vmeg.c"\nvolatile {t} a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) {{ static volatile {t} b[2]; }}\n')
+
+  def test_buffer_without_volatile_is_refused(self):
+    for text in ["Buffer a[4];\n", "int x;\nstatic Buffer a[4];\n", "const Buffer a[4];\n"]:
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError) as ctx:
+          render(text, [], "t.vmeg.c")
+        self.assertIn("volatile", str(ctx.exception))
+
+  def test_volatile_among_qualifiers(self):
+    for text in ["static volatile Buffer a[4];\n", "volatile static Buffer a[4];\n", "const volatile Buffer a[4];\n", "extern volatile Buffer a[4];\n"]:
+      with self.subTest(text=text):
+        self.assertIn("u32 __attribute__", render(text, [], "t.vmeg.c"))
 
   def test_top_level_buffers_is_refused(self):
     text = "int a;\nbuffers {\n  top0, 1 words, from x;\n}\n"

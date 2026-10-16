@@ -700,10 +700,32 @@ def passthrough(text, begin, end, positions):
   return "".join(out)
 
 
+DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
+
+
+def check_volatile(text, toks, blocks):
+  for i, (kind, value, start, _) in enumerate(toks):
+    if kind != "ident" or value != "Buffer":
+      continue
+    if any(b[1] <= start < b[3] for b in blocks):
+      continue
+    found = False
+    j = i - 1
+    while j >= 0 and toks[j][0] == "ident" and toks[j][1] in DECLARATION_QUALIFIERS:
+      if toks[j][1] == "volatile":
+        found = True
+      j -= 1
+    if not found:
+      line = text.count("\n", 0, start) + 1
+      raise ValueError(f"line {line}: Buffer must be volatile (volatile Buffer name[...])")
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
-  positions = [s for kind, value, s, _ in tokens(text) if kind == "ident" and value == "Buffer"]
+  toks = list(tokens(text))
+  check_volatile(text, toks, blocks)
+  positions = [s for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   pos = 0
   for block in blocks:
     _, start, _, end = block
