@@ -992,7 +992,7 @@ def call_edits(text, blocks, quoted, on_process_starts):
     lines.append("vmeLibDisable();")
     at, start = function_body(text, block)
     if start in on_process_starts:
-      lines.insert(1, "vmegUploadGlobals();")
+      lines[1:1] = ["vmeLibWipe();", "vmegUploadGlobals();"]
       merged.add(start)
     calls = "".join(f"\n  {code}" for code in lines)
     resume = text.count("\n", 0, at - 1) + 1
@@ -1049,7 +1049,7 @@ def on_process_edit(text, toks, quoted):
     return None
   at = bodies[0]
   resume = text.count("\n", 0, at - 1) + 1
-  return (at, 0, f'\n  vmeLibEnable();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n')
+  return (at, 0, f'\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n')
 
 
 def summary(path, text, toks, blocks, cache):

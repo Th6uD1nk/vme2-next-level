@@ -151,7 +151,8 @@ class RenderTest(unittest.TestCase):
     weak = "__attribute__((weak)) void vmegUploadGlobals(void) { }\n"
     self.assertTrue(out.startswith(weak + '#line 1 "t.vmeg.c"\n'))
     self.assertEqual(out.count("vmegUploadGlobals();"), 1)
-    self.assertIn("{\n  vmeLibEnable();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
+    self.assertIn("{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
+    self.assertEqual(out.count("vmeLibWipe();"), 1)
     self.assertLess(out.index("vmeLibDisable();"), out.index("go();"))
     plain = "void f() { meLibOnProcess(); }\nvoid meLibOnProcess(void);\n"
     self.assertNotIn("vmegUploadGlobals", render(plain, find_blocks(plain), "t.vmeg.c"))
@@ -165,7 +166,7 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
-    expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmegUploadGlobals();",
+    expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmeLibWipe();", "vmegUploadGlobals();",
       "vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);", "k();", "vmeLibDisable();", "go();"]
     position = out.index("void meLibOnProcess")
     for piece in expected:
@@ -174,6 +175,8 @@ class RenderTest(unittest.TestCase):
     out = render(other, find_blocks(other), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 2)
     self.assertEqual(out.count("vmegUploadGlobals();"), 1)
+    self.assertEqual(out.count("vmeLibWipe();"), 1)
+    self.assertLess(out.index("vmeLibWipe();"), out.index("vmegUploadGlobals();"))
 
   def test_merge_of_global_lines(self):
     def info(source, *lines):
