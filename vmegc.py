@@ -911,6 +911,36 @@ def function_body(text, block):
   return declaration if declaration is not None else open_at + 1
 
 
+def on_process_bodies(toks):
+  bodies = []
+  depth = 0
+  i = 0
+  size = len(toks)
+  while i < size:
+    kind, value, start, end = toks[i]
+    if kind == "punct" and value == "{":
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth -= 1
+    elif kind == "ident" and value == "meLibOnProcess" and depth == 0 and i + 1 < size and toks[i + 1][1] == "(":
+      nest = 0
+      j = i + 1
+      while j < size:
+        if toks[j][0] == "punct" and toks[j][1] == "(":
+          nest += 1
+        elif toks[j][0] == "punct" and toks[j][1] == ")":
+          nest -= 1
+          if nest == 0:
+            break
+        j += 1
+      if j + 1 < size and toks[j + 1][0] == "punct" and toks[j + 1][1] == "{":
+        bodies.append(toks[j + 1][3])
+        depth += 1
+        i = j + 1
+    i += 1
+  return bodies
+
+
 def kernel_statements(text, block, cache):
   statements = cache.get(block[1])
   if statements is None:
