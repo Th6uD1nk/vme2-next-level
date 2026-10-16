@@ -58,7 +58,7 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "int a;\nbuffers {\n x\n}\nint b;\n"
+    text = "int a;\nbuffers {\n  top0, 1 words, from x;\n}\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 4 "t.vmeg.c"\n\nint b;\n')
 

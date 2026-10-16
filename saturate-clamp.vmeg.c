@@ -1,9 +1,9 @@
 buffers {
-  top0  : top0,  16 words, from sharedTop0;
-  top1  : top1,  16 words, from sharedTop1;
-  top2  : top2,  16 words, from sharedTop2;
-  top3  : top3,  16 words, from sharedTop3;
-  base0 : base0, 16 words, at SHARED_BASE_0_INPUT_OFFSET, from sharedBase0;
+  top0, 16 words, from sharedTop0;
+  top1, 16 words, from sharedTop1;
+  top2, 16 words, from sharedTop2;
+  top3, 16 words, from sharedTop3;
+  base0, 16 words, at SHARED_BASE_0_INPUT_OFFSET, from sharedBase0;
 }
 
 kernel runContext direct {

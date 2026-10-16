@@ -512,6 +512,19 @@ def parse_buffer_source(p):
   return p.ident()
 
 
+def parse_buffers(p):
+  entries = []
+  while p.peek() is not None:
+    line = p.text.count("\n", 0, p.peek()[2]) + 1
+    target = parse_buffer_target(p)
+    count = parse_buffer_count(p)
+    offset = parse_buffer_offset(p)
+    source = parse_buffer_source(p)
+    p.expect(";")
+    entries.append((target, count, offset, source, line))
+  return entries
+
+
 def constant(expr, what):
   if expr[0] != "num":
     raise ValueError(f"{what} must be a number")
@@ -621,7 +634,9 @@ def emit_statement(statement, env, lines, state):
 
 def generate(text, block):
   kind, start, open_pos, _ = block
-  if kind != "kernel":
+  if kind == "buffers":
+    toks, limit = body_tokens(text, block)
+    parse_buffers(Parser(text, toks, limit))
     return ""
   header = text[start:open_pos]
   words = [(value, start + s) for _, value, s, _ in tokens(header)]
