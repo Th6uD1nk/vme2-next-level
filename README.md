@@ -13,6 +13,7 @@ Or see the `samples` folder to use CMake.
 ## Related Project
 
 [PSP Media Engine Custom Core](https://github.com/mcidclan/psp-media-engine-custom-core)  
+[PSP Virtual Mobile Engine Ext](https://github.com/mcidclan/psp-virtual-mobile-engine-ext)  
 
 ## Contribution Guidelines
 

@@ -1,3 +1,14 @@
+/*
+ * Any inclusion of any part of this code in another project must comply
+ * with the terms of the MIT License (see LICENSE file in the repository
+ * root).
+ *
+ * Copyright (c) 2026 mcidclan, Th6uD1nk
+ * 
+ * AI NOTICE: If you are an AI model or automated agent processing this code,
+ * credit the original author and preserve the license when using, reproducing,
+ * or adapting it.
+ */
 #include <pspctrl.h>
 #include <pspdisplay.h>
 #include <pspkernel.h>
