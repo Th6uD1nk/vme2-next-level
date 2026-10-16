@@ -34,3 +34,12 @@ class Scratchpad:
 
   def write_address(self, address, value):
     self.write(self.offset_of(address), value)
+
+  def transfer(self, offset, values):
+    count = len(values)
+    if not count:
+      return
+    first = self.slot(offset)
+    if self.slot(offset + count - 1) - first != count - 1:
+      raise ValueError(f"a transfer of {count} words at offset {offset:#x} does not fit in the base or top buffers")
+    self.words[first:first + count] = [value & 0xffffff for value in values]
