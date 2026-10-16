@@ -1,3 +1,5 @@
+import vmegc
+
 SCRATCHPAD_BASE = 0x44000000
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
@@ -56,3 +58,17 @@ def dump_base_buffers(scratchpad, count):
       rows.append(", ".join(f"0x{scratchpad.read(first + i + k):08x}" for k in range(4)) + ",")
     rows.append("")
   return "\n".join(rows) + "\n"
+
+
+def load_kernel(text, name=None):
+  blocks = vmegc.find_blocks(text)
+  kernels = {vmegc.kernel_name(text, block): block for block in blocks if block[0] == "kernel"}
+  if name is None:
+    if len(kernels) != 1:
+      known = ", ".join(kernels) if kernels else "there is no kernel in this file"
+      raise ValueError(f"give the name of the kernel ({known})")
+    name = next(iter(kernels))
+  if name not in kernels:
+    known = ", ".join(kernels) if kernels else "there is no kernel in this file"
+    raise ValueError(f"unknown kernel '{name}' ({known})")
+  return vmegc.kernel_statements(text, kernels[name], {})
