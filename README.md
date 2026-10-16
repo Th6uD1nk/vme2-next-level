@@ -1,7 +1,14 @@
 ## VME Transpiler, WIP
+
+A transpiler and debugger for the PSP Virtual Mobile Engine (VME2): turns C-like kernels into plain C/C++ built on vme-lib from the 'me-core' project
+
+## Build
+Example:
 ```
-python3 vmegc.py saturate-clamp.vmeg.c -o saturate-clamp.c
+python3 vmegc.py samples/c/saturate-clamp.vmeg.c -o saturate-clamp.c
 ```
+
+Or see the `samples` folder to use CMake.
 
 ## Related Project
 
