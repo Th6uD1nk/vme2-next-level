@@ -6,6 +6,7 @@ REGISTER_COUNT = 106
 CONTEXT_WORDS = 112
 DMAC_BASE = 0x440ff000
 DMAC_REGISTER_COUNT = 17
+PHYSICAL_MASK = 0x1fffffff
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -84,6 +85,7 @@ class Emulator:
     self.scratchpad = Scratchpad()
     self.registers = [0] * REGISTER_COUNT
     self.dmac = [0] * DMAC_REGISTER_COUNT
+    self.memory = {}
 
   def locate(self, address):
     for first, count, registers in ((DATAPATH_BASE, REGISTER_COUNT, self.registers), (DMAC_BASE, DMAC_REGISTER_COUNT, self.dmac)):
@@ -109,6 +111,26 @@ class Emulator:
     else:
       registers, index = located
       registers[index] = value & 0xffffffff
+
+  def put_memory(self, address, words):
+    first = self.memory_address(address)
+    for i, word in enumerate(words):
+      self.memory[first + 4 * i] = word & 0xffffffff
+
+  def get_memory(self, address, count):
+    first = self.memory_address(address)
+    words = []
+    for i in range(count):
+      word = self.memory.get(first + 4 * i)
+      if word is None:
+        raise ValueError(f"the memory image has no word at {first + 4 * i:#x}")
+      words.append(word)
+    return words
+
+  def memory_address(self, address):
+    if address & 3:
+      raise ValueError(f"memory address {address:#x} is not aligned on 4 bytes")
+    return address & PHYSICAL_MASK
 
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:
