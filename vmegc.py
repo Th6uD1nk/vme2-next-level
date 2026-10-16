@@ -492,6 +492,20 @@ def parse_buffer_count(p):
   return count[1]
 
 
+def parse_buffer_offset(p):
+  tok = p.peek()
+  after = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+  if tok is None or tok[1] != "," or after is None or after[1] != "at":
+    return None
+  p.expect(",")
+  p.expect("at")
+  start = p.peek()
+  offset = fold(parse_expr(p), {})
+  if offset[0] == "num" and offset[1] < 0:
+    p.error("the offset must not be negative", start)
+  return offset
+
+
 def parse_buffer_source(p):
   p.expect(",")
   p.expect("from")
