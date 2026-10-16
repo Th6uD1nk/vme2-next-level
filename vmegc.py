@@ -685,21 +685,37 @@ def generate(text, block):
   return f"void {name}() {{\n{body}}}"
 
 
+BUFFER_TYPE = "u32 __attribute__((aligned(64)))"
+
+
+def passthrough(text, begin, end, positions):
+  out = []
+  pos = begin
+  for at in positions:
+    if begin <= at < end:
+      out.append(text[pos:at])
+      out.append(BUFFER_TYPE)
+      pos = at + len("Buffer")
+  out.append(text[pos:end])
+  return "".join(out)
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
+  positions = [s for kind, value, s, _ in tokens(text) if kind == "ident" and value == "Buffer"]
   pos = 0
   for block in blocks:
     _, start, _, end = block
     code = generate(text, block)
-    out.append(text[pos:start])
+    out.append(passthrough(text, pos, start, positions))
     if code:
       first = text.count("\n", 0, start) + 1
       out.append(f'\n#line {first} "{quoted}"\n{code}')
     line = text.count("\n", 0, end) + 1
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
-  out.append(text[pos:])
+  out.append(passthrough(text, pos, len(text), positions))
   return "".join(out)
 
 

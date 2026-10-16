@@ -62,6 +62,12 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 6 "t.vmeg.c"\n\nint b;\n')
 
+  def test_buffer_keyword(self):
+    text = 'volatile Buffer a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) { Buffer b[2]; }\n'
+    out = render(text, [], "t.vmeg.c")
+    t = "u32 __attribute__((aligned(64)))"
+    self.assertEqual(out, f'#line 1 "t.vmeg.c"\nvolatile {t} a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) {{ {t} b[2]; }}\n')
+
   def test_top_level_buffers_is_refused(self):
     text = "int a;\nbuffers {\n  top0, 1 words, from x;\n}\n"
     with self.assertRaises(ValueError) as ctx:
