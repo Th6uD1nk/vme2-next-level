@@ -122,6 +122,9 @@ def find_blocks(text):
   for i, (kind, value, start, end, depth, prev) in enumerate(items):
     if start < skip:
       continue
+    if kind == "punct" and value == "@" and depth > 0 and prev in (";", "}", "{") and i + 2 < len(items) and items[i + 1][1] == "vme" and items[i + 2][1] == "{":
+      blocks.append(("vme", start, items[i + 1][3], items[i + 1][3]))
+      continue
     if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
       blocks.append(read_decorator(text, items, i))
       continue
@@ -711,7 +714,7 @@ def emit_statement(statement, env, lines, state):
 
 def generate(text, block):
   kind, start, open_pos, _ = block
-  if kind == "decorator":
+  if kind in ("decorator", "vme"):
     return ""
   if kind == "buffers":
     line = text.count("\n", 0, start) + 1
