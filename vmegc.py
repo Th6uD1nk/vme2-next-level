@@ -351,13 +351,17 @@ def parse_for_header(p):
   return ("for", var, low, high)
 
 
-def upload_call(entry):
-  target, count, offset, source, _ = entry
+def upload_text(target, count, offset, source):
   kind, index = target.split("_")
   destination = f"VME_{kind}_BUFF{index}_WOFF"
-  if offset is not None:
-    destination += f" + {to_c(offset)}"
+  if offset:
+    destination += f" + {offset}"
   return f"vmeLibMemoryToRingBuffer((void*){source}, {destination}, {count});"
+
+
+def upload_call(entry):
+  target, count, offset, source, _ = entry
+  return upload_text(target, count, "" if offset is None else to_c(offset), source)
 
 
 def parse_buffers_block(p):
@@ -1108,6 +1112,27 @@ def check_on_process(infos):
     raise ValueError(f"{first_global[0]}:{first_global[1]}: global buffers need a function meLibOnProcess in one of the files, none defines it")
 
 
+def merged_file(merged, includes):
+  rows = [f"#include {header}" for header in includes]
+  for source in dict.fromkeys(source for _, _, _, source in merged):
+    rows.append(f"extern volatile u32 {source}[];")
+  rows.append("void vmegUploadGlobals(void) {")
+  rows += [f"  {upload_text(*entry)}" for entry in merged]
+  rows.append("}")
+  return "\n".join(rows) + "\n"
+
+
+def merge_command(paths, output, includes):
+  infos = []
+  for path in paths:
+    with open(path, encoding="utf-8", newline="") as f:
+      infos.append(read_summary(f.read(), path))
+  merged = merge_globals(infos)
+  check_on_process(infos)
+  with open(output, "w", encoding="utf-8", newline="") as f:
+    f.write(merged_file(merged, includes))
+
+
 def render(text, blocks, path):
   return translate(text, blocks, path)[0]
 
@@ -1143,10 +1168,24 @@ def translate(text, blocks, path):
 
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmegc")
-  parser.add_argument("input")
+  parser.add_argument("inputs", nargs="+")
   parser.add_argument("-o", "--output")
   parser.add_argument("--list", action="store_true")
+  parser.add_argument("--merge", action="store_true")
+  parser.add_argument("--include", action="append", default=[])
   args = parser.parse_args(argv)
+
+  if args.merge:
+    try:
+      merge_command(args.inputs, args.output or "vmeg-globals.c", args.include)
+    except (ValueError, OSError) as e:
+      print(e, file=sys.stderr)
+      return 1
+    return 0
+
+  if len(args.inputs) != 1:
+    parser.error("give a single .vmeg.c file, or --merge with the .vmeg-info files")
+  args.input = args.inputs[0]
 
   with open(args.input, encoding="utf-8", newline="") as f:
     text = f.read()

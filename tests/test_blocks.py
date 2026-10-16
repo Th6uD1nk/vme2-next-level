@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmegc import check_on_process, find_blocks, merge_globals, render, translate
+from vmegc import check_on_process, find_blocks, merged_file, merge_globals, render, translate
 
 
 def found(text):
@@ -203,6 +203,12 @@ class RenderTest(unittest.TestCase):
     with self.assertRaises(ValueError) as ctx:
       check_on_process([info("a.vmeg.c", on_process=[3]), info("b.vmeg.c", on_process=[12])])
     self.assertEqual(str(ctx.exception), "meLibOnProcess is defined more than once: a.vmeg.c:3 and b.vmeg.c:12")
+
+  def test_merged_file(self):
+    merged = [("TOP_0", 4, "", "inA"), ("BASE_1", 8, "OFFSET + 2", "inB"), ("TOP_2", 4, "", "inA")]
+    expected = "#include <x.h>\nextern volatile u32 inA[];\nextern volatile u32 inB[];\nvoid vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n"
+    self.assertEqual(merged_file(merged, ["<x.h>"]), expected)
+    self.assertEqual(merged_file([], []), "void vmegUploadGlobals(void) {\n}\n")
 
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"
