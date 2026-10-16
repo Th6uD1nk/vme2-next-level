@@ -124,7 +124,7 @@ def find_blocks(text):
       continue
     if kind == "punct" and value == "@" and depth > 0:
       if prev in (";", "}", "{") and i + 2 < len(items) and items[i + 1][1] == "vme" and items[i + 2][1] == "{":
-        blocks.append(("vme", start, items[i + 1][3], items[i + 1][3]))
+        blocks.append(("vme", start, items[i + 1][3], items[i + 2][3]))
         continue
       line = text.count("\n", 0, start) + 1
       raise ValueError(f"line {line}: inside a function only '@vme {{ ... }}' is accepted")
@@ -720,8 +720,10 @@ def emit_statement(statement, env, lines, state):
 
 def generate(text, block):
   kind, start, open_pos, _ = block
-  if kind in ("decorator", "vme"):
+  if kind == "decorator":
     return ""
+  if kind == "vme":
+    return "{ vmeLibEnable();"
   if kind == "buffers":
     line = text.count("\n", 0, start) + 1
     raise ValueError(f"line {line}: buffers must be inside a kernel (global buffers or local buffers)")

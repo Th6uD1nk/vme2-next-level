@@ -221,7 +221,7 @@ class RenderTest(unittest.TestCase):
     self.assertEqual([block[0] for block in blocks], ["vme"])
     out = render(text, blocks, "t.vmeg.c")
     self.assertNotIn("@", out)
-    self.assertNotIn("vmeLibEnable", out)
+    self.assertEqual(out.count("vmeLibEnable();"), 1)
     for piece in ["before();", "{", "runContext();", "}", "while (1)"]:
       self.assertIn(piece, out)
     inside_kernel = "kernel k direct {\n  icn top = 0;\n}\n@kernel k\nvoid f() {\n  const char* s = \"@vme {\";\n}\n"
