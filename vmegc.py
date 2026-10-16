@@ -726,14 +726,14 @@ def generate(text, block):
 BUFFER_TYPE = "u32 __attribute__((aligned(64)))"
 
 
-def passthrough(text, begin, end, positions):
+def passthrough(text, begin, end, edits):
   out = []
   pos = begin
-  for at in positions:
+  for at, length, replacement in edits:
     if begin <= at < end:
       out.append(text[pos:at])
-      out.append(BUFFER_TYPE)
-      pos = at + len("Buffer")
+      out.append(replacement)
+      pos = at + length
   out.append(text[pos:end])
   return "".join(out)
 
@@ -793,25 +793,78 @@ def check_decorators(text, blocks):
       raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name}")
 
 
+def function_body(text, block):
+  begin = block[3]
+  parens = 0
+  open_at = None
+  depth = 0
+  declaration = None
+  pending = False
+  for kind, value, start, _ in tokens(text[begin:]):
+    start += begin
+    if open_at is None:
+      if kind == "punct" and value == "(":
+        parens += 1
+      elif kind == "punct" and value == ")":
+        parens -= 1
+      elif kind == "punct" and value == "{" and parens == 0:
+        open_at = start
+        depth = 1
+      continue
+    if kind == "punct" and value == "{":
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth -= 1
+      if depth == 0:
+        break
+    elif kind == "ident" and value == "Buffer" and depth == 1:
+      pending = True
+    elif kind == "punct" and value == ";" and depth == 1 and pending:
+      declaration = start + 1
+      pending = False
+  return declaration if declaration is not None else open_at + 1
+
+
+def call_edits(text, blocks, quoted):
+  kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
+  edits = []
+  for block in blocks:
+    if block[0] != "decorator":
+      continue
+    line = text.count("\n", 0, block[1]) + 1
+    calls = ""
+    for name in decorator_names(text, block):
+      words = [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])]
+      if "direct" not in words[2:]:
+        raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
+      calls += f"\n  {name}();"
+    at = function_body(text, block)
+    resume = text.count("\n", 0, at - 1) + 1
+    edits.append((at, 0, f'{calls}\n#line {resume} "{quoted}"\n'))
+  return edits
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
   toks = list(tokens(text))
   check_buffers(text, toks, blocks)
-  positions = [s for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
+  codes = [generate(text, block) for block in blocks]
+  check_decorators(text, blocks)
+  edits = [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
+  edits += call_edits(text, blocks, quoted)
+  edits.sort(key=lambda edit: edit[0])
   pos = 0
-  for block in blocks:
+  for block, code in zip(blocks, codes):
     _, start, _, end = block
-    code = generate(text, block)
-    out.append(passthrough(text, pos, start, positions))
+    out.append(passthrough(text, pos, start, edits))
     if code:
       first = text.count("\n", 0, start) + 1
       out.append(f'\n#line {first} "{quoted}"\n{code}')
     line = text.count("\n", 0, end) + 1
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
-  check_decorators(text, blocks)
-  out.append(passthrough(text, pos, len(text), positions))
+  out.append(passthrough(text, pos, len(text), edits))
   return "".join(out)
 
 

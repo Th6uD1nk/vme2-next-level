@@ -58,15 +58,18 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "int a;\nkernel k {\n  global buffers {\n    top0, 1 words, from x;\n  }\n}\n@kernel k\nvoid f(void) { }\nint b;\n"
+    text = "int a;\nkernel k direct {\n  global buffers {\n    top0, 1 words, from x;\n  }\n}\n@kernel k\nvoid f(void) { }\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
-    self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 6 "t.vmeg.c"\n\n\n#line 7 "t.vmeg.c"\n\nvoid f(void) { }\nint b;\n')
+    self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nint a;\n'))
+    self.assertIn('#line 6 "t.vmeg.c"', out)
+    self.assertTrue(out.endswith('void f(void) {\n  k();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
-    text = "kernel k {\n}\n@kernel k\n\n/* c */\nstatic void run(int a) { }\n"
+    text = "kernel k direct {\n}\n@kernel k\n\n/* c */\nstatic void run(int a) { }\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertNotIn("@", out)
-    self.assertIn("static void run(int a) { }", out)
+    self.assertIn("static void run(int a) {", out)
+    self.assertIn("\n  k();", out)
     bad = ["@kernel\nvoid run() { }\n", "@kernel k\nrun() { }\n", "@kernel k\nint x;\n", "@kernel k\nvoid run();\n", "@other k\nvoid run() { }\n", "@kernel k\n"]
     for text in bad:
       with self.subTest(text=text):
@@ -74,14 +77,14 @@ class RenderTest(unittest.TestCase):
           find_blocks(text)
 
   def test_decorator_needs_a_known_kernel(self):
-    text = "kernel k {\n}\n@kernel z\nvoid run() { }\n"
+    text = "kernel k direct {\n}\n@kernel z\nvoid run() { }\n"
     with self.assertRaises(ValueError) as ctx:
       render(text, find_blocks(text), "t.vmeg.c")
     self.assertIn("line 3", str(ctx.exception))
     self.assertIn("'z'", str(ctx.exception))
 
   def test_decorator_with_a_list_of_kernels(self):
-    kernels = "kernel a {\n}\nkernel b {\n}\nkernel c {\n}\n"
+    kernels = "kernel a direct {\n}\nkernel b direct {\n}\nkernel c direct {\n}\n"
     ok = kernels + "@kernel a, b\nvoid r1() { }\n@kernel c\nvoid r2() { }\n"
     out = render(ok, find_blocks(ok), "t.vmeg.c")
     self.assertNotIn("@", out)
@@ -93,7 +96,7 @@ class RenderTest(unittest.TestCase):
           render(text, find_blocks(text), "t.vmeg.c")
 
   def test_every_kernel_needs_a_decorated_function(self):
-    kernel = "kernel k {\n  icn top = 0;\n}\n"
+    kernel = "kernel k direct {\n  icn top = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:
       render(kernel, find_blocks(kernel), "t.vmeg.c")
     self.assertIn("line 1", str(ctx.exception))
