@@ -62,6 +62,17 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out, '#line 1 "t.vmeg.c"\nint a;\n\n#line 6 "t.vmeg.c"\n\nint b;\n')
 
+  def test_decorator(self):
+    text = "@kernel k\n\n/* c */\nstatic void run(int a) { }\n"
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertNotIn("@", out)
+    self.assertIn("static void run(int a) { }", out)
+    bad = ["@kernel\nvoid run() { }\n", "@kernel k\nrun() { }\n", "@kernel k\nint x;\n", "@kernel k\nvoid run();\n", "@other k\nvoid run() { }\n", "@kernel k\n"]
+    for text in bad:
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError):
+          find_blocks(text)
+
   def test_buffer_keyword(self):
     text = 'volatile Buffer a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) { static volatile Buffer b[2]; }\n'
     out = render(text, [], "t.vmeg.c")

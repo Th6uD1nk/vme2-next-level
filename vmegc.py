@@ -80,10 +80,41 @@ def walk(text):
     prev = value
 
 
+def read_decorator(text, items, index):
+  start = items[index][2]
+  line = text.count("\n", 0, start) + 1
+  if index + 2 >= len(items) or items[index + 1][1] != "kernel" or items[index + 2][0] != "ident":
+    raise ValueError(f"line {line}: expected '@kernel name'")
+  name_end = items[index + 2][3]
+  parens = 0
+  seen = False
+  words = 0
+  for kind, value, _, _, _, _ in items[index + 3:]:
+    if kind == "ident" and not seen:
+      words += 1
+    if kind == "punct" and value == "(":
+      parens += 1
+      if not seen and words < 2:
+        raise ValueError(f"line {line}: @kernel needs a kernel name, then a function definition with its return type")
+      seen = True
+    elif kind == "punct" and value == ")":
+      parens -= 1
+    elif kind == "punct" and value in (";", "=") and parens == 0:
+      break
+    elif kind == "punct" and value == "{" and parens == 0:
+      if seen:
+        return ("decorator", start, name_end, name_end)
+      break
+  raise ValueError(f"line {line}: @kernel must be followed by a function definition")
+
+
 def find_blocks(text):
   items = list(walk(text))
   blocks = []
   for i, (kind, value, start, end, depth, prev) in enumerate(items):
+    if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
+      blocks.append(read_decorator(text, items, i))
+      continue
     if kind != "ident" or value not in ("buffers", "kernel"):
       continue
     if depth != 0 or prev not in (";", "}"):
@@ -656,6 +687,8 @@ def emit_statement(statement, env, lines, state):
 
 def generate(text, block):
   kind, start, open_pos, _ = block
+  if kind == "decorator":
+    return ""
   if kind == "buffers":
     line = text.count("\n", 0, start) + 1
     raise ValueError(f"line {line}: buffers must be inside a kernel (global buffers or local buffers)")
