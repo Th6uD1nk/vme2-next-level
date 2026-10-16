@@ -741,6 +741,41 @@ def passthrough(text, begin, end, edits):
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
 
 
+def declarator_names(toks, i):
+  names = []
+  expect = True
+  nest = 0
+  for kind, value, _, _ in toks[i + 1:]:
+    if kind == "punct" and value in "([{":
+      nest += 1
+    elif kind == "punct" and value in ")]}":
+      nest -= 1
+      if nest < 0:
+        break
+    elif nest == 0:
+      if kind == "punct" and value == ";":
+        break
+      if kind == "punct" and value == ",":
+        expect = True
+      elif kind == "ident" and expect:
+        names.append(value)
+        expect = False
+  return names
+
+
+def file_buffer_names(toks):
+  names = set()
+  depth = 0
+  for i, (kind, value, _, _) in enumerate(toks):
+    if kind == "punct" and value == "{":
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth -= 1
+    elif kind == "ident" and value == "Buffer" and depth == 0:
+      names.update(declarator_names(toks, i))
+  return names
+
+
 def check_buffers(text, toks, blocks):
   depth = 0
   for i, (kind, value, start, _) in enumerate(toks):
