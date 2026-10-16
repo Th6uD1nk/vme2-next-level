@@ -1160,13 +1160,11 @@ def check_on_process(infos):
     raise ValueError(f"{first_global[0]}:{first_global[1]}: global buffers need a function meLibOnProcess in one of the files, none defines it")
 
 
-def merged_file(merged, includes):
-  rows = [f"#include {header}" for header in includes]
-  for source in dict.fromkeys(source for _, _, _, source in merged):
-    rows.append(f"extern volatile u32 {source}[];")
-  rows.append(C_LINKAGE_BEGIN + "void vmegUploadGlobals(void) {")
+def merged_file(merged):
+  rows = [f"extern volatile u32 {source}[];" for source in dict.fromkeys(source for _, _, _, source in merged)]
+  rows.append("static void vmegUploadGlobals(void) {")
   rows += [f"  {upload_text(*entry)}" for entry in merged]
-  rows.append("}\n" + C_LINKAGE_END.rstrip("\n"))
+  rows.append("}")
   return "\n".join(rows) + "\n"
 
 
@@ -1178,7 +1176,7 @@ def merge_command(paths, output, includes):
   merged = merge_globals(infos)
   check_on_process(infos)
   with open(output, "w", encoding="utf-8", newline="") as f:
-    f.write(merged_file(merged, includes))
+    f.write(merged_file(merged))
 
 
 def render(text, blocks, path):

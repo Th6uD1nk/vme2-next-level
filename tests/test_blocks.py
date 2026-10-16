@@ -209,11 +209,9 @@ class RenderTest(unittest.TestCase):
 
   def test_merged_file(self):
     merged = [("TOP_0", 4, "", "inA"), ("BASE_1", 8, "OFFSET + 2", "inB"), ("TOP_2", 4, "", "inA")]
-    begin = '#ifdef __cplusplus\nextern "C" {\n#endif\n'
-    end = "#ifdef __cplusplus\n}\n#endif\n"
-    expected = "#include <x.h>\nextern volatile u32 inA[];\nextern volatile u32 inB[];\n" + begin + "void vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n" + end
-    self.assertEqual(merged_file(merged, ["<x.h>"]), expected)
-    self.assertEqual(merged_file([], []), begin + "void vmegUploadGlobals(void) {\n}\n" + end)
+    expected = "extern volatile u32 inA[];\nextern volatile u32 inB[];\nstatic void vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n"
+    self.assertEqual(merged_file(merged), expected)
+    self.assertEqual(merged_file([]), "static void vmegUploadGlobals(void) {\n}\n")
 
   def test_vme_is_removed_and_the_block_is_kept(self):
     text = "void f(void) {\n  before();\n  @vme {\n    runContext();\n  }\n  while (1) { }\n}\n"
