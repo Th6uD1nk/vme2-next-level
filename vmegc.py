@@ -492,6 +492,12 @@ def parse_buffer_count(p):
   return count[1]
 
 
+def parse_buffer_source(p):
+  p.expect(",")
+  p.expect("from")
+  return p.ident()
+
+
 def constant(expr, what):
   if expr[0] != "num":
     raise ValueError(f"{what} must be a number")
