@@ -59,6 +59,14 @@ def tokens(text):
     pos = m.end()
 
 
+def globals_header(path):
+  name = os.path.basename(path)
+  for source, _ in SUFFIXES:
+    if name.endswith(source):
+      return name[:-len(source)] + ".gen.h"
+  return os.path.splitext(name)[0] + ".gen.h"
+
+
 def default_output(path):
   name = os.path.basename(path)
   for source, result in SUFFIXES:
@@ -1083,9 +1091,7 @@ def check_local_sources(text, blocks):
             raise ValueError(f"line {line}: '{source}' is not declared with Buffer in the function marked with @kernel {kernel} at line {where} (local buffers)")
 
 
-C_LINKAGE_BEGIN = "#ifdef __cplusplus\nextern \"C\" {\n#endif\n"
-C_LINKAGE_END = "#ifdef __cplusplus\n}\n#endif\n"
-WEAK_DEFAULT = C_LINKAGE_BEGIN + "__attribute__((weak)) void vmegUploadGlobals(void) { }\n" + C_LINKAGE_END
+GLOBALS_PROTOTYPE = "static void vmegUploadGlobals(void);\n"
 
 
 def on_process_edit(text, toks, quoted):
@@ -1187,7 +1193,7 @@ def translate(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
   on_process, on_end = on_process_edit(text, toks, quoted) or (None, None)
-  out = [(WEAK_DEFAULT if on_process else "") + f'#line 1 "{quoted}"\n']
+  out = [(GLOBALS_PROTOTYPE if on_process else "") + f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, toks, blocks)
@@ -1215,6 +1221,8 @@ def translate(text, blocks, path):
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
+  if on_process:
+    out.append(f'\n#include "{globals_header(path)}"\n')
   return "".join(out), summary(path, text, toks, blocks, {})
 
 
