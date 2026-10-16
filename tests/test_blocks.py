@@ -107,6 +107,25 @@ class RenderTest(unittest.TestCase):
           render(text, find_blocks(text), "t.vmeg.c")
         self.assertIn("global buffers", str(ctx.exception))
 
+  def test_local_sources_must_be_declared_in_every_decorated_function(self):
+    kernel = "kernel k direct {\n  local buffers {\n    top0, 1 words, from x;\n  }\n}\n"
+    declared = "void f() {\n  volatile Buffer x[1];\n}\n"
+    ok = kernel + "@kernel k\n" + declared
+    render(ok, find_blocks(ok), "t.vmeg.c")
+    bad = [
+      kernel + "@kernel k\nvoid f() { }\n",
+      "volatile Buffer x[1];\n" + kernel + "@kernel k\nvoid f() { }\n",
+      kernel + "@kernel k\nvoid f() {\n  if (1) { volatile Buffer x[1]; }\n}\n",
+      kernel + "@kernel k\n" + declared + "@kernel k\nvoid g() { }\n",
+    ]
+    for text in bad:
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError) as ctx:
+          render(text, find_blocks(text), "t.vmeg.c")
+        self.assertIn("local buffers", str(ctx.exception))
+    both = kernel + "@kernel k\n" + declared + "@kernel k\n" + declared.replace("f()", "g()")
+    render(both, find_blocks(both), "t.vmeg.c")
+
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:

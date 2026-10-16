@@ -935,6 +935,29 @@ def check_global_sources(text, blocks, toks):
           raise ValueError(f"line {line}: '{source}' is not declared with Buffer at the top level of the file (global buffers)")
 
 
+def check_local_sources(text, blocks):
+  functions = {}
+  for block in blocks:
+    if block[0] != "decorator":
+      continue
+    declared = function_buffer_names(text, block)
+    where = text.count("\n", 0, block[1]) + 1
+    for kernel in decorator_names(text, block):
+      functions.setdefault(kernel, []).append((declared, where))
+  for block in blocks:
+    if block[0] != "kernel":
+      continue
+    kernel = kernel_name(text, block)
+    body, limit = body_tokens(text, block)
+    for statement in parse_body(Parser(text, body, limit)):
+      if statement[0] != "buffers" or statement[1] != "local":
+        continue
+      for _, _, _, source, line in statement[2]:
+        for declared, where in functions[kernel]:
+          if source not in declared:
+            raise ValueError(f"line {line}: '{source}' is not declared with Buffer in the function marked with @kernel {kernel} at line {where} (local buffers)")
+
+
 def render(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   out = [f'#line 1 "{quoted}"\n']
@@ -943,6 +966,7 @@ def render(text, blocks, path):
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, blocks)
   check_global_sources(text, blocks, toks)
+  check_local_sources(text, blocks)
   edits = [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += call_edits(text, blocks, quoted)
   edits.sort(key=lambda edit: edit[0])
