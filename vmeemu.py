@@ -1,3 +1,4 @@
+SCRATCHPAD_BASE = 0x44000000
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -22,3 +23,14 @@ class Scratchpad:
 
   def write(self, offset, value):
     self.words[self.slot(offset)] = value & 0xffffff
+
+  def offset_of(self, address):
+    if address < SCRATCHPAD_BASE or address & 3:
+      raise ValueError(f"scratchpad address {address:#x} is not a word address from {SCRATCHPAD_BASE:#x}")
+    return (address - SCRATCHPAD_BASE) >> 2
+
+  def read_address(self, address):
+    return self.read(self.offset_of(address))
+
+  def write_address(self, address, value):
+    self.write(self.offset_of(address), value)
