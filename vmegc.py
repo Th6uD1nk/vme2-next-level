@@ -119,12 +119,16 @@ def find_blocks(text):
   items = list(walk(text))
   blocks = []
   skip = 0
+  nested = False
   for i, (kind, value, start, end, depth, prev) in enumerate(items):
     if start < skip:
       continue
     if kind == "punct" and value == "@" and depth > 0:
       if prev in (";", "}", "{") and i + 2 < len(items) and items[i + 1][1] == "vme" and items[i + 2][1] == "{":
+        close = block_end(text, items, i + 2, start, "@vme block") - 1
         blocks.append(("vme", start, items[i + 1][3], items[i + 2][3]))
+        blocks.append(("vme-end", close, close, close))
+        nested = True
         continue
       line = text.count("\n", 0, start) + 1
       raise ValueError(f"line {line}: inside a function only '@vme {{ ... }}' is accepted")
@@ -148,6 +152,8 @@ def find_blocks(text):
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
       blocks.append(("buffers" if value == "buffers" else "kernel", start, items[j][2], block_end(text, items, j, start)))
       skip = blocks[-1][3]
+  if nested:
+    blocks.sort(key=lambda block: block[1])
   return blocks
 
 
@@ -724,6 +730,8 @@ def generate(text, block):
     return ""
   if kind == "vme":
     return "{ vmeLibEnable();"
+  if kind == "vme-end":
+    return "vmeLibDisable();"
   if kind == "buffers":
     line = text.count("\n", 0, start) + 1
     raise ValueError(f"line {line}: buffers must be inside a kernel (global buffers or local buffers)")
@@ -1216,6 +1224,8 @@ def main(argv=None):
 
   if args.list:
     for kind, start, open_pos, end in blocks:
+      if kind == "vme-end":
+        continue
       first = text.count("\n", 0, start) + 1
       last = text.count("\n", 0, end - 1) + 1
       header = " ".join(text[start:open_pos].split())

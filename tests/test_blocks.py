@@ -218,10 +218,11 @@ class RenderTest(unittest.TestCase):
   def test_vme_is_removed_and_the_block_is_kept(self):
     text = "void f(void) {\n  before();\n  @vme {\n    runContext();\n  }\n  while (1) { }\n}\n"
     blocks = find_blocks(text)
-    self.assertEqual([block[0] for block in blocks], ["vme"])
+    self.assertEqual([block[0] for block in blocks], ["vme", "vme-end"])
     out = render(text, blocks, "t.vmeg.c")
     self.assertNotIn("@", out)
     self.assertEqual(out.count("vmeLibEnable();"), 1)
+    self.assertEqual(out.count("vmeLibDisable();"), 1)
     for piece in ["before();", "{", "runContext();", "}", "while (1)"]:
       self.assertIn(piece, out)
     inside_kernel = "kernel k direct {\n  icn top = 0;\n}\n@kernel k\nvoid f() {\n  const char* s = \"@vme {\";\n}\n"
