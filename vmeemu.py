@@ -1,7 +1,8 @@
 from vmeg.blocks import find_blocks, kernel_name
 from vmeg.parser import kernel_statements
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad, TOP_OFFSET
-from emu.registers import CONTEXT_WORDS, DATAPATH_BASE, FU_KINDS, FU_OPERAND_REGISTERS, REGISTER_COUNT, SWEN_REGISTER, agu_view, decode_fu, fu_register, output_fu, routing_view
+from emu.registers import CONTEXT_WORDS, DATAPATH_BASE, FU_KINDS, REGISTER_COUNT, SWEN_REGISTER, agu_view, decode_fu, fu_register, output_fu, routing_view
+from emu.fu import execute, fu_operands, opcode_entry, signed32
 
 DMAC_BASE = 0x440ff000
 DMAC_REGISTER_COUNT = 17
@@ -302,50 +303,6 @@ def stream_offsets(registers, kind, buffer):
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
   first = (TOP_OFFSET if kind == "top" else BASE_OFFSET) + buffer * BUFFER_WORDS
   return [first + inside for inside in agu_inside_offsets(view, f"the {kind} AGU of pe{driver}", f"{kind}{buffer}", "reads")]
-
-
-def saturate(value, n):
-  if n == 0:
-    return value
-  return max(-(1 << (n - 1)), min((1 << (n - 1)) - 1, value))
-
-
-def signed32(value):
-  return value - (1 << 32) if value & 0x80000000 else value
-
-
-def fu_operands(registers, pe, kind):
-  if kind not in FU_OPERAND_REGISTERS:
-    raise ValueError(f"unknown fu '{kind}' ({', '.join(FU_OPERAND_REGISTERS)})")
-  if not 0 <= pe <= 3:
-    raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
-  first = FU_OPERAND_REGISTERS[kind] + 2 * pe
-  return signed32(registers[first]), signed32(registers[first + 1])
-
-
-def op_add(back, front, fu, a, b):
-  if fu["round"] and fu["k"]:
-    raise ValueError("the rounding bit of an ADD with a shift is not modeled")
-  return (back + front) >> fu["k"]
-
-
-def op_clp(back, front, fu, a, b):
-  return max(b, min(a, back))
-
-
-OPCODES = {0x010: (op_add, ("back", "front")), 0x07c: (op_clp, ("back",))}
-
-
-def opcode_entry(fu):
-  entry = OPCODES.get(fu["opcode"])
-  if entry is None:
-    raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in OPCODES)})")
-  return entry
-
-
-def execute(fu, back, front, a=0, b=0):
-  handler, _ = opcode_entry(fu)
-  return saturate(handler(back, front, fu, a, b), fu["sat"])
 
 
 def stream_at(emulator, kind, buffer, cycle, cache):
