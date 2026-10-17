@@ -1,3 +1,5 @@
 notes.txt
 saturate-clamp.c
 build
+__pycache__/
+*.pyc
