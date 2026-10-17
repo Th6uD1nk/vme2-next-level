@@ -30,7 +30,11 @@ def op_clp(back, front, fu, a, b):
   return max(b, min(a, back))
 
 
-OPCODES = {0x010: (op_add, ("back", "front")), 0x07c: (op_clp, ("back",))}
+def op_and(back, front, fu, a, b):
+  return back & front
+
+
+OPCODES = {0x010: (op_add, ("back", "front")), 0x07c: (op_clp, ("back",)), 0x0c0: (op_and, ("back", "front"))}
 
 
 def opcode_entry(fu):
