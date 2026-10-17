@@ -12,6 +12,9 @@ DMAC_CONTROL = 2
 DMAC_MEMORY_ADDRESS = 4
 CONTEXT_TRANSFER_MASK = 0x4c
 CONTEXT_TRANSFER_BITS = 0x0c
+TRIGGER = 0x18
+DMAC_STATUS = 0
+VME_DONE = 0x800
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -90,6 +93,7 @@ class Emulator:
     self.scratchpad = Scratchpad()
     self.registers = [0] * REGISTER_COUNT
     self.dmac = [0] * DMAC_REGISTER_COUNT
+    self.active = [0] * REGISTER_COUNT
     self.memory = {}
 
   def locate(self, address):
@@ -123,6 +127,9 @@ class Emulator:
   def run_control(self, value):
     if value & CONTEXT_TRANSFER_MASK == CONTEXT_TRANSFER_BITS:
       self.load_context(self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], CONTEXT_WORDS))
+    elif value == TRIGGER:
+      self.active[:] = self.registers
+      self.dmac[DMAC_STATUS] |= VME_DONE
 
   def put_memory(self, address, words):
     first = self.memory_address(address)
