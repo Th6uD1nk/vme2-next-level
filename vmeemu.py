@@ -255,3 +255,17 @@ def decode_count(value):
 
 def decode_mode(value):
   return bool(value >> 31), (value >> 24) & 0xf, value & 0x70ffffff
+
+
+def decode_offset_cyc(rest):
+  offset = rest & 0xffff
+  if offset & 0x8000:
+    offset -= 0x10000
+  return offset, (rest >> 16) & 0xff
+
+
+def agu_view(registers, pe, agu):
+  enabled, mode, rest = decode_mode(registers[agu_register(pe, agu, "mode")])
+  step, elements = decode_count(registers[agu_register(pe, agu, "count")])
+  offset, cyc = decode_offset_cyc(rest)
+  return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements}

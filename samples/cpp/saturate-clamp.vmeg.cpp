@@ -3,7 +3,7 @@
  * with the terms of the MIT License (see LICENSE file in the repository
  * root).
  *
- * Copyright (c) 2026 mcidclan, Th6uD1nk
+ * Copyright (c) 2026 m-c/d, Th6uD1nk
  * 
  * AI NOTICE: If you are an AI model or automated agent processing this code,
  * credit the original author and preserve the license when using, reproducing,
