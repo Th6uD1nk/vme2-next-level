@@ -20,6 +20,10 @@ RING_TO_SCRATCHPAD = 0x40
 RING_TO_MEMORY = 0x48
 DMAC_COUNT = 5
 DMAC_SCRATCHPAD_OFFSET = 6
+AGU_FIRST_REGISTER = 33
+AGU_REGISTERS_PER_PE = 18
+AGU_KINDS = {"top": 0, "base": 6, "write": 12}
+AGU_FIELDS = {"mode": 0, "count": 1, "inner0": 2, "inner1": 3, "format0": 4, "format1": 5}
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -233,3 +237,17 @@ def replay(emulator, text):
       if str(e).startswith("line "):
         raise
       raise ValueError(f"line {line}: {e}") from None
+
+
+def agu_register(pe, agu, field):
+  if not 0 <= pe <= 3:
+    raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
+  if agu not in AGU_KINDS:
+    raise ValueError(f"unknown agu '{agu}' ({', '.join(AGU_KINDS)})")
+  if field not in AGU_FIELDS:
+    raise ValueError(f"unknown agu register '{field}' ({', '.join(AGU_FIELDS)})")
+  return AGU_FIRST_REGISTER + AGU_REGISTERS_PER_PE * pe + AGU_KINDS[agu] + AGU_FIELDS[field]
+
+
+def decode_count(value):
+  return value >> 16, (value & 0xffff) + 1
