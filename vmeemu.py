@@ -213,6 +213,28 @@ class Emulator:
     offsets = stream_offsets(self.active, kind, buffer)
     return None if offsets is None else [self.scratchpad.read(offset) for offset in offsets]
 
+  def pe_output(self, pe, element, cache):
+    memo = {}
+    running = set()
+
+    def fu_output(kind, p):
+      key = (kind, p)
+      if key not in memo:
+        if key in running:
+          raise ValueError(f"the {kind} FU of pe{p} depends on its own output")
+        running.add(key)
+        fu = decode_fu(self.active[fu_register(p, kind)])
+        _, uses = opcode_entry(fu)
+        a, b = fu_operands(self.active, p, kind)
+        staging = lambda index: fu_output("primary", index) if index < 4 else fu_output("secondary", index - 4)
+        back = operand_value(fu["back"], element, self, cache, staging) if "back" in uses else 0
+        front = operand_value(fu["front"], element, self, cache, staging) if "front" in uses else 0
+        memo[key] = execute(fu, back, front, a, b)
+        running.discard(key)
+      return memo[key]
+
+    return fu_output(output_fu(self.active[SWEN_REGISTER], pe), pe)
+
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:
       raise ValueError(f"a context has {CONTEXT_WORDS} words, not {len(words)}")
@@ -395,22 +417,27 @@ def op_clp(back, front, fu, a, b):
   return max(b, min(a, back))
 
 
-OPCODES = {0x010: op_add, 0x07c: op_clp}
+OPCODES = {0x010: (op_add, ("back", "front")), 0x07c: (op_clp, ("back",))}
+
+
+def opcode_entry(fu):
+  entry = OPCODES.get(fu["opcode"])
+  if entry is None:
+    raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in OPCODES)})")
+  return entry
 
 
 def execute(fu, back, front, a=0, b=0):
-  handler = OPCODES.get(fu["opcode"])
-  if handler is None:
-    raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in OPCODES)})")
+  handler, _ = opcode_entry(fu)
   return saturate(handler(back, front, fu, a, b), fu["sat"])
 
 
 def operand_value(source, element, emulator, cache, staging):
   kind, _, number = source.partition("_")
   if kind == "STAGING" and number.isdigit():
-    if int(number) not in staging:
-      raise ValueError(f"{source} is not available yet")
-    return staging[int(number)]
+    if int(number) > 7:
+      raise ValueError(f"the operand source {source} is not modeled")
+    return staging(int(number))
   if kind not in ("TOP", "BASE") or not number.isdigit():
     raise ValueError(f"the operand source {source} is not modeled")
   key = (kind.lower(), int(number))
