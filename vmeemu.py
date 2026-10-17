@@ -12,6 +12,7 @@ DMAC_CONTROL = 2
 DMAC_MEMORY_ADDRESS = 4
 CONTEXT_TRANSFER_MASK = 0x4c
 CONTEXT_TRANSFER_BITS = 0x0c
+PRELOAD_CONTEXT = 5
 TRIGGER = 0x18
 CLEAR_LOCAL_BUFFER = 0x21
 MEM_TO_16 = 0x52
@@ -139,7 +140,7 @@ class Emulator:
       registers[index] = value
 
   def run_control(self, value):
-    if value & CONTEXT_TRANSFER_MASK == CONTEXT_TRANSFER_BITS:
+    if value & CONTEXT_TRANSFER_MASK == CONTEXT_TRANSFER_BITS or value == PRELOAD_CONTEXT:
       self.load_context(self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], CONTEXT_WORDS))
     elif value == CLEAR_LOCAL_BUFFER:
       self.clear_local_buffer()
