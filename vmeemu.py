@@ -20,6 +20,9 @@ RING_TO_SCRATCHPAD = 0x40
 RING_TO_MEMORY = 0x48
 DMAC_COUNT = 5
 DMAC_SCRATCHPAD_OFFSET = 6
+FU_KINDS = {"primary": 0, "secondary": 4}
+MUX_FRONT_SHIFT = 27
+MUX_BACK_SHIFT = 22
 SWEN_REGISTER = 27
 ROUTING_REGISTERS = {"top": 28, "base": 29, "write": 30}
 AGU_FIRST_REGISTER = 33
@@ -294,3 +297,23 @@ def routing_view(registers, kind):
   if kind == "write":
     return nibbles
   return [nibble if nibble < 4 else "clear" for nibble in nibbles]
+
+
+def fu_register(pe, kind):
+  if not 0 <= pe <= 3:
+    raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
+  if kind not in FU_KINDS:
+    raise ValueError(f"unknown fu '{kind}' ({', '.join(FU_KINDS)})")
+  return FU_KINDS[kind] + pe
+
+
+def decode_selector(value):
+  if 16 <= value <= 23:
+    return f"STAGING_{value - 16}"
+  if value < 16 and value % 2 == 0:
+    return f"{'BASE' if value & 8 else 'TOP'}_{value >> 1 & 3}"
+  return f"UNKNOWN_{value}"
+
+
+def decode_mux(register):
+  return decode_selector(register >> MUX_FRONT_SHIFT & 0x1f), decode_selector(register >> MUX_BACK_SHIFT & 0x1f)
