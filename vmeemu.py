@@ -208,6 +208,10 @@ class Emulator:
       raise ValueError(f"memory address {address:#x} is not aligned on 4 bytes")
     return address & PHYSICAL_MASK
 
+  def read_stream(self, kind, buffer):
+    offsets = stream_offsets(self.active, kind, buffer)
+    return None if offsets is None else [self.scratchpad.read(offset) for offset in offsets]
+
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:
       raise ValueError(f"a context has {CONTEXT_WORDS} words, not {len(words)}")
@@ -318,3 +322,26 @@ def decode_selector(value):
 
 def decode_mux(register):
   return decode_selector(register >> MUX_FRONT_SHIFT & 0x1f), decode_selector(register >> MUX_BACK_SHIFT & 0x1f)
+
+
+def stream_offsets(registers, kind, buffer):
+  if kind not in ("top", "base"):
+    raise ValueError(f"unknown read agu '{kind}' (top, base)")
+  if not 0 <= buffer <= 3:
+    raise ValueError(f"{kind}{buffer}: buffer out of range ({kind}0 to {kind}3)")
+  driver = routing_view(registers, kind)[buffer]
+  if driver == "clear":
+    return None
+  view = agu_view(registers, driver, kind)
+  if not view["enabled"]:
+    raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
+  if view["mode"] != 4:
+    raise ValueError(f"the mode {view['mode']} of the {kind} AGU of pe{driver} is not modeled, only the mode 4")
+  first = (TOP_OFFSET if kind == "top" else BASE_OFFSET) + buffer * BUFFER_WORDS
+  offsets = []
+  for i in range(view["elements"]):
+    inside = view["offset"] + i * view["step"]
+    if not 0 <= inside < BUFFER_WORDS:
+      raise ValueError(f"the {kind} AGU of pe{driver} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
+    offsets.append(first + inside)
+  return offsets
