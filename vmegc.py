@@ -1,6 +1,5 @@
 import argparse
 import os
-import re
 import sys
 
 from vmeg.blocks import find_blocks
