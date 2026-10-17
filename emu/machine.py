@@ -1,5 +1,5 @@
 from emu.agu import agu_inside_offsets, run_length, stream_at, stream_offsets, write_agu
-from emu.dmac import CLEAR_LOCAL_BUFFER, CONTEXT_TRANSFER_BITS, CONTEXT_TRANSFER_MASK, DMAC_BASE, DMAC_CONTROL, DMAC_COUNT, DMAC_MEMORY_ADDRESS, DMAC_REGISTER_COUNT, DMAC_SCRATCHPAD_OFFSET, MEM_FROM_16, MEM_TO_16, PRELOAD_CONTEXT, RING_TO_MEMORY, RING_TO_SCRATCHPAD, TRIGGER
+from emu.dmac import CLEAR_LOCAL_BUFFER, CONTEXT_TRANSFER_BITS, CONTEXT_TRANSFER_MASK, DMAC_BASE, DMAC_CONTROL, DMAC_COUNT, DMAC_GROUP_SIZE, DMAC_GROUP_STEPS, DMAC_ITERATION_STEP, DMAC_MEMORY_ADDRESS, DMAC_REGISTER_COUNT, DMAC_SCRATCHPAD_OFFSET, ITERATE_TO_MEMORY, ITERATE_TO_SCRATCHPAD, ITERATION_STEP_BYTES, MEM_FROM_16, MEM_TO_16, PRELOAD_CONTEXT, RING_TO_MEMORY, RING_TO_SCRATCHPAD, TRIGGER
 from emu.fu import execute, fu_operands, opcode_entry
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad
 from emu.registers import CONTEXT_WORDS, DATAPATH_BASE, FU_KINDS, REGISTER_COUNT, SWEN_REGISTER, decode_fu, fu_register, output_fu
@@ -56,6 +56,10 @@ class Emulator:
       self.mem_to_16()
     elif value == MEM_FROM_16:
       self.mem_from_16()
+    elif value == ITERATE_TO_SCRATCHPAD:
+      self.iterate_to_scratchpad()
+    elif value == ITERATE_TO_MEMORY:
+      self.iterate_to_memory()
     elif value == TRIGGER:
       self.trigger()
 
@@ -153,6 +157,31 @@ class Emulator:
     offset = self.dmac[DMAC_SCRATCHPAD_OFFSET]
     words = [self.scratchpad.read(offset + i) for i in range(self.transfer_count())]
     self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], words)
+
+  def iteration_addresses(self):
+    dims = self.dmac[DMAC_COUNT]
+    count, gap = (dims >> 16) + 1, (dims & 0xffff) + 1
+    if self.dmac[DMAC_ITERATION_STEP] != ITERATION_STEP_BYTES:
+      raise ValueError(f"the iteration step {self.dmac[DMAC_ITERATION_STEP]} is not modeled (modeled: {ITERATION_STEP_BYTES}, one word of 32 bits)")
+    size = self.dmac[DMAC_GROUP_SIZE] + 1
+    outer, inner = self.dmac[DMAC_GROUP_STEPS] >> 16, self.dmac[DMAC_GROUP_STEPS] & 0xffff
+    offset = self.dmac[DMAC_SCRATCHPAD_OFFSET]
+    if size > 1:
+      if gap != 1:
+        raise ValueError(f"the second count {gap - 1} of the iterations with a group of {size} words is not modeled")
+      return [offset + i // size * outer + i % size * inner for i in range(count)]
+    if outer or inner:
+      raise ValueError(f"the group steps {outer}, {inner} with a group of one word are not modeled")
+    return [offset + i * gap for i in range(count)]
+
+  def iterate_to_scratchpad(self):
+    addresses = self.iteration_addresses()
+    for address, word in zip(addresses, self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], len(addresses))):
+      self.scratchpad.write(address, word)
+
+  def iterate_to_memory(self):
+    addresses = self.iteration_addresses()
+    self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], [self.scratchpad.read(address) for address in addresses])
 
   def mem_to_16(self):
     values = []

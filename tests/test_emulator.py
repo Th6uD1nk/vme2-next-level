@@ -49,14 +49,21 @@ class Recorder(Emulator):
   def mem_from_16(self):
     self.calls.append("mem from 16")
 
+  def iterate_to_scratchpad(self):
+    self.calls.append("iterate to scratchpad")
+
+  def iterate_to_memory(self):
+    self.calls.append("iterate to memory")
+
 
 class ControlTest(unittest.TestCase):
   def test_each_control_value_fires_its_own_action_only(self):
     actions = {
       0x05: "context", 0x0c: "context", 0x1d: "context", 0x18: "trigger", 0x21: "clear",
       0x40: "ring to scratchpad", 0x48: "ring to memory", 0x52: "mem to 16", 0x5a: "mem from 16",
+      0x50: "iterate to scratchpad", 0x58: "iterate to memory",
     }
-    nothing = [0x00, 0x02, 0x03, 0x04, 0x08, 0x20, 0x28, 0x42, 0x45, 0x4d, 0x50, 0x54, 0x58, 0x5d]
+    nothing = [0x00, 0x02, 0x03, 0x04, 0x08, 0x20, 0x28, 0x42, 0x45, 0x4d, 0x54, 0x5d]
     for value in list(actions) + nothing:
       emulator = Recorder()
       emulator.put_memory(0x1000, [0] * CONTEXT_WORDS)
@@ -183,6 +190,20 @@ class SyncTest(unittest.TestCase):
   def test_written_words_are_seen_by_a_later_fu_only_with_the_end_token(self):
     self.assertEqual(self.run_kernel(True), [0] * 7 + [101, 102, 103, 104, 105])
     self.assertEqual(self.run_kernel(False), [0] * 12)
+
+
+class IterationTest(unittest.TestCase):
+  def test_groups_on_the_way_in_and_gap_on_the_way_out(self):
+    emulator = Emulator()
+    emulator.put_memory(0x1000, list(range(1, 9)))
+    for offset, value in ((0x10, 0x1000), (0x14, 0x70000), (0x18, 0x8000), (0x20, 4), (0x24, 3), (0x28, 0x100001), (0x08, 0x50)):
+      emulator.write(0x440ff000 + offset, value)
+    words = [emulator.scratchpad.read(0x8000 + i) for i in range(32)]
+    self.assertEqual(words[:4] + words[16:20], list(range(1, 9)))
+    self.assertEqual(sum(1 for word in words if word), 8)
+    for offset, value in ((0x10, 0x2000), (0x14, 0x1000f), (0x18, 0x8000), (0x24, 0), (0x28, 0), (0x08, 0x58)):
+      emulator.write(0x440ff000 + offset, value)
+    self.assertEqual(emulator.get_memory(0x2000, 2), [1, 5])
 
 
 if __name__ == "__main__":
