@@ -20,6 +20,7 @@ RING_TO_SCRATCHPAD = 0x40
 RING_TO_MEMORY = 0x48
 DMAC_COUNT = 5
 DMAC_SCRATCHPAD_OFFSET = 6
+SWEN_REGISTER = 27
 AGU_FIRST_REGISTER = 33
 AGU_REGISTERS_PER_PE = 18
 AGU_KINDS = {"top": 0, "base": 6, "write": 12}
@@ -269,3 +270,13 @@ def agu_view(registers, pe, agu):
   step, elements = decode_count(registers[agu_register(pe, agu, "count")])
   offset, cyc = decode_offset_cyc(rest)
   return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements}
+
+
+def decode_swen(value):
+  return [bool(value >> (31 - pe) & 1) for pe in range(4)]
+
+
+def output_fu(value, pe):
+  if not 0 <= pe <= 3:
+    raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
+  return "secondary" if decode_swen(value)[pe] else "primary"
