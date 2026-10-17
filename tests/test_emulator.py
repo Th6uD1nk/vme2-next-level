@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from emu.registers import CONTEXT_WORDS
 from emu.trace import replay
-from vmeemu import Emulator
+from emu.machine import Emulator
 
 
 class ReplayTest(unittest.TestCase):
