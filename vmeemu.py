@@ -235,19 +235,9 @@ class Emulator:
     self.run()
 
   def run(self):
-    cache = {}
     self.cycles = run_length(self.active)
-    writes = []
-    for pe in range(4):
-      found = write_agu(self.active, pe)
-      if found is None:
-        continue
-      driver, view = found
-      first = BASE_OFFSET + pe * BUFFER_WORDS
-      offsets = agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")
-      for element, inside in enumerate(offsets):
-        writes.append((first + inside, self.pe_output(pe, element, cache)))
-    for offset, value in writes:
+    self.simulate_fus({})
+    for offset, value in self.collect_writes():
       self.scratchpad.write(offset, value)
 
   def clear_local_buffer(self):
@@ -300,28 +290,6 @@ class Emulator:
   def read_stream(self, kind, buffer):
     offsets = stream_offsets(self.active, kind, buffer)
     return None if offsets is None else [self.scratchpad.read(offset) for offset in offsets]
-
-  def pe_output(self, pe, element, cache):
-    memo = {}
-    running = set()
-
-    def fu_output(kind, p):
-      key = (kind, p)
-      if key not in memo:
-        if key in running:
-          raise ValueError(f"the {kind} FU of pe{p} depends on its own output")
-        running.add(key)
-        fu = decode_fu(self.active[fu_register(p, kind)])
-        _, uses = opcode_entry(fu)
-        a, b = fu_operands(self.active, p, kind)
-        staging = lambda index: fu_output("primary", index) if index < 4 else fu_output("secondary", index - 4)
-        back = operand_value(fu["back"], element, self, cache, staging) if "back" in uses else 0
-        front = operand_value(fu["front"], element, self, cache, staging) if "front" in uses else 0
-        memo[key] = execute(fu, back, front, a, b)
-        running.discard(key)
-      return memo[key]
-
-    return fu_output(output_fu(self.active[SWEN_REGISTER], pe), pe)
 
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:
@@ -550,22 +518,3 @@ def stream_at(emulator, kind, buffer, cycle, cache):
   if stream is None or cycle >= len(stream):
     return 0
   return signed32(stream[cycle])
-
-
-def operand_value(source, element, emulator, cache, staging):
-  kind, _, number = source.partition("_")
-  if kind == "STAGING" and number.isdigit():
-    if int(number) > 7:
-      raise ValueError(f"the operand source {source} is not modeled")
-    return staging(int(number))
-  if kind not in ("TOP", "BASE") or not number.isdigit():
-    raise ValueError(f"the operand source {source} is not modeled")
-  key = (kind.lower(), int(number))
-  if key not in cache:
-    cache[key] = emulator.read_stream(*key)
-  stream = cache[key]
-  if stream is None:
-    return 0
-  if element >= len(stream):
-    raise ValueError(f"the stream of {source} has {len(stream)} elements, the element {element} is missing")
-  return signed32(stream[element])
