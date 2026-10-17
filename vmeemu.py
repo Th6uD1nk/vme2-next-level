@@ -351,3 +351,15 @@ def stream_offsets(registers, kind, buffer):
       raise ValueError(f"the {kind} AGU of pe{driver} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
     offsets.append(first + inside)
   return offsets
+
+
+def decode_fu(register):
+  front, back = decode_mux(register)
+  return {
+    "front": front,
+    "back": back,
+    "opcode": register >> 12 & 0x3ff,
+    "sat": register >> 7 & 0x1f,
+    "round": register >> 6 & 1,
+    "k": register & 0x3f,
+  }
