@@ -1,4 +1,5 @@
 import vmegc
+from vmeg.blocks import find_blocks, kernel_name
 
 SCRATCHPAD_BASE = 0x44000000
 DATAPATH_BASE = 0x440f8000
@@ -71,8 +72,8 @@ def dump_base_buffers(scratchpad, count):
 
 
 def load_kernel(text, name=None):
-  blocks = vmegc.find_blocks(text)
-  kernels = {vmegc.kernel_name(text, block): block for block in blocks if block[0] == "kernel"}
+  blocks = find_blocks(text)
+  kernels = {kernel_name(text, block): block for block in blocks if block[0] == "kernel"}
   if name is None:
     if len(kernels) != 1:
       known = ", ".join(kernels) if kernels else "there is no kernel in this file"

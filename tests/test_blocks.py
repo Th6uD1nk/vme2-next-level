@@ -4,7 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmegc import check_on_process, default_output, find_blocks, merged_file, merge_globals, render, translate
+from vmeg.blocks import find_blocks
+from vmegc import check_on_process, default_output, merged_file, merge_globals, render, translate
 
 
 def found(text):
