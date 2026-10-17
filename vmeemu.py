@@ -15,6 +15,9 @@ CONTEXT_TRANSFER_BITS = 0x0c
 TRIGGER = 0x18
 DMAC_STATUS = 0
 VME_DONE = 0x800
+CLEAR_LOCAL_BUFFER = 0x21
+DMAC_COUNT = 5
+DMAC_SCRATCHPAD_OFFSET = 6
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -127,9 +130,17 @@ class Emulator:
   def run_control(self, value):
     if value & CONTEXT_TRANSFER_MASK == CONTEXT_TRANSFER_BITS:
       self.load_context(self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], CONTEXT_WORDS))
+    elif value == CLEAR_LOCAL_BUFFER:
+      self.clear_local_buffer()
     elif value == TRIGGER:
       self.active[:] = self.registers
       self.dmac[DMAC_STATUS] |= VME_DONE
+
+  def clear_local_buffer(self):
+    count = self.dmac[DMAC_COUNT]
+    if count >> 16:
+      raise ValueError(f"the count register {count:#x} has bits above the 16 low bits, not modeled")
+    self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], [0] * (count + 1))
 
   def put_memory(self, address, words):
     first = self.memory_address(address)
