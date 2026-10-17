@@ -33,6 +33,7 @@ AGU_KINDS = {"top": 0, "base": 6, "write": 12}
 AGU_FIELDS = {"mode": 0, "count": 1, "inner0": 2, "inner1": 3, "format0": 4, "format1": 5}
 STAGING_COUNT = 8
 STAGING_WORDS = 2048
+STAGING_LAG = 3
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -179,6 +180,40 @@ class Emulator:
 
   def staging_write(self, index, slot, value):
     self.staging_slot(index, slot)[slot] = value & 0xffffff
+
+  def simulate_fus(self, cache):
+    needed = {}
+    pending = [(output_fu(self.active[SWEN_REGISTER], pe), pe) for pe in range(4) if write_agu(self.active, pe) is not None]
+    while pending:
+      key = pending.pop()
+      if key in needed:
+        continue
+      kind, pe = key
+      fu = decode_fu(self.active[fu_register(pe, kind)])
+      _, uses = opcode_entry(fu)
+      a, b = fu_operands(self.active, pe, kind)
+      needed[key] = (fu, uses, a, b)
+      for side in uses:
+        name, _, number = fu[side].partition("_")
+        if name == "STAGING" and number.isdigit() and int(number) < STAGING_COUNT:
+          pending.append(("primary", int(number)) if int(number) < 4 else ("secondary", int(number) - 4))
+
+    def operand(source, cycle):
+      name, _, number = source.partition("_")
+      if name == "STAGING" and number.isdigit() and int(number) < STAGING_COUNT:
+        return self.staging_read(int(number), cycle)
+      if name in ("TOP", "BASE") and number.isdigit():
+        return stream_at(self, name.lower(), int(number), cycle, cache)
+      raise ValueError(f"the operand source {source} is not modeled")
+
+    for cycle in range(self.cycles):
+      for (kind, pe), (fu, uses, a, b) in needed.items():
+        back = operand(fu["back"], cycle) if "back" in uses else 0
+        front = operand(fu["front"], cycle) if "front" in uses else 0
+        slot = cycle + STAGING_LAG
+        if slot >= STAGING_WORDS:
+          raise ValueError(f"the run is longer than the staging, the slot {slot} does not exist")
+        self.staging_write(pe + FU_KINDS[kind], slot, execute(fu, back, front, a, b))
 
   def trigger(self):
     self.active[:] = self.registers
