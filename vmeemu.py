@@ -31,6 +31,8 @@ AGU_FIRST_REGISTER = 33
 AGU_REGISTERS_PER_PE = 18
 AGU_KINDS = {"top": 0, "base": 6, "write": 12}
 AGU_FIELDS = {"mode": 0, "count": 1, "inner0": 2, "inner1": 3, "format0": 4, "format1": 5}
+STAGING_COUNT = 8
+STAGING_WORDS = 2048
 BUFFER_WORDS = 0x800
 BUFFER_COUNT = 4
 BASE_OFFSET = 0
@@ -111,6 +113,7 @@ class Emulator:
     self.dmac = [0] * DMAC_REGISTER_COUNT
     self.active = [0] * REGISTER_COUNT
     self.memory = {}
+    self.staging = [[0] * STAGING_WORDS for _ in range(STAGING_COUNT)]
 
   def locate(self, address):
     for first, count, registers in ((DATAPATH_BASE, REGISTER_COUNT, self.registers), (DMAC_BASE, DMAC_REGISTER_COUNT, self.dmac)):
@@ -161,6 +164,20 @@ class Emulator:
     if count >> 16:
       raise ValueError(f"the count register {count:#x} has bits above the 16 low bits, not modeled")
     return count + 1
+
+  def staging_slot(self, index, slot):
+    if not 0 <= index < STAGING_COUNT:
+      raise ValueError(f"STAGING_{index}: staging out of range (STAGING_0 to STAGING_{STAGING_COUNT - 1})")
+    if not 0 <= slot < STAGING_WORDS:
+      raise ValueError(f"STAGING_{index}: slot {slot} out of range (0 to {STAGING_WORDS - 1})")
+    return self.staging[index]
+
+  def staging_read(self, index, slot):
+    value = self.staging_slot(index, slot)[slot]
+    return value - 0x1000000 if value & 0x800000 else value
+
+  def staging_write(self, index, slot, value):
+    self.staging_slot(index, slot)[slot] = value & 0xffffff
 
   def trigger(self):
     self.active[:] = self.registers
