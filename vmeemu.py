@@ -1,24 +1,8 @@
-from vmeg.blocks import find_blocks, kernel_name
-from vmeg.parser import kernel_statements
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad
 from emu.registers import CONTEXT_WORDS, DATAPATH_BASE, FU_KINDS, REGISTER_COUNT, SWEN_REGISTER, decode_fu, fu_register, output_fu
 from emu.fu import execute, fu_operands, opcode_entry
 from emu.agu import agu_inside_offsets, run_length, stream_at, stream_offsets, write_agu
 from emu.dmac import CLEAR_LOCAL_BUFFER, CONTEXT_TRANSFER_BITS, CONTEXT_TRANSFER_MASK, DMAC_BASE, DMAC_CONTROL, DMAC_COUNT, DMAC_MEMORY_ADDRESS, DMAC_REGISTER_COUNT, DMAC_SCRATCHPAD_OFFSET, MEM_FROM_16, MEM_TO_16, PRELOAD_CONTEXT, RING_TO_MEMORY, RING_TO_SCRATCHPAD, TRIGGER
-
-
-def load_kernel(text, name=None):
-  blocks = find_blocks(text)
-  kernels = {kernel_name(text, block): block for block in blocks if block[0] == "kernel"}
-  if name is None:
-    if len(kernels) != 1:
-      known = ", ".join(kernels) if kernels else "there is no kernel in this file"
-      raise ValueError(f"give the name of the kernel ({known})")
-    name = next(iter(kernels))
-  if name not in kernels:
-    known = ", ".join(kernels) if kernels else "there is no kernel in this file"
-    raise ValueError(f"unknown kernel '{name}' ({known})")
-  return kernel_statements(text, kernels[name], {})
 
 
 class Emulator:
