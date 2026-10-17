@@ -6,6 +6,7 @@ FU_OPERAND_REGISTERS = {"primary": 8, "secondary": 16}
 MUX_FRONT_SHIFT = 27
 MUX_BACK_SHIFT = 22
 SWEN_REGISTER = 27
+RING_TOKEN = 0x20000
 ROUTING_REGISTERS = {"top": 28, "base": 29, "write": 30}
 AGU_FIRST_REGISTER = 33
 AGU_REGISTERS_PER_PE = 18
@@ -42,7 +43,9 @@ def agu_view(registers, pe, agu):
   enabled, mode, rest = decode_mode(registers[agu_register(pe, agu, "mode")])
   step, elements = decode_count(registers[agu_register(pe, agu, "count")])
   offset, cyc = decode_offset_cyc(rest)
-  return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements}
+  return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements,
+    "inner0": registers[agu_register(pe, agu, "inner0")], "format0": registers[agu_register(pe, agu, "format0")],
+    "format1": registers[agu_register(pe, agu, "format1")]}
 
 
 def decode_swen(value):

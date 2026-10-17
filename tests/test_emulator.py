@@ -4,9 +4,10 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from emu.agu import stream_at
 from emu.fu import execute
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from emu.registers import CONTEXT_WORDS
+from emu.registers import CONTEXT_WORDS, agu_register
 from emu.trace import replay
 from emu.machine import Emulator
 
@@ -146,6 +147,19 @@ class MacTest(unittest.TestCase):
 
   def test_acc_shift_starts_with_bias_then_adds_the_previous_result(self):
     self.assertEqual(self.stream(0x250, 1, 20, [4, 6, 8, 10], [0, 0, 0, 0]), [12, 15, 19, 24])
+
+
+class RingTest(unittest.TestCase):
+  def test_ring_cycles_over_inner_count_whatever_the_agu_count(self):
+    emulator = Emulator()
+    emulator.active[:] = [0] * 106
+    emulator.scratchpad.transfer(TOP_OFFSET, [0x100 + i for i in range(8)])
+    emulator.active[28] = 0x4440
+    emulator.active[agu_register(0, "top", "mode")] = 0x84000000
+    emulator.active[agu_register(0, "top", "count")] = 0x10000 | 15
+    emulator.active[agu_register(0, "top", "inner0")] = (3 << 16) | 1
+    emulator.active[agu_register(0, "top", "format0")] = 0x20000
+    self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(10)], [0x100, 0x101, 0x102, 0x103] * 2 + [0x100, 0x101])
 
 
 if __name__ == "__main__":
