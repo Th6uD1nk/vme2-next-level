@@ -164,6 +164,25 @@ class Emulator:
 
   def trigger(self):
     self.active[:] = self.registers
+    self.run()
+
+  def run(self):
+    cache = {}
+    routing = routing_view(self.active, "write")
+    writes = []
+    for pe in range(4):
+      driver = routing[pe]
+      if driver > 3:
+        raise ValueError(f"the write routing {driver} of the output of pe{pe} is not modeled")
+      view = agu_view(self.active, driver, "write")
+      if not view["enabled"]:
+        continue
+      first = BASE_OFFSET + pe * BUFFER_WORDS
+      offsets = agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")
+      for element, inside in enumerate(offsets):
+        writes.append((first + inside, self.pe_output(pe, element, cache)))
+    for offset, value in writes:
+      self.scratchpad.write(offset, value)
 
   def clear_local_buffer(self):
     self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], [0] * self.transfer_count())
@@ -357,6 +376,16 @@ def mode4_offsets(view):
 AGU_MODES = {4: mode4_offsets}
 
 
+def agu_inside_offsets(view, label, buffer, verb):
+  if view["mode"] not in AGU_MODES:
+    raise ValueError(f"the mode {view['mode']} of {label} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
+  offsets = AGU_MODES[view["mode"]](view)
+  for inside in offsets:
+    if not 0 <= inside < BUFFER_WORDS:
+      raise ValueError(f"{label} {verb} the word {inside} of {buffer}, outside the buffer, the circular mode is not modeled")
+  return offsets
+
+
 def stream_offsets(registers, kind, buffer):
   if kind not in ("top", "base"):
     raise ValueError(f"unknown read agu '{kind}' (top, base)")
@@ -368,15 +397,8 @@ def stream_offsets(registers, kind, buffer):
   view = agu_view(registers, driver, kind)
   if not view["enabled"]:
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
-  if view["mode"] not in AGU_MODES:
-    raise ValueError(f"the mode {view['mode']} of the {kind} AGU of pe{driver} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
   first = (TOP_OFFSET if kind == "top" else BASE_OFFSET) + buffer * BUFFER_WORDS
-  offsets = []
-  for inside in AGU_MODES[view["mode"]](view):
-    if not 0 <= inside < BUFFER_WORDS:
-      raise ValueError(f"the {kind} AGU of pe{driver} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
-    offsets.append(first + inside)
-  return offsets
+  return [first + inside for inside in agu_inside_offsets(view, f"the {kind} AGU of pe{driver}", f"{kind}{buffer}", "reads")]
 
 
 def decode_fu(register):
