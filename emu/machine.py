@@ -90,7 +90,7 @@ class Emulator:
       fu = decode_fu(self.active[fu_register(pe, kind)])
       _, uses = opcode_entry(fu)
       a, b = fu_operands(self.active, pe, kind)
-      needed[key] = (fu, uses, a, b)
+      needed[key] = (fu, uses, a, b, {})
       for side in uses:
         name, _, number = fu[side].partition("_")
         if name == "STAGING" and number.isdigit() and int(number) < STAGING_COUNT:
@@ -105,7 +105,7 @@ class Emulator:
       raise ValueError(f"the operand source {source} is not modeled")
 
     for cycle in range(self.cycles):
-      for (kind, pe), (fu, uses, a, b) in needed.items():
+      for (kind, pe), (fu, uses, a, b, state) in needed.items():
         back = operand(fu["back"], cycle) if "back" in uses else 0
         front = operand(fu["front"], cycle) if "front" in uses else 0
         slot = cycle + STAGING_LAG
@@ -113,7 +113,7 @@ class Emulator:
           raise ValueError(f"the run is longer than the staging, the slot {slot} does not exist")
         staging = pe + FU_KINDS[kind]
         previous = self.staging_read(staging, slot - 1) if cycle else None
-        self.staging_write(staging, slot, execute(fu, back, front, a, b, previous))
+        self.staging_write(staging, slot, execute(fu, back, front, a, b, previous, state))
 
   def collect_writes(self):
     writes = []

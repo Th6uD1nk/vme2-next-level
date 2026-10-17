@@ -20,30 +20,36 @@ def fu_operands(registers, pe, kind):
   return signed32(registers[first]), signed32(registers[first + 1])
 
 
-def op_add(back, front, fu, a, b, previous):
+def op_add(back, front, fu, a, b, previous, state):
   if fu["round"] and fu["k"]:
     raise ValueError("the rounding bit of an ADD with a shift is not modeled")
   return (back + front) >> fu["k"]
 
 
-def op_clp(back, front, fu, a, b, previous):
+def op_clp(back, front, fu, a, b, previous, state):
   return max(b, min(a, back))
 
 
-def op_and(back, front, fu, a, b, previous):
+def op_and(back, front, fu, a, b, previous, state):
   return back & front
 
 
-def op_mac_acc_shift_bias(back, front, fu, a, b, previous):
+def op_mac_acc_shift_bias(back, front, fu, a, b, previous, state):
   return (b >> fu["k"] if previous is None else previous) + (back >> fu["k"])
 
 
-def op_sub_ofb(back, front, fu, a, b, previous):
+def op_mac_inner_product_bias(back, front, fu, a, b, previous, state):
+  state["sum"] = state.get("sum", 0) + back * front
+  return (state["sum"] + b) >> fu["k"]
+
+
+def op_sub_ofb(back, front, fu, a, b, previous, state):
   return (front - back) + b
 
 
 OPCODES = {
   0x010: (op_add, ("back", "front")),
+  0x240: (op_mac_inner_product_bias, ("back", "front")),
   0x048: (op_sub_ofb, ("back", "front")),
   0x250: (op_mac_acc_shift_bias, ("back",)),
   0x07c: (op_clp, ("back",)),
@@ -58,6 +64,6 @@ def opcode_entry(fu):
   return entry
 
 
-def execute(fu, back, front, a=0, b=0, previous=None):
+def execute(fu, back, front, a=0, b=0, previous=None, state=None):
   handler, _ = opcode_entry(fu)
-  return saturate(handler(back, front, fu, a, b, previous), fu["sat"])
+  return saturate(handler(back, front, fu, a, b, previous, {} if state is None else state), fu["sat"])

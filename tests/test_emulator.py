@@ -4,6 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from emu.fu import execute
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from emu.registers import CONTEXT_WORDS
 from emu.trace import replay
@@ -125,6 +126,26 @@ class SampleTest(unittest.TestCase):
       expected = [max(0, min(0x7fffff, max(-64, min(63, tops[pe][i] + signed[i])))) for i in range(16)]
       got = [emulator.scratchpad.read(BASE_OFFSET + pe * BUFFER_WORDS + i) for i in range(16)]
       self.assertEqual(got, expected, f"base{pe}")
+
+
+class MacTest(unittest.TestCase):
+  def stream(self, opcode, k, b, backs, fronts):
+    fu = {"opcode": opcode, "sat": 0, "round": 0, "k": k}
+    state = {}
+    out = []
+    previous = None
+    for back, front in zip(backs, fronts):
+      previous = execute(fu, back, front, 0, b, previous, state)
+      out.append(previous)
+    return out
+
+  def test_inner_product_is_a_running_sum_and_bias_is_added_to_each_output(self):
+    self.assertEqual(self.stream(0x240, 0, 0, [1, 1, 1, 1], [1, 1, 1, 1]), [1, 2, 3, 4])
+    self.assertEqual(self.stream(0x240, 0, 1, [1, 1, 1, 1], [1, 1, 1, 1]), [2, 3, 4, 5])
+    self.assertEqual(self.stream(0x240, 1, 0, [1, 2, 3], [2, 2, 2]), [1, 3, 6])
+
+  def test_acc_shift_starts_with_bias_then_adds_the_previous_result(self):
+    self.assertEqual(self.stream(0x250, 1, 20, [4, 6, 8, 10], [0, 0, 0, 0]), [12, 15, 19, 24])
 
 
 if __name__ == "__main__":
