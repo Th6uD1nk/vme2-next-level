@@ -5,7 +5,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
-from vmegc import check_on_process, default_output, merged_file, merge_globals, render, translate
+from vmeg.merge import check_on_process, merged_file, merge_globals
+from vmegc import default_output, render, translate
 
 
 def found(text):
