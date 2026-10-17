@@ -19,7 +19,7 @@ def write_agu(registers, pe):
     return None
   if view["format0"] >> 16 or view["format1"]:
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 16 low bits of the first, the bubbles, and 0 for the second, the sync is not modeled)")
-  view["start"] = view["cyc"] + view["format0"]
+  view["bubbles"] = view["format0"]
   return driver, view
 
 
@@ -28,7 +28,7 @@ def run_length(registers):
   for pe in range(4):
     found = write_agu(registers, pe)
     if found is not None:
-      length = max(length, found[1]["start"] + found[1]["elements"])
+      length = max(length, found[1]["cyc"] + found[1]["elements"])
   return length
 
 
