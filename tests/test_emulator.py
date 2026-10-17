@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from emu.agu import stream_at
 from emu.fu import execute
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from emu.registers import CONTEXT_WORDS, agu_register
+from emu.registers import CONTEXT_WORDS, agu_register, fu_register
 from emu.trace import replay
 from emu.machine import Emulator
 
@@ -160,6 +160,29 @@ class RingTest(unittest.TestCase):
     emulator.active[agu_register(0, "top", "inner0")] = (3 << 16) | 1
     emulator.active[agu_register(0, "top", "format0")] = 0x20000
     self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(10)], [0x100, 0x101, 0x102, 0x103] * 2 + [0x100, 0x101])
+
+
+class SyncTest(unittest.TestCase):
+  def run_kernel(self, sync):
+    emulator = Emulator()
+    registers = emulator.registers
+    registers[:] = [0] * 106
+    registers[28], registers[29], registers[30] = 0x4400, 0x4440, 0x3210
+    registers[fu_register(0, "primary")] = (2 << 27) | (0x010 << 12)
+    registers[fu_register(1, "primary")] = (4 << 27) | (8 << 22) | (0x010 << 12)
+    for pe, agu, mode, count in ((0, "top", 0x84000000, 7), (0, "base", 0x84000000, 11), (0, "write", 0x84000000, 14), (1, "write", 0x84060000, 11)):
+      registers[agu_register(pe, agu, "mode")] = mode
+      registers[agu_register(pe, agu, "count")] = 0x10000 | count
+    registers[agu_register(0, "write", "format0")] = 1
+    registers[agu_register(0, "write", "format1")] = 0x200000 if sync else 0
+    emulator.scratchpad.transfer(TOP_OFFSET, [1, 2, 3, 4, 5, 6, 7, 8])
+    emulator.scratchpad.transfer(TOP_OFFSET + BUFFER_WORDS, [100] * 8)
+    emulator.trigger()
+    return [emulator.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(12)]
+
+  def test_written_words_are_seen_by_a_later_fu_only_with_the_end_token(self):
+    self.assertEqual(self.run_kernel(True), [0] * 7 + [101, 102, 103, 104, 105])
+    self.assertEqual(self.run_kernel(False), [0] * 12)
 
 
 if __name__ == "__main__":

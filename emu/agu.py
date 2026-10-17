@@ -1,6 +1,6 @@
 from emu.fu import signed32
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from emu.registers import RING_TOKEN, agu_view, routing_view
+from emu.registers import END_TOKEN, RING_TOKEN, SYNC_MINIMUM, agu_view, routing_view
 
 
 def mode4_offsets(view):
@@ -17,9 +17,12 @@ def write_agu(registers, pe):
   view = agu_view(registers, driver, "write")
   if not view["enabled"]:
     return None
-  if view["format0"] >> 16 or view["format1"]:
-    raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 16 low bits of the first, the bubbles, and 0 for the second, the sync is not modeled)")
+  if view["format0"] >> 16 or view["format1"] not in (0, END_TOKEN):
+    raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 16 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
   view["bubbles"] = view["format0"]
+  view["sync"] = view["format1"] == END_TOKEN
+  if view["sync"] and 6 - view["cyc"] + view["bubbles"] < SYNC_MINIMUM:
+    raise ValueError(f"the sync of the write AGU of pe{driver} needs 6 - cyc + bubbles of at least {SYNC_MINIMUM}, it has {6 - view['cyc'] + view['bubbles']}")
   return driver, view
 
 
@@ -88,17 +91,24 @@ def stream_offsets(registers, kind, buffer):
   return [first + inside if first + inside >= group else None for inside in offsets]
 
 
-def stream_at(emulator, kind, buffer, cycle, cache):
+def stream_at(emulator, kind, buffer, cycle, cache, synced=None):
   if cycle < 0:
     raise ValueError(f"cycle {cycle} is before the start of the run")
   key = (kind, buffer)
   if key not in cache:
-    cache[key] = (emulator.read_stream(kind, buffer), stream_ring(emulator.active, kind, buffer))
-  stream, ring = cache[key]
+    offsets = stream_offsets(emulator.active, kind, buffer)
+    cache[key] = (offsets, None if offsets is None else emulator.read_words(offsets), stream_ring(emulator.active, kind, buffer))
+  offsets, stream, ring = cache[key]
   if stream is None:
     return 0
   if ring:
-    return signed32(stream[cycle % len(stream)])
-  if cycle >= len(stream):
+    index = cycle % len(stream)
+  elif cycle >= len(stream):
     return 0
-  return signed32(stream[cycle])
+  else:
+    index = cycle
+  if synced is not None and offsets[index] is not None:
+    word = synced(offsets[index], cycle)
+    if word is not None:
+      return signed32(word)
+  return signed32(stream[index])

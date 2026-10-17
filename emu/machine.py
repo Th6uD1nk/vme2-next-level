@@ -96,12 +96,14 @@ class Emulator:
         if name == "STAGING" and number.isdigit() and int(number) < STAGING_COUNT:
           pending.append(("primary", int(number)) if int(number) < 4 else ("secondary", int(number) - 4))
 
+    synced = self.synced_reader(self.synced_words())
+
     def operand(source, cycle):
       name, _, number = source.partition("_")
       if name == "STAGING" and number.isdigit() and int(number) < STAGING_COUNT:
         return self.staging_read(int(number), cycle)
       if name in ("TOP", "BASE") and number.isdigit():
-        return stream_at(self, name.lower(), int(number), cycle, cache)
+        return stream_at(self, name.lower(), int(number), cycle, cache, synced)
       raise ValueError(f"the operand source {source} is not modeled")
 
     for cycle in range(self.cycles):
@@ -187,9 +189,39 @@ class Emulator:
       raise ValueError(f"memory address {address:#x} is not aligned on 4 bytes")
     return address & PHYSICAL_MASK
 
+  def read_words(self, offsets):
+    return [0 if offset is None else self.scratchpad.read(offset) for offset in offsets]
+
   def read_stream(self, kind, buffer):
     offsets = stream_offsets(self.active, kind, buffer)
-    return None if offsets is None else [0 if offset is None else self.scratchpad.read(offset) for offset in offsets]
+    return None if offsets is None else self.read_words(offsets)
+
+  def synced_words(self):
+    words = {}
+    for pe in range(4):
+      found = write_agu(self.active, pe)
+      if found is None or not found[1]["sync"]:
+        continue
+      driver, view = found
+      first = BASE_OFFSET + pe * BUFFER_WORDS
+      staging = pe + FU_KINDS[output_fu(self.active[SWEN_REGISTER], pe)]
+      for j, inside in enumerate(agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")):
+        words[first + inside] = (staging, view, j)
+    return words
+
+  def synced_reader(self, words):
+    def synced(address, cycle):
+      found = words.get(address)
+      if found is None:
+        return None
+      staging, view, j = found
+      if j < view["bubbles"]:
+        return 0
+      slot = view["cyc"] + j - view["bubbles"] - STAGING_LAG
+      if slot < 0:
+        return 0
+      return self.staging_read(staging, slot) if slot - STAGING_LAG < cycle else None
+    return synced
 
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:
