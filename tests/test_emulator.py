@@ -5,7 +5,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from vmeemu import CONTEXT_WORDS, Emulator, replay
+from emu.registers import CONTEXT_WORDS
+from vmeemu import Emulator, replay
 
 
 class ReplayTest(unittest.TestCase):
