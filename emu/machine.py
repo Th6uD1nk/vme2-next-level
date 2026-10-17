@@ -189,7 +189,7 @@ class Emulator:
 
   def read_stream(self, kind, buffer):
     offsets = stream_offsets(self.active, kind, buffer)
-    return None if offsets is None else [self.scratchpad.read(offset) for offset in offsets]
+    return None if offsets is None else [0 if offset is None else self.scratchpad.read(offset) for offset in offsets]
 
   def load_context(self, words):
     if len(words) != CONTEXT_WORDS:

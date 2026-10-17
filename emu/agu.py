@@ -69,15 +69,18 @@ def stream_offsets(registers, kind, buffer):
   if found is None:
     return None
   label, view = found
-  first = (TOP_OFFSET if kind == "top" else BASE_OFFSET) + buffer * BUFFER_WORDS
+  group = TOP_OFFSET if kind == "top" else BASE_OFFSET
+  first = group + buffer * BUFFER_WORDS
   if view["format0"] == RING_TOKEN:
     offsets = ring_offsets(view)
-    for inside in offsets:
-      if not 0 <= inside < BUFFER_WORDS:
-        raise ValueError(f"{label} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
+  elif view["mode"] in AGU_MODES:
+    offsets = AGU_MODES[view["mode"]](view)
   else:
-    offsets = agu_inside_offsets(view, label, f"{kind}{buffer}", "reads")
-  return [first + inside for inside in offsets]
+    raise ValueError(f"the mode {view['mode']} of {label} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
+  for inside in offsets:
+    if inside >= BUFFER_WORDS:
+      raise ValueError(f"{label} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
+  return [first + inside if first + inside >= group else None for inside in offsets]
 
 
 def stream_at(emulator, kind, buffer, cycle, cache):
