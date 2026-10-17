@@ -251,3 +251,7 @@ def agu_register(pe, agu, field):
 
 def decode_count(value):
   return value >> 16, (value & 0xffff) + 1
+
+
+def decode_mode(value):
+  return bool(value >> 31), (value >> 24) & 0xf, value & 0x70ffffff
