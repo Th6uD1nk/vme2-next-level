@@ -324,6 +324,13 @@ def decode_mux(register):
   return decode_selector(register >> MUX_FRONT_SHIFT & 0x1f), decode_selector(register >> MUX_BACK_SHIFT & 0x1f)
 
 
+def mode4_offsets(view):
+  return [view["offset"] + i * view["step"] for i in range(view["elements"])]
+
+
+AGU_MODES = {4: mode4_offsets}
+
+
 def stream_offsets(registers, kind, buffer):
   if kind not in ("top", "base"):
     raise ValueError(f"unknown read agu '{kind}' (top, base)")
@@ -335,12 +342,11 @@ def stream_offsets(registers, kind, buffer):
   view = agu_view(registers, driver, kind)
   if not view["enabled"]:
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
-  if view["mode"] != 4:
-    raise ValueError(f"the mode {view['mode']} of the {kind} AGU of pe{driver} is not modeled, only the mode 4")
+  if view["mode"] not in AGU_MODES:
+    raise ValueError(f"the mode {view['mode']} of the {kind} AGU of pe{driver} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
   first = (TOP_OFFSET if kind == "top" else BASE_OFFSET) + buffer * BUFFER_WORDS
   offsets = []
-  for i in range(view["elements"]):
-    inside = view["offset"] + i * view["step"]
+  for inside in AGU_MODES[view["mode"]](view):
     if not 0 <= inside < BUFFER_WORDS:
       raise ValueError(f"the {kind} AGU of pe{driver} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
     offsets.append(first + inside)
