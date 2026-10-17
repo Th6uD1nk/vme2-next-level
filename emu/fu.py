@@ -20,27 +20,32 @@ def fu_operands(registers, pe, kind):
   return signed32(registers[first]), signed32(registers[first + 1])
 
 
-def op_add(back, front, fu, a, b):
+def op_add(back, front, fu, a, b, previous):
   if fu["round"] and fu["k"]:
     raise ValueError("the rounding bit of an ADD with a shift is not modeled")
   return (back + front) >> fu["k"]
 
 
-def op_clp(back, front, fu, a, b):
+def op_clp(back, front, fu, a, b, previous):
   return max(b, min(a, back))
 
 
-def op_and(back, front, fu, a, b):
+def op_and(back, front, fu, a, b, previous):
   return back & front
 
 
-def op_sub_ofb(back, front, fu, a, b):
+def op_mac_acc_shift_bias(back, front, fu, a, b, previous):
+  return (b >> fu["k"] if previous is None else previous) + (back >> fu["k"])
+
+
+def op_sub_ofb(back, front, fu, a, b, previous):
   return (front - back) + b
 
 
 OPCODES = {
   0x010: (op_add, ("back", "front")),
   0x048: (op_sub_ofb, ("back", "front")),
+  0x250: (op_mac_acc_shift_bias, ("back",)),
   0x07c: (op_clp, ("back",)),
   0x0c0: (op_and, ("back", "front")),
 }
@@ -53,6 +58,6 @@ def opcode_entry(fu):
   return entry
 
 
-def execute(fu, back, front, a=0, b=0):
+def execute(fu, back, front, a=0, b=0, previous=None):
   handler, _ = opcode_entry(fu)
-  return saturate(handler(back, front, fu, a, b), fu["sat"])
+  return saturate(handler(back, front, fu, a, b, previous), fu["sat"])

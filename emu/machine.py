@@ -111,7 +111,9 @@ class Emulator:
         slot = cycle + STAGING_LAG
         if slot >= STAGING_WORDS:
           raise ValueError(f"the run is longer than the staging, the slot {slot} does not exist")
-        self.staging_write(pe + FU_KINDS[kind], slot, execute(fu, back, front, a, b))
+        staging = pe + FU_KINDS[kind]
+        previous = self.staging_read(staging, slot - 1) if cycle else None
+        self.staging_write(staging, slot, execute(fu, back, front, a, b, previous))
 
   def collect_writes(self):
     writes = []
