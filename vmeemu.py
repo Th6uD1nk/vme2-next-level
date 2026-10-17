@@ -16,6 +16,8 @@ TRIGGER = 0x18
 CLEAR_LOCAL_BUFFER = 0x21
 MEM_TO_16 = 0x52
 MEM_FROM_16 = 0x5a
+RING_TO_SCRATCHPAD = 0x40
+RING_TO_MEMORY = 0x48
 DMAC_COUNT = 5
 DMAC_SCRATCHPAD_OFFSET = 6
 BUFFER_WORDS = 0x800
@@ -132,6 +134,10 @@ class Emulator:
       self.load_context(self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], CONTEXT_WORDS))
     elif value == CLEAR_LOCAL_BUFFER:
       self.clear_local_buffer()
+    elif value == RING_TO_SCRATCHPAD:
+      self.ring_to_scratchpad()
+    elif value == RING_TO_MEMORY:
+      self.ring_to_memory()
     elif value == MEM_TO_16:
       self.mem_to_16()
     elif value == MEM_FROM_16:
@@ -147,6 +153,15 @@ class Emulator:
 
   def clear_local_buffer(self):
     self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], [0] * self.transfer_count())
+
+  def ring_to_scratchpad(self):
+    words = self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], self.transfer_count())
+    self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], words)
+
+  def ring_to_memory(self):
+    offset = self.dmac[DMAC_SCRATCHPAD_OFFSET]
+    words = [self.scratchpad.read(offset + i) for i in range(self.transfer_count())]
+    self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], words)
 
   def mem_to_16(self):
     values = []
