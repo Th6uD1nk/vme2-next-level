@@ -114,6 +114,7 @@ class Emulator:
     self.active = [0] * REGISTER_COUNT
     self.memory = {}
     self.staging = [[0] * STAGING_WORDS for _ in range(STAGING_COUNT)]
+    self.cycles = 0
 
   def locate(self, address):
     for first, count, registers in ((DATAPATH_BASE, REGISTER_COUNT, self.registers), (DMAC_BASE, DMAC_REGISTER_COUNT, self.dmac)):
@@ -185,15 +186,13 @@ class Emulator:
 
   def run(self):
     cache = {}
-    routing = routing_view(self.active, "write")
+    self.cycles = run_length(self.active)
     writes = []
     for pe in range(4):
-      driver = routing[pe]
-      if driver > 3:
-        raise ValueError(f"the write routing {driver} of the output of pe{pe} is not modeled")
-      view = agu_view(self.active, driver, "write")
-      if not view["enabled"]:
+      found = write_agu(self.active, pe)
+      if found is None:
         continue
+      driver, view = found
       first = BASE_OFFSET + pe * BUFFER_WORDS
       offsets = agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")
       for element, inside in enumerate(offsets):
@@ -391,6 +390,23 @@ def mode4_offsets(view):
 
 
 AGU_MODES = {4: mode4_offsets}
+
+
+def write_agu(registers, pe):
+  driver = routing_view(registers, "write")[pe]
+  if driver > 3:
+    raise ValueError(f"the write routing {driver} of the output of pe{pe} is not modeled")
+  view = agu_view(registers, driver, "write")
+  return (driver, view) if view["enabled"] else None
+
+
+def run_length(registers):
+  length = 0
+  for pe in range(4):
+    found = write_agu(registers, pe)
+    if found is not None:
+      length = max(length, found[1]["cyc"] + found[1]["elements"])
+  return length
 
 
 def agu_inside_offsets(view, label, buffer, verb):
