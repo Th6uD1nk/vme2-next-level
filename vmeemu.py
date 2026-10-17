@@ -215,6 +215,21 @@ class Emulator:
           raise ValueError(f"the run is longer than the staging, the slot {slot} does not exist")
         self.staging_write(pe + FU_KINDS[kind], slot, execute(fu, back, front, a, b))
 
+  def collect_writes(self):
+    writes = []
+    for pe in range(4):
+      found = write_agu(self.active, pe)
+      if found is None:
+        continue
+      driver, view = found
+      first = BASE_OFFSET + pe * BUFFER_WORDS
+      offsets = agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")
+      staging = pe + FU_KINDS[output_fu(self.active[SWEN_REGISTER], pe)]
+      for j, inside in enumerate(offsets):
+        slot = view["cyc"] + j - STAGING_LAG
+        writes.append((first + inside, self.staging_read(staging, slot) if slot >= 0 else 0))
+    return writes
+
   def trigger(self):
     self.active[:] = self.registers
     self.run()
