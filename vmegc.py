@@ -7,19 +7,9 @@ from vmeg.blocks import find_blocks
 from vmeg.expr import to_c
 from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers, check_decorators, check_global_sources, check_local_sources, global_lines, on_process_bodies, on_process_edit, passthrough
 from vmeg.kernel import generate
+from vmeg.names import INFO_SUFFIX, SUFFIXES, globals_header
 from vmeg.parser import upload_text
 from vmeg.scanner import tokens
-
-SUFFIXES = ((".vmeg.cpp", ".cpp"), (".vmeg.c", ".c"))
-INFO_SUFFIX = ".vmeg-info"
-
-
-def globals_header(path):
-  name = os.path.basename(path)
-  for source, _ in SUFFIXES:
-    if name.endswith(source):
-      return name[:-len(source)] + ".gen.h"
-  return os.path.splitext(name)[0] + ".gen.h"
 
 
 def default_output(path):
