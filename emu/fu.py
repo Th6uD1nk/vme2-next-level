@@ -34,7 +34,16 @@ def op_and(back, front, fu, a, b):
   return back & front
 
 
-OPCODES = {0x010: (op_add, ("back", "front")), 0x07c: (op_clp, ("back",)), 0x0c0: (op_and, ("back", "front"))}
+def op_sub_ofb(back, front, fu, a, b):
+  return (front - back) + b
+
+
+OPCODES = {
+  0x010: (op_add, ("back", "front")),
+  0x048: (op_sub_ofb, ("back", "front")),
+  0x07c: (op_clp, ("back",)),
+  0x0c0: (op_and, ("back", "front")),
+}
 
 
 def opcode_entry(fu):
