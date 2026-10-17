@@ -3,11 +3,11 @@ import os
 import re
 import sys
 
-from vmeg.blocks import body_tokens, decorator_names, find_blocks, kernel_name
+from vmeg.blocks import find_blocks
 from vmeg.expr import to_c
-from vmeg.host import check_buffers, check_decorators, check_global_sources, check_local_sources
+from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers, check_decorators, check_global_sources, check_local_sources, global_lines, on_process_bodies, on_process_edit, passthrough
 from vmeg.kernel import generate
-from vmeg.parser import Parser, kernel_statements, parse_body, upload_call, upload_text
+from vmeg.parser import upload_text
 from vmeg.scanner import tokens
 
 SUFFIXES = ((".vmeg.cpp", ".cpp"), (".vmeg.c", ".c"))
@@ -28,149 +28,6 @@ def default_output(path):
     if name.endswith(source):
       return name[:-len(source)] + result
   raise SystemExit("vmegc: input must end with .vmeg.c or .vmeg.cpp (or pass -o)")
-
-
-BUFFER_TYPE = "u32 __attribute__((aligned(64)))"
-
-
-def passthrough(text, begin, end, edits):
-  out = []
-  pos = begin
-  for at, length, replacement in edits:
-    if begin <= at < end:
-      out.append(text[pos:at])
-      out.append(replacement)
-      pos = at + length
-  out.append(text[pos:end])
-  return "".join(out)
-
-
-def function_body(text, block):
-  begin = block[3]
-  parens = 0
-  open_at = None
-  depth = 0
-  declaration = None
-  pending = False
-  for kind, value, start, _ in tokens(text[begin:]):
-    start += begin
-    if open_at is None:
-      if kind == "punct" and value == "(":
-        parens += 1
-      elif kind == "punct" and value == ")":
-        parens -= 1
-      elif kind == "punct" and value == "{" and parens == 0:
-        open_at = start
-        depth = 1
-      continue
-    if kind == "punct" and value == "{":
-      depth += 1
-    elif kind == "punct" and value == "}":
-      depth -= 1
-      if depth == 0:
-        break
-    elif kind == "ident" and value == "Buffer" and depth == 1:
-      pending = True
-    elif kind == "punct" and value == ";" and depth == 1 and pending:
-      declaration = start + 1
-      pending = False
-  return (declaration if declaration is not None else open_at + 1), open_at + 1
-
-
-def on_process_bodies(toks):
-  bodies = []
-  depth = 0
-  i = 0
-  size = len(toks)
-  open_body = False
-  while i < size:
-    kind, value, start, end = toks[i]
-    if kind == "punct" and value == "{":
-      depth += 1
-    elif kind == "punct" and value == "}":
-      depth -= 1
-      if depth == 0 and open_body:
-        bodies[-1][1] = start
-        open_body = False
-    elif kind == "ident" and value == "meLibOnProcess" and depth == 0 and i + 1 < size and toks[i + 1][1] == "(":
-      nest = 0
-      j = i + 1
-      while j < size:
-        if toks[j][0] == "punct" and toks[j][1] == "(":
-          nest += 1
-        elif toks[j][0] == "punct" and toks[j][1] == ")":
-          nest -= 1
-          if nest == 0:
-            break
-        j += 1
-      if j + 1 < size and toks[j + 1][0] == "punct" and toks[j + 1][1] == "{":
-        bodies.append([toks[j + 1][3], toks[-1][3]])
-        open_body = True
-        depth += 1
-        i = j + 1
-    i += 1
-  return bodies
-
-
-def global_lines(text, blocks, cache):
-  lines = []
-  for block in blocks:
-    if block[0] != "kernel":
-      continue
-    for statement in kernel_statements(text, block, cache):
-      if statement[0] == "buffers" and statement[1] == "global":
-        lines += statement[2]
-  return lines
-
-
-def local_uploads(text, block):
-  body, limit = body_tokens(text, block)
-  calls = []
-  for statement in parse_body(Parser(text, body, limit)):
-    if statement[0] == "buffers" and statement[1] == "local":
-      calls += [upload_call(entry) for entry in statement[2]]
-  return calls
-
-
-def call_edits(text, blocks, quoted, on_process_starts):
-  kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
-  edits = []
-  merged = set()
-  for block in blocks:
-    if block[0] != "decorator":
-      continue
-    line = text.count("\n", 0, block[1]) + 1
-    lines = ["vmeLibEnable();"]
-    for name in decorator_names(text, block):
-      words = [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])]
-      if "direct" not in words[2:]:
-        raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
-      lines += local_uploads(text, kernels[name])
-      lines.append(f"{name}();")
-    lines.append("vmeLibDisable();")
-    at, start = function_body(text, block)
-    if start in on_process_starts:
-      lines[1:1] = ["vmeLibWipe();", "vmegUploadGlobals();"]
-      merged.add(start)
-    calls = "".join(f"\n  {code}" for code in lines)
-    resume = text.count("\n", 0, at - 1) + 1
-    edits.append((at, 0, f'{calls}\n#line {resume} "{quoted}"\n'))
-  return edits, merged
-
-
-GLOBALS_PROTOTYPE = "static void vmegUploadGlobals(void);\n"
-
-
-def on_process_edit(text, toks, quoted):
-  bodies = on_process_bodies(toks)
-  if len(bodies) > 1:
-    line = text.count("\n", 0, bodies[1][0]) + 1
-    raise ValueError(f"line {line}: meLibOnProcess is defined twice in this file")
-  if not bodies:
-    return None
-  at, end = bodies[0]
-  resume = text.count("\n", 0, at - 1) + 1
-  return (at, 0, f'\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
 
 
 def summary(path, text, toks, blocks, cache):
