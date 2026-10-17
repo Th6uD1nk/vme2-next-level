@@ -16,6 +16,8 @@ TRIGGER = 0x18
 DMAC_STATUS = 0
 VME_DONE = 0x800
 CLEAR_LOCAL_BUFFER = 0x21
+MEM_TO_16 = 0x52
+MEM_FROM_16 = 0x5a
 DMAC_COUNT = 5
 DMAC_SCRATCHPAD_OFFSET = 6
 BUFFER_WORDS = 0x800
@@ -132,15 +134,37 @@ class Emulator:
       self.load_context(self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], CONTEXT_WORDS))
     elif value == CLEAR_LOCAL_BUFFER:
       self.clear_local_buffer()
+    elif value == MEM_TO_16:
+      self.mem_to_16()
+    elif value == MEM_FROM_16:
+      self.mem_from_16()
     elif value == TRIGGER:
       self.active[:] = self.registers
       self.dmac[DMAC_STATUS] |= VME_DONE
 
-  def clear_local_buffer(self):
+  def transfer_count(self):
     count = self.dmac[DMAC_COUNT]
     if count >> 16:
       raise ValueError(f"the count register {count:#x} has bits above the 16 low bits, not modeled")
-    self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], [0] * (count + 1))
+    return count + 1
+
+  def clear_local_buffer(self):
+    self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], [0] * self.transfer_count())
+
+  def mem_to_16(self):
+    values = []
+    for word in self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], self.transfer_count()):
+      values += [word & 0xffff, word >> 16]
+    self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], values)
+
+  def mem_from_16(self):
+    offset = self.dmac[DMAC_SCRATCHPAD_OFFSET]
+    words = []
+    for i in range(self.transfer_count()):
+      low = self.scratchpad.read(offset + 2 * i) & 0xffff
+      high = self.scratchpad.read(offset + 2 * i + 1) & 0xffff
+      words.append(low | high << 16)
+    self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], words)
 
   def put_memory(self, address, words):
     first = self.memory_address(address)
