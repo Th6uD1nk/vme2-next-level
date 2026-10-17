@@ -126,7 +126,7 @@ class Emulator:
       offsets = agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")
       staging = pe + FU_KINDS[output_fu(self.active[SWEN_REGISTER], pe)]
       for j, inside in enumerate(offsets):
-        slot = view["cyc"] + j - STAGING_LAG
+        slot = view["start"] + j - STAGING_LAG
         writes.append((first + inside, self.staging_read(staging, slot) if slot >= 0 else 0))
     return writes
 
