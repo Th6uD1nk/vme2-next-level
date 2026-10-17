@@ -154,13 +154,16 @@ class Emulator:
     elif value == MEM_FROM_16:
       self.mem_from_16()
     elif value == TRIGGER:
-      self.active[:] = self.registers
+      self.trigger()
 
   def transfer_count(self):
     count = self.dmac[DMAC_COUNT]
     if count >> 16:
       raise ValueError(f"the count register {count:#x} has bits above the 16 low bits, not modeled")
     return count + 1
+
+  def trigger(self):
+    self.active[:] = self.registers
 
   def clear_local_buffer(self):
     self.scratchpad.transfer(self.dmac[DMAC_SCRATCHPAD_OFFSET], [0] * self.transfer_count())
