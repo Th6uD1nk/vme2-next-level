@@ -1,5 +1,5 @@
-import vmegc
 from vmeg.blocks import find_blocks, kernel_name
+from vmeg.parser import kernel_statements
 
 SCRATCHPAD_BASE = 0x44000000
 DATAPATH_BASE = 0x440f8000
@@ -82,7 +82,7 @@ def load_kernel(text, name=None):
   if name not in kernels:
     known = ", ".join(kernels) if kernels else "there is no kernel in this file"
     raise ValueError(f"unknown kernel '{name}' ({known})")
-  return vmegc.kernel_statements(text, kernels[name], {})
+  return kernel_statements(text, kernels[name], {})
 
 
 class Emulator:

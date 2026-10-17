@@ -1,5 +1,8 @@
 import re
 
+from vmeg.blocks import body_tokens
+from vmeg.expr import fold, to_c
+
 ICN_NAMES = {
   "swen": "SWEN",
   "top": "AGU_TOP",
@@ -18,6 +21,8 @@ AGU_PARAMS = {
 }
 
 PE_NAME = re.compile(r"pe([0-9]+)$")
+
+BUFFER_NAME = re.compile(r"(top|base)([0-3])$")
 
 
 class Parser:
@@ -207,3 +212,151 @@ def parse_for_header(p):
   high = parse_expr(p)
   p.expect("{")
   return ("for", var, low, high)
+
+
+def buffer_ref(expr):
+  if expr[0] == "name":
+    m = BUFFER_NAME.match(expr[1])
+    if m:
+      return f"{m.group(1).upper()}_{m.group(2)}"
+    return None
+  if expr[0] == "index" and expr[1] in ("top", "base"):
+    if expr[2][0] != "num":
+      raise ValueError(f"{expr[1]}[...]: buffer index must be a number")
+    if not 0 <= expr[2][1] <= 3:
+      raise ValueError(f"{expr[1]}[{expr[2][1]}]: buffer index out of range (0 to 3)")
+    return f"{expr[1].upper()}_{expr[2][1]}"
+  return None
+
+
+def parse_buffer_target(p):
+  start = p.peek()
+  if start is None:
+    p.error("expected a buffer (top0 to top3, base0 to base3)")
+  try:
+    ref = buffer_ref(fold(parse_expr(p), {}))
+  except ValueError as e:
+    p.error(str(e), start)
+  if ref is None:
+    p.error("expected a buffer (top0 to top3, base0 to base3)", start)
+  return ref
+
+
+def parse_buffer_count(p):
+  p.expect(",")
+  start = p.peek()
+  count = fold(parse_expr(p), {})
+  if count[0] != "num":
+    p.error("the number of words must be a number", start)
+  if count[1] < 1:
+    p.error("the number of words must be at least 1", start)
+  p.expect("words")
+  return count[1]
+
+
+def parse_buffer_offset(p):
+  tok = p.peek()
+  after = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+  if tok is None or tok[1] != "," or after is None or after[1] != "at":
+    return None
+  p.expect(",")
+  p.expect("at")
+  start = p.peek()
+  offset = fold(parse_expr(p), {})
+  if offset[0] == "num" and offset[1] < 0:
+    p.error("the offset must not be negative", start)
+  return offset
+
+
+def parse_buffer_source(p):
+  p.expect(",")
+  p.expect("from")
+  return p.ident()
+
+
+def parse_buffers(p, closed=False):
+  entries = []
+  while True:
+    if closed:
+      if p.accept("}"):
+        break
+      if p.peek() is None:
+        p.error("expected '}'")
+    elif p.peek() is None:
+      break
+    line = p.text.count("\n", 0, p.peek()[2]) + 1
+    target = parse_buffer_target(p)
+    count = parse_buffer_count(p)
+    offset = parse_buffer_offset(p)
+    source = parse_buffer_source(p)
+    p.expect(";")
+    entries.append((target, count, offset, source, line))
+  return entries
+
+
+def parse_buffers_block(p):
+  qualifier = p.ident()
+  p.expect("buffers")
+  p.expect("{")
+  return ("buffers", qualifier, parse_buffers(p, True))
+
+
+def upload_text(target, count, offset, source):
+  kind, index = target.split("_")
+  destination = f"VME_{kind}_BUFF{index}_WOFF"
+  if offset:
+    destination += f" + {offset}"
+  return f"vmeLibMemoryToRingBuffer((void*){source}, {destination}, {count});"
+
+
+def upload_call(entry):
+  target, count, offset, source, _ = entry
+  return upload_text(target, count, "" if offset is None else to_c(offset), source)
+
+
+def parse_for(p):
+  _, var, low, high = parse_for_header(p)
+  body = []
+  while not p.accept("}"):
+    if p.peek() is None:
+      p.error("expected '}'")
+    start = p.peek()
+    statement = parse_statement(p)
+    if statement[0] == "buffers":
+      p.error("buffers cannot be inside a for", start)
+    body.append(statement)
+  return ("for", var, low, high, body)
+
+
+def parse_statement(p):
+  tok = p.peek()
+  line = p.text.count("\n", 0, tok[2]) + 1
+  if tok[0] == "ident":
+    if tok[1] == "for":
+      return parse_for(p) + (line,)
+    if tok[1] == "icn":
+      return parse_icn(p) + (line,)
+    if tok[1] == "const":
+      return parse_const(p) + (line,)
+    if tok[1] == "pe" or PE_NAME.match(tok[1]):
+      return parse_pe_statement(p) + (line,)
+    if tok[1] in ("global", "local"):
+      return parse_buffers_block(p) + (line,)
+    if tok[1] == "buffers":
+      p.error("buffers needs a qualifier: global buffers or local buffers")
+  p.error(f"unknown statement '{tok[1]}'")
+
+
+def parse_body(p):
+  statements = []
+  while p.peek() is not None:
+    statements.append(parse_statement(p))
+  return statements
+
+
+def kernel_statements(text, block, cache):
+  statements = cache.get(block[1])
+  if statements is None:
+    body, limit = body_tokens(text, block)
+    statements = cache[block[1]] = parse_body(Parser(text, body, limit))
+  return statements
