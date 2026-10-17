@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vmeemu import CONTEXT_WORDS, Emulator, replay
+from vmeemu import BASE_OFFSET, BUFFER_WORDS, CONTEXT_WORDS, TOP_OFFSET, Emulator, replay
 
 
 class ReplayTest(unittest.TestCase):
@@ -108,6 +108,20 @@ class SampleTest(unittest.TestCase):
     expected = [SAMPLE_REGISTERS.get(index, 0) for index in range(len(emulator.registers))]
     self.assertEqual(emulator.registers, expected)
     self.assertEqual(emulator.active, expected)
+
+  def test_sample_results_in_the_base_buffers(self):
+    tops = [[0x10 * (n + 1) + i for i in range(16)] for n in range(4)]
+    base0 = [0x01, 0x10, 0x01, 0x800001, 0x01, 0x20, 0x01, 0x800001, 0x01, 0x30, 0x01, 0x800001, 0x01, 0x40, 0x01, 0x800001]
+    emulator = Emulator()
+    for n in range(4):
+      emulator.scratchpad.transfer(TOP_OFFSET + n * BUFFER_WORDS, tops[n])
+    emulator.scratchpad.transfer(BASE_OFFSET + 32, base0)
+    replay(emulator, SAMPLE_KERNEL_TRACE)
+    signed = [word - 0x1000000 if word & 0x800000 else word for word in base0]
+    for pe in range(4):
+      expected = [max(0, min(0x7fffff, max(-64, min(63, tops[pe][i] + signed[i])))) for i in range(16)]
+      got = [emulator.scratchpad.read(BASE_OFFSET + pe * BUFFER_WORDS + i) for i in range(16)]
+      self.assertEqual(got, expected, f"base{pe}")
 
 
 if __name__ == "__main__":
