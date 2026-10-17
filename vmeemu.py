@@ -376,7 +376,9 @@ def signed32(value):
 
 
 def op_add(back, front, fu):
-  return back + front
+  if fu["round"] and fu["k"]:
+    raise ValueError("the rounding bit of an ADD with a shift is not modeled")
+  return (back + front) >> fu["k"]
 
 
 OPCODES = {0x010: op_add}
