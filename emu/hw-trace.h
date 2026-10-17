@@ -44,12 +44,23 @@ inline void hwTraceMemory(u32 address, const u32* words, int count) {
 struct HwRef {
   u32 address;
 
+  bool isRegister() const {
+    return address >= 0x44000000 && address < 0x44100000;
+  }
+
   operator u32() const {
+    if (!isRegister()) {
+      return *(volatile u32*)(uintptr_t)address;
+    }
     std::map<u32, u32>::const_iterator found = hwTraceLast().find(address);
     return found == hwTraceLast().end() ? 0 : found->second;
   }
 
   HwRef& operator=(u32 value) {
+    if (!isRegister()) {
+      *(volatile u32*)(uintptr_t)address = value;
+      return *this;
+    }
     fprintf(hwTraceFile(), "W 0x%x 0x%x\n", address, value);
     hwTraceLast()[address] = value;
     return *this;

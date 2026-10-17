@@ -12,8 +12,10 @@ AGU_MODES = {4: mode4_offsets}
 
 def write_agu(registers, pe):
   driver = routing_view(registers, "write")[pe]
-  if driver > 3:
-    raise ValueError(f"the write routing {driver} of the output of pe{pe} is not modeled")
+  if driver == 4:
+    return None
+  if driver > 4:
+    raise ValueError(f"the write routing {driver} of the output of pe{pe} is not modeled (modeled: 0 to 3 and 4, nothing writes)")
   view = agu_view(registers, driver, "write")
   if not view["enabled"]:
     return None
