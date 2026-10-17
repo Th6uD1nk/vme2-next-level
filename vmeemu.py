@@ -21,6 +21,7 @@ RING_TO_MEMORY = 0x48
 DMAC_COUNT = 5
 DMAC_SCRATCHPAD_OFFSET = 6
 SWEN_REGISTER = 27
+ROUTING_REGISTERS = {"top": 28, "base": 29, "write": 30}
 AGU_FIRST_REGISTER = 33
 AGU_REGISTERS_PER_PE = 18
 AGU_KINDS = {"top": 0, "base": 6, "write": 12}
@@ -280,3 +281,16 @@ def output_fu(value, pe):
   if not 0 <= pe <= 3:
     raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
   return "secondary" if decode_swen(value)[pe] else "primary"
+
+
+def decode_routing(value):
+  return [value >> (4 * n) & 0xf for n in range(4)]
+
+
+def routing_view(registers, kind):
+  if kind not in ROUTING_REGISTERS:
+    raise ValueError(f"unknown routing '{kind}' ({', '.join(ROUTING_REGISTERS)})")
+  nibbles = decode_routing(registers[ROUTING_REGISTERS[kind]])
+  if kind == "write":
+    return nibbles
+  return [nibble if nibble < 4 else "clear" for nibble in nibbles]
