@@ -13,8 +13,6 @@ DMAC_MEMORY_ADDRESS = 4
 CONTEXT_TRANSFER_MASK = 0x4c
 CONTEXT_TRANSFER_BITS = 0x0c
 TRIGGER = 0x18
-DMAC_STATUS = 0
-VME_DONE = 0x800
 CLEAR_LOCAL_BUFFER = 0x21
 MEM_TO_16 = 0x52
 MEM_FROM_16 = 0x5a
@@ -140,7 +138,6 @@ class Emulator:
       self.mem_from_16()
     elif value == TRIGGER:
       self.active[:] = self.registers
-      self.dmac[DMAC_STATUS] |= VME_DONE
 
   def transfer_count(self):
     count = self.dmac[DMAC_COUNT]
