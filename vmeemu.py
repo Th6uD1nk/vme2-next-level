@@ -363,3 +363,9 @@ def decode_fu(register):
     "round": register >> 6 & 1,
     "k": register & 0x3f,
   }
+
+
+def saturate(value, n):
+  if n == 0:
+    return value
+  return max(-(1 << (n - 1)), min((1 << (n - 1)) - 1, value))
