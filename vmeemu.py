@@ -490,6 +490,18 @@ def execute(fu, back, front, a=0, b=0):
   return saturate(handler(back, front, fu, a, b), fu["sat"])
 
 
+def stream_at(emulator, kind, buffer, cycle, cache):
+  if cycle < 0:
+    raise ValueError(f"cycle {cycle} is before the start of the run")
+  key = (kind, buffer)
+  if key not in cache:
+    cache[key] = emulator.read_stream(kind, buffer)
+  stream = cache[key]
+  if stream is None or cycle >= len(stream):
+    return 0
+  return signed32(stream[cycle])
+
+
 def operand_value(source, element, emulator, cache, staging):
   kind, _, number = source.partition("_")
   if kind == "STAGING" and number.isdigit():
