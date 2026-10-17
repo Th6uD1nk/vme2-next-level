@@ -369,3 +369,40 @@ def saturate(value, n):
   if n == 0:
     return value
   return max(-(1 << (n - 1)), min((1 << (n - 1)) - 1, value))
+
+
+def signed32(value):
+  return value - (1 << 32) if value & 0x80000000 else value
+
+
+def op_add(back, front, fu):
+  return back + front
+
+
+OPCODES = {0x010: op_add}
+
+
+def execute(fu, back, front):
+  handler = OPCODES.get(fu["opcode"])
+  if handler is None:
+    raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in OPCODES)})")
+  return saturate(handler(back, front, fu), fu["sat"])
+
+
+def operand_value(source, element, emulator, cache, staging):
+  kind, _, number = source.partition("_")
+  if kind == "STAGING" and number.isdigit():
+    if int(number) not in staging:
+      raise ValueError(f"{source} is not available yet")
+    return staging[int(number)]
+  if kind not in ("TOP", "BASE") or not number.isdigit():
+    raise ValueError(f"the operand source {source} is not modeled")
+  key = (kind.lower(), int(number))
+  if key not in cache:
+    cache[key] = emulator.read_stream(*key)
+  stream = cache[key]
+  if stream is None:
+    return 0
+  if element >= len(stream):
+    raise ValueError(f"the stream of {source} has {len(stream)} elements, the element {element} is missing")
+  return signed32(stream[element])
