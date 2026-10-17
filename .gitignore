@@ -3,3 +3,4 @@ saturate-clamp.c
 build
 __pycache__/
 *.pyc
+reverse-notes.txt
