@@ -132,18 +132,19 @@ def check_buffers(text, toks, blocks):
       raise ValueError(f"line {line}: Buffer must be volatile (volatile Buffer name[...])")
 
 
-def check_decorators(text, blocks):
+def check_decorators(text, blocks, registry):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
+  known = registry["kernels"]
   decorated = set()
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
       continue
     line = text.count("\n", 0, block[1]) + 1
     for name in decorator_names(text, block):
-      if name not in kernels:
-        known = f"kernels: {', '.join(kernels)}" if kernels else "there is no kernel in this file"
-        raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({known})")
-      if block[0] == "kernel-block" and "direct" not in [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])][2:]:
+      if name not in known:
+        names = f"kernels: {', '.join(known)}" if known else "there is no kernel in the project"
+        raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({names})")
+      if not known[name][0]["direct"]:
         raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
       decorated.add(name)
   for name, block in kernels.items():
@@ -152,7 +153,7 @@ def check_decorators(text, blocks):
       raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or a block @kernel {name} {{ ... }}")
 
 
-def check_local_sources(text, blocks, registry):
+def check_local_sources(text, blocks, registry, path):
   functions = {}
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
@@ -165,14 +166,13 @@ def check_local_sources(text, blocks, registry):
     for kernel in decorator_names(text, block):
       where_text = f"the function marked with @kernel {kernel} at line {where}" if block[0] == "decorator" else f"the function that contains the @kernel {kernel} block at line {where}"
       functions.setdefault(kernel, []).append((declared, where_text))
-  for block in blocks:
-    if block[0] != "kernel":
-      continue
-    kernel = kernel_name(text, block)
-    for _, _, _, source, line in registry["kernels"][kernel][0]["local"]:
-      for declared, where in functions[kernel]:
+  for kernel, callers in functions.items():
+    definition = registry["kernels"][kernel][0]
+    owner = "" if definition["path"] == path else f" (kernel of {definition['path']})"
+    for _, _, _, source, line in definition["local"]:
+      for declared, where in callers:
         if source not in declared:
-          raise ValueError(f"line {line}: '{source}' is not declared with Buffer in {where} (local buffers)")
+          raise ValueError(f"line {line}{owner}: '{source}' is not declared with Buffer in {where} (local buffers)")
 
 
 def passthrough(text, begin, end, edits):
@@ -290,7 +290,6 @@ def kernel_uploads(registry, name, qualifiers):
 
 
 def call_edits(text, blocks, quoted, on_process_starts, registry):
-  kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
   edits = []
   merged = set()
   for block in blocks:
@@ -304,9 +303,6 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     line = text.count("\n", 0, block[1]) + 1
     lines = ["vmeLibEnable();"]
     for name in decorator_names(text, block):
-      words = [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])]
-      if "direct" not in words[2:]:
-        raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
       lines += kernel_uploads(registry, name, ("local",))
       lines.append(f"{name}();")
     lines.append("vmeLibDisable();")

@@ -43,8 +43,8 @@ def translate(text, blocks, path, registry=None):
   out = [(GLOBALS_PROTOTYPE if on_process else "") + f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
-  check_decorators(text, blocks)
-  check_local_sources(text, blocks, registry)
+  check_decorators(text, blocks, registry)
+  check_local_sources(text, blocks, registry, path)
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
   edits = []
   declarations = needed_externs(registry, path) if registry else []
