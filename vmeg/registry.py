@@ -1,4 +1,5 @@
 from vmeg.host import declarator_names
+from vmeg.scanner import tokens
 
 BOUNDARIES = (";", "}", "{")
 
@@ -35,5 +36,14 @@ def declarations(text, toks, depth_wanted):
         "text": text[statement[0][2]:statement[-1][3]],
         "line": text.count("\n", 0, statement[0][2]) + 1,
         "extern": any(kind == "ident" and value == "extern" for kind, value, _, _ in statement),
+        "static": any(kind == "ident" and value == "static" for kind, value, _, _ in statement),
       })
   return found
+
+
+def array_definitions(path, text):
+  return [
+    {"name": name, "path": path, "line": declaration["line"], "static": declaration["static"], "extern": declaration["extern"], "text": declaration["text"]}
+    for declaration in declarations(text, list(tokens(text)), 0)
+    for name in declaration["names"]
+  ]
