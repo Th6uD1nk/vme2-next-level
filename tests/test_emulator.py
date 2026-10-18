@@ -216,7 +216,7 @@ class ListingTest(unittest.TestCase):
       "kernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from a;\n  }\n}\n"
     )
     self.assertEqual(emulations(text), [{
-      "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [],
+      "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10), ("BASE_2", 2, "OFFSET", "a", 11)],
     }])
 
@@ -227,7 +227,7 @@ class ListingTest(unittest.TestCase):
 
 
   def test_printing_follows_the_format_of_the_human(self):
-    text = "#define OFFSET 32\n@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from b;\n  }\n}\n"
+    text = "#define OFFSET 32\n@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from b;\n  }\n}\nBuffer a[4], b[4];\n"
     self.assertEqual(format_listing(emulations(text), defines(text)), (
       "emulate \"first\": kernel k (lines 3-8)\n"
       "  global buffers:\n"
@@ -241,7 +241,7 @@ class ListingTest(unittest.TestCase):
 
 
   def test_full_lists_the_eight_buffers_with_their_links(self):
-    text = "@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    top0, 2 words, at 8, from b;\n  }\n}\n"
+    text = "@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    top0, 2 words, at 8, from b;\n  }\n}\nBuffer a[4], b[4];\n"
     lines = format_listing(emulations(text), [], full=True).splitlines()
     self.assertEqual(lines[1:4], [
       "  TOP_0   global  at 0  4 words  from a",
@@ -256,10 +256,17 @@ class ListingTest(unittest.TestCase):
       "#define OFF 8\n"
       "@emulate \"one\"\nkernel k direct {\n  global buffers {\n    top0, 16 words, from a;\n    top0, 16 words, at OFF, from b;\n    top1, 4 words, at 40, from c;\n    top1, 4 words, at UNKNOWN, from d;\n  }\n}\n"
       "@emulate \"two\"\nkernel m direct {\n  global buffers {\n    top0, 16 words, from a;\n  }\n}\n"
+      "Buffer a[4], b[4], c[4], d[4];\n"
     )
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
     marked = [line for line in lines if "overlaps" in line]
     self.assertEqual(marked, ["  TOP_0   global  at OFF  16 words  from b  <-- overlaps TOP_0 at 0 (words 8-15)"])
+
+
+  def test_an_array_without_buffer_declaration_is_marked_and_extern_counts(self):
+    text = "extern Buffer a[4];\n@emulate \"one\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    top1, 4 words, from nothere;\n  }\n}\n"
+    lines = format_listing(emulations(text), [], full=True).splitlines()
+    self.assertEqual(lines[1:3], ["  TOP_0   global  at 0  4 words  from a", "  TOP_1   global  at 0  4 words  from nothere  <-- 'nothere' is not declared with Buffer"])
 
 
 if __name__ == "__main__":

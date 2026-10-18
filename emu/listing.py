@@ -1,7 +1,8 @@
 import re
 
-from vmeg.blocks import find_blocks, kernel_name
+from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.expr import to_c
+from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -28,6 +29,14 @@ def buffer_entries(statements, qualifier):
   return entries
 
 
+def declared_names(text, blocks, kernel):
+  local = set()
+  for block in blocks:
+    if block[0] == "decorator" and kernel in decorator_names(text, block):
+      local |= function_buffer_names(text, block)
+  return {"global": file_buffer_names(list(tokens(text))), "local": local}
+
+
 def emulations(text):
   blocks = find_blocks(text)
   found = []
@@ -43,6 +52,7 @@ def emulations(text):
       "last": text.count("\n", 0, kernel[3] - 1) + 1,
       "global": buffer_entries(statements, "global"),
       "local": buffer_entries(statements, "local"),
+      "declared": declared_names(text, blocks, kernel_name(text, kernel)),
     })
   return found
 
@@ -66,9 +76,22 @@ def overlap_notes(emulation, definitions):
       end = start + count - 1
       hits = [(other, written, max(start, first), min(end, last)) for other, written, first, last in placed if other == buffer and max(start, first) <= min(end, last)]
       if hits:
-        notes[(qualifier, index)] = "<-- " + ", ".join(f"overlaps {other} at {written or 0} (words {low}-{high})" for other, written, low, high in hits)
+        notes.setdefault((qualifier, index), []).append(", ".join(f"overlaps {other} at {written or 0} (words {low}-{high})" for other, written, low, high in hits))
       placed.append((buffer, offset, start, end))
   return notes
+
+
+def link_notes(emulation, definitions):
+  notes = overlap_notes(emulation, definitions)
+  for qualifier in ("global", "local"):
+    for index, (_, _, _, source, _) in enumerate(emulation[qualifier]):
+      if source not in emulation["declared"][qualifier]:
+        notes.setdefault((qualifier, index), []).append(f"'{source}' is not declared with Buffer")
+  return notes
+
+
+def marked(line, notes, key):
+  return f"{line}  <-- {'; '.join(notes[key])}" if key in notes else line
 
 
 def buffer_lines(entries, notes, qualifier):
@@ -76,7 +99,7 @@ def buffer_lines(entries, notes, qualifier):
   for index, (target, count, offset, source, _) in enumerate(entries):
     place = f"at {offset}  " if offset else ""
     line = f"    {target:<8}{count} words  {place}from {source}"
-    lines.append(f"{line}  {notes[(qualifier, index)]}" if (qualifier, index) in notes else line)
+    lines.append(marked(line, notes, (qualifier, index)))
   return lines
 
 
@@ -91,14 +114,14 @@ def full_lines(emulation, notes):
       lines.append(f"  {buffer:<8}not linked")
     for qualifier, index, (_, count, offset, source, _) in links:
       line = f"  {buffer:<8}{qualifier:<8}at {offset or 0}  {count} words  from {source}"
-      lines.append(f"{line}  {notes[(qualifier, index)]}" if (qualifier, index) in notes else line)
+      lines.append(marked(line, notes, (qualifier, index)))
   return lines
 
 
 def format_listing(found, definitions, full=False):
   lines = []
   for emulation in found:
-    notes = overlap_notes(emulation, definitions)
+    notes = link_notes(emulation, definitions)
     lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} (lines {emulation['first']}-{emulation['last']})")
     if full:
       lines += full_lines(emulation, notes)
