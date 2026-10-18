@@ -6,6 +6,7 @@ from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
+NAME = re.compile(r"(?<!\w)[A-Za-z_]\w*")
 DEFINE = re.compile(r"#\s*define\s+([A-Za-z_]\w*(?:\([^)]*\))?)(.*)", re.S)
 COMMENTS = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 
@@ -83,10 +84,14 @@ def overlap_notes(emulation, definitions):
 
 def link_notes(emulation, definitions):
   notes = overlap_notes(emulation, definitions)
+  known = {name.split("(")[0] for name, _ in definitions}
   for qualifier in ("global", "local"):
-    for index, (_, _, _, source, _) in enumerate(emulation[qualifier]):
+    for index, (_, _, offset, source, _) in enumerate(emulation[qualifier]):
       if source not in emulation["declared"][qualifier]:
         notes.setdefault((qualifier, index), []).append(f"'{source}' is not declared with Buffer")
+      for name in dict.fromkeys(NAME.findall(offset)):
+        if name not in known:
+          notes.setdefault((qualifier, index), []).append(f"'{name}' has no #define in this file")
   return notes
 
 

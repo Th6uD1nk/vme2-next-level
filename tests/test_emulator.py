@@ -269,5 +269,11 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(lines[1:3], ["  TOP_0   global  at 0  4 words  from a", "  TOP_1   global  at 0  4 words  from nothere  <-- 'nothere' is not declared with Buffer"])
 
 
+  def test_an_offset_name_without_define_is_marked(self):
+    text = "#define KNOWN 8\n@emulate \"one\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, at KNOWN, from a;\n    top1, 4 words, at (KNOWN + MISSING), from a;\n    top2, 4 words, at 0x28, from a;\n  }\n}\nBuffer a[4];\n"
+    lines = format_listing(emulations(text), defines(text), full=True).splitlines()
+    self.assertEqual([line for line in lines if "<--" in line], ["  TOP_1   global  at (KNOWN + MISSING)  4 words  from a  <-- 'MISSING' has no #define in this file"])
+
+
 if __name__ == "__main__":
   unittest.main()
