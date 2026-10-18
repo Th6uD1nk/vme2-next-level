@@ -5,6 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from emu.agu import stream_at
+from emu.extract import array_declarations
 from emu.fu import execute
 from emu.listing import defines, emulations, format_listing
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
@@ -248,6 +249,26 @@ class ListingTest(unittest.TestCase):
     text = "#define KNOWN 8\n@emulate \"one\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, at KNOWN, from a;\n    top1, 4 words, at (KNOWN + MISSING), from a;\n    top2, 4 words, at 0x28, from a;\n  }\n}\nBuffer a[4];\n"
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
     self.assertEqual([line for line in lines if "<--" in line], ["  TOP_1   global  at (KNOWN + MISSING)  4 words  from a  <-- 'MISSING' has no #define in this file"])
+
+
+class ExtractTest(unittest.TestCase):
+  def test_arrays_of_the_links_with_two_in_one_statement_extern_and_local(self):
+    text = (
+      "extern Buffer ex[16];\n"
+      "volatile Buffer a[2] = { 1, 2 }, b[3];\n"
+      "@emulate \"one\"\nkernel k direct {\n"
+      "  global buffers { top0, 2 words, from a; top1, 3 words, from b; top2, 16 words, from ex; }\n"
+      "  local buffers { top3, 4 words, from x; }\n}\n"
+      "@kernel k\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
+    )
+    found = array_declarations(text, "one")
+    self.assertEqual([(d["where"], d["names"], d["extern"], d["text"]) for d in found], [
+      ("global", ["a", "b"], False, "volatile Buffer a[2] = { 1, 2 }, b[3];"),
+      ("global", ["ex"], True, "extern Buffer ex[16];"),
+      ("local", ["x"], False, "Buffer x[4] = { 5, 6, 7, 8 };"),
+    ])
+    with self.assertRaises(ValueError):
+      array_declarations(text, "missing")
 
 
 if __name__ == "__main__":
