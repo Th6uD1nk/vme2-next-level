@@ -132,26 +132,9 @@ def check_buffers(text, toks, blocks):
       raise ValueError(f"line {line}: Buffer must be volatile (volatile Buffer name[...])")
 
 
-def vme_calls(toks, blocks, names):
-  events = [(b[3], 1) if b[0] == "vme" else (b[1], -1) for b in blocks if b[0] in ("vme", "vme-end")]
-  called = set()
-  if not events or not names:
-    return called
-  depth = 0
-  e = 0
-  size = len(toks)
-  for i, (kind, value, start, _) in enumerate(toks):
-    while e < len(events) and events[e][0] <= start:
-      depth += events[e][1]
-      e += 1
-    if depth and kind == "ident" and value in names and i + 1 < size and toks[i + 1][1] == "(":
-      called.add(value)
-  return called
-
-
-def check_decorators(text, toks, blocks):
+def check_decorators(text, blocks):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
-  decorated = vme_calls(toks, blocks, kernels)
+  decorated = set()
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
       continue
@@ -166,7 +149,7 @@ def check_decorators(text, toks, blocks):
   for name, block in kernels.items():
     if name not in decorated:
       line = text.count("\n", 0, block[1]) + 1
-      raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or call {name}() in a @vme block")
+      raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or a block @kernel {name} {{ ... }}")
 
 
 def check_local_sources(text, blocks):
@@ -288,10 +271,8 @@ def on_process_edit(text, toks, quoted):
 
 
 def block_only_kernels(text, blocks):
-  kernels = {kernel_name(text, b) for b in blocks if b[0] == "kernel"}
   in_blocks = {name for b in blocks if b[0] == "kernel-block" for name in decorator_names(text, b)}
   elsewhere = {name for b in blocks if b[0] == "decorator" for name in decorator_names(text, b)}
-  elsewhere |= vme_calls(list(tokens(text)), blocks, kernels)
   return in_blocks - elsewhere
 
 
