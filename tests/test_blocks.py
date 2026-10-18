@@ -217,17 +217,17 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(merged_file(merged), expected)
     self.assertEqual(merged_file([]), "static void vmegUploadGlobals(void) {\n}\n")
 
-  def test_vme_is_removed_and_the_block_is_kept(self):
-    text = "void f(void) {\n  before();\n  @vme {\n    runContext();\n  }\n  while (1) { }\n}\n"
+  def test_kernel_block_is_removed_and_the_block_is_kept(self):
+    text = "kernel k direct {\n  icn top = 0;\n}\nvoid f(void) {\n  before();\n  @kernel k {\n    after();\n  }\n  while (1) { }\n}\n"
     blocks = find_blocks(text)
-    self.assertEqual([block[0] for block in blocks], ["vme", "vme-end"])
+    self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "t.vmeg.c")
     self.assertNotIn("@", out)
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
-    for piece in ["before();", "{", "runContext();", "}", "while (1)"]:
+    for piece in ["before();", "{", "k();", "after();", "}", "while (1)"]:
       self.assertIn(piece, out)
-    inside_kernel = "kernel k direct {\n  icn top = 0;\n}\n@kernel k\nvoid f() {\n  const char* s = \"@vme {\";\n}\n"
+    inside_kernel = "kernel k direct {\n  icn top = 0;\n}\n@kernel k\nvoid f() {\n  const char* s = \"@kernel k {\";\n}\n"
     self.assertEqual([block[0] for block in find_blocks(inside_kernel)], ["kernel", "decorator"])
 
   def test_context_is_an_alias_of_kernel(self):
