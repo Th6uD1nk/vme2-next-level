@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from emu.agu import stream_at
 from emu.fu import execute
-from emu.listing import defines, emulations
+from emu.listing import defines, emulations, format_listing
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from emu.registers import CONTEXT_WORDS, agu_register, fu_register
 from emu.trace import replay
@@ -224,6 +224,20 @@ class ListingTest(unittest.TestCase):
   def test_defines_with_continuation_comment_and_arguments(self):
     text = "#define A 1\n#define B (x + 1) // note\n#define F(x) ((x) * 2)\n#define L a + \\\n  b /* c */\n#define E\n#include <x.h>\nint y = 1; // #define NOT 3\n"
     self.assertEqual(defines(text), [("A", "1"), ("B", "(x + 1)"), ("F(x)", "((x) * 2)"), ("L", "a + b"), ("E", "")])
+
+
+  def test_printing_follows_the_format_of_the_human(self):
+    text = "#define OFFSET 32\n@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from b;\n  }\n}\n"
+    self.assertEqual(format_listing(emulations(text), defines(text)), (
+      "emulate \"first\": kernel k (lines 3-8)\n"
+      "  global buffers:\n"
+      "    TOP_0   4 words  from a\n"
+      "    BASE_2  2 words  at OFFSET  from b\n"
+      "  local buffers: none\n"
+      "\n"
+      "defines of the file:\n"
+      "  OFFSET  32\n"
+    ))
 
 
 if __name__ == "__main__":

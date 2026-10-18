@@ -45,3 +45,24 @@ def emulations(text):
       "local": buffer_entries(statements, "local"),
     })
   return found
+
+
+def buffer_lines(entries):
+  lines = []
+  for target, count, offset, source, _ in entries:
+    place = f"at {offset}  " if offset else ""
+    lines.append(f"    {target:<8}{count} words  {place}from {source}")
+  return lines
+
+
+def format_listing(found, definitions):
+  lines = []
+  for emulation in found:
+    lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} (lines {emulation['first']}-{emulation['last']})")
+    for qualifier in ("global", "local"):
+      entries = emulation[qualifier]
+      lines.append(f"  {qualifier} buffers:" if entries else f"  {qualifier} buffers: none")
+      lines += buffer_lines(entries)
+  lines += ["", "defines of the file:"]
+  lines += [f"  {name}  {value}" if value else f"  {name}" for name, value in definitions]
+  return "\n".join(lines) + "\n"
