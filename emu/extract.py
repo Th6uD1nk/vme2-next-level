@@ -97,3 +97,15 @@ def host_source(text, identifier):
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
   parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
   return "\n\n".join(parts) + "\n"
+
+
+INCLUDES = '#include "hw-trace.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
+
+
+def host_main(text, identifier):
+  kernel = chosen_emulation(text, identifier)["kernel"]
+  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  {kernel}();\n  vmeLibDisable();\n  return 0;\n}}\n"
+
+
+def host_program(text, identifier):
+  return INCLUDES + "\n" + host_source(text, identifier) + "\n" + host_main(text, identifier)
