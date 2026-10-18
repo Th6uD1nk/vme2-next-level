@@ -16,6 +16,9 @@ def list_emulations(text, kernel, full):
     found = [emulation for emulation in found if emulation["kernel"] == kernel]
   elif not found:
     print("warning: there is no @emulate in this file", file=sys.stderr)
+  for emulation in found:
+    if not emulation["global"] and not emulation["local"]:
+      print(f"warning: emulate \"{emulation['id']}\": the kernel {emulation['kernel']} has no buffer", file=sys.stderr)
   sys.stdout.write(format_listing(found, defines(text), full))
 
 
