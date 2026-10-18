@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from emu.agu import stream_at
 from emu.fu import execute
+from emu.listing import emulations
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from emu.registers import CONTEXT_WORDS, agu_register, fu_register
 from emu.trace import replay
@@ -204,6 +205,20 @@ class IterationTest(unittest.TestCase):
     for offset, value in ((0x10, 0x2000), (0x14, 0x1000f), (0x18, 0x8000), (0x24, 0), (0x28, 0), (0x08, 0x58)):
       emulator.write(0x440ff000 + offset, value)
     self.assertEqual(emulator.get_memory(0x2000, 2), [1, 5])
+
+
+class ListingTest(unittest.TestCase):
+  def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
+    text = (
+      "volatile Buffer a[4];\n"
+      "kernel other direct {\n  global buffers {\n    top1, 4 words, from a;\n  }\n}\n"
+      "@emulate \"first\"\n"
+      "kernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from a;\n  }\n}\n"
+    )
+    self.assertEqual(emulations(text), [{
+      "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [],
+      "global": [("TOP_0", 4, "", "a", 10), ("BASE_2", 2, "OFFSET", "a", 11)],
+    }])
 
 
 if __name__ == "__main__":
