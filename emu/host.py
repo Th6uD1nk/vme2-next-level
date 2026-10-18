@@ -6,6 +6,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIBRARY = os.path.join(ROOT, "me-custom-core")
 NATIVE = os.path.join(ROOT, "emu", "native")
 SUBSTITUTES = (("emu-me-lib.h", "me-lib.h"), ("emu-me-core-mapper.h", "me-core-mapper.h"))
+RUN_TIMEOUT = 60
 COMPILER_FLAGS = ("-m32", "-no-pie", "-std=c++11", "-fpermissive", "-w", "-x", "c++")
 LIBRARY_FILES = ("vme-lib.c", "vme-lib.h", "vme-fu-opcodes.h", "me-lib.h", "me-core-mapper.h")
 
@@ -34,3 +35,13 @@ def build_program(source, folder):
   if done.returncode:
     raise ValueError(f"the host program does not build:\n{done.stderr.rstrip()}")
   return executable
+
+
+def run_program(executable):
+  try:
+    done = subprocess.run([executable], capture_output=True, text=True, timeout=RUN_TIMEOUT)
+  except subprocess.TimeoutExpired:
+    raise ValueError(f"the host program did not finish in {RUN_TIMEOUT} seconds") from None
+  if done.returncode:
+    raise ValueError(f"the host program failed with the exit code {done.returncode}:\n{done.stderr.rstrip()}")
+  return done.stdout
