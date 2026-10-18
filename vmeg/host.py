@@ -73,7 +73,27 @@ def function_tokens(text, block):
 
 
 def function_buffer_names(text, block):
-  toks = function_tokens(text, block)
+  return declared_buffer_names(function_tokens(text, block))
+
+
+def enclosing_function_tokens(text, position):
+  body = []
+  depth = 0
+  for kind, value, start, end in tokens(text):
+    if kind == "punct" and value == "{":
+      depth += 1
+    if depth:
+      body.append((kind, value, start, end))
+    if kind == "punct" and value == "}":
+      depth -= 1
+      if depth == 0:
+        if body[0][2] <= position < end:
+          return body
+        body = []
+  return []
+
+
+def declared_buffer_names(toks):
   names = set()
   depth = 0
   for i, (kind, value, _, _) in enumerate(toks):
@@ -166,12 +186,16 @@ def check_global_sources(text, blocks, toks):
 def check_local_sources(text, blocks):
   functions = {}
   for block in blocks:
-    if block[0] != "decorator":
+    if block[0] not in ("decorator", "kernel-block"):
       continue
-    declared = function_buffer_names(text, block)
     where = text.count("\n", 0, block[1]) + 1
+    if block[0] == "decorator":
+      declared = function_buffer_names(text, block)
+    else:
+      declared = declared_buffer_names(enclosing_function_tokens(text, block[1]))
     for kernel in decorator_names(text, block):
-      functions.setdefault(kernel, []).append((declared, where))
+      where_text = f"the function marked with @kernel {kernel} at line {where}" if block[0] == "decorator" else f"the function that contains the @kernel {kernel} block at line {where}"
+      functions.setdefault(kernel, []).append((declared, where_text))
   for block in blocks:
     if block[0] != "kernel":
       continue
@@ -183,7 +207,7 @@ def check_local_sources(text, blocks):
       for _, _, _, source, line in statement[2]:
         for declared, where in functions[kernel]:
           if source not in declared:
-            raise ValueError(f"line {line}: '{source}' is not declared with Buffer in the function marked with @kernel {kernel} at line {where} (local buffers)")
+            raise ValueError(f"line {line}: '{source}' is not declared with Buffer in {where} (local buffers)")
 
 
 def passthrough(text, begin, end, edits):
@@ -304,7 +328,7 @@ def call_edits(text, blocks, quoted, on_process_starts):
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
-      calls = "".join(f" {name}();" for name in decorator_names(text, block))
+      calls = "".join("".join(f" {call}" for call in local_uploads(text, kernels[name])) + f" {name}();" for name in decorator_names(text, block))
       edits.append((brace, 0, f" vmeLibEnable();{calls}"))
       continue
     if block[0] != "decorator":
