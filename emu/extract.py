@@ -1,6 +1,8 @@
-from emu.listing import emulations
+import re
+
+from emu.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.host import declarator_names, function_tokens
+from vmeg.host import BUFFER_TYPE, declarator_names, function_tokens
 from vmeg.kernel import generate
 from vmeg.parser import upload_text
 from vmeg.scanner import tokens
@@ -86,3 +88,12 @@ def array_declarations(text, identifier):
 def upload_calls(text, identifier):
   emulation = chosen_emulation(text, identifier)
   return [upload_text(target, count, offset, source) for qualifier in ("global", "local") for target, count, offset, source, _ in emulation[qualifier]]
+
+
+def host_source(text, identifier):
+  parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
+  parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in array_declarations(text, identifier)]
+  parts.append(kernel_code(text, identifier))
+  calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
+  parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
+  return "\n\n".join(parts) + "\n"
