@@ -99,3 +99,18 @@ def check_definitions(registry):
     if len(definitions) > 1:
       first, second = definitions[0], definitions[1]
       raise ValueError(f"{second['path']}: line {second['line']}: the kernel '{name}' is already defined at {first['path']} line {first['line']}")
+
+
+def check_uses(registry):
+  for definitions in registry["kernels"].values():
+    for kernel in definitions:
+      for _, _, _, source, line in kernel["global"]:
+        where = f"{kernel['path']}: line {line}"
+        declared = registry["arrays"].get(source, [])
+        if not declared:
+          raise ValueError(f"{where}: the array '{source}' is not declared with Buffer in any file")
+        defined = [definition for definition in declared if not definition["extern"]]
+        if not defined:
+          raise ValueError(f"{where}: the array '{source}' is declared extern but defined in no file")
+        if defined[0]["static"] and defined[0]["path"] != kernel["path"]:
+          raise ValueError(f"{where}: the array '{source}' is static in {defined[0]['path']} line {defined[0]['line']}, it cannot be used from another file")
