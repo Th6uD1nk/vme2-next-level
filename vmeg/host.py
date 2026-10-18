@@ -1,5 +1,5 @@
 from vmeg.blocks import body_tokens, decorator_names, kernel_name
-from vmeg.parser import Parser, kernel_statements, parse_body, upload_call
+from vmeg.parser import Parser, kernel_statements, parse_body, upload_text
 from vmeg.scanner import tokens
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
@@ -288,27 +288,19 @@ def global_lines(text, blocks, cache):
   return lines
 
 
-def buffer_uploads(text, block, qualifier):
-  body, limit = body_tokens(text, block)
-  calls = []
-  for statement in parse_body(Parser(text, body, limit)):
-    if statement[0] == "buffers" and statement[1] == qualifier:
-      calls += [upload_call(entry) for entry in statement[2]]
-  return calls
+def kernel_uploads(registry, name, qualifiers):
+  kernel = registry["kernels"][name][0]
+  return [upload_text(target, count, offset, source) for qualifier in qualifiers for target, count, offset, source, _ in kernel[qualifier]]
 
 
-def local_uploads(text, block):
-  return buffer_uploads(text, block, "local")
-
-
-def call_edits(text, blocks, quoted, on_process_starts):
+def call_edits(text, blocks, quoted, on_process_starts, registry):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
   edits = []
   merged = set()
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
-      calls = "".join("".join(f" {call}" for call in buffer_uploads(text, kernels[name], "global") + local_uploads(text, kernels[name])) + f" {name}();" for name in decorator_names(text, block))
+      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name, ("global", "local"))) + f" {name}();" for name in decorator_names(text, block))
       edits.append((brace, 0, f" vmeLibEnable();{calls}"))
       continue
     if block[0] != "decorator":
@@ -319,7 +311,7 @@ def call_edits(text, blocks, quoted, on_process_starts):
       words = [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])]
       if "direct" not in words[2:]:
         raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
-      lines += local_uploads(text, kernels[name])
+      lines += kernel_uploads(registry, name, ("local",))
       lines.append(f"{name}();")
     lines.append("vmeLibDisable();")
     at, start = function_body(text, block)

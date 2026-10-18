@@ -309,10 +309,6 @@ def upload_text(target, count, offset, source):
   return f"vmeLibMemoryToRingBuffer((void*){source}, {destination}, {count});"
 
 
-def upload_call(entry):
-  target, count, offset, source, _ = entry
-  return upload_text(target, count, "" if offset is None else to_c(offset), source)
-
 
 def parse_for(p):
   _, var, low, high = parse_for_header(p)
