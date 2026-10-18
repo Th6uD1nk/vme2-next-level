@@ -286,5 +286,27 @@ class RenderTest(unittest.TestCase):
     self.assertIn("line 2", str(ctx.exception))
 
 
+class EmulateTest(unittest.TestCase):
+  def test_both_forms_give_the_same_blocks(self):
+    own_line = found('@emulate "sat-1"\nkernel k direct { a }')
+    same_line = found('@emulate "sat-1" kernel k direct { a }')
+    self.assertEqual([kind for kind, _ in own_line], ["emulate", "kernel"])
+    self.assertEqual([kind for kind, _ in same_line], ["emulate", "kernel"])
+    self.assertEqual(own_line[1], same_line[1])
+
+  def test_bad_emulate_is_an_error_with_its_line(self):
+    cases = {
+      '@emulate\nkernel k { }': "line 1: expected @emulate",
+      '@emulate "bad id"\nkernel k { }': "line 1: expected @emulate",
+      '@emulate "a"\nvoid f() { }': "line 1: @emulate \"id\" must be followed by 'kernel name'",
+      '@emulate "a"\nkernel k { }\n@emulate "a"\nkernel m { }': "line 3: the id \"a\" of @emulate is already used at line 1",
+    }
+    for text, message in cases.items():
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError) as caught:
+          find_blocks(text)
+        self.assertIn(message, str(caught.exception))
+
+
 if __name__ == "__main__":
   unittest.main()

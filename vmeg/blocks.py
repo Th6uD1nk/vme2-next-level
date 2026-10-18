@@ -1,4 +1,8 @@
+import re
+
 from vmeg.scanner import tokens, walk
+
+EMULATE_ID = re.compile(r'"[A-Za-z0-9_-]+"')
 
 
 def read_decorator(text, items, index):
@@ -34,11 +38,34 @@ def read_decorator(text, items, index):
   raise ValueError(f"line {line}: @kernel must be followed by a function definition")
 
 
+def read_emulate(text, items, index):
+  start = items[index][2]
+  line = text.count("\n", 0, start) + 1
+  if index + 2 >= len(items) or items[index + 2][0] != "str" or not EMULATE_ID.fullmatch(items[index + 2][1]):
+    raise ValueError(f"line {line}: expected @emulate \"id\", the id is made of letters, digits, - and _ between double quotes")
+  if index + 4 >= len(items) or items[index + 3][1] != "kernel" or items[index + 4][0] != "ident":
+    raise ValueError(f"line {line}: @emulate \"id\" must be followed by 'kernel name'")
+  end = items[index + 2][3]
+  return ("emulate", start, end, end), items[index + 2][1][1:-1], line, items[index + 3][2]
+
+
+def check_emulate(blocks, ids, kernels):
+  for k, block in enumerate(blocks):
+    if block[0] != "emulate":
+      continue
+    following = blocks[k + 1] if k + 1 < len(blocks) else None
+    if following is None or following[0] != "kernel" or following[1] != kernels[block[1]][1]:
+      raise ValueError(f"line {kernels[block[1]][0]}: @emulate must be followed by a kernel definition with its body")
+
+
 def find_blocks(text):
   items = list(walk(text))
   blocks = []
   skip = 0
   nested = False
+  ids = {}
+  kernels = {}
+  allowed = set()
   for i, (kind, value, start, end, depth, prev) in enumerate(items):
     if start < skip:
       continue
@@ -55,11 +82,20 @@ def find_blocks(text):
       if i + 1 < len(items) and items[i + 1][1] == "vme":
         line = text.count("\n", 0, start) + 1
         raise ValueError(f"line {line}: @vme must be inside the body of a function")
+      if i + 1 < len(items) and items[i + 1][1] == "emulate":
+        block, name, line, kernel_start = read_emulate(text, items, i)
+        if name in ids:
+          raise ValueError(f"line {line}: the id \"{name}\" of @emulate is already used at line {ids[name]}")
+        ids[name] = line
+        kernels[start] = (line, kernel_start)
+        allowed.add(i + 3)
+        blocks.append(block)
+        continue
       blocks.append(read_decorator(text, items, i))
       continue
     if kind != "ident" or value not in ("buffers", "kernel", "context"):
       continue
-    if depth != 0 or prev not in (";", "}"):
+    if depth != 0 or (prev not in (";", "}") and i not in allowed):
       continue
     j = i + 1
     if value != "buffers":
@@ -73,6 +109,7 @@ def find_blocks(text):
       skip = blocks[-1][3]
   if nested:
     blocks.sort(key=lambda block: block[1])
+  check_emulate(blocks, ids, kernels)
   return blocks
 
 
