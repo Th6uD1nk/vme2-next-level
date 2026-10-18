@@ -31,11 +31,14 @@ def main(argv=None):
   parser.add_argument("--kernel")
   parser.add_argument("--full", action="store_true")
   parser.add_argument("--run")
+  parser.add_argument("--trace")
   args = parser.parse_args(argv)
   if (args.kernel is not None or args.full) and not args.list:
     parser.error("--kernel and --full go with --list")
   if args.run is not None and args.list:
     parser.error("--run does not go with --list")
+  if args.trace is not None and args.run is None:
+    parser.error("--trace goes with --run")
 
   try:
     with open(args.input, encoding="utf-8") as f:
@@ -44,7 +47,7 @@ def main(argv=None):
       list_emulations(text, args.kernel, args.full)
       return 0
     if args.run is not None:
-      emulator = run_emulation(text, args.run)
+      emulator = run_emulation(text, args.run, args.trace)
     else:
       emulator = Emulator()
       replay(emulator, text)
