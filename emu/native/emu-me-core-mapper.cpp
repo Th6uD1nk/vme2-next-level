@@ -1,5 +1,6 @@
 #include "hw-trace.h"
 #include <map>
+#include <string.h>
 
 static u32 virtualAddress(const void* pointer, u32 count) {
   static std::map<const void*, u32> known;
@@ -30,5 +31,37 @@ void meCoreDMACPrimMemoryToRingBuffer(void* src, u32 offset, u32 count) {
 
 void meCoreDMACPrimRingBufferToMemory(void* dst, u32 offset, u32 count) {
   transfer(virtualAddress(dst, count), offset, count, 0x48);
+}
+
+void meCoreBusClockEnableDMACPrimMux(void) {}
+void meCoreBusClockDisableDMACPrimMux(void) {}
+void meCoreBusClockEnableVMECtrl(void) {}
+void meCoreBusClockDisableVMECtrl(void) {}
+
+int meCoreDcacheWritebackRange(void* address, u32 size) {
+  return 0;
+}
+
+void meCoreDMACPrimWaitTransferFinish(void) {
+  hw(0x440ff000) = (0x200 >> 8) | 0x80;
+}
+
+void meCoreDMACPrimWaitVMEFinish(void) {
+  hw(0x440ff000) = (0x800 >> 8) | 0x80;
+}
+
+void meCoreDMACPrimMuxSetCtrl_0x018(void) {
+  hw(0x440ff008) = 0x18;
+}
+
+void meCoreMemset(void* dst, int value, u32 size) {
+  u32 address = (u32)(uintptr_t)dst;
+  if (address >= 0x440f8000 && address < 0x44100000) {
+    for (u32 i = 0; i < size; i += 4) {
+      hw(address + i) = (u32)value;
+    }
+    return;
+  }
+  memset(dst, value, size);
 }
 }
