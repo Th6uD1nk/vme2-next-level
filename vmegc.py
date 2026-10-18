@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import sys
 
 from vmeg.blocks import find_blocks
@@ -7,7 +8,7 @@ from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers,
 from vmeg.kernel import generate
 from vmeg.merge import merge_command, summary
 from vmeg.names import INFO_SUFFIX, SUFFIXES, globals_header
-from vmeg.registry import check_definitions, check_uses, project_registry
+from vmeg.registry import check_definitions, check_uses, needed_externs, project_registry
 from vmeg.scanner import tokens
 
 
@@ -23,7 +24,18 @@ def render(text, blocks, path):
   return translate(text, blocks, path)[0]
 
 
-def translate(text, blocks, path):
+def extern_edit(text, toks, blocks, quoted, declarations):
+  first = min((block[1] for block in blocks), default=len(text))
+  includes = [(start, end) for kind, value, start, end in toks if kind == "pp" and value.startswith("#include") and start < first]
+  lines = "".join(f"\n{re.sub(r'\bBuffer\b', BUFFER_TYPE, declaration)}" for declaration in declarations)
+  if not includes:
+    return (0, 0, lines.lstrip("\n") + "\n" + f'#line 1 "{quoted}"\n')
+  at = includes[-1][1]
+  resume = text.count("\n", 0, at) + 2
+  return (at, 0, f'{lines}\n#line {resume} "{quoted}"')
+
+
+def translate(text, blocks, path, registry=None):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
   on_process = (on_process_edit(text, toks, quoted) or (None, None))[0]
@@ -34,6 +46,9 @@ def translate(text, blocks, path):
   check_local_sources(text, blocks)
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set())
   edits = []
+  declarations = needed_externs(registry, path) if registry else []
+  if declarations:
+    edits.append(extern_edit(text, toks, blocks, quoted, declarations))
   if on_process and on_process[0] not in merged:
     edits.append(on_process)
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
@@ -112,7 +127,7 @@ def main(argv=None):
   results = []
   for path, text, blocks in found:
     try:
-      result, info = translate(text, blocks, path)
+      result, info = translate(text, blocks, path, registry)
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
