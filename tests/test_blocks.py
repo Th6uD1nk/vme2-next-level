@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
 from vmeg.merge import check_on_process, merged_file, merge_globals, summary
-from vmeg.registry import check_uses, project_registry
+from vmeg.registry import check_definitions, check_uses, project_registry
 from vmeg.scanner import tokens
 from vmegc import default_output, render, translate
 
@@ -349,6 +349,34 @@ class KernelBlockTest(unittest.TestCase):
         with self.assertRaises(ValueError) as caught:
           render(text, find_blocks(text), "x.vmeg.c")
         self.assertIn(message, str(caught.exception))
+
+
+KERNEL = "kernel k direct {\n  global buffers { top0, 4 words, from g; }\n}\n"
+
+
+class RegistryTest(unittest.TestCase):
+  def failure(self, check, sources):
+    with self.assertRaises(ValueError) as caught:
+      check(project_registry(sources))
+    return str(caught.exception)
+
+  def test_an_array_or_a_kernel_defined_twice_is_an_error_but_not_an_extern(self):
+    check_definitions(project_registry([("a.vmeg.c", "volatile Buffer g[4];\n"), ("b.vmeg.c", "extern Buffer g[4];\n")]))
+    check_definitions(project_registry([("a.vmeg.c", "extern Buffer g[4];\n"), ("b.vmeg.c", "extern Buffer g[4];\n")]))
+    self.assertEqual(
+      self.failure(check_definitions, [("a.vmeg.c", "volatile Buffer g[4];\n"), ("b.vmeg.c", "\nvolatile Buffer g[4];\n")]),
+      "b.vmeg.c: line 2: the array 'g' is already defined at a.vmeg.c line 1")
+    self.assertEqual(
+      self.failure(check_definitions, [("a.vmeg.c", "kernel k direct {\n}\n"), ("b.vmeg.c", "\nkernel k direct {\n}\n")]),
+      "b.vmeg.c: line 2: the kernel 'k' is already defined at a.vmeg.c line 1")
+
+  def test_the_array_of_a_global_line_must_be_defined_and_visible(self):
+    check_uses(project_registry([("a.vmeg.c", "volatile Buffer g[4];\n" + KERNEL)]))
+    check_uses(project_registry([("a.vmeg.c", "volatile Buffer g[4];\n"), ("b.vmeg.c", "extern Buffer g[4];\n" + KERNEL)]))
+    check_uses(project_registry([("a.vmeg.c", "static volatile Buffer g[4];\n" + KERNEL)]))
+    self.assertIn("is not declared with Buffer in any file", self.failure(check_uses, [("a.vmeg.c", KERNEL)]))
+    self.assertIn("declared extern but defined in no file", self.failure(check_uses, [("a.vmeg.c", "extern Buffer g[4];\n" + KERNEL)]))
+    self.assertIn("is static in a.vmeg.c line 1", self.failure(check_uses, [("a.vmeg.c", "static volatile Buffer g[4];\n"), ("b.vmeg.c", KERNEL)]))
 
 
 if __name__ == "__main__":
