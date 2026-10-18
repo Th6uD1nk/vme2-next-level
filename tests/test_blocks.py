@@ -308,5 +308,28 @@ class EmulateTest(unittest.TestCase):
         self.assertIn(message, str(caught.exception))
 
 
+class KernelBlockTest(unittest.TestCase):
+  def test_kernel_block_in_a_function_is_read_and_removed(self):
+    text = "kernel k direct {\n}\nvoid f() {\n  @kernel k {\n    a();\n  }\n}\n"
+    blocks = find_blocks(text)
+    self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block"])
+    out = render(text, blocks, "x.vmeg.c")
+    self.assertNotIn("@kernel", out)
+    self.assertIn("a();", out)
+
+  def test_bad_kernel_block_is_an_error_with_its_line(self):
+    cases = {
+      "void f() {\n  @kernel {\n  }\n}\n": "line 2: expected a kernel name",
+      "void f() {\n  @kernel k;\n}\n": "line 2: @kernel inside a function must be followed",
+      "void f() {\n  @kernel nope {\n  }\n}\n": "line 2: @kernel refers to an unknown kernel 'nope'",
+      "kernel k {\n}\nvoid f() {\n  @kernel k {\n  }\n}\n": "line 4: kernel 'k' is not direct",
+    }
+    for text, message in cases.items():
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError) as caught:
+          render(text, find_blocks(text), "x.vmeg.c")
+        self.assertIn(message, str(caught.exception))
+
+
 if __name__ == "__main__":
   unittest.main()
