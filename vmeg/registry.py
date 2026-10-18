@@ -87,3 +87,15 @@ def project_registry(sources):
     for definition in kernel_definitions(path, text):
       kernels.setdefault(definition["name"], []).append(definition)
   return {"arrays": arrays, "kernels": kernels}
+
+
+def check_definitions(registry):
+  for name, definitions in registry["arrays"].items():
+    defined = [definition for definition in definitions if not definition["extern"]]
+    if len(defined) > 1:
+      first, second = defined[0], defined[1]
+      raise ValueError(f"{second['path']}: line {second['line']}: the array '{name}' is already defined at {first['path']} line {first['line']}")
+  for name, definitions in registry["kernels"].items():
+    if len(definitions) > 1:
+      first, second = definitions[0], definitions[1]
+      raise ValueError(f"{second['path']}: line {second['line']}: the kernel '{name}' is already defined at {first['path']} line {first['line']}")
