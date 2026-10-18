@@ -92,8 +92,7 @@ void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
 
-  @vme {
-    runContext();
+  @kernel runContext {
     vmeDebugFillWith(VME_BASE_BUFFERS);
   }
 
