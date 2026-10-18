@@ -301,10 +301,19 @@ def on_process_edit(text, toks, quoted):
   return (at, 0, f'\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
 
 
+def block_only_kernels(text, blocks):
+  kernels = {kernel_name(text, b) for b in blocks if b[0] == "kernel"}
+  in_blocks = {name for b in blocks if b[0] == "kernel-block" for name in decorator_names(text, b)}
+  elsewhere = {name for b in blocks if b[0] == "decorator" for name in decorator_names(text, b)}
+  elsewhere |= vme_calls(list(tokens(text)), blocks, kernels)
+  return in_blocks - elsewhere
+
+
 def global_lines(text, blocks, cache):
   lines = []
+  skipped = block_only_kernels(text, blocks)
   for block in blocks:
-    if block[0] != "kernel":
+    if block[0] != "kernel" or kernel_name(text, block) in skipped:
       continue
     for statement in kernel_statements(text, block, cache):
       if statement[0] == "buffers" and statement[1] == "global":
@@ -312,13 +321,17 @@ def global_lines(text, blocks, cache):
   return lines
 
 
-def local_uploads(text, block):
+def buffer_uploads(text, block, qualifier):
   body, limit = body_tokens(text, block)
   calls = []
   for statement in parse_body(Parser(text, body, limit)):
-    if statement[0] == "buffers" and statement[1] == "local":
+    if statement[0] == "buffers" and statement[1] == qualifier:
       calls += [upload_call(entry) for entry in statement[2]]
   return calls
+
+
+def local_uploads(text, block):
+  return buffer_uploads(text, block, "local")
 
 
 def call_edits(text, blocks, quoted, on_process_starts):
@@ -328,7 +341,7 @@ def call_edits(text, blocks, quoted, on_process_starts):
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
-      calls = "".join("".join(f" {call}" for call in local_uploads(text, kernels[name])) + f" {name}();" for name in decorator_names(text, block))
+      calls = "".join("".join(f" {call}" for call in buffer_uploads(text, kernels[name], "global") + local_uploads(text, kernels[name])) + f" {name}();" for name in decorator_names(text, block))
       edits.append((brace, 0, f" vmeLibEnable();{calls}"))
       continue
     if block[0] != "decorator":
