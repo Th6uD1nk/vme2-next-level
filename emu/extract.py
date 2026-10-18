@@ -91,6 +91,9 @@ def upload_calls(text, identifier):
 
 
 def host_source(text, identifier):
+  for declaration in array_declarations(text, identifier):
+    if declaration["extern"]:
+      raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern, its contents are in another file")
   parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
   parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in array_declarations(text, identifier)]
   parts.append(kernel_code(text, identifier))
