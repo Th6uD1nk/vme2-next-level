@@ -133,9 +133,7 @@ def check_buffers(text, toks, blocks):
 
 
 def check_decorators(text, blocks, registry):
-  kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
   known = registry["kernels"]
-  decorated = set()
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
       continue
@@ -146,11 +144,6 @@ def check_decorators(text, blocks, registry):
         raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({names})")
       if not known[name][0]["direct"]:
         raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
-      decorated.add(name)
-  for name, block in kernels.items():
-    if name not in decorated:
-      line = text.count("\n", 0, block[1]) + 1
-      raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or a block @kernel {name} {{ ... }}")
 
 
 def check_local_sources(text, blocks, registry, path):

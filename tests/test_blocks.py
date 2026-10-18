@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
 from vmeg.merge import check_on_process, merged_file, merge_globals, summary
-from vmeg.registry import array_definitions, check_definitions, check_uses, extern_declaration, needed_externs, project_registry
+from vmeg.registry import array_definitions, check_calls, check_definitions, check_uses, extern_declaration, needed_externs, project_registry
 from vmeg.scanner import tokens
 from vmegc import default_output, render, translate
 
@@ -94,10 +94,12 @@ class RenderTest(unittest.TestCase):
     self.assertNotIn("@", out)
     again = kernels + "@kernel a, a, b\nvoid r() { }\n@kernel c\nvoid s() { }\n"
     render(again, find_blocks(again), "t.vmeg.c")
-    for text in [kernels + "@kernel a, z\nvoid r() { }\n", kernels + "@kernel a, b\nvoid r() { }\n"]:
-      with self.subTest(text=text):
-        with self.assertRaises(ValueError):
-          render(text, find_blocks(text), "t.vmeg.c")
+    unknown = kernels + "@kernel a, z\nvoid r() { }\n"
+    with self.assertRaises(ValueError):
+      render(unknown, find_blocks(unknown), "t.vmeg.c")
+    forgotten = kernels + "@kernel a, b\nvoid r() { }\n"
+    with self.assertRaises(ValueError):
+      check_calls(project_registry([("t.vmeg.c", forgotten)]))
 
   def test_global_sources_must_be_declared_with_buffer(self):
     def build(declarations):
@@ -249,11 +251,12 @@ class RenderTest(unittest.TestCase):
   def test_every_kernel_needs_a_decorated_function(self):
     kernel = "kernel k direct {\n  icn top = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:
-      render(kernel, find_blocks(kernel), "t.vmeg.c")
-    self.assertIn("line 1", str(ctx.exception))
+      check_calls(project_registry([("t.vmeg.c", kernel)]))
+    self.assertIn("t.vmeg.c: line 1", str(ctx.exception))
     self.assertIn("'k'", str(ctx.exception))
     text = kernel + "@kernel k\nvoid run() { }\n"
-    render(text, find_blocks(text), "t.vmeg.c")
+    check_calls(project_registry([("t.vmeg.c", text)]))
+    check_calls(project_registry([("a.vmeg.c", kernel), ("b.vmeg.c", "@kernel k\nvoid run() { }\n")]))
 
   def test_buffer_keyword(self):
     text = 'volatile Buffer a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) { static volatile Buffer b[2]; }\n'

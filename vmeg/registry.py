@@ -187,3 +187,11 @@ def needed_externs(registry, path):
     if defined:
       declarations.append(extern_declaration(defined[0]))
   return declarations
+
+
+def check_calls(registry):
+  called = {call["name"] for call in registry["calls"]}
+  for name, definitions in registry["kernels"].items():
+    if name not in called:
+      definition = definitions[0]
+      raise ValueError(f"{definition['path']}: line {definition['line']}: kernel '{name}' is never called, add a function marked with @kernel {name} or a block @kernel {name} {{ ... }}")
