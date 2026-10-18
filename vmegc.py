@@ -116,7 +116,7 @@ def main(argv=None):
   if args.list:
     for path, text, blocks in found:
       for kind, start, open_pos, end in blocks:
-        if kind == "vme-end":
+        if kind == "kernel-block-end":
           continue
         first = text.count("\n", 0, start) + 1
         last = text.count("\n", 0, end - 1) + 1

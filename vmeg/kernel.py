@@ -150,10 +150,6 @@ def generate(text, block):
     return ""
   if kind == "kernel-block-end":
     return "vmeLibDisable();"
-  if kind == "vme":
-    return "{ vmeLibEnable();"
-  if kind == "vme-end":
-    return "vmeLibDisable();"
   if kind == "buffers":
     line = text.count("\n", 0, start) + 1
     raise ValueError(f"line {line}: buffers must be inside a kernel (global buffers or local buffers)")
