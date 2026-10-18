@@ -1,5 +1,6 @@
 import re
 
+from emu.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.expr import to_c
 from vmeg.host import file_buffer_names, function_buffer_names
@@ -86,9 +87,12 @@ def link_notes(emulation, definitions):
   notes = overlap_notes(emulation, definitions)
   known = {name.split("(")[0] for name, _ in definitions}
   for qualifier in ("global", "local"):
-    for index, (_, _, offset, source, _) in enumerate(emulation[qualifier]):
+    for index, (_, count, offset, source, _) in enumerate(emulation[qualifier]):
       if source not in emulation["declared"][qualifier]:
         notes.setdefault((qualifier, index), []).append(f"'{source}' is not declared with Buffer")
+      start = number(offset, definitions)
+      if start is not None and start + count > BUFFER_WORDS:
+        notes.setdefault((qualifier, index), []).append(f"goes past the end of the buffer ({hex(BUFFER_WORDS)} words)")
       for name in dict.fromkeys(NAME.findall(offset)):
         if name not in known:
           notes.setdefault((qualifier, index), []).append(f"'{name}' has no #define in this file")
