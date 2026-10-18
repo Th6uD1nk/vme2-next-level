@@ -76,3 +76,14 @@ def kernel_definitions(path, text):
       "local": buffer_links(statements, "local"),
     })
   return found
+
+
+def project_registry(sources):
+  arrays = {}
+  kernels = {}
+  for path, text in sources:
+    for definition in array_definitions(path, text):
+      arrays.setdefault(definition["name"], []).append(definition)
+    for definition in kernel_definitions(path, text):
+      kernels.setdefault(definition["name"], []).append(definition)
+  return {"arrays": arrays, "kernels": kernels}
