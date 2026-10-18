@@ -75,8 +75,6 @@ def main(argv=None):
 
   if args.output and len(args.inputs) != 1:
     parser.error("-o goes with a single input file, every output is written next to its source")
-  if args.list and len(args.inputs) != 1:
-    parser.error("--list takes a single file")
 
   found = []
   for path in args.inputs:
@@ -87,16 +85,16 @@ def main(argv=None):
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
-  args.input, text, blocks = found[0]
 
   if args.list:
-    for kind, start, open_pos, end in blocks:
-      if kind == "vme-end":
-        continue
-      first = text.count("\n", 0, start) + 1
-      last = text.count("\n", 0, end - 1) + 1
-      header = " ".join(text[start:open_pos].split())
-      print(f"{args.input}:{first}-{last}: {header}")
+    for path, text, blocks in found:
+      for kind, start, open_pos, end in blocks:
+        if kind == "vme-end":
+          continue
+        first = text.count("\n", 0, start) + 1
+        last = text.count("\n", 0, end - 1) + 1
+        header = " ".join(text[start:open_pos].split())
+        print(f"{path}:{first}-{last}: {header}")
     return 0
 
   results = []
