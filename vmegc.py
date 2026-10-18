@@ -97,18 +97,21 @@ def main(argv=None):
       print(f"{args.input}:{first}-{last}: {header}")
     return 0
 
-  try:
-    result, info = translate(text, blocks, args.input)
-  except ValueError as e:
-    print(f"{args.input}: {e}", file=sys.stderr)
-    return 1
+  results = []
+  for path, text, blocks in found:
+    try:
+      result, info = translate(text, blocks, path)
+    except ValueError as e:
+      print(f"{path}: {e}", file=sys.stderr)
+      return 1
+    results.append((args.output or default_output(path), result, info))
 
-  output = args.output or default_output(args.input)
-  with open(output, "w", encoding="utf-8", newline="") as f:
-    f.write(result)
-  base = output[:-4] if output.endswith(".cpp") else output[:-2] if output.endswith(".c") else output
-  with open(base + INFO_SUFFIX, "w", encoding="utf-8", newline="") as f:
-    f.write(info)
+  for output, result, info in results:
+    with open(output, "w", encoding="utf-8", newline="") as f:
+      f.write(result)
+    base = output[:-4] if output.endswith(".cpp") else output[:-2] if output.endswith(".c") else output
+    with open(base + INFO_SUFFIX, "w", encoding="utf-8", newline="") as f:
+      f.write(info)
   return 0
 
 
