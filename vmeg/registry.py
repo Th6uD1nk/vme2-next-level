@@ -119,3 +119,34 @@ def check_uses(registry):
           raise ValueError(f"{where}: the array '{source}' is declared extern but defined in no file")
         if defined[0]["static"] and defined[0]["path"] != kernel["path"]:
           raise ValueError(f"{where}: the array '{source}' is static in {defined[0]['path']} line {defined[0]['line']}, it cannot be used from another file")
+
+
+def split_declarators(text):
+  toks = list(tokens(text))
+  at = next(i for i, (kind, value, _, _) in enumerate(toks) if kind == "ident" and value == "Buffer")
+  qualifiers = [value for kind, value, _, _ in toks[:at] if kind == "ident" and value not in ("static", "extern")]
+  declarators = [[]]
+  nest = 0
+  for token in toks[at + 1:]:
+    kind, value = token[0], token[1]
+    if kind == "punct" and value in "([{":
+      nest += 1
+    elif kind == "punct" and value in ")]}":
+      nest -= 1
+    if nest == 0 and kind == "punct" and value in ",;":
+      declarators.append([])
+    else:
+      declarators[-1].append(token)
+  return qualifiers, declarators
+
+
+def drop_initializer(declarator):
+  nest = 0
+  for i, (kind, value, _, _) in enumerate(declarator):
+    if kind == "punct" and value in "([{":
+      nest += 1
+    elif kind == "punct" and value in ")]}":
+      nest -= 1
+    elif nest == 0 and kind == "punct" and value == "=":
+      return declarator[:i]
+  return declarator
