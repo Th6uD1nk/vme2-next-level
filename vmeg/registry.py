@@ -1,4 +1,4 @@
-from vmeg.blocks import find_blocks, kernel_name
+from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.expr import to_c
 from vmeg.host import declarator_names
 from vmeg.parser import kernel_statements
@@ -78,20 +78,30 @@ def kernel_definitions(path, text):
   return found
 
 
+def call_definitions(path, text):
+  return [
+    {"name": name, "path": path, "line": text.count("\n", 0, block[1]) + 1}
+    for block in find_blocks(text) if block[0] in ("decorator", "kernel-block")
+    for name in decorator_names(text, block)
+  ]
+
+
 def project_registry(sources):
   arrays = {}
   kernels = {}
+  calls = []
   for path, text in sources:
     try:
       array_list = array_definitions(path, text)
       kernel_list = kernel_definitions(path, text)
+      calls += call_definitions(path, text)
     except ValueError as e:
       raise ValueError(f"{path}: {e}") from None
     for definition in array_list:
       arrays.setdefault(definition["name"], []).append(definition)
     for definition in kernel_list:
       kernels.setdefault(definition["name"], []).append(definition)
-  return {"arrays": arrays, "kernels": kernels}
+  return {"arrays": arrays, "kernels": kernels, "calls": calls}
 
 
 def check_definitions(registry):
