@@ -1,5 +1,5 @@
-from vmeg.blocks import body_tokens, decorator_names, kernel_name
-from vmeg.parser import Parser, kernel_statements, parse_body, upload_text
+from vmeg.blocks import decorator_names, kernel_name
+from vmeg.parser import kernel_statements, upload_text
 from vmeg.scanner import tokens
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
@@ -152,7 +152,7 @@ def check_decorators(text, blocks):
       raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or a block @kernel {name} {{ ... }}")
 
 
-def check_local_sources(text, blocks):
+def check_local_sources(text, blocks, registry):
   functions = {}
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
@@ -169,14 +169,10 @@ def check_local_sources(text, blocks):
     if block[0] != "kernel":
       continue
     kernel = kernel_name(text, block)
-    body, limit = body_tokens(text, block)
-    for statement in parse_body(Parser(text, body, limit)):
-      if statement[0] != "buffers" or statement[1] != "local":
-        continue
-      for _, _, _, source, line in statement[2]:
-        for declared, where in functions[kernel]:
-          if source not in declared:
-            raise ValueError(f"line {line}: '{source}' is not declared with Buffer in {where} (local buffers)")
+    for _, _, _, source, line in registry["kernels"][kernel][0]["local"]:
+      for declared, where in functions[kernel]:
+        if source not in declared:
+          raise ValueError(f"line {line}: '{source}' is not declared with Buffer in {where} (local buffers)")
 
 
 def passthrough(text, begin, end, edits):
