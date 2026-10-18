@@ -155,7 +155,7 @@ class RenderTest(unittest.TestCase):
     self.assertTrue(out.startswith('static void vmegUploadGlobals(void);\n#line 1 "t.vmeg.c"\n'))
     self.assertTrue(out.endswith('\n#include "t.gen.h"\n'))
     self.assertEqual(out.count("vmegUploadGlobals();"), 1)
-    self.assertIn("{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
+    self.assertIn("{\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
     self.assertEqual(out.count("vmeLibWipe();"), 1)
     self.assertLess(out.index("vmeLibDisable();"), out.index("go();"))
     plain = "void f() { meLibOnProcess(); }\nvoid meLibOnProcess(void);\n"

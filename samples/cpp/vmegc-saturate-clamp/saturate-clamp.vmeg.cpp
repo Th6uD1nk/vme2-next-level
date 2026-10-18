@@ -88,9 +88,6 @@ kernel runContext direct {
 }
 
 void meLibOnProcess(void) {
-  
-  meCoreDcacheWritebackInvalidateAll();
-  meLibExceptionHandlerInit(0);
 
   @kernel runContext {
     vmeDebugFillWith(VME_BASE_BUFFERS);
