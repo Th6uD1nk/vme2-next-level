@@ -1,4 +1,7 @@
-from vmeg.host import declarator_names
+from emu.listing import emulations
+from vmeg.blocks import decorator_names, find_blocks
+from vmeg.host import declarator_names, function_tokens
+from vmeg.scanner import tokens
 
 BOUNDARIES = (";", "}", "{")
 
@@ -37,3 +40,27 @@ def declarations(text, toks, depth_wanted):
         "extern": any(kind == "ident" and value == "extern" for kind, value, _, _ in statement),
       })
   return found
+
+
+def array_declarations(text, identifier):
+  chosen = [emulation for emulation in emulations(text) if emulation["id"] == identifier]
+  if not chosen:
+    known = ", ".join(emulation["id"] for emulation in emulations(text))
+    raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in this file'})")
+  emulation = chosen[0]
+  blocks = find_blocks(text)
+  available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
+  for block in blocks:
+    if block[0] == "decorator" and emulation["kernel"] in decorator_names(text, block):
+      available["local"] += declarations(text, function_tokens(text, block), 1)
+  result = []
+  seen = set()
+  for qualifier in ("global", "local"):
+    for source in dict.fromkeys(entry[3] for entry in emulation[qualifier]):
+      for declaration in available[qualifier]:
+        key = (qualifier, declaration["line"], declaration["text"])
+        if source in declaration["names"] and key not in seen:
+          seen.add(key)
+          result.append(dict(declaration, where=qualifier))
+          break
+  return result
