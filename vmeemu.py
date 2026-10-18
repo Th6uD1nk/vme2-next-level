@@ -7,7 +7,7 @@ from emu.memory import dump_base_buffers
 from emu.trace import replay
 
 
-def list_emulations(text, kernel):
+def list_emulations(text, kernel, full):
   found = emulations(text)
   if kernel is not None:
     known = [emulation["kernel"] for emulation in found]
@@ -16,7 +16,7 @@ def list_emulations(text, kernel):
     found = [emulation for emulation in found if emulation["kernel"] == kernel]
   elif not found:
     print("warning: there is no @emulate in this file", file=sys.stderr)
-  sys.stdout.write(format_listing(found, defines(text)))
+  sys.stdout.write(format_listing(found, defines(text), full))
 
 
 def main(argv=None):
@@ -25,15 +25,16 @@ def main(argv=None):
   parser.add_argument("--words", type=int, default=32)
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--kernel")
+  parser.add_argument("--full", action="store_true")
   args = parser.parse_args(argv)
-  if args.kernel is not None and not args.list:
-    parser.error("--kernel goes with --list")
+  if (args.kernel is not None or args.full) and not args.list:
+    parser.error("--kernel and --full go with --list")
 
   try:
     with open(args.input, encoding="utf-8") as f:
       text = f.read()
     if args.list:
-      list_emulations(text, args.kernel)
+      list_emulations(text, args.kernel, args.full)
       return 0
     emulator = Emulator()
     replay(emulator, text)
