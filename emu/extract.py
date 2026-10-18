@@ -1,6 +1,7 @@
 from emu.listing import emulations
-from vmeg.blocks import decorator_names, find_blocks
+from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import declarator_names, function_tokens
+from vmeg.kernel import generate
 from vmeg.scanner import tokens
 
 BOUNDARIES = (";", "}", "{")
@@ -42,12 +43,27 @@ def declarations(text, toks, depth_wanted):
   return found
 
 
-def array_declarations(text, identifier):
-  chosen = [emulation for emulation in emulations(text) if emulation["id"] == identifier]
+def chosen_emulation(text, identifier):
+  found = emulations(text)
+  chosen = [emulation for emulation in found if emulation["id"] == identifier]
   if not chosen:
-    known = ", ".join(emulation["id"] for emulation in emulations(text))
+    known = ", ".join(emulation["id"] for emulation in found)
     raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in this file'})")
-  emulation = chosen[0]
+  return chosen[0]
+
+
+def kernel_code(text, identifier):
+  emulation = chosen_emulation(text, identifier)
+  for block in find_blocks(text):
+    if block[0] == "kernel" and kernel_name(text, block) == emulation["kernel"]:
+      code = generate(text, block)
+      if not code:
+        raise ValueError(f"the kernel {emulation['kernel']} of the @emulate \"{identifier}\" has no code to run, it needs the option direct")
+      return code
+
+
+def array_declarations(text, identifier):
+  emulation = chosen_emulation(text, identifier)
   blocks = find_blocks(text)
   available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
   for block in blocks:
