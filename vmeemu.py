@@ -4,6 +4,7 @@ import sys
 from emu.listing import defines, emulations, format_listing
 from emu.machine import Emulator
 from emu.memory import dump_base_buffers
+from emu.run import run_emulation
 from emu.trace import replay
 
 
@@ -29,9 +30,12 @@ def main(argv=None):
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--kernel")
   parser.add_argument("--full", action="store_true")
+  parser.add_argument("--run")
   args = parser.parse_args(argv)
   if (args.kernel is not None or args.full) and not args.list:
     parser.error("--kernel and --full go with --list")
+  if args.run is not None and args.list:
+    parser.error("--run does not go with --list")
 
   try:
     with open(args.input, encoding="utf-8") as f:
@@ -39,8 +43,11 @@ def main(argv=None):
     if args.list:
       list_emulations(text, args.kernel, args.full)
       return 0
-    emulator = Emulator()
-    replay(emulator, text)
+    if args.run is not None:
+      emulator = run_emulation(text, args.run)
+    else:
+      emulator = Emulator()
+      replay(emulator, text)
     sys.stdout.write(dump_base_buffers(emulator.scratchpad, args.words))
   except (ValueError, OSError) as e:
     print(f"{args.input}: {e}", file=sys.stderr)
