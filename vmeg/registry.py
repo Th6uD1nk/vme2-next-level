@@ -150,3 +150,12 @@ def drop_initializer(declarator):
     elif nest == 0 and kind == "punct" and value == "=":
       return declarator[:i]
   return declarator
+
+
+def extern_declaration(definition):
+  qualifiers, declarators = split_declarators(definition["text"])
+  for declarator in declarators:
+    if declarator and declarator[0][1] == definition["name"]:
+      kept = drop_initializer(declarator)
+      return " ".join(["extern"] + qualifiers + ["Buffer"]) + " " + definition["text"][kept[0][2]:kept[-1][3]] + ";"
+  raise ValueError(f"the array '{definition['name']}' is not in its own declaration")
