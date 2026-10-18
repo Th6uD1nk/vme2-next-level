@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
 from vmeg.merge import check_on_process, merged_file, merge_globals, summary
-from vmeg.registry import check_definitions, check_uses, project_registry
+from vmeg.registry import array_definitions, check_definitions, check_uses, extern_declaration, needed_externs, project_registry
 from vmeg.scanner import tokens
 from vmegc import default_output, render, translate
 
@@ -377,6 +377,28 @@ class RegistryTest(unittest.TestCase):
     self.assertIn("is not declared with Buffer in any file", self.failure(check_uses, [("a.vmeg.c", KERNEL)]))
     self.assertIn("declared extern but defined in no file", self.failure(check_uses, [("a.vmeg.c", "extern Buffer g[4];\n" + KERNEL)]))
     self.assertIn("is static in a.vmeg.c line 1", self.failure(check_uses, [("a.vmeg.c", "static volatile Buffer g[4];\n"), ("b.vmeg.c", KERNEL)]))
+
+  def test_extern_declaration_of_an_array_and_the_ones_a_file_needs(self):
+    text = (
+      "volatile Buffer g[4] = { 1, 2, 3, 4 };\n"
+      "volatile Buffer a[2] = { 1, 2 }, b[3];\n"
+      "const volatile Buffer c[] = { 5, 6 };\n"
+      "volatile Buffer m[2][N + 1] = {\n  { 1 }, { 2 },\n};\n"
+      "extern Buffer e[16];\n"
+    )
+    declarations = {definition["name"]: extern_declaration(definition) for definition in array_definitions("a.vmeg.c", text)}
+    self.assertEqual(declarations, {
+      "g": "extern volatile Buffer g[4];",
+      "a": "extern volatile Buffer a[2];",
+      "b": "extern volatile Buffer b[3];",
+      "c": "extern const volatile Buffer c[];",
+      "m": "extern volatile Buffer m[2][N + 1];",
+      "e": "extern Buffer e[16];",
+    })
+    registry = project_registry([("a.vmeg.c", "volatile Buffer g[4] = { 1 };\n"), ("b.vmeg.c", KERNEL), ("c.vmeg.c", "extern Buffer g[4];\n" + KERNEL.replace("kernel k", "kernel j"))])
+    self.assertEqual(needed_externs(registry, "a.vmeg.c"), [])
+    self.assertEqual(needed_externs(registry, "b.vmeg.c"), ["extern volatile Buffer g[4];"])
+    self.assertEqual(needed_externs(registry, "c.vmeg.c"), [])
 
 
 if __name__ == "__main__":
