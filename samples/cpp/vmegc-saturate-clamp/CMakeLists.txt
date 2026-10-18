@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.11)
 set(CMAKE_TOOLCHAIN_FILE "$ENV{PSPDEV}/psp/share/pspdev.cmake" CACHE PATH "toolchain file")
 project(vme-saturate-clamp C CXX ASM)
 
-include(../../cmake/vmegc.cmake)
+include(../../../cmake/vmegc.cmake)
 
 add_executable(vme)
 vmegc_sources(vme SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/saturate-clamp.vmeg.cpp)
 
-target_include_directories(vme PRIVATE ../../vme-ext)
+target_include_directories(vme PRIVATE ../../../vme-ext)
 
 target_compile_options(vme PRIVATE -Os -G0 -Wall -fno-pic)
 
