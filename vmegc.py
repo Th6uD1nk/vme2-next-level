@@ -25,7 +25,7 @@ def render(text, blocks, path):
 def translate(text, blocks, path):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
-  on_process, on_end = on_process_edit(text, toks, quoted) or (None, None)
+  on_process = (on_process_edit(text, toks, quoted) or (None, None))[0]
   out = [(GLOBALS_PROTOTYPE if on_process else "") + f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
@@ -35,11 +35,7 @@ def translate(text, blocks, path):
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set())
   edits = []
   if on_process and on_process[0] not in merged:
-    first = next((k for k, block in enumerate(blocks) if block[0] == "vme" and on_process[0] <= block[1] < on_end), None)
-    if first is None:
-      edits.append(on_process)
-    else:
-      codes[first] += " vmeLibWipe(); vmegUploadGlobals();"
+    edits.append(on_process)
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += calls
   edits.sort(key=lambda edit: edit[0])
