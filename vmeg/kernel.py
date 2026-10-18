@@ -146,7 +146,7 @@ def emit_statement(statement, env, lines, state):
 
 def generate(text, block):
   kind, start, open_pos, _ = block
-  if kind in ("decorator", "emulate"):
+  if kind in ("decorator", "emulate", "kernel-block"):
     return ""
   if kind == "vme":
     return "{ vmeLibEnable();"

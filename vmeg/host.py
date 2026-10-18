@@ -133,13 +133,15 @@ def check_decorators(text, toks, blocks):
   kernels = {kernel_name(text, b): b for b in blocks if b[0] == "kernel"}
   decorated = vme_calls(toks, blocks, kernels)
   for block in blocks:
-    if block[0] != "decorator":
+    if block[0] not in ("decorator", "kernel-block"):
       continue
     line = text.count("\n", 0, block[1]) + 1
     for name in decorator_names(text, block):
       if name not in kernels:
         known = f"kernels: {', '.join(kernels)}" if kernels else "there is no kernel in this file"
         raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({known})")
+      if block[0] == "kernel-block" and "direct" not in [value for _, value, _, _ in tokens(text[kernels[name][1]:kernels[name][2]])][2:]:
+        raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
       decorated.add(name)
   for name, block in kernels.items():
     if name not in decorated:

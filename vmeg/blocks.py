@@ -38,6 +38,23 @@ def read_decorator(text, items, index):
   raise ValueError(f"line {line}: @kernel must be followed by a function definition")
 
 
+def read_kernel_block(text, items, index):
+  start = items[index][2]
+  line = text.count("\n", 0, start) + 1
+  last = index + 1
+  while True:
+    if last + 1 >= len(items) or items[last + 1][0] != "ident":
+      raise ValueError(f"line {line}: expected a kernel name after @kernel")
+    last += 1
+    if last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
+      last += 1
+      continue
+    break
+  if last + 1 >= len(items) or items[last + 1][0] != "punct" or items[last + 1][1] != "{":
+    raise ValueError(f"line {line}: @kernel inside a function must be followed by the kernel names and a block {{ ... }}")
+  return ("kernel-block", start, items[last][3], items[last][3])
+
+
 def read_emulate(text, items, index):
   start = items[index][2]
   line = text.count("\n", 0, start) + 1
@@ -76,8 +93,12 @@ def find_blocks(text):
         blocks.append(("vme-end", close, close, close))
         nested = True
         continue
+      if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "kernel":
+        blocks.append(read_kernel_block(text, items, i))
+        nested = True
+        continue
       line = text.count("\n", 0, start) + 1
-      raise ValueError(f"line {line}: inside a function only '@vme {{ ... }}' is accepted")
+      raise ValueError(f"line {line}: inside a function only '@vme {{ ... }}' and '@kernel name {{ ... }}' are accepted")
     if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
       if i + 1 < len(items) and items[i + 1][1] == "vme":
         line = text.count("\n", 0, start) + 1
