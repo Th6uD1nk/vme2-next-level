@@ -75,16 +75,17 @@ def main(argv=None):
 
   if len(args.inputs) != 1:
     parser.error("give a single .vmeg.c file, or --merge with the .vmeg-info files")
-  args.input = args.inputs[0]
 
-  with open(args.input, encoding="utf-8", newline="") as f:
-    text = f.read()
-
-  try:
-    blocks = find_blocks(text)
-  except ValueError as e:
-    print(f"{args.input}: {e}", file=sys.stderr)
-    return 1
+  found = []
+  for path in args.inputs:
+    with open(path, encoding="utf-8", newline="") as f:
+      text = f.read()
+    try:
+      found.append((path, text, find_blocks(text)))
+    except ValueError as e:
+      print(f"{path}: {e}", file=sys.stderr)
+      return 1
+  args.input, text, blocks = found[0]
 
   if args.list:
     for kind, start, open_pos, end in blocks:
