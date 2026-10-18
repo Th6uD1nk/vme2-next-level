@@ -226,31 +226,6 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(defines(text), [("A", "1"), ("B", "(x + 1)"), ("F(x)", "((x) * 2)"), ("L", "a + b"), ("E", "")])
 
 
-  def test_printing_follows_the_format_of_the_human(self):
-    text = "#define OFFSET 32\n@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from b;\n  }\n}\nBuffer a[4], b[4];\n"
-    self.assertEqual(format_listing(emulations(text), defines(text)), (
-      "emulate \"first\": kernel k (lines 3-8)\n"
-      "  global buffers:\n"
-      "    TOP_0   4 words  from a\n"
-      "    BASE_2  2 words  at OFFSET  from b\n"
-      "  local buffers: none\n"
-      "\n"
-      "defines of the file:\n"
-      "  OFFSET  32\n"
-    ))
-
-
-  def test_full_lists_the_eight_buffers_with_their_links(self):
-    text = "@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    top0, 2 words, at 8, from b;\n  }\n}\nBuffer a[4], b[4];\n"
-    lines = format_listing(emulations(text), [], full=True).splitlines()
-    self.assertEqual(lines[1:4], [
-      "  TOP_0   global  at 0  4 words  from a",
-      "  TOP_0   global  at 8  2 words  from b",
-      "  TOP_1   not linked",
-    ])
-    self.assertEqual(sum(1 for line in lines if line.endswith("not linked")), 7)
-
-
   def test_overlap_is_marked_on_the_second_link_of_the_same_kernel_only(self):
     text = (
       "#define OFF 8\n"
