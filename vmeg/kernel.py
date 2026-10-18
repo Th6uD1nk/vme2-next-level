@@ -148,6 +148,8 @@ def generate(text, block):
   kind, start, open_pos, _ = block
   if kind in ("decorator", "emulate", "kernel-block"):
     return ""
+  if kind == "kernel-block-end":
+    return "vmeLibDisable();"
   if kind == "vme":
     return "{ vmeLibEnable();"
   if kind == "vme-end":

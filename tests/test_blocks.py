@@ -309,13 +309,15 @@ class EmulateTest(unittest.TestCase):
 
 
 class KernelBlockTest(unittest.TestCase):
-  def test_kernel_block_in_a_function_is_read_and_removed(self):
+  def test_kernel_block_in_a_function_is_wrapped_with_enable_call_and_disable(self):
     text = "kernel k direct {\n}\nvoid f() {\n  @kernel k {\n    a();\n  }\n}\n"
     blocks = find_blocks(text)
-    self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block"])
+    self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "x.vmeg.c")
     self.assertNotIn("@kernel", out)
-    self.assertIn("a();", out)
+    self.assertIn("{ vmeLibEnable(); k();", out)
+    self.assertLess(out.index("k();"), out.index("a();"))
+    self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
 
   def test_bad_kernel_block_is_an_error_with_its_line(self):
     cases = {

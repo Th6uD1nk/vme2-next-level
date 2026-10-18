@@ -52,7 +52,8 @@ def read_kernel_block(text, items, index):
     break
   if last + 1 >= len(items) or items[last + 1][0] != "punct" or items[last + 1][1] != "{":
     raise ValueError(f"line {line}: @kernel inside a function must be followed by the kernel names and a block {{ ... }}")
-  return ("kernel-block", start, items[last][3], items[last][3])
+  close = block_end(text, items, last + 1, start, "@kernel block") - 1
+  return [("kernel-block", start, items[last][3], items[last][3]), ("kernel-block-end", close, close, close)]
 
 
 def read_emulate(text, items, index):
@@ -94,7 +95,7 @@ def find_blocks(text):
         nested = True
         continue
       if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "kernel":
-        blocks.append(read_kernel_block(text, items, i))
+        blocks.extend(read_kernel_block(text, items, i))
         nested = True
         continue
       line = text.count("\n", 0, start) + 1

@@ -302,6 +302,11 @@ def call_edits(text, blocks, quoted, on_process_starts):
   edits = []
   merged = set()
   for block in blocks:
+    if block[0] == "kernel-block":
+      brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
+      calls = "".join(f" {name}();" for name in decorator_names(text, block))
+      edits.append((brace, 0, f" vmeLibEnable();{calls}"))
+      continue
     if block[0] != "decorator":
       continue
     line = text.count("\n", 0, block[1]) + 1
