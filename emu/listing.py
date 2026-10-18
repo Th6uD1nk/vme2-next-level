@@ -55,10 +55,27 @@ def buffer_lines(entries):
   return lines
 
 
-def format_listing(found, definitions):
+BUFFERS = [f"{kind}_{n}" for kind in ("TOP", "BASE") for n in range(4)]
+
+
+def full_lines(emulation):
+  lines = []
+  for buffer in BUFFERS:
+    links = [(qualifier, entry) for qualifier in ("global", "local") for entry in emulation[qualifier] if entry[0] == buffer]
+    if not links:
+      lines.append(f"  {buffer:<8}not linked")
+    for qualifier, (_, count, offset, source, _) in links:
+      lines.append(f"  {buffer:<8}{qualifier:<8}at {offset or 0}  {count} words  from {source}")
+  return lines
+
+
+def format_listing(found, definitions, full=False):
   lines = []
   for emulation in found:
     lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} (lines {emulation['first']}-{emulation['last']})")
+    if full:
+      lines += full_lines(emulation)
+      continue
     for qualifier in ("global", "local"):
       entries = emulation[qualifier]
       lines.append(f"  {qualifier} buffers:" if entries else f"  {qualifier} buffers: none")

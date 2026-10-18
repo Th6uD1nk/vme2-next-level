@@ -240,5 +240,16 @@ class ListingTest(unittest.TestCase):
     ))
 
 
+  def test_full_lists_the_eight_buffers_with_their_links(self):
+    text = "@emulate \"first\"\nkernel k direct {\n  global buffers {\n    top0, 4 words, from a;\n    top0, 2 words, at 8, from b;\n  }\n}\n"
+    lines = format_listing(emulations(text), [], full=True).splitlines()
+    self.assertEqual(lines[1:4], [
+      "  TOP_0   global  at 0  4 words  from a",
+      "  TOP_0   global  at 8  2 words  from b",
+      "  TOP_1   not linked",
+    ])
+    self.assertEqual(sum(1 for line in lines if line.endswith("not linked")), 7)
+
+
 if __name__ == "__main__":
   unittest.main()
