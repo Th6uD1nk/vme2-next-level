@@ -5,7 +5,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
-from vmeg.merge import check_on_process, merged_file, merge_globals
+from vmeg.merge import check_on_process, merged_file, merge_globals, summary
+from vmeg.scanner import tokens
 from vmegc import default_output, render, translate
 
 
@@ -318,6 +319,22 @@ class KernelBlockTest(unittest.TestCase):
     self.assertIn("{ vmeLibEnable(); k();", out)
     self.assertLess(out.index("k();"), out.index("a();"))
     self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
+
+  def test_block_sends_globals_then_locals_and_its_kernel_leaves_the_merge(self):
+    text = (
+      "volatile Buffer g[4] = { 1 };\n"
+      "kernel a direct {\n  global buffers {\n    top0, 4 words, from g;\n  }\n  local buffers {\n    top1, 4 words, from x;\n  }\n}\n"
+      "kernel o direct {\n  global buffers {\n    top2, 4 words, from g;\n  }\n}\n"
+      "@kernel o\nvoid other() {\n}\n"
+      "void f() {\n  volatile Buffer x[4];\n  @kernel a {\n  }\n}\n"
+    )
+    blocks = find_blocks(text)
+    out = render(text, blocks, "x.vmeg.c")
+    self.assertLess(out.index("VME_TOP_BUFF0_WOFF"), out.index("VME_TOP_BUFF1_WOFF"))
+    self.assertLess(out.index("VME_TOP_BUFF1_WOFF"), out.index("a();"))
+    info = summary("x.vmeg.c", text, list(tokens(text)), blocks, {})
+    self.assertIn("TOP_2", info)
+    self.assertNotIn("TOP_0", info)
 
   def test_bad_kernel_block_is_an_error_with_its_line(self):
     cases = {
