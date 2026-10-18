@@ -251,5 +251,16 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(sum(1 for line in lines if line.endswith("not linked")), 7)
 
 
+  def test_overlap_is_marked_on_the_second_link_of_the_same_kernel_only(self):
+    text = (
+      "#define OFF 8\n"
+      "@emulate \"one\"\nkernel k direct {\n  global buffers {\n    top0, 16 words, from a;\n    top0, 16 words, at OFF, from b;\n    top1, 4 words, at 40, from c;\n    top1, 4 words, at UNKNOWN, from d;\n  }\n}\n"
+      "@emulate \"two\"\nkernel m direct {\n  global buffers {\n    top0, 16 words, from a;\n  }\n}\n"
+    )
+    lines = format_listing(emulations(text), defines(text), full=True).splitlines()
+    marked = [line for line in lines if "overlaps" in line]
+    self.assertEqual(marked, ["  TOP_0   global  at OFF  16 words  from b  <-- overlaps TOP_0 at 0 (words 8-15)"])
+
+
 if __name__ == "__main__":
   unittest.main()
