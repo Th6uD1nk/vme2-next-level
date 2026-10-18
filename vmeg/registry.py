@@ -1,4 +1,7 @@
+from vmeg.blocks import find_blocks, kernel_name
+from vmeg.expr import to_c
 from vmeg.host import declarator_names
+from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
 BOUNDARIES = (";", "}", "{")
@@ -47,3 +50,29 @@ def array_definitions(path, text):
     for declaration in declarations(text, list(tokens(text)), 0)
     for name in declaration["names"]
   ]
+
+
+def buffer_links(statements, qualifier):
+  return [
+    (target, count, "" if offset is None else to_c(offset), source, line)
+    for statement in statements if statement[0] == "buffers" and statement[1] == qualifier
+    for target, count, offset, source, line in statement[2]
+  ]
+
+
+def kernel_definitions(path, text):
+  found = []
+  for block in find_blocks(text):
+    if block[0] != "kernel":
+      continue
+    statements = kernel_statements(text, block, {})
+    words = [value for _, value, _, _ in tokens(text[block[1]:block[2]])]
+    found.append({
+      "name": kernel_name(text, block),
+      "path": path,
+      "line": text.count("\n", 0, block[1]) + 1,
+      "direct": "direct" in words[2:],
+      "global": buffer_links(statements, "global"),
+      "local": buffer_links(statements, "local"),
+    })
+  return found
