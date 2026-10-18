@@ -159,3 +159,21 @@ def extern_declaration(definition):
       kept = drop_initializer(declarator)
       return " ".join(["extern"] + qualifiers + ["Buffer"]) + " " + definition["text"][kept[0][2]:kept[-1][3]] + ";"
   raise ValueError(f"the array '{definition['name']}' is not in its own declaration")
+
+
+def needed_externs(registry, path):
+  sources = {}
+  for definitions in registry["kernels"].values():
+    for kernel in definitions:
+      if kernel["path"] == path:
+        for _, _, _, source, _ in kernel["global"]:
+          sources[source] = True
+  declarations = []
+  for source in sources:
+    definitions = registry["arrays"].get(source, [])
+    if any(definition["path"] == path for definition in definitions):
+      continue
+    defined = [definition for definition in definitions if not definition["extern"]]
+    if defined:
+      declarations.append(extern_declaration(defined[0]))
+  return declarations
