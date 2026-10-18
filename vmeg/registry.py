@@ -195,3 +195,12 @@ def check_calls(registry):
     if name not in called:
       definition = definitions[0]
       raise ValueError(f"{definition['path']}: line {definition['line']}: kernel '{name}' is never called, add a function marked with @kernel {name} or a block @kernel {name} {{ ... }}")
+
+
+def needed_prototypes(registry, path):
+  names = {}
+  for call in registry["calls"]:
+    definitions = registry["kernels"].get(call["name"], [])
+    if call["path"] == path and definitions and definitions[0]["path"] != path:
+      names[call["name"]] = True
+  return [f"void {name}();" for name in names]
