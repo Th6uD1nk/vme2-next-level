@@ -77,6 +77,10 @@ def main(argv=None):
   if args.output and len(args.inputs) != 1:
     parser.error("-o goes with a single input file, every output is written next to its source")
 
+  for path in args.inputs:
+    if path.endswith(".vmeg.h"):
+      parser.error(f"{path}: a .vmeg.h is not a source, the buffers are declared in .vmeg.c or .vmeg.cpp files")
+
   found = []
   for path in args.inputs:
     with open(path, encoding="utf-8", newline="") as f:
