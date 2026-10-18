@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
 from vmeg.merge import check_on_process, merged_file, merge_globals, summary
+from vmeg.registry import check_uses, project_registry
 from vmeg.scanner import tokens
 from vmegc import default_output, render, translate
 
@@ -102,13 +103,13 @@ class RenderTest(unittest.TestCase):
     def build(declarations):
       return declarations + "kernel k direct {\n  global buffers {\n    top0, 1 words, from x;\n    top1, 1 words, from y;\n  }\n}\n@kernel k\nvoid f() { }\n"
     ok = build("volatile Buffer x[1], y[1];\n")
-    render(ok, find_blocks(ok), "t.vmeg.c")
+    check_uses(project_registry([("t.vmeg.c", ok)]))
     for declarations in ["", "volatile Buffer x[1];\n", "volatile Buffer x[1], z[1];\n", "volatile u32 x[1], y[1];\n"]:
       text = build(declarations)
       with self.subTest(declarations=declarations):
         with self.assertRaises(ValueError) as ctx:
-          render(text, find_blocks(text), "t.vmeg.c")
-        self.assertIn("global buffers", str(ctx.exception))
+          check_uses(project_registry([("t.vmeg.c", text)]))
+        self.assertIn("is not declared with Buffer in any file", str(ctx.exception))
 
   def test_local_sources_must_be_declared_in_every_decorated_function(self):
     kernel = "kernel k direct {\n  local buffers {\n    top0, 1 words, from x;\n  }\n}\n"

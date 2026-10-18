@@ -3,7 +3,7 @@ import os
 import sys
 
 from vmeg.blocks import find_blocks
-from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers, check_decorators, check_global_sources, check_local_sources, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
 from vmeg.kernel import generate
 from vmeg.merge import merge_command, summary
 from vmeg.names import INFO_SUFFIX, SUFFIXES, globals_header
@@ -31,7 +31,6 @@ def translate(text, blocks, path):
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, toks, blocks)
-  check_global_sources(text, blocks, toks)
   check_local_sources(text, blocks)
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set())
   edits = []

@@ -169,20 +169,6 @@ def check_decorators(text, toks, blocks):
       raise ValueError(f"line {line}: kernel '{name}' is never called, add a function marked with @kernel {name} or call {name}() in a @vme block")
 
 
-def check_global_sources(text, blocks, toks):
-  declared = file_buffer_names(toks)
-  for block in blocks:
-    if block[0] != "kernel":
-      continue
-    body, limit = body_tokens(text, block)
-    for statement in parse_body(Parser(text, body, limit)):
-      if statement[0] != "buffers" or statement[1] != "global":
-        continue
-      for _, _, _, source, line in statement[2]:
-        if source not in declared:
-          raise ValueError(f"line {line}: '{source}' is not declared with Buffer at the top level of the file (global buffers)")
-
-
 def check_local_sources(text, blocks):
   functions = {}
   for block in blocks:
