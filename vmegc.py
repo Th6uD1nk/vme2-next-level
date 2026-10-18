@@ -73,8 +73,10 @@ def main(argv=None):
       return 1
     return 0
 
-  if len(args.inputs) != 1:
-    parser.error("give a single .vmeg.c file, or --merge with the .vmeg-info files")
+  if args.output and len(args.inputs) != 1:
+    parser.error("-o goes with a single input file, every output is written next to its source")
+  if args.list and len(args.inputs) != 1:
+    parser.error("--list takes a single file")
 
   found = []
   for path in args.inputs:
