@@ -82,9 +82,14 @@ def project_registry(sources):
   arrays = {}
   kernels = {}
   for path, text in sources:
-    for definition in array_definitions(path, text):
+    try:
+      array_list = array_definitions(path, text)
+      kernel_list = kernel_definitions(path, text)
+    except ValueError as e:
+      raise ValueError(f"{path}: {e}") from None
+    for definition in array_list:
       arrays.setdefault(definition["name"], []).append(definition)
-    for definition in kernel_definitions(path, text):
+    for definition in kernel_list:
       kernels.setdefault(definition["name"], []).append(definition)
   return {"arrays": arrays, "kernels": kernels}
 

@@ -7,6 +7,7 @@ from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers,
 from vmeg.kernel import generate
 from vmeg.merge import merge_command, summary
 from vmeg.names import INFO_SUFFIX, SUFFIXES, globals_header
+from vmeg.registry import check_definitions, check_uses, project_registry
 from vmeg.scanner import tokens
 
 
@@ -85,6 +86,14 @@ def main(argv=None):
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
+
+  try:
+    registry = project_registry([(path, text) for path, text, _ in found])
+    check_definitions(registry)
+    check_uses(registry)
+  except ValueError as e:
+    print(e, file=sys.stderr)
+    return 1
 
   if args.list:
     for path, text, blocks in found:
