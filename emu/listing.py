@@ -1,7 +1,23 @@
+import re
+
 from vmeg.blocks import find_blocks, kernel_name
 from vmeg.expr import to_c
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
+
+DEFINE = re.compile(r"#\s*define\s+([A-Za-z_]\w*(?:\([^)]*\))?)(.*)", re.S)
+COMMENTS = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
+
+
+def defines(text):
+  found = []
+  for kind, value, _, _ in tokens(text):
+    if kind != "pp":
+      continue
+    m = DEFINE.match(value)
+    if m:
+      found.append((m.group(1), " ".join(COMMENTS.sub(" ", m.group(2).replace("\\\n", " ")).split())))
+  return found
 
 
 def buffer_entries(statements, qualifier):

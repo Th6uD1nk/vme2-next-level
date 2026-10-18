@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from emu.agu import stream_at
 from emu.fu import execute
-from emu.listing import emulations
+from emu.listing import defines, emulations
 from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from emu.registers import CONTEXT_WORDS, agu_register, fu_register
 from emu.trace import replay
@@ -219,6 +219,11 @@ class ListingTest(unittest.TestCase):
       "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [],
       "global": [("TOP_0", 4, "", "a", 10), ("BASE_2", 2, "OFFSET", "a", 11)],
     }])
+
+
+  def test_defines_with_continuation_comment_and_arguments(self):
+    text = "#define A 1\n#define B (x + 1) // note\n#define F(x) ((x) * 2)\n#define L a + \\\n  b /* c */\n#define E\n#include <x.h>\nint y = 1; // #define NOT 3\n"
+    self.assertEqual(defines(text), [("A", "1"), ("B", "(x + 1)"), ("F(x)", "((x) * 2)"), ("L", "a + b"), ("E", "")])
 
 
 if __name__ == "__main__":
