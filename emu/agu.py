@@ -108,7 +108,7 @@ def stream_at(emulator, kind, buffer, cycle, cache, synced=None):
   if ring:
     index = cycle % len(stream)
   elif cycle >= len(stream):
-    return 0
+    return signed32(stream[-1])
   else:
     index = cycle
   if synced is not None and offsets[index] is not None:
