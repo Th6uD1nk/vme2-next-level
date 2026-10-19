@@ -138,9 +138,13 @@ def emit_statement(statement, env, lines, state):
     for icn, value in statement[1]:
       if icn == "swen":
         state["swen"] = True
+      if icn in state["routing"]:
+        state["manual"].add(icn)
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
   elif kind == "agu":
-    claim(state, target_pe(statement[1], env), statement[1][2], statement[-1])
+    pe = target_pe(statement[1], env)
+    claim(state, pe, statement[1][2], statement[-1])
+    state["routing"][statement[1][2]][pe] = pe
     lines.extend(generate_agu(statement[1], statement[2], env))
   elif kind == "agudecl":
     if statement[1] in state["agus"]:
@@ -159,6 +163,7 @@ def emit_statement(statement, env, lines, state):
     if slot not in variable["owners"]:
       variable["owners"][slot] = pe
       lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env))
+    state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "assign":
     pe = target_pe(statement[1], env)
     claim(state, pe, "out", statement[-1])
@@ -210,9 +215,12 @@ def generate(text, block):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}}
+  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "manual": set()}
   for statement in statements:
     emit(statement, env, lines, state)
+  for slot, nibbles in state["routing"].items():
+    if slot not in state["manual"]:
+      lines.append(f"vme_icn({ICN_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"] and not state["swen"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   lines.append("vmeLibFinish();")
