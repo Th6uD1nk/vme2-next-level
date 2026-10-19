@@ -25,10 +25,22 @@ function(vmegc_sources target)
     message(FATAL_ERROR "vmegc_sources needs cmake 3.11 or newer")
   endif()
   cmake_parse_arguments(ARG "" "" "SOURCES" ${ARGN})
+  set(inputs "")
   set(generated "")
   foreach(source ${ARG_SOURCES})
-    vmegc_translate(c "${source}")
-    list(APPEND generated "${c}")
+    get_filename_component(name "${source}" NAME)
+    string(REGEX REPLACE "\\.vmeg\\.(cpp|c)$" "" base "${name}")
+    string(REGEX REPLACE "^.*\\.vmeg\\.(cpp|c)$" "\\1" extension "${name}")
+    get_filename_component(input "${source}" ABSOLUTE)
+    list(APPEND inputs "${input}")
+    list(APPEND generated "${CMAKE_CURRENT_BINARY_DIR}/${base}.${extension}")
   endforeach()
+  add_custom_command(
+    OUTPUT ${generated}
+    COMMAND "${VMEGC_PYTHON}" "${VMEGC_SCRIPT}" ${inputs}
+    DEPENDS ${inputs} "${VMEGC_SCRIPT}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    COMMENT "vmegc ${target}"
+    VERBATIM)
   target_sources(${target} PRIVATE ${generated})
 endfunction()
