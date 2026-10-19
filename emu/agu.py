@@ -19,9 +19,8 @@ def write_agu(registers, pe):
   view = agu_view(registers, driver, "write")
   if not view["enabled"]:
     return None
-  if view["format0"] >> 16 or view["format1"] not in (0, END_TOKEN):
-    raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 16 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
-  view["bubbles"] = view["format0"]
+  if view["format0_other"] or view["repeat"] or view["reverse"] or view["format1"] not in (0, END_TOKEN):
+    raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 12 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
   view["sync"] = view["format1"] == END_TOKEN
   if view["sync"] and 6 - view["cyc"] + view["bubbles"] < SYNC_MINIMUM:
     raise ValueError(f"the sync of the write AGU of pe{driver} needs 6 - cyc + bubbles of at least {SYNC_MINIMUM}, it has {6 - view['cyc'] + view['bubbles']}")
@@ -59,7 +58,7 @@ def read_view(registers, kind, buffer):
   if not view["enabled"]:
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
   label = f"the {kind} AGU of pe{driver}"
-  if view["format0"] not in (0, RING_TOKEN) or view["format1"]:
+  if view["bubbles"] or view["reverse"] or view["format0_other"] or view["format1"]:
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of {label} are not modeled (modeled: 0 and {RING_TOKEN:#x} for the first, 0 for the second)")
   return label, view
 
@@ -69,7 +68,7 @@ def ring_offsets(view):
 
 
 def ring_active(view):
-  return view["format0"] == RING_TOKEN and view["inner_step"] != 0
+  return view["repeat"] and view["inner_step"] != 0
 
 
 def stream_ring(registers, kind, buffer):
