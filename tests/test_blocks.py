@@ -175,7 +175,7 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(out.count("vmeLibWipe();"), 1)
 
   def test_kernel_block_is_removed_and_the_block_is_kept(self):
-    text = "kernel k direct {\n  icn top = 0;\n}\nvoid f(void) {\n  before();\n  @kernel k {\n    after();\n  }\n  while (1) { }\n}\n"
+    text = "kernel k direct {\n  icn skew = 0;\n}\nvoid f(void) {\n  before();\n  @kernel k {\n    after();\n  }\n  while (1) { }\n}\n"
     blocks = find_blocks(text)
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "t.vmeg.c")
@@ -184,7 +184,7 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(out.count("vmeLibDisable();"), 1)
     for piece in ["before();", "{", "k();", "after();", "}", "while (1)"]:
       self.assertIn(piece, out)
-    inside_kernel = "kernel k direct {\n  icn top = 0;\n}\n@kernel k\nvoid f() {\n  const char* s = \"@kernel k {\";\n}\n"
+    inside_kernel = "kernel k direct {\n  icn skew = 0;\n}\n@kernel k\nvoid f() {\n  const char* s = \"@kernel k {\";\n}\n"
     self.assertEqual([block[0] for block in find_blocks(inside_kernel)], ["kernel", "decorator"])
 
   def test_context_is_an_alias_of_kernel(self):
@@ -204,7 +204,7 @@ class RenderTest(unittest.TestCase):
       default_output("a.cpp")
 
   def test_every_kernel_needs_a_decorated_function(self):
-    kernel = "kernel k direct {\n  icn top = 0;\n}\n"
+    kernel = "kernel k direct {\n  icn skew = 0;\n}\n"
     with self.assertRaises(ValueError) as ctx:
       check_calls(project_registry([("t.vmeg.c", kernel)]))
     self.assertIn("t.vmeg.c: line 1", str(ctx.exception))
