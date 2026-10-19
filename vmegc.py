@@ -44,12 +44,12 @@ def translate(text, blocks, path, registry=None):
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path)
-  calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
+  calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
   edits = []
   declarations = needed_externs(registry, path) + needed_prototypes(registry, path)
   if declarations:
     edits.append(extern_edit(text, toks, blocks, quoted, declarations))
-  if on_process and on_process[0] not in merged:
+  if on_process and on_process[0] not in started:
     edits.append(on_process)
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += calls

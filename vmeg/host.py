@@ -264,7 +264,7 @@ def kernel_uploads(registry, name, qualifiers):
 
 def call_edits(text, blocks, quoted, on_process_starts, registry):
   edits = []
-  merged = set()
+  started = set()
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
@@ -283,8 +283,8 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     if start in on_process_starts:
       lines[0:0] = ["meCoreDcacheWritebackInvalidateAll();", "meLibExceptionHandlerInit(0);"]
       lines[3:3] = ["vmeLibWipe();"]
-      merged.add(start)
+      started.add(start)
     calls = "".join(f"\n  {code}" for code in lines)
     resume = text.count("\n", 0, at - 1) + 1
     edits.append((at, 0, f'{calls}\n#line {resume} "{quoted}"\n'))
-  return edits, merged
+  return edits, started
