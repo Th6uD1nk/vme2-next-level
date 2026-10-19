@@ -133,7 +133,8 @@ def check_inner(pe, agu, key, value, env):
       raise ValueError(f"pe{pe}.{agu}.{key}: duplicate parameter '{name}'")
     if inner_value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}.{key}: '{name}' takes a value, not a list of parameters")
-    inner[name] = to_c(fold(inner_value, env))
+    folded = fold(inner_value, env)
+    inner[name] = f"({to_c(folded)})" if folded[0] == "name" else to_c(folded)
   for name in ("count", "step"):
     if name not in inner:
       raise ValueError(f"pe{pe}.{agu}.{key}: '{name}' is required")
@@ -173,10 +174,13 @@ def generate_agu(target, params, env):
   if "cyc" in values:
     mode += f", vme_cyc({values['cyc']})"
   step = f"agu_step({values['step']})" if "step" in values else "VME_DEF_STEP"
-  return [
+  lines = [
     f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
     f"vme_pe{pe}(agu_{agu}(COUNT), {step}, {values['count']});",
   ]
+  if "inner0" in values:
+    lines.append(f"vme_pe{pe}(agu_{agu}(INNER_0), {values['inner0']['count']} << 16, {values['inner0']['step']});")
+  return lines
 
 
 def swen_mask(pes):
