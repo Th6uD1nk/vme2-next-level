@@ -173,6 +173,9 @@ def emit_statement(statement, env, lines, state):
     claim(state, pe, "out", statement[-1])
     operations = flatten(fold(statement[2], env))
     _, front, back = operations[0]
+    state["reads"].setdefault(front, statement[-1])
+    state["reads"].setdefault(back, statement[-1])
+    state["outputs"].setdefault(pe, statement[-1])
     fu = f"vme_mux({front}, {back}), fu_code(OP_ADD)"
     after = 1
     if len(operations) > 1 and operations[1][0] == "sat":
@@ -219,9 +222,16 @@ def generate(text, block, warnings=None):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": []}
+  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
+  for ref, line in state["reads"].items():
+    slot, number = ref.lower().split("_")
+    if state["routing"][slot][int(number)] == 4:
+      warn(state, line, f"{slot}{number} is read but no .{slot} is bound in pe{number}, it reads zero")
+  for pe, line in state["outputs"].items():
+    if state["routing"]["write"][pe] == 4:
+      warn(state, line, f"pe{pe} has an operation but no .write is bound, its result stays in the staging")
   for slot, nibbles in state["routing"].items():
     lines.append(f"vme_icn({ICN_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"] and not state["swen"]:
