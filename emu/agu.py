@@ -19,7 +19,7 @@ def write_agu(registers, pe):
   view = agu_view(registers, driver, "write")
   if not view["enabled"]:
     return None
-  if view["format0_other"] or view["repeat"] or view["reverse"] or view["format1"] not in (0, END_TOKEN):
+  if view["format0_other"] or view["repeat"] or view["format1"] not in (0, END_TOKEN):
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 12 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
   view["sync"] = view["format1"] == END_TOKEN
   if view["sync"] and 6 - view["cyc"] + view["bubbles"] < SYNC_MINIMUM:
@@ -40,6 +40,8 @@ def agu_inside_offsets(view, label, buffer, verb):
   if view["mode"] not in AGU_MODES:
     raise ValueError(f"the mode {view['mode']} of {label} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
   offsets = AGU_MODES[view["mode"]](view)
+  if view["reverse"]:
+    offsets = offsets[::-1]
   for inside in offsets:
     if not 0 <= inside < BUFFER_WORDS:
       raise ValueError(f"{label} {verb} the word {inside} of {buffer}, outside the buffer, the circular mode is not modeled")
