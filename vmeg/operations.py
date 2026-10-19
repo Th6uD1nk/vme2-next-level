@@ -1,5 +1,6 @@
 OPERATIONS = {
   "add": {
+    "opcode": 0x010,
     "syntax": "a + b",
     "code": "fu_code(OP_ADD)",
     "operands": ("front", "back"),
@@ -7,6 +8,7 @@ OPERATIONS = {
     "note": "a on the front socket, b on the back one",
   },
   "clamp": {
+    "opcode": 0x07c,
     "syntax": "clamp(x, low, high)",
     "code": "fu_code(OP_CLP)",
     "operands": ("back",),
@@ -14,6 +16,7 @@ OPERATIONS = {
     "note": "registers A = high and B = low, x is a buffer, a Staging variable or an operation",
   },
   "mac": {
+    "opcode": 0x240,
     "syntax": "mac(a, b)",
     "code": "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS",
     "operands": ("front", "back"),
@@ -21,6 +24,7 @@ OPERATIONS = {
     "note": "running inner product (sum of a * b + bias) >> k, a on the front socket and b on the back one",
   },
   "acc": {
+    "opcode": 0x250,
     "syntax": "acc(x)",
     "code": "VME_FU_OPCODE_MAC_ACC_SHIFT_BIAS",
     "operands": ("back",),
@@ -38,12 +42,12 @@ FIELDS = (
 
 def operation_columns(specification):
   units = "primary FU only" if specification["units"] == "primary" else "any FU"
-  return (specification["syntax"], specification["code"], ", ".join(specification["operands"]), units)
+  return (specification["syntax"], f"0x{specification['opcode']:03x}", specification["code"], ", ".join(specification["operands"]), units)
 
 
 def format_operations():
   rows = [operation_columns(specification) for specification in OPERATIONS.values()]
-  widths = [max(len(row[i]) for row in rows) for i in range(4)]
+  widths = [max(len(row[i]) for row in rows) for i in range(5)]
   lines = ["operations, each one takes one FU:"]
   for specification, row in zip(OPERATIONS.values(), rows):
     lines.append("  " + "  ".join(column.ljust(width) for column, width in zip(row, widths)).rstrip())
