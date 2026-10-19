@@ -146,6 +146,31 @@ def claim(state, pe, name, line):
   state["set"][key] = line
 
 
+def place(state, lines, pe, operations, line):
+  used = state["fus"].get(pe, 0)
+  if used + len(operations) > 2:
+    raise ValueError(f"a pe has two FUs, this pe needs {used + len(operations)} operations")
+  for operation in operations:
+    number = state["fus"].get(pe, 0)
+    state["fus"][pe] = number + 1
+    unit = "PRIMARY" if number == 0 else "SECONDARY"
+    if operation["kind"] == "add":
+      mux, code = f"vme_mux({operation['front']}, {operation['back']})", "OP_ADD"
+      reads = (operation["front"], operation["back"])
+    else:
+      source = operation["source"] or f"STAGING_{pe}"
+      mux, code = f"vme_mux(NONE, {source})", "OP_CLP"
+      reads = (operation["source"],) if operation["source"] else ()
+    for ref in reads:
+      state["reads"].setdefault(ref, line)
+    sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
+    lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, fu_code({code}){sat});")
+    if operation["kind"] == "clamp":
+      lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
+      lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")
+  return number
+
+
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "const":
@@ -195,27 +220,9 @@ def emit_statement(statement, env, lines, state):
     if (pe, "operation") in state["set"]:
       raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
-    operations = flatten(fold(statement[2], env))
-    if len(operations) > 2:
-      raise ValueError(f"a pe has two FUs, this expression needs {len(operations)} operations")
+    last = place(state, lines, pe, flatten(fold(statement[2], env)), statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
-    for number, operation in enumerate(operations):
-      unit = "PRIMARY" if number == 0 else "SECONDARY"
-      if operation["kind"] == "add":
-        mux, code = f"vme_mux({operation['front']}, {operation['back']})", "OP_ADD"
-        reads = (operation["front"], operation["back"])
-      else:
-        source = operation["source"] or f"STAGING_{pe}"
-        mux, code = f"vme_mux(NONE, {source})", "OP_CLP"
-        reads = (operation["source"],) if operation["source"] else ()
-      for ref in reads:
-        state["reads"].setdefault(ref, statement[-1])
-      sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
-      lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, fu_code({code}){sat});")
-      if operation["kind"] == "clamp":
-        lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
-        lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")
-    if len(operations) > 1:
+    if last == 1:
       state["secondary"].add(pe)
   elif kind == "peblock":
     for inner in statement[1]:
@@ -251,7 +258,7 @@ def generate(text, block, warnings=None):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   for ref, line in state["reads"].items():
