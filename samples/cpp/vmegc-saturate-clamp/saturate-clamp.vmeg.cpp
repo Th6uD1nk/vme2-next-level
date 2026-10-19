@@ -81,12 +81,14 @@ kernel runContext direct {
   Agu write = { count, cyc: 0x09 };
 
   for p in 0..3 {
-    pe[p].out = clamp(sat(top[p] + base0, 7), 0, 0x7fffff);
-    pe[p].top = top;
-    pe[p].write = write;
+    pe[p] {
+      .top = top;
+      .write = write;
+      .clamp(sat(top[p] + base0, 7), 0, 0x7fffff);
+    }
   }
 
-  pe0.base = base;
+  pe0 { .base = base; }
 }
 
 void meLibOnProcess(void) {
