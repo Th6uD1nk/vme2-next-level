@@ -29,6 +29,17 @@ def operand(expr):
   return ref
 
 
+def split_source(expr):
+  ref = buffer_ref(expr)
+  if ref is not None:
+    return ref, []
+  return None, flatten(expr)
+
+
+def sat_field(operation):
+  return "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
+
+
 def flatten(expr):
   kind = expr[0]
   if kind == "call":
@@ -39,18 +50,27 @@ def flatten(expr):
       bits = constant(args[1], "sat bits")
       if not 0 <= bits <= 31:
         raise ValueError("sat bits out of range (0 to 31)")
-      return flatten(args[0]) + [("sat", bits)]
+      _, operations = split_source(args[0])
+      if not operations:
+        raise ValueError("sat must wrap an operation")
+      if operations[-1]["sat"] is not None:
+        raise ValueError("an operation takes only one sat")
+      operations[-1]["sat"] = bits
+      return operations
     if name == "clamp":
       if len(args) != 3:
         raise ValueError("clamp takes 3 arguments (value, low, high)")
       low = constant(args[1], "clamp low")
       high = constant(args[2], "clamp high")
-      return flatten(args[0]) + [("clamp", low, high)]
+      source, operations = split_source(args[0])
+      if source is not None:
+        raise ValueError("an operation is expected (an addition, sat or clamp)")
+      return operations + [{"kind": "clamp", "low": low, "high": high, "sat": None}]
     raise ValueError(f"unknown operation '{name}' (sat, clamp)")
   if kind == "bin":
     if expr[1] != "+":
       raise ValueError(f"unsupported operator '{expr[1]}' (+)")
-    return [("add", operand(expr[2]), operand(expr[3]))]
+    return [{"kind": "add", "front": operand(expr[2]), "back": operand(expr[3]), "sat": None}]
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
@@ -172,22 +192,17 @@ def emit_statement(statement, env, lines, state):
     pe = target_pe(statement[1], env)
     claim(state, pe, "operation", statement[-1])
     operations = flatten(fold(statement[2], env))
-    _, front, back = operations[0]
-    state["reads"].setdefault(front, statement[-1])
-    state["reads"].setdefault(back, statement[-1])
+    add = operations[0]
+    state["reads"].setdefault(add["front"], statement[-1])
+    state["reads"].setdefault(add["back"], statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
-    fu = f"vme_mux({front}, {back}), fu_code(OP_ADD)"
-    after = 1
-    if len(operations) > 1 and operations[1][0] == "sat":
-      fu += f", fu_sat({operations[1][1]})"
-      after = 2
-    lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), {fu});")
-    if len(operations) > after and operations[after][0] == "clamp":
-      _, low, high = operations[after]
+    lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), vme_mux({add['front']}, {add['back']}), fu_code(OP_ADD){sat_field(add)});")
+    if len(operations) > 1:
+      clamp = operations[1]
       state["secondary"].add(pe)
-      lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP));")
-      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, A), {to_c(('num', high))});")
-      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, B), {to_c(('num', low))});")
+      lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP){sat_field(clamp)});")
+      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, A), {to_c(('num', clamp['high']))});")
+      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, B), {to_c(('num', clamp['low']))});")
   elif kind == "peblock":
     for inner in statement[1]:
       emit(inner, env, lines, state)
