@@ -209,6 +209,13 @@ def parse_agu_declaration(p):
   return ("agudecl", name, params)
 
 
+def parse_staging_declaration(p):
+  p.expect("Staging")
+  name = p.ident()
+  p.expect(";")
+  return ("stagingdecl", name)
+
+
 def parse_pe_block(p, index):
   body = []
   while not p.accept("}"):
@@ -217,6 +224,9 @@ def parse_pe_block(p, index):
     line = p.text.count("\n", 0, p.peek()[2]) + 1
     if p.peek()[1] == "Agu":
       body.append(parse_agu_declaration(p) + (line,))
+      continue
+    if p.peek()[1] == "Staging":
+      body.append(parse_staging_declaration(p) + (line,))
       continue
     p.expect(".")
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
@@ -380,6 +390,8 @@ def parse_statement(p):
       return parse_const(p) + (line,)
     if tok[1] == "Agu":
       return parse_agu_declaration(p) + (line,)
+    if tok[1] == "Staging":
+      return parse_staging_declaration(p) + (line,)
     if tok[1] == "pe" or PE_NAME.match(tok[1]):
       return parse_pe_statement(p) + (line,)
     if tok[1] in ("global", "local"):

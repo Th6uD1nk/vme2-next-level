@@ -167,7 +167,15 @@ def emit_statement(statement, env, lines, state):
   elif kind == "agudecl":
     if statement[1] in state["agus"]:
       raise ValueError(f"the Agu variable '{statement[1]}' is declared twice")
+    if statement[1] in state["stagings"]:
+      raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
     state["agus"][statement[1]] = {"params": statement[2], "owners": {}}
+  elif kind == "stagingdecl":
+    if statement[1] in state["stagings"]:
+      raise ValueError(f"the Staging variable '{statement[1]}' is declared twice")
+    if statement[1] in state["agus"]:
+      raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
+    state["stagings"][statement[1]] = {}
   elif kind == "aguref":
     variable = state["agus"].get(statement[2][1])
     if variable is None:
@@ -243,7 +251,7 @@ def generate(text, block, warnings=None):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   for ref, line in state["reads"].items():
