@@ -126,7 +126,7 @@ def parse_term(p):
   return left
 
 
-def parse_expr(p):
+def parse_additive(p):
   left = parse_term(p)
   while True:
     if p.accept("+"):
@@ -136,6 +136,26 @@ def parse_expr(p):
     else:
       return left
     left = ("bin", op, left, parse_term(p))
+
+
+def accept_shift(p):
+  tok = p.peek()
+  following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+  if tok is None or following is None or tok[0] != "punct" or following[0] != "punct":
+    return None
+  if tok[1] in ("<", ">") and following[1] == tok[1] and tok[3] == following[2]:
+    p.i += 2
+    return tok[1] * 2
+  return None
+
+
+def parse_expr(p):
+  left = parse_additive(p)
+  while True:
+    op = accept_shift(p)
+    if op is None:
+      return left
+    left = ("bin", op, left, parse_additive(p))
 
 
 def parse_pe_index(p):
