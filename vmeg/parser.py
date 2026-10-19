@@ -228,6 +228,16 @@ def parse_pe_block(p, index):
     if p.peek()[1] == "Staging":
       body.append(parse_staging_declaration(p) + (line,))
       continue
+    if p.peek()[0] == "ident":
+      start = p.peek()
+      name = p.ident()
+      p.expect("=")
+      if p.peek() is not None and p.peek()[1] == "{":
+        p.error("expected '.'", start)
+      expr = parse_expr(p)
+      p.expect(";")
+      body.append(("stageset", ("target", index, "stage"), name, expr, line))
+      continue
     p.expect(".")
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "punct" and following[1] == "=":

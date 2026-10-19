@@ -224,6 +224,18 @@ def emit_statement(statement, env, lines, state):
     state["outputs"].setdefault(pe, statement[-1])
     if last == 1:
       state["secondary"].add(pe)
+  elif kind == "stageset":
+    name = statement[2]
+    variable = state["stagings"].get(name)
+    if variable is None:
+      if name in state["agus"]:
+        raise ValueError(f"'{name}' is an Agu variable, only a Staging variable can receive an operation")
+      raise ValueError(f"unknown Staging variable '{name}'")
+    if "pe" in variable:
+      raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
+    pe = target_pe(statement[1], env)
+    last = place(state, lines, pe, flatten(fold(statement[3], env)), statement[-1])
+    variable.update({"pe": pe, "unit": last, "line": statement[-1]})
   elif kind == "peblock":
     for inner in statement[1]:
       emit(inner, env, lines, state)

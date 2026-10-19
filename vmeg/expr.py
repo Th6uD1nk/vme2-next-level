@@ -39,6 +39,8 @@ def substitute(statement, env):
   if kind == "agu":
     params = [(key, fold(value, env)) for key, value in statement[2][1]]
     return ("agu", substitute_target(statement[1], env), ("params", params), line)
+  if kind == "stageset":
+    return ("stageset", substitute_target(statement[1], env), statement[2], fold(statement[3], env), line)
   if kind == "stagingdecl":
     return statement
   if kind == "agudecl":
