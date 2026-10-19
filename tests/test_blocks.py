@@ -403,6 +403,16 @@ class RegistryTest(unittest.TestCase):
     self.assertEqual(needed_externs(registry, "b.vmeg.c"), ["extern volatile Buffer g[4];"])
     self.assertEqual(needed_externs(registry, "c.vmeg.c"), [])
 
+  def test_a_kernel_of_another_file_is_called_with_its_prototype_extern_and_upload(self):
+    a = "volatile Buffer g[4];\n" + KERNEL
+    b = "int x;\nvoid f() {\n  @kernel k {\n  }\n}\n"
+    registry = project_registry([("a.vmeg.c", a), ("b.vmeg.c", b)])
+    check_calls(registry)
+    out, _ = translate(b, find_blocks(b), "b.vmeg.c", registry)
+    self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
+    self.assertIn("vmeLibMemoryToRingBuffer((void*)g, VME_TOP_BUFF0_WOFF, 4); k();", out)
+    self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
+
 
 if __name__ == "__main__":
   unittest.main()
