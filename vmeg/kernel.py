@@ -72,17 +72,17 @@ def flatten(expr, stagings):
       source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
     if name == "acc":
-      if len(args) != 1:
-        raise ValueError("acc takes 1 argument (back)")
+      if len(args) != len(OPERATIONS["acc"]["operands"]):
+        raise ValueError(f"acc takes 1 argument ({', '.join(OPERATIONS['acc']['operands'])})")
       source, operations = split_source(args[0], stagings)
       if operations:
         raise ValueError("acc takes a buffer or a Staging variable")
       return [{"kind": "acc", "source": source, "sat": None}]
     if name == "mac":
-      if len(args) != 2:
-        raise ValueError("mac takes 2 arguments (front, back)")
+      if len(args) != len(OPERATIONS["mac"]["operands"]):
+        raise ValueError(f"mac takes 2 arguments ({', '.join(OPERATIONS['mac']['operands'])})")
       return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
-    raise ValueError(f"unknown operation '{name}' (sat, clamp, mac, acc)")
+    raise ValueError(f"unknown operation '{name}' ({', '.join(['sat'] + [kind for kind in OPERATIONS if kind != 'add'])})")
   if kind == "bin":
     if expr[1] in (">>", "<<"):
       _, operations = split_source(expr[2], stagings)
