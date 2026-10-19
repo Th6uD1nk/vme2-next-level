@@ -203,8 +203,13 @@ def parse_pe_block(p, index):
       p.error("expected '}'")
     line = p.text.count("\n", 0, p.peek()[2]) + 1
     p.expect(".")
-    target = ("target", index, p.ident())
-    body.append(parse_pe_assignment(p, target) + (line,))
+    following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+    if following is not None and following[0] == "punct" and following[1] == "=":
+      body.append(parse_pe_assignment(p, ("target", index, p.ident())) + (line,))
+    else:
+      expr = parse_expr(p)
+      p.expect(";")
+      body.append(("assign", ("target", index, "out"), expr, line))
   return ("peblock", body)
 
 
