@@ -47,17 +47,19 @@ kernel runContext direct {
     base0, 16 words, at SHARED_BASE_0_INPUT_OFFSET, from sharedBase0;
   }
 
-  icn top = 0, write = 0, base = 0x4440;
-
   const count = 16 - 1;
+
+  Agu top   = { count };
+  Agu base  = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
+  Agu write = { count, cyc: 0x09 };
 
   for p in 0..3 {
     pe[p].out = clamp(sat(top[p] + base0, 7), 0, 0x7fffff);
+    pe[p].top = top;
+    pe[p].write = write;
   }
 
-  pe0.top   = { count };
-  pe0.base  = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
-  pe0.write = { count, cyc: 0x09 };
+  pe0.base = base;
 }
 
 @kernel runContext
