@@ -1,5 +1,6 @@
 from vmeg.blocks import body_tokens
 from vmeg.expr import fold, substitute, to_c
+from vmeg.operations import OPERATIONS
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 
@@ -190,23 +191,16 @@ def place(state, lines, pe, operations, line):
     number = state["fus"].get(pe, 0)
     state["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
-    if operation["kind"] == "add":
-      mux, code = f"vme_mux({operation['front']}, {operation['back']})", "fu_code(OP_ADD)"
+    specification = OPERATIONS[operation["kind"]]
+    if specification["units"] == "primary" and number != 0:
+      raise ValueError(f"{operation['kind']} cannot run on the secondary FU, it must be the first operation of the pe")
+    code = specification["code"]
+    if specification["operands"] == ("front", "back"):
+      mux = f"vme_mux({operation['front']}, {operation['back']})"
       reads = (operation["front"], operation["back"])
-    elif operation["kind"] == "mac":
-      if number != 0:
-        raise ValueError("mac cannot run on the secondary FU, it must be the first operation of the pe")
-      mux, code = f"vme_mux({operation['front']}, {operation['back']})", "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS"
-      reads = (operation["front"], operation["back"])
-    elif operation["kind"] == "acc":
-      if number != 0:
-        raise ValueError("acc cannot run on the secondary FU, it must be the first operation of the pe")
-      source = operation["source"] or f"STAGING_{pe}"
-      mux, code = f"vme_mux(NONE, {source})", "VME_FU_OPCODE_MAC_ACC_SHIFT_BIAS"
-      reads = (operation["source"],) if operation["source"] else ()
     else:
       source = operation["source"] or f"STAGING_{pe}"
-      mux, code = f"vme_mux(NONE, {source})", "fu_code(OP_CLP)"
+      mux = f"vme_mux(NONE, {source})"
       reads = (operation["source"],) if operation["source"] else ()
     for ref in reads:
       if not ref.startswith("STAGING"):
