@@ -6,7 +6,6 @@ import sys
 from vmeg.blocks import find_blocks
 from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
 from vmeg.kernel import generate
-from vmeg.merge import merge_command
 from vmeg.names import SUFFIXES
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
 from vmeg.scanner import tokens
@@ -74,18 +73,7 @@ def main(argv=None):
   parser.add_argument("inputs", nargs="+")
   parser.add_argument("-o", "--output")
   parser.add_argument("--list", action="store_true")
-  parser.add_argument("--merge", action="store_true")
   args = parser.parse_args(argv)
-
-  if args.merge:
-    if args.output:
-      parser.error("--merge does not take -o, the header is written next to the .vmeg-info of the file with meLibOnProcess")
-    try:
-      merge_command(args.inputs)
-    except (ValueError, OSError) as e:
-      print(e, file=sys.stderr)
-      return 1
-    return 0
 
   if args.output and len(args.inputs) != 1:
     parser.error("-o goes with a single input file, every output is written next to its source")

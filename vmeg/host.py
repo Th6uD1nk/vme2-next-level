@@ -1,5 +1,5 @@
-from vmeg.blocks import decorator_names, kernel_name
-from vmeg.parser import kernel_statements, upload_text
+from vmeg.blocks import decorator_names
+from vmeg.parser import upload_text
 from vmeg.scanner import tokens
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
@@ -255,24 +255,6 @@ def on_process_edit(text, toks, quoted):
   at, end = bodies[0]
   resume = text.count("\n", 0, at - 1) + 1
   return (at, 0, f'\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
-
-
-def block_only_kernels(text, blocks):
-  in_blocks = {name for b in blocks if b[0] == "kernel-block" for name in decorator_names(text, b)}
-  elsewhere = {name for b in blocks if b[0] == "decorator" for name in decorator_names(text, b)}
-  return in_blocks - elsewhere
-
-
-def global_lines(text, blocks, cache):
-  lines = []
-  skipped = block_only_kernels(text, blocks)
-  for block in blocks:
-    if block[0] != "kernel" or kernel_name(text, block) in skipped:
-      continue
-    for statement in kernel_statements(text, block, cache):
-      if statement[0] == "buffers" and statement[1] == "global":
-        lines += statement[2]
-  return lines
 
 
 def kernel_uploads(registry, name, qualifiers):

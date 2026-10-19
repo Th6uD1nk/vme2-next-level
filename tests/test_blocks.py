@@ -5,7 +5,6 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
-from vmeg.merge import check_on_process, merged_file, merge_globals
 from vmeg.registry import array_definitions, check_calls, check_definitions, check_uses, extern_declaration, needed_externs, project_registry
 from vmegc import default_output, render, translate
 
@@ -174,41 +173,6 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(out.count("vmeLibEnable();"), 2)
     self.assertEqual(out.count("vmegUploadGlobals();"), 0)
     self.assertEqual(out.count("vmeLibWipe();"), 1)
-
-  def test_merge_of_global_lines(self):
-    def info(source, *lines):
-      return {"source": source, "globals": list(lines), "on_process": []}
-    a = info("a.vmeg.c", ("TOP_0", 16, "", "x", 4), ("BASE_0", 16, "OFF", "w", 5))
-    same = info("b.vmeg.c", ("TOP_0", 16, "0", "x", 9), ("BASE_0", 16, "OFF", "w", 10), ("TOP_1", 8, "", "y", 11))
-    self.assertEqual(merge_globals([a, same]), [("TOP_0", 16, "", "x"), ("BASE_0", 16, "OFF", "w"), ("TOP_1", 8, "", "y")])
-    apart = info("b.vmeg.c", ("BASE_0", 16, "8", "w", 3))
-    self.assertEqual(len(merge_globals([a, apart])), 3)
-    for other in [("TOP_0", 16, "", "other", 9), ("TOP_0", 8, "", "x", 9)]:
-      with self.subTest(other=other):
-        with self.assertRaises(ValueError) as ctx:
-          merge_globals([a, info("b.vmeg.c", other)])
-        self.assertEqual(str(ctx.exception), "b.vmeg.c:9: top0 is already loaded at the same offset by a.vmeg.c:4 with a different source or size")
-
-  def test_on_process_over_the_summaries(self):
-    def info(source, globals_=(), on_process=()):
-      return {"source": source, "globals": list(globals_), "on_process": list(on_process)}
-    lines = [("TOP_0", 16, "", "x", 40)]
-    check_on_process([info("a.vmeg.c", lines), info("b.vmeg.c", on_process=[7])])
-    check_on_process([info("a.vmeg.c", lines, [7])])
-    check_on_process([info("a.vmeg.c"), info("b.vmeg.c")])
-    check_on_process([info("a.vmeg.c", on_process=[3])])
-    with self.assertRaises(ValueError) as ctx:
-      check_on_process([info("a.vmeg.c", lines), info("b.vmeg.c")])
-    self.assertEqual(str(ctx.exception), "a.vmeg.c:40: global buffers need a function meLibOnProcess in one of the files, none defines it")
-    with self.assertRaises(ValueError) as ctx:
-      check_on_process([info("a.vmeg.c", on_process=[3]), info("b.vmeg.c", on_process=[12])])
-    self.assertEqual(str(ctx.exception), "meLibOnProcess is defined more than once: a.vmeg.c:3 and b.vmeg.c:12")
-
-  def test_merged_file(self):
-    merged = [("TOP_0", 4, "", "inA"), ("BASE_1", 8, "OFFSET + 2", "inB"), ("TOP_2", 4, "", "inA")]
-    expected = "extern volatile u32 inA[];\nextern volatile u32 inB[];\nstatic void vmegUploadGlobals(void) {\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF0_WOFF, 4);\n  vmeLibMemoryToRingBuffer((void*)inB, VME_BASE_BUFF1_WOFF + OFFSET + 2, 8);\n  vmeLibMemoryToRingBuffer((void*)inA, VME_TOP_BUFF2_WOFF, 4);\n}\n"
-    self.assertEqual(merged_file(merged), expected)
-    self.assertEqual(merged_file([]), "static void vmegUploadGlobals(void) {\n}\n")
 
   def test_kernel_block_is_removed_and_the_block_is_kept(self):
     text = "kernel k direct {\n  icn top = 0;\n}\nvoid f(void) {\n  before();\n  @kernel k {\n    after();\n  }\n  while (1) { }\n}\n"
