@@ -86,6 +86,8 @@ def stream_offsets(registers, kind, buffer):
   group = TOP_OFFSET if kind == "top" else BASE_OFFSET
   first = group + buffer * BUFFER_WORDS
   if ring_active(view):
+    if view["mode"] not in AGU_MODES:
+      raise ValueError(f"the mode {view['mode']} of {label} is not modeled with the ring (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
     if view["reverse"]:
       raise ValueError(f"{label} reverses the order with the ring, not modeled")
     offsets = ring_offsets(view)
