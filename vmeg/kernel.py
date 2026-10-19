@@ -22,21 +22,29 @@ def constant(expr, what):
   return expr[1]
 
 
-def operand(expr):
-  ref = buffer_ref(expr)
+def source_ref(expr, stagings):
+  if expr[0] == "name" and expr[1] in stagings:
+    if stagings[expr[1]] is None:
+      raise ValueError(f"the Staging variable '{expr[1]}' is read before it is set")
+    return stagings[expr[1]]
+  return buffer_ref(expr)
+
+
+def operand(expr, stagings):
+  ref = source_ref(expr, stagings)
   if ref is None:
-    raise ValueError("an operand must be a buffer (top0 to top3, base0 to base3)")
+    raise ValueError("an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable")
   return ref
 
 
-def split_source(expr):
-  ref = buffer_ref(expr)
+def split_source(expr, stagings):
+  ref = source_ref(expr, stagings)
   if ref is not None:
     return ref, []
-  return None, flatten(expr)
+  return None, flatten(expr, stagings)
 
 
-def flatten(expr):
+def flatten(expr, stagings):
   kind = expr[0]
   if kind == "call":
     name, args = expr[1], expr[2]
@@ -46,7 +54,7 @@ def flatten(expr):
       bits = constant(args[1], "sat bits")
       if not 0 <= bits <= 31:
         raise ValueError("sat bits out of range (0 to 31)")
-      _, operations = split_source(args[0])
+      _, operations = split_source(args[0], stagings)
       if not operations:
         raise ValueError("sat must wrap an operation")
       if operations[-1]["sat"] is not None:
@@ -58,13 +66,13 @@ def flatten(expr):
         raise ValueError("clamp takes 3 arguments (value, low, high)")
       low = constant(args[1], "clamp low")
       high = constant(args[2], "clamp high")
-      source, operations = split_source(args[0])
+      source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
     raise ValueError(f"unknown operation '{name}' (sat, clamp)")
   if kind == "bin":
     if expr[1] != "+":
       raise ValueError(f"unsupported operator '{expr[1]}' (+)")
-    return [{"kind": "add", "front": operand(expr[2]), "back": operand(expr[3]), "sat": None}]
+    return [{"kind": "add", "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
@@ -146,6 +154,10 @@ def claim(state, pe, name, line):
   state["set"][key] = line
 
 
+def staging_refs(state):
+  return {name: f"STAGING_{variable['pe'] + 4 * variable['unit']}" if "pe" in variable else None for name, variable in state["stagings"].items()}
+
+
 def place(state, lines, pe, operations, line):
   used = state["fus"].get(pe, 0)
   if used + len(operations) > 2:
@@ -162,7 +174,8 @@ def place(state, lines, pe, operations, line):
       mux, code = f"vme_mux(NONE, {source})", "OP_CLP"
       reads = (operation["source"],) if operation["source"] else ()
     for ref in reads:
-      state["reads"].setdefault(ref, line)
+      if not ref.startswith("STAGING"):
+        state["reads"].setdefault(ref, line)
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, fu_code({code}){sat});")
     if operation["kind"] == "clamp":
@@ -220,7 +233,7 @@ def emit_statement(statement, env, lines, state):
     if (pe, "operation") in state["set"]:
       raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
-    last = place(state, lines, pe, flatten(fold(statement[2], env)), statement[-1])
+    last = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state)), statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
     if last == 1:
       state["secondary"].add(pe)
@@ -234,7 +247,7 @@ def emit_statement(statement, env, lines, state):
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
     pe = target_pe(statement[1], env)
-    last = place(state, lines, pe, flatten(fold(statement[3], env)), statement[-1])
+    last = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state)), statement[-1])
     variable.update({"pe": pe, "unit": last, "line": statement[-1]})
   elif kind == "peblock":
     for inner in statement[1]:
