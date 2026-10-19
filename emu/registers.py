@@ -7,6 +7,8 @@ MUX_FRONT_SHIFT = 27
 MUX_BACK_SHIFT = 22
 SWEN_REGISTER = 27
 RING_TOKEN = 0x20000
+FORMAT0_BUBBLES_MASK = 0xfff
+FORMAT0_REVERSE = 1 << 28
 END_TOKEN = 0x200000
 SYNC_MINIMUM = 7
 ROUTING_REGISTERS = {"top": 28, "base": 29, "write": 30}
@@ -34,6 +36,15 @@ def decode_mode(value):
   return bool(value >> 31), (value >> 24) & 0xf, value & 0x70ffffff
 
 
+def decode_format0(value):
+  return {
+    "bubbles": value & FORMAT0_BUBBLES_MASK,
+    "repeat": bool(value & RING_TOKEN),
+    "reverse": bool(value & FORMAT0_REVERSE),
+    "format0_other": value & ~(FORMAT0_BUBBLES_MASK | RING_TOKEN | FORMAT0_REVERSE) & 0xffffffff,
+  }
+
+
 def decode_inner(value):
   return value >> 16, value & 0xffff
 
@@ -50,8 +61,9 @@ def agu_view(registers, pe, agu):
   step, elements = decode_count(registers[agu_register(pe, agu, "count")])
   offset, cyc = decode_offset_cyc(rest)
   inner_count, inner_step = decode_inner(registers[agu_register(pe, agu, "inner0")])
+  format0 = registers[agu_register(pe, agu, "format0")]
   return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements,
-    "inner_count": inner_count, "inner_step": inner_step, "format0": registers[agu_register(pe, agu, "format0")],
+    "inner_count": inner_count, "inner_step": inner_step, "format0": format0, **decode_format0(format0),
     "format1": registers[agu_register(pe, agu, "format1")]}
 
 
