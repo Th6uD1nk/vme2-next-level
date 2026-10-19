@@ -131,6 +131,8 @@ def generate_agu(target, params, env):
       raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[agu])})")
     if key in values:
       raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
+    if value[0] == "params":
+      raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     folded = fold(value, env)
     if key == "offset" and folded[0] == "num" and not -32768 <= folded[1] <= 32767:
       raise ValueError(f"pe{pe}.{agu}: the offset {folded[1]} is outside -32768 to 32767")

@@ -28,6 +28,10 @@ def fold(expr, env):
   return expr
 
 
+def fold_params(items, env):
+  return [(key, ("params", fold_params(value[1], env)) if value[0] == "params" else fold(value, env)) for key, value in items]
+
+
 def substitute_target(target, env):
   return ("target", fold(target[1], env), target[2])
 
@@ -40,14 +44,13 @@ def substitute(statement, env):
   if kind == "const":
     return ("const", statement[1], fold(statement[2], env), line)
   if kind == "agu":
-    params = [(key, fold(value, env)) for key, value in statement[2][1]]
-    return ("agu", substitute_target(statement[1], env), ("params", params), line)
+    return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
     return ("stageset", substitute_target(statement[1], env), statement[2], fold(statement[3], env), line)
   if kind == "stagingdecl":
     return statement
   if kind == "agudecl":
-    return ("agudecl", statement[1], ("params", [(key, fold(value, env)) for key, value in statement[2][1]]), line)
+    return ("agudecl", statement[1], ("params", fold_params(statement[2][1], env)), line)
   if kind == "aguref":
     return ("aguref", substitute_target(statement[1], env), statement[2], line)
   if kind == "peblock":

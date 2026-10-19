@@ -199,14 +199,20 @@ def parse_target(p):
   return ("target", index, p.ident())
 
 
-def parse_params(p):
+def parse_params(p, nested=False):
   p.expect("{")
   items = []
   if not p.accept("}"):
     while True:
       name = p.ident()
       if p.accept(":"):
-        value = parse_expr(p)
+        tok = p.peek()
+        if tok is not None and tok[1] == "{":
+          if nested:
+            p.error("a list of parameters cannot be nested more than one level", tok)
+          value = parse_params(p, True)
+        else:
+          value = parse_expr(p)
       else:
         value = ("name", name)
       items.append((name, value))
