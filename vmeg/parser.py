@@ -12,7 +12,7 @@ ICN_NAMES = {
   "skew": "SKEW",
 }
 
-READ_PARAMS = ("count", "offset", "mode", "step", "inner0")
+READ_PARAMS = ("count", "offset", "mode", "step", "inner0", "reverse")
 
 AGU_PARAMS = {
   "top": READ_PARAMS,

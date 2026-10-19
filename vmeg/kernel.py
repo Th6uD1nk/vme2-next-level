@@ -156,6 +156,11 @@ def generate_agu(target, params, env):
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     folded = fold(value, env)
+    if key == "reverse":
+      if folded[0] != "num" or folded[1] not in (0, 1):
+        raise ValueError(f"pe{pe}.{agu}: reverse takes true or false")
+      values[key] = folded[1]
+      continue
     if key == "bubbles" and folded[0] == "num" and not 0 <= folded[1] <= 4095:
       raise ValueError(f"pe{pe}.{agu}: the bubbles {folded[1]} are outside 0 to 4095")
     if key == "bubbles":
@@ -188,6 +193,8 @@ def generate_agu(target, params, env):
   format0 = []
   if values.get("bubbles", "0") != "0":
     format0.append(values["bubbles"])
+  if values.get("reverse"):
+    format0.append("0x10000000")
   if format0:
     lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
   return lines
@@ -351,7 +358,7 @@ def generate(text, block, warnings=None):
   if "direct" not in options:
     return ""
   lines = ["vmeLibStart();"]
-  env = {}
+  env = {"true": ("num", 1), "false": ("num", 0)}
   state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
