@@ -8,7 +8,7 @@ from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers,
 from vmeg.kernel import generate
 from vmeg.merge import merge_command, summary
 from vmeg.names import INFO_SUFFIX, SUFFIXES, globals_header
-from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, project_registry
+from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
 from vmeg.scanner import tokens
 
 
@@ -47,7 +47,7 @@ def translate(text, blocks, path, registry=None):
   check_local_sources(text, blocks, registry, path)
   calls, merged = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
   edits = []
-  declarations = needed_externs(registry, path) if registry else []
+  declarations = needed_externs(registry, path) + needed_prototypes(registry, path)
   if declarations:
     edits.append(extern_edit(text, toks, blocks, quoted, declarations))
   if on_process and on_process[0] not in merged:
