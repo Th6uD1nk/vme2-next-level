@@ -34,3 +34,24 @@ FIELDS = (
   ("op >> n", "k = n", "the shift in the 6 low bits of the FU register, n 0 to 63, the last layer of an operation"),
   ("op << n", "k = 64 - n", "the rotary shift, n 0 to 63"),
 )
+
+
+def operation_columns(specification):
+  units = "primary FU only" if specification["units"] == "primary" else "any FU"
+  return (specification["syntax"], specification["code"], ", ".join(specification["operands"]), units)
+
+
+def format_operations():
+  rows = [operation_columns(specification) for specification in OPERATIONS.values()]
+  widths = [max(len(row[i]) for row in rows) for i in range(4)]
+  lines = ["operations, each one takes one FU:"]
+  for specification, row in zip(OPERATIONS.values(), rows):
+    lines.append("  " + "  ".join(column.ljust(width) for column, width in zip(row, widths)).rstrip())
+    lines.append("      " + specification["note"])
+  lines.append("")
+  lines.append("fields of the FU of the operation they wrap:")
+  syntax_width = max(len(field[0]) for field in FIELDS)
+  code_width = max(len(field[1]) for field in FIELDS)
+  for syntax, code, note in FIELDS:
+    lines.append("  " + syntax.ljust(syntax_width) + "  " + code.ljust(code_width) + "  " + note)
+  return "\n".join(lines) + "\n"
