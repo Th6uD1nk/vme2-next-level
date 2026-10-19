@@ -2,9 +2,9 @@ import re
 
 from emu.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.expr import to_c
 from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.parser import kernel_statements
+from vmeg.registry import buffer_links
 from vmeg.scanner import tokens
 
 NAME = re.compile(r"(?<!\w)[A-Za-z_]\w*")
@@ -21,14 +21,6 @@ def defines(text):
     if m:
       found.append((m.group(1), " ".join(COMMENTS.sub(" ", m.group(2).replace("\\\n", " ")).split())))
   return found
-
-
-def buffer_entries(statements, qualifier):
-  entries = []
-  for statement in statements:
-    if statement[0] == "buffers" and statement[1] == qualifier:
-      entries += [(target, count, "" if offset is None else to_c(offset), source, line) for target, count, offset, source, line in statement[2]]
-  return entries
 
 
 def declared_names(text, blocks, kernel):
@@ -52,8 +44,8 @@ def emulations(text):
       "kernel": kernel_name(text, kernel),
       "first": text.count("\n", 0, kernel[1]) + 1,
       "last": text.count("\n", 0, kernel[3] - 1) + 1,
-      "global": buffer_entries(statements, "global"),
-      "local": buffer_entries(statements, "local"),
+      "global": buffer_links(statements, "global"),
+      "local": buffer_links(statements, "local"),
       "declared": declared_names(text, blocks, kernel_name(text, kernel)),
     })
   return found
