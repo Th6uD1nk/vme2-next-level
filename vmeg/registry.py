@@ -80,7 +80,7 @@ def kernel_definitions(path, text):
 
 def call_definitions(path, text):
   return [
-    {"name": name, "path": path, "line": text.count("\n", 0, block[1]) + 1}
+    {"name": name, "path": path, "line": text.count("\n", 0, block[1]) + 1, "block": block[0] == "kernel-block"}
     for block in find_blocks(text) if block[0] in ("decorator", "kernel-block")
     for name in decorator_names(text, block)
   ]
@@ -176,6 +176,11 @@ def needed_externs(registry, path):
   for definitions in registry["kernels"].values():
     for kernel in definitions:
       if kernel["path"] == path:
+        for _, _, _, source, _ in kernel["global"]:
+          sources[source] = True
+  for call in registry["calls"]:
+    if call["path"] == path and call["block"]:
+      for kernel in registry["kernels"].get(call["name"], []):
         for _, _, _, source, _ in kernel["global"]:
           sources[source] = True
   declarations = []
