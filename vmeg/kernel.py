@@ -59,6 +59,8 @@ def flatten(expr, stagings):
         raise ValueError("sat must wrap an operation")
       if operations[-1]["sat"] is not None:
         raise ValueError("an operation takes only one sat")
+      if operations[-1].get("shift") is not None:
+        raise ValueError("the shift goes after the sat: sat(x, n) >> k")
       operations[-1]["sat"] = bits
       return operations
     if name == "clamp":
@@ -81,8 +83,19 @@ def flatten(expr, stagings):
       return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
     raise ValueError(f"unknown operation '{name}' (sat, clamp, mac, acc)")
   if kind == "bin":
+    if expr[1] in (">>", "<<"):
+      _, operations = split_source(expr[2], stagings)
+      if not operations:
+        raise ValueError("a shift must wrap an operation")
+      amount = constant(expr[3], "the shift")
+      if not 0 <= amount <= 63:
+        raise ValueError("the shift must be 0 to 63")
+      if operations[-1].get("shift") is not None:
+        raise ValueError("an operation takes only one shift")
+      operations[-1]["shift"] = amount if expr[1] == ">>" else (64 - amount) % 64
+      return operations
     if expr[1] != "+":
-      raise ValueError(f"unsupported operator '{expr[1]}' (+)")
+      raise ValueError(f"unsupported operator '{expr[1]}' (+, >>, <<)")
     return [{"kind": "add", "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
@@ -199,6 +212,8 @@ def place(state, lines, pe, operations, line):
       if not ref.startswith("STAGING"):
         state["reads"].setdefault(ref, line)
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
+    if operation.get("shift"):
+      sat += f", {operation['shift']}"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
     if operation["kind"] == "clamp":
       lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
