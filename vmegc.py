@@ -4,10 +4,10 @@ import re
 import sys
 
 from vmeg.blocks import find_blocks
-from vmeg.host import BUFFER_TYPE, GLOBALS_PROTOTYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
 from vmeg.kernel import generate
 from vmeg.merge import merge_command, summary
-from vmeg.names import INFO_SUFFIX, SUFFIXES, globals_header
+from vmeg.names import INFO_SUFFIX, SUFFIXES
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
 from vmeg.scanner import tokens
 
@@ -40,7 +40,7 @@ def translate(text, blocks, path, registry=None):
   toks = list(tokens(text))
   registry = registry or project_registry([(path, text)])
   on_process = (on_process_edit(text, toks, quoted) or (None, None))[0]
-  out = [(GLOBALS_PROTOTYPE if on_process else "") + f'#line 1 "{quoted}"\n']
+  out = [f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   codes = [generate(text, block) for block in blocks]
   check_decorators(text, blocks, registry)
@@ -66,8 +66,6 @@ def translate(text, blocks, path, registry=None):
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
-  if on_process:
-    out.append(f'\n#include "{globals_header(path)}"\n')
   return "".join(out), summary(path, text, toks, blocks, {})
 
 

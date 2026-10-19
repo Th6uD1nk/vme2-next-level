@@ -6,8 +6,6 @@ DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "
 
 BUFFER_TYPE = "u32 __attribute__((aligned(64)))"
 
-GLOBALS_PROTOTYPE = "static void vmegUploadGlobals(void);\n"
-
 
 def declarator_names(toks, i):
   names = []

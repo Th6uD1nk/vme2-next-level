@@ -154,8 +154,8 @@ class RenderTest(unittest.TestCase):
   def test_global_uploads_in_on_process(self):
     text = "int before;\nvoid meLibOnProcess(void)\n{\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
-    self.assertTrue(out.startswith('static void vmegUploadGlobals(void);\n#line 1 "t.vmeg.c"\n'))
-    self.assertTrue(out.endswith('\n#include "t.gen.h"\n'))
+    self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\n'))
+    self.assertNotIn("gen.h", out)
     self.assertEqual(out.count("vmegUploadGlobals();"), 0)
     self.assertIn("{\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmeLibDisable();\n#line 3", out)
     self.assertEqual(out.count("vmeLibWipe();"), 1)
