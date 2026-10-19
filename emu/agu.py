@@ -65,8 +65,7 @@ def read_view(registers, kind, buffer):
 
 
 def ring_offsets(view):
-  count, step = view["inner0"] >> 16, view["inner0"] & 0xffff
-  return [view["offset"] + i * step for i in range(count + 1)]
+  return [view["offset"] + i * view["inner_step"] for i in range(view["inner_count"] + 1)]
 
 
 def stream_ring(registers, kind, buffer):

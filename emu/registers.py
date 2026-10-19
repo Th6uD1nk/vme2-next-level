@@ -34,6 +34,10 @@ def decode_mode(value):
   return bool(value >> 31), (value >> 24) & 0xf, value & 0x70ffffff
 
 
+def decode_inner(value):
+  return value >> 16, value & 0xffff
+
+
 def decode_offset_cyc(rest):
   offset = rest & 0xffff
   if offset & 0x8000:
@@ -45,8 +49,9 @@ def agu_view(registers, pe, agu):
   enabled, mode, rest = decode_mode(registers[agu_register(pe, agu, "mode")])
   step, elements = decode_count(registers[agu_register(pe, agu, "count")])
   offset, cyc = decode_offset_cyc(rest)
+  inner_count, inner_step = decode_inner(registers[agu_register(pe, agu, "inner0")])
   return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements,
-    "inner0": registers[agu_register(pe, agu, "inner0")], "format0": registers[agu_register(pe, agu, "format0")],
+    "inner_count": inner_count, "inner_step": inner_step, "format0": registers[agu_register(pe, agu, "format0")],
     "format1": registers[agu_register(pe, agu, "format1")]}
 
 
