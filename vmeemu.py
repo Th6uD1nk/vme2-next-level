@@ -4,7 +4,7 @@ import sys
 from emu.listing import defines, emulations, format_listing
 from emu.machine import Emulator
 from emu.memory import dump_base_buffers
-from emu.run import run_emulation
+from emu.run import choose_source, run_emulation
 from emu.trace import replay
 
 
@@ -25,7 +25,7 @@ def list_emulations(text, kernel, full):
 
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmeemu")
-  parser.add_argument("input")
+  parser.add_argument("input", nargs="+")
   parser.add_argument("--words", type=int, default=32)
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--kernel")
@@ -39,21 +39,29 @@ def main(argv=None):
     parser.error("--run does not go with --list")
   if args.trace is not None and args.run is None:
     parser.error("--trace goes with --run")
+  if args.run is None and len(args.input) != 1:
+    parser.error("several files go only with --run")
 
+  where = ", ".join(args.input)
   try:
-    with open(args.input, encoding="utf-8") as f:
-      text = f.read()
+    sources = []
+    for path in args.input:
+      with open(path, encoding="utf-8") as f:
+        sources.append((path, f.read()))
+    text = sources[0][1]
     if args.list:
       list_emulations(text, args.kernel, args.full)
       return 0
     if args.run is not None:
+      path, text = choose_source(sources, args.run)
+      where = path
       emulator = run_emulation(text, args.run, args.trace)
     else:
       emulator = Emulator()
       replay(emulator, text)
     sys.stdout.write(dump_base_buffers(emulator.scratchpad, args.words))
   except (ValueError, OSError) as e:
-    print(f"{args.input}: {e}", file=sys.stderr)
+    print(f"{where}: {e}", file=sys.stderr)
     return 1
   return 0
 

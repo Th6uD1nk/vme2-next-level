@@ -1,9 +1,22 @@
 import tempfile
 
-from emu.extract import host_program
+from emu.extract import chosen_emulation, host_program
+from emu.listing import emulations
 from emu.host import build_program, run_program
 from emu.machine import Emulator
 from emu.trace import replay
+
+
+def choose_source(sources, identifier):
+  having = [(path, text) for path, text in sources if any(emulation["id"] == identifier for emulation in emulations(text))]
+  if len(having) == 1:
+    return having[0]
+  if len(having) > 1:
+    raise ValueError(f"the @emulate \"{identifier}\" is in {' and '.join(path for path, _ in having)}")
+  if len(sources) == 1:
+    chosen_emulation(sources[0][1], identifier)
+  known = ", ".join(emulation["id"] for _, text in sources for emulation in emulations(text))
+  raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in these files'})")
 
 
 def run_emulation(text, identifier, trace_path=None):
