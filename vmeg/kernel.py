@@ -156,6 +156,11 @@ def generate_agu(target, params, env):
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     folded = fold(value, env)
+    if key == "bubbles" and folded[0] == "num" and not 0 <= folded[1] <= 4095:
+      raise ValueError(f"pe{pe}.{agu}: the bubbles {folded[1]} are outside 0 to 4095")
+    if key == "bubbles":
+      values[key] = to_c(folded) if folded[0] == "num" else f"{to_c(folded) if folded[0] != 'name' else '(' + to_c(folded) + ')'} & 0xfff"
+      continue
     if key == "offset" and folded[0] == "num" and not -32768 <= folded[1] <= 32767:
       raise ValueError(f"pe{pe}.{agu}: the offset {folded[1]} is outside -32768 to 32767")
     if key == "offset":
@@ -180,6 +185,11 @@ def generate_agu(target, params, env):
   ]
   if "inner0" in values:
     lines.append(f"vme_pe{pe}(agu_{agu}(INNER_0), {values['inner0']['count']} << 16, {values['inner0']['step']});")
+  format0 = []
+  if values.get("bubbles", "0") != "0":
+    format0.append(values["bubbles"])
+  if format0:
+    lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
   return lines
 
 
