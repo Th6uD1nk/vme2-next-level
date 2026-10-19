@@ -81,7 +81,10 @@ def generate_agu(target, params, env):
       raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[agu])})")
     if key in values:
       raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
-    values[key] = to_c(fold(value, env))
+    folded = fold(value, env)
+    if key == "offset" and folded[0] == "num" and not -32768 <= folded[1] <= 32767:
+      raise ValueError(f"pe{pe}.{agu}: the offset {folded[1]} is outside -32768 to 32767")
+    values[key] = to_c(folded)
   if "count" not in values:
     raise ValueError(f"pe{pe}.{agu}: 'count' is required")
   mode = f"agu_mode({values['mode']})" if "mode" in values else "VME_DEF_MODE"
