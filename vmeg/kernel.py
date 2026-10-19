@@ -156,7 +156,7 @@ def generate_agu(target, params, env):
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     folded = fold(value, env)
-    if key in ("reverse", "repeat"):
+    if key in ("reverse", "repeat", "sync"):
       if folded[0] != "num" or folded[1] not in (0, 1):
         raise ValueError(f"pe{pe}.{agu}: {key} takes true or false")
       values[key] = folded[1]
@@ -204,6 +204,8 @@ def generate_agu(target, params, env):
     format0.append("VME_RING_TOKEN")
   if format0:
     lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
+  if values.get("sync"):
+    lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_1), VME_END_TOKEN);")
   return lines
 
 

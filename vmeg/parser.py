@@ -17,7 +17,7 @@ AGU_COMMON = ("count", "offset", "mode", "step", "inner0", "reverse")
 AGU_PARAMS = {
   "top": AGU_COMMON + ("repeat",),
   "base": AGU_COMMON + ("repeat",),
-  "write": AGU_COMMON + ("cyc", "bubbles"),
+  "write": AGU_COMMON + ("cyc", "bubbles", "sync"),
 }
 
 PE_NAME = re.compile(r"pe([0-9]+)$")
