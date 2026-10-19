@@ -152,6 +152,9 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"unknown Agu variable '{statement[2][1]}'")
     pe = target_pe(statement[1], env)
     slot = statement[1][2]
+    for bound in variable["owners"]:
+      if bound != slot:
+        raise ValueError(f"the Agu variable '{statement[2][1]}' is already bound to .{bound}, it cannot be bound to .{slot}")
     claim(state, pe, slot, statement[-1])
     if slot not in variable["owners"]:
       variable["owners"][slot] = pe
