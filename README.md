@@ -1,4 +1,4 @@
-## VME Transpiler, WIP
+## VME2 Next Level. (Transpiler, Emulator and Debugger)
 
 A transpiler and debugger for the PSP Virtual Mobile Engine (VME2): turns C-like kernels into plain C/C++ built on vme-lib from the 'me-core' project
 

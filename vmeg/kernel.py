@@ -95,9 +95,10 @@ def flatten(expr, stagings):
         raise ValueError("an operation takes only one shift")
       operations[-1]["shift"] = amount if expr[1] == ">>" else (64 - amount) % 64
       return operations
-    if expr[1] != "+":
-      raise ValueError(f"unsupported operator '{expr[1]}' (+, >>, <<)")
-    return [{"kind": "add", "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
+    kinds = {"+": "add", "-": "sub"}
+    if expr[1] not in kinds:
+      raise ValueError(f"unsupported operator '{expr[1]}' (+, -, >>, <<)")
+    return [{"kind": kinds[expr[1]], "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 

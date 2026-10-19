@@ -7,6 +7,14 @@ OPERATIONS = {
     "units": "any",
     "note": "a on the front socket, b on the back one",
   },
+  "sub": {
+    "opcode": 0x048,
+    "syntax": "a - b",
+    "code": "fu_code(OP_SUB_OFB)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "(a - b) + register B of the FU, a on the front socket and b on the back one",
+  },
   "clamp": {
     "opcode": 0x07c,
     "syntax": "clamp(x, low, high)",
