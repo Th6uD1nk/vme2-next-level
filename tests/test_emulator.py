@@ -270,6 +270,18 @@ class ExtractTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       array_declarations(text, "missing")
 
+  def test_arrays_of_the_links_come_from_the_other_files(self):
+    text = "extern Buffer ex[2];\n@emulate \"one\"\nkernel k direct {\n  global buffers { top0, 2 words, from ex; top1, 2 words, from absent; }\n  local buffers { top2, 4 words, from x; }\n}\n"
+    arrays = "volatile Buffer ex[2] = { 1, 2 };\nvolatile Buffer absent[2] = { 3, 4 };\n"
+    function = "@kernel k\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
+    found = array_declarations(text, "one", [arrays, function])
+    self.assertEqual([(d["where"], d["names"], d["extern"], d["text"]) for d in found], [
+      ("global", ["ex"], False, "volatile Buffer ex[2] = { 1, 2 };"),
+      ("global", ["absent"], False, "volatile Buffer absent[2] = { 3, 4 };"),
+      ("local", ["x"], False, "Buffer x[4] = { 5, 6, 7, 8 };"),
+    ])
+    self.assertEqual([d["origin"] for d in found], [arrays, arrays, function])
+
 
 if __name__ == "__main__":
   unittest.main()
