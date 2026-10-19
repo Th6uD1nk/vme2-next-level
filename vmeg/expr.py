@@ -41,6 +41,8 @@ def substitute(statement, env):
     return ("agu", substitute_target(statement[1], env), ("params", params), line)
   if kind == "agudecl":
     return ("agudecl", statement[1], ("params", [(key, fold(value, env)) for key, value in statement[2][1]]), line)
+  if kind == "aguref":
+    return ("aguref", substitute_target(statement[1], env), statement[2], line)
   if kind == "peblock":
     return ("peblock", [substitute(inner, env) for inner in statement[1]], line)
   if kind == "assign":

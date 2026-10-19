@@ -187,6 +187,11 @@ def parse_pe_assignment(p, target):
       p.error(f"unknown agu '{target[2]}' ({', '.join(AGU_PARAMS)})", name_token)
     kind = "agu"
     value = parse_params(p)
+  elif target[2] in AGU_PARAMS:
+    if tok is None or tok[0] != "ident":
+      p.error("expected parameters { ... } or the name of an Agu variable")
+    kind = "aguref"
+    value = ("name", p.ident())
   else:
     if target[2] != "out":
       p.error(f"cannot assign an expression to '{target[2]}', only to 'out'", name_token)

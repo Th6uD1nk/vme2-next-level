@@ -146,6 +146,16 @@ def emit_statement(statement, env, lines, state):
     if statement[1] in state["agus"]:
       raise ValueError(f"the Agu variable '{statement[1]}' is declared twice")
     state["agus"][statement[1]] = {"params": statement[2], "owners": {}}
+  elif kind == "aguref":
+    variable = state["agus"].get(statement[2][1])
+    if variable is None:
+      raise ValueError(f"unknown Agu variable '{statement[2][1]}'")
+    pe = target_pe(statement[1], env)
+    slot = statement[1][2]
+    claim(state, pe, slot, statement[-1])
+    if slot not in variable["owners"]:
+      variable["owners"][slot] = pe
+      lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env))
   elif kind == "assign":
     pe = target_pe(statement[1], env)
     claim(state, pe, "out", statement[-1])
