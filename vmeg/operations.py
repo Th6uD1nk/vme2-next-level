@@ -15,6 +15,14 @@ OPERATIONS = {
     "units": "any",
     "note": "(a - b) + register B of the FU, a on the front socket and b on the back one",
   },
+  "and": {
+    "opcode": 0x0c0,
+    "syntax": "a & b",
+    "code": "fu_code(OP_AND)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "the bits and, a on the front socket and b on the back one",
+  },
   "clamp": {
     "opcode": 0x07c,
     "syntax": "clamp(x, low, high)",
