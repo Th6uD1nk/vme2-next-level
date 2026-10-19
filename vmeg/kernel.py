@@ -36,10 +36,6 @@ def split_source(expr):
   return None, flatten(expr)
 
 
-def sat_field(operation):
-  return "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
-
-
 def flatten(expr):
   kind = expr[0]
   if kind == "call":
@@ -63,9 +59,7 @@ def flatten(expr):
       low = constant(args[1], "clamp low")
       high = constant(args[2], "clamp high")
       source, operations = split_source(args[0])
-      if source is not None:
-        raise ValueError("an operation is expected (an addition, sat or clamp)")
-      return operations + [{"kind": "clamp", "low": low, "high": high, "sat": None}]
+      return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
     raise ValueError(f"unknown operation '{name}' (sat, clamp)")
   if kind == "bin":
     if expr[1] != "+":
@@ -192,17 +186,27 @@ def emit_statement(statement, env, lines, state):
     pe = target_pe(statement[1], env)
     claim(state, pe, "operation", statement[-1])
     operations = flatten(fold(statement[2], env))
-    add = operations[0]
-    state["reads"].setdefault(add["front"], statement[-1])
-    state["reads"].setdefault(add["back"], statement[-1])
+    if len(operations) > 2:
+      raise ValueError(f"a pe has two FUs, this expression needs {len(operations)} operations")
     state["outputs"].setdefault(pe, statement[-1])
-    lines.append(f"vme_pe{pe}(vme_fu(PRIMARY), vme_mux({add['front']}, {add['back']}), fu_code(OP_ADD){sat_field(add)});")
+    for number, operation in enumerate(operations):
+      unit = "PRIMARY" if number == 0 else "SECONDARY"
+      if operation["kind"] == "add":
+        mux, code = f"vme_mux({operation['front']}, {operation['back']})", "OP_ADD"
+        reads = (operation["front"], operation["back"])
+      else:
+        source = operation["source"] or f"STAGING_{pe}"
+        mux, code = f"vme_mux(NONE, {source})", "OP_CLP"
+        reads = (operation["source"],) if operation["source"] else ()
+      for ref in reads:
+        state["reads"].setdefault(ref, statement[-1])
+      sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
+      lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, fu_code({code}){sat});")
+      if operation["kind"] == "clamp":
+        lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
+        lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")
     if len(operations) > 1:
-      clamp = operations[1]
       state["secondary"].add(pe)
-      lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP){sat_field(clamp)});")
-      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, A), {to_c(('num', clamp['high']))});")
-      lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, B), {to_c(('num', clamp['low']))});")
   elif kind == "peblock":
     for inner in statement[1]:
       emit(inner, env, lines, state)
