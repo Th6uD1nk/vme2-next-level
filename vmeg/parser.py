@@ -149,13 +149,31 @@ def accept_shift(p):
   return None
 
 
-def parse_expr(p):
+def parse_shift(p):
   left = parse_additive(p)
   while True:
     op = accept_shift(p)
     if op is None:
       return left
     left = ("bin", op, left, parse_additive(p))
+
+
+def accept_and(p):
+  tok = p.peek()
+  following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+  if tok is None or tok[0] != "punct" or tok[1] != "&":
+    return False
+  if following is not None and following[0] == "punct" and following[1] == "&" and tok[3] == following[2]:
+    return False
+  p.i += 1
+  return True
+
+
+def parse_expr(p):
+  left = parse_shift(p)
+  while accept_and(p):
+    left = ("bin", "&", left, parse_shift(p))
+  return left
 
 
 def parse_pe_index(p):
