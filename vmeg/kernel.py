@@ -84,7 +84,14 @@ def generate_agu(target, params, env):
     folded = fold(value, env)
     if key == "offset" and folded[0] == "num" and not -32768 <= folded[1] <= 32767:
       raise ValueError(f"pe{pe}.{agu}: the offset {folded[1]} is outside -32768 to 32767")
-    values[key] = to_c(folded)
+    if key == "offset":
+      if folded[0] == "num":
+        values[key] = to_c(("num", folded[1] & 0xffff))
+      else:
+        text = to_c(folded)
+        values[key] = f"{text if folded[0] != 'name' else '(' + text + ')'} & 0xffff"
+    else:
+      values[key] = to_c(folded)
   if "count" not in values:
     raise ValueError(f"pe{pe}.{agu}: 'count' is required")
   mode = f"agu_mode({values['mode']})" if "mode" in values else "VME_DEF_MODE"
