@@ -58,7 +58,7 @@ def read_view(registers, kind, buffer):
   if not view["enabled"]:
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
   label = f"the {kind} AGU of pe{driver}"
-  if view["bubbles"] or view["reverse"] or view["format0_other"] or view["format1"]:
+  if view["bubbles"] or view["format0_other"] or view["format1"]:
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of {label} are not modeled (modeled: 0 and {RING_TOKEN:#x} for the first, 0 for the second)")
   return label, view
 
@@ -84,9 +84,13 @@ def stream_offsets(registers, kind, buffer):
   group = TOP_OFFSET if kind == "top" else BASE_OFFSET
   first = group + buffer * BUFFER_WORDS
   if ring_active(view):
+    if view["reverse"]:
+      raise ValueError(f"{label} reverses the order with the ring, not modeled")
     offsets = ring_offsets(view)
   elif view["mode"] in AGU_MODES:
     offsets = AGU_MODES[view["mode"]](view)
+    if view["reverse"]:
+      offsets = offsets[::-1]
   else:
     raise ValueError(f"the mode {view['mode']} of {label} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
   for inside in offsets:
