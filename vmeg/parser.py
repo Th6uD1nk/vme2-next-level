@@ -12,12 +12,12 @@ ICN_NAMES = {
   "skew": "SKEW",
 }
 
-READ_PARAMS = ("count", "offset", "mode", "step", "inner0", "reverse")
+AGU_COMMON = ("count", "offset", "mode", "step", "inner0", "reverse")
 
 AGU_PARAMS = {
-  "top": READ_PARAMS,
-  "base": READ_PARAMS,
-  "write": READ_PARAMS + ("cyc", "bubbles"),
+  "top": AGU_COMMON + ("repeat",),
+  "base": AGU_COMMON + ("repeat",),
+  "write": AGU_COMMON + ("cyc", "bubbles"),
 }
 
 PE_NAME = re.compile(r"pe([0-9]+)$")

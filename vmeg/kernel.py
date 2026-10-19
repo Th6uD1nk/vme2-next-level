@@ -156,9 +156,9 @@ def generate_agu(target, params, env):
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     folded = fold(value, env)
-    if key == "reverse":
+    if key in ("reverse", "repeat"):
       if folded[0] != "num" or folded[1] not in (0, 1):
-        raise ValueError(f"pe{pe}.{agu}: reverse takes true or false")
+        raise ValueError(f"pe{pe}.{agu}: {key} takes true or false")
       values[key] = folded[1]
       continue
     if key == "bubbles" and folded[0] == "num" and not 0 <= folded[1] <= 4095:
@@ -195,6 +195,8 @@ def generate_agu(target, params, env):
     format0.append(values["bubbles"])
   if values.get("reverse"):
     format0.append("0x10000000")
+  if values.get("repeat"):
+    format0.append("VME_RING_TOKEN")
   if format0:
     lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
   return lines
