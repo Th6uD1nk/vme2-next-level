@@ -68,7 +68,11 @@ def flatten(expr, stagings):
       high = constant(args[2], "clamp high")
       source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
-    raise ValueError(f"unknown operation '{name}' (sat, clamp)")
+    if name == "mac":
+      if len(args) != 2:
+        raise ValueError("mac takes 2 arguments (front, back)")
+      return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
+    raise ValueError(f"unknown operation '{name}' (sat, clamp, mac)")
   if kind == "bin":
     if expr[1] != "+":
       raise ValueError(f"unsupported operator '{expr[1]}' (+)")
@@ -167,17 +171,22 @@ def place(state, lines, pe, operations, line):
     state["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
     if operation["kind"] == "add":
-      mux, code = f"vme_mux({operation['front']}, {operation['back']})", "OP_ADD"
+      mux, code = f"vme_mux({operation['front']}, {operation['back']})", "fu_code(OP_ADD)"
+      reads = (operation["front"], operation["back"])
+    elif operation["kind"] == "mac":
+      if number != 0:
+        raise ValueError("mac cannot run on the secondary FU, it must be the first operation of the pe")
+      mux, code = f"vme_mux({operation['front']}, {operation['back']})", "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS"
       reads = (operation["front"], operation["back"])
     else:
       source = operation["source"] or f"STAGING_{pe}"
-      mux, code = f"vme_mux(NONE, {source})", "OP_CLP"
+      mux, code = f"vme_mux(NONE, {source})", "fu_code(OP_CLP)"
       reads = (operation["source"],) if operation["source"] else ()
     for ref in reads:
       if not ref.startswith("STAGING"):
         state["reads"].setdefault(ref, line)
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
-    lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, fu_code({code}){sat});")
+    lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
     if operation["kind"] == "clamp":
       lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
       lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")
