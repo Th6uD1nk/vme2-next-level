@@ -121,6 +121,10 @@ def emit(statement, env, lines, state):
     raise ValueError(f"line {statement[-1]}: {e}") from None
 
 
+def warn(state, line, message):
+  state["warnings"].append((line, message))
+
+
 def claim(state, pe, name, line):
   key = (pe, name)
   if key in state["set"]:
@@ -190,7 +194,7 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
-def generate(text, block):
+def generate(text, block, warnings=None):
   kind, start, open_pos, _ = block
   if kind in ("decorator", "emulate", "kernel-block"):
     return ""
@@ -215,7 +219,7 @@ def generate(text, block):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}}
+  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": []}
   for statement in statements:
     emit(statement, env, lines, state)
   for slot, nibbles in state["routing"].items():
@@ -223,5 +227,7 @@ def generate(text, block):
   if state["secondary"] and not state["swen"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   lines.append("vmeLibFinish();")
+  if warnings is not None:
+    warnings.extend(state["warnings"])
   body = "".join(f"  {line}\n" for line in lines)
   return f"void {name}() {{\n{body}}}"

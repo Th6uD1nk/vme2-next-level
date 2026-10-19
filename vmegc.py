@@ -34,14 +34,15 @@ def extern_edit(text, toks, blocks, quoted, declarations):
   return (at, 0, f'{lines}\n#line {resume} "{quoted}"')
 
 
-def translate(text, blocks, path, registry=None):
+def translate(text, blocks, path, registry=None, warnings=None):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
   registry = registry or project_registry([(path, text)])
   on_process = (on_process_edit(text, toks, quoted) or (None, None))[0]
   out = [f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
-  codes = [generate(text, block) for block in blocks]
+  found = []
+  codes = [generate(text, block, found) for block in blocks]
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
@@ -65,6 +66,8 @@ def translate(text, blocks, path, registry=None):
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
+  if warnings is not None:
+    warnings.extend((path, line, message) for line, message in found)
   return "".join(out)
 
 
@@ -113,13 +116,17 @@ def main(argv=None):
     return 0
 
   results = []
+  warnings = []
   for path, text, blocks in found:
     try:
-      result = translate(text, blocks, path, registry)
+      result = translate(text, blocks, path, registry, warnings)
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
     results.append((args.output or default_output(path), result))
+
+  for path, line, message in warnings:
+    print(f"{path}: line {line}: warning: {message}", file=sys.stderr)
 
   for output, result in results:
     with open(output, "w", encoding="utf-8", newline="") as f:
