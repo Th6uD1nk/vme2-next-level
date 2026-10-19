@@ -122,6 +122,24 @@ def unroll(loop):
   return out
 
 
+def check_inner(pe, agu, key, value, env):
+  if value[0] != "params":
+    raise ValueError(f"pe{pe}.{agu}: '{key}' takes parameters between braces: {key}: {{ count: 15, step: 1 }}")
+  inner = {}
+  for name, inner_value in value[1]:
+    if name not in ("count", "step"):
+      raise ValueError(f"pe{pe}.{agu}.{key}: unknown parameter '{name}' (count, step)")
+    if name in inner:
+      raise ValueError(f"pe{pe}.{agu}.{key}: duplicate parameter '{name}'")
+    if inner_value[0] == "params":
+      raise ValueError(f"pe{pe}.{agu}.{key}: '{name}' takes a value, not a list of parameters")
+    inner[name] = to_c(fold(inner_value, env))
+  for name in ("count", "step"):
+    if name not in inner:
+      raise ValueError(f"pe{pe}.{agu}.{key}: '{name}' is required")
+  return inner
+
+
 def generate_agu(target, params, env):
   pe = target_pe(target, env)
   agu = target[2]
@@ -131,6 +149,9 @@ def generate_agu(target, params, env):
       raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[agu])})")
     if key in values:
       raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
+    if key == "inner0":
+      values[key] = check_inner(pe, agu, key, value, env)
+      continue
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     folded = fold(value, env)
