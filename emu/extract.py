@@ -32,7 +32,7 @@ def other_declaration(others, source):
   for other in others:
     for declaration in declarations(other, list(tokens(other)), 0):
       if source in declaration["names"] and not declaration["extern"] and not declaration["static"]:
-        return declaration
+        return dict(declaration, origin=other)
   return None
 
 
@@ -55,7 +55,7 @@ def array_declarations(text, identifier, others=()):
       key = (qualifier, found["line"], found["text"])
       if key not in seen:
         seen.add(key)
-        result.append(dict(found, where=qualifier))
+        result.append(dict(found, where=qualifier, origin=found.get("origin", text)))
   return result
 
 
@@ -69,7 +69,15 @@ def host_source(text, identifier, others=()):
   for declaration in arrays:
     if declaration["extern"]:
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern, its contents are in another file")
+  known = dict(defines(text))
   parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
+  for origin in dict.fromkeys(declaration["origin"] for declaration in arrays if declaration["origin"] is not text):
+    for name, value in defines(origin):
+      if name not in known:
+        known[name] = value
+        parts.append(f"#define {name} {value}".rstrip())
+      elif known[name] != value:
+        raise ValueError(f"the macro {name} has two different values in the files of the @emulate \"{identifier}\"")
   parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in arrays]
   parts.append(kernel_code(text, identifier))
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
