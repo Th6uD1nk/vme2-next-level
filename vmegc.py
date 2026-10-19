@@ -6,8 +6,8 @@ import sys
 from vmeg.blocks import find_blocks
 from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
 from vmeg.kernel import generate
-from vmeg.merge import merge_command, summary
-from vmeg.names import INFO_SUFFIX, SUFFIXES
+from vmeg.merge import merge_command
+from vmeg.names import SUFFIXES
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
 from vmeg.scanner import tokens
 
@@ -21,7 +21,7 @@ def default_output(path):
 
 
 def render(text, blocks, path):
-  return translate(text, blocks, path)[0]
+  return translate(text, blocks, path)
 
 
 def extern_edit(text, toks, blocks, quoted, declarations):
@@ -66,7 +66,7 @@ def translate(text, blocks, path, registry=None):
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
-  return "".join(out), summary(path, text, toks, blocks, {})
+  return "".join(out)
 
 
 def main(argv=None):
@@ -127,18 +127,15 @@ def main(argv=None):
   results = []
   for path, text, blocks in found:
     try:
-      result, info = translate(text, blocks, path, registry)
+      result = translate(text, blocks, path, registry)
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
-    results.append((args.output or default_output(path), result, info))
+    results.append((args.output or default_output(path), result))
 
-  for output, result, info in results:
+  for output, result in results:
     with open(output, "w", encoding="utf-8", newline="") as f:
       f.write(result)
-    base = output[:-4] if output.endswith(".cpp") else output[:-2] if output.endswith(".c") else output
-    with open(base + INFO_SUFFIX, "w", encoding="utf-8", newline="") as f:
-      f.write(info)
   return 0
 
 

@@ -1,19 +1,7 @@
 import os
 
-from vmeg.expr import to_c
-from vmeg.host import global_lines, on_process_bodies
 from vmeg.names import globals_header
 from vmeg.parser import upload_text
-
-
-def summary(path, text, toks, blocks, cache):
-  rows = ["vmeg-info\t1", f"source\t{path}"]
-  for target, count, offset, source, line in global_lines(text, blocks, cache):
-    where = "" if offset is None else to_c(offset)
-    rows.append(f"global\t{target}\t{count}\t{where}\t{source}\t{line}")
-  for at, _ in on_process_bodies(toks):
-    rows.append(f"on-process\t{text.count(chr(10), 0, at) + 1}")
-  return "\n".join(rows) + "\n"
 
 
 def read_summary(text, name):

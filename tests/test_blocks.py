@@ -5,9 +5,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
-from vmeg.merge import check_on_process, merged_file, merge_globals, summary
+from vmeg.merge import check_on_process, merged_file, merge_globals
 from vmeg.registry import array_definitions, check_calls, check_definitions, check_uses, extern_declaration, needed_externs, project_registry
-from vmeg.scanner import tokens
 from vmegc import default_output, render, translate
 
 
@@ -143,13 +142,6 @@ class RenderTest(unittest.TestCase):
     for piece in expected:
       position = body.index(piece, position) + len(piece)
     self.assertLess(body.index("vmeLibDisable();"), body.index("go();"))
-
-  def test_summary_of_a_file(self):
-    text = "volatile Buffer g[4];\nkernel a direct {\n  global buffers {\n    base1, 4 words, at OFFSET + 4, from g;\n    top2, 4 words, from g;\n  }\n}\n@kernel a\nvoid f() { }\nvoid meLibOnProcess(void) { }\n"
-    _, info = translate(text, find_blocks(text), "t.vmeg.c")
-    self.assertEqual(info, "vmeg-info\t1\nsource\tt.vmeg.c\nglobal\tBASE_1\t4\t(OFFSET + 4)\tg\t4\nglobal\tTOP_2\t4\t\tg\t5\non-process\t10\n")
-    plain = "int x;\n"
-    self.assertEqual(translate(plain, find_blocks(plain), "p.vmeg.c")[1], "vmeg-info\t1\nsource\tp.vmeg.c\n")
 
   def test_global_uploads_in_on_process(self):
     text = "int before;\nvoid meLibOnProcess(void)\n{\n  go();\n}\n"
@@ -323,7 +315,7 @@ class KernelBlockTest(unittest.TestCase):
     self.assertLess(out.index("k();"), out.index("a();"))
     self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
 
-  def test_block_sends_globals_then_locals_and_its_kernel_leaves_the_merge(self):
+  def test_block_sends_globals_then_locals(self):
     text = (
       "volatile Buffer g[4] = { 1 };\n"
       "kernel a direct {\n  global buffers {\n    top0, 4 words, from g;\n  }\n  local buffers {\n    top1, 4 words, from x;\n  }\n}\n"
@@ -335,9 +327,6 @@ class KernelBlockTest(unittest.TestCase):
     out = render(text, blocks, "x.vmeg.c")
     self.assertLess(out.index("VME_TOP_BUFF0_WOFF"), out.index("VME_TOP_BUFF1_WOFF"))
     self.assertLess(out.index("VME_TOP_BUFF1_WOFF"), out.index("a();"))
-    info = summary("x.vmeg.c", text, list(tokens(text)), blocks, {})
-    self.assertIn("TOP_2", info)
-    self.assertNotIn("TOP_0", info)
 
   def test_bad_kernel_block_is_an_error_with_its_line(self):
     cases = {
@@ -407,7 +396,7 @@ class RegistryTest(unittest.TestCase):
     b = "int x;\nvoid f() {\n  @kernel k {\n  }\n}\n"
     registry = project_registry([("a.vmeg.c", a), ("b.vmeg.c", b)])
     check_calls(registry)
-    out, _ = translate(b, find_blocks(b), "b.vmeg.c", registry)
+    out = translate(b, find_blocks(b), "b.vmeg.c", registry)
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
     self.assertIn("vmeLibMemoryToRingBuffer((void*)g, VME_TOP_BUFF0_WOFF, 4); k();", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
