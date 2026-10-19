@@ -155,7 +155,7 @@ def emit_statement(statement, env, lines, state):
   elif kind == "icn":
     for icn, value in statement[1]:
       if icn == "swen":
-        state["swen"] = True
+        raise ValueError("icn swen was removed, SWEN is derived from the operations of the pes")
       if icn in state["routing"]:
         raise ValueError(f"icn {icn} was removed, the routing is derived from the .{icn} bindings")
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
@@ -184,6 +184,8 @@ def emit_statement(statement, env, lines, state):
     state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "operation":
     pe = target_pe(statement[1], env)
+    if (pe, "operation") in state["set"]:
+      raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
     operations = flatten(fold(statement[2], env))
     if len(operations) > 2:
@@ -241,7 +243,7 @@ def generate(text, block, warnings=None):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  state = {"secondary": set(), "set": {}, "agus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   for ref, line in state["reads"].items():
@@ -253,7 +255,7 @@ def generate(text, block, warnings=None):
       warn(state, line, f"pe{pe} has an operation but no .write is bound, its result stays in the staging")
   for slot, nibbles in state["routing"].items():
     lines.append(f"vme_icn({ICN_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
-  if state["secondary"] and not state["swen"]:
+  if state["secondary"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   lines.append("vmeLibFinish();")
   if warnings is not None:
