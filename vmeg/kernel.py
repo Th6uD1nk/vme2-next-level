@@ -119,6 +119,13 @@ def emit(statement, env, lines, state):
     raise ValueError(f"line {statement[-1]}: {e}") from None
 
 
+def claim(state, pe, name, line):
+  key = (pe, name)
+  if key in state["set"]:
+    raise ValueError(f"pe{pe}.{name} is already set at line {state['set'][key]}")
+  state["set"][key] = line
+
+
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "const":
@@ -131,9 +138,11 @@ def emit_statement(statement, env, lines, state):
         state["swen"] = True
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
   elif kind == "agu":
+    claim(state, target_pe(statement[1], env), statement[1][2], statement[-1])
     lines.extend(generate_agu(statement[1], statement[2], env))
   elif kind == "assign":
     pe = target_pe(statement[1], env)
+    claim(state, pe, "out", statement[-1])
     operations = flatten(fold(statement[2], env))
     _, front, back = operations[0]
     fu = f"vme_mux({front}, {back}), fu_code(OP_ADD)"
@@ -179,7 +188,7 @@ def generate(text, block):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"swen": False, "secondary": set()}
+  state = {"swen": False, "secondary": set(), "set": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   if state["secondary"] and not state["swen"]:
