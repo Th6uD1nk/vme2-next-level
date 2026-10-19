@@ -45,8 +45,8 @@ def substitute(statement, env):
     return ("aguref", substitute_target(statement[1], env), statement[2], line)
   if kind == "peblock":
     return ("peblock", [substitute(inner, env) for inner in statement[1]], line)
-  if kind == "assign":
-    return ("assign", substitute_target(statement[1], env), fold(statement[2], env), line)
+  if kind == "operation":
+    return ("operation", substitute_target(statement[1], env), fold(statement[2], env), line)
   var, low, high, body = statement[1], statement[2], statement[3], statement[4]
   inner = {name: value for name, value in env.items() if name != var}
   return ("for", var, fold(low, env), fold(high, env), [substitute(s, inner) for s in body], line)

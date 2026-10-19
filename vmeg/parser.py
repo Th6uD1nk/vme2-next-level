@@ -192,11 +192,10 @@ def parse_pe_assignment(p, target):
       p.error("expected parameters { ... } or the name of an Agu variable")
     kind = "aguref"
     value = ("name", p.ident())
+  elif target[2] == "out":
+    p.error(".out was removed, write the operation in a pe block: pe0 { .expr; }", name_token)
   else:
-    if target[2] != "out":
-      p.error(f"cannot assign an expression to '{target[2]}', only to 'out'", name_token)
-    kind = "assign"
-    value = parse_expr(p)
+    p.error(f"unknown element '{target[2]}' of a pe ({', '.join(AGU_PARAMS)})", name_token)
   p.expect(";")
   return (kind, target, value)
 
@@ -226,7 +225,7 @@ def parse_pe_block(p, index):
     else:
       expr = parse_expr(p)
       p.expect(";")
-      body.append(("assign", ("target", index, "out"), expr, line))
+      body.append(("operation", ("target", index, "operation"), expr, line))
   return ("peblock", body)
 
 

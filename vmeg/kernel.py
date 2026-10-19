@@ -168,9 +168,9 @@ def emit_statement(statement, env, lines, state):
       variable["owners"][slot] = pe
       lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env))
     state["routing"][slot][pe] = variable["owners"][slot]
-  elif kind == "assign":
+  elif kind == "operation":
     pe = target_pe(statement[1], env)
-    claim(state, pe, "out", statement[-1])
+    claim(state, pe, "operation", statement[-1])
     operations = flatten(fold(statement[2], env))
     _, front, back = operations[0]
     state["reads"].setdefault(front, statement[-1])
