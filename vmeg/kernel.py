@@ -68,11 +68,18 @@ def flatten(expr, stagings):
       high = constant(args[2], "clamp high")
       source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
+    if name == "acc":
+      if len(args) != 1:
+        raise ValueError("acc takes 1 argument (back)")
+      source, operations = split_source(args[0], stagings)
+      if operations:
+        raise ValueError("acc takes a buffer or a Staging variable")
+      return [{"kind": "acc", "source": source, "sat": None}]
     if name == "mac":
       if len(args) != 2:
         raise ValueError("mac takes 2 arguments (front, back)")
       return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
-    raise ValueError(f"unknown operation '{name}' (sat, clamp, mac)")
+    raise ValueError(f"unknown operation '{name}' (sat, clamp, mac, acc)")
   if kind == "bin":
     if expr[1] != "+":
       raise ValueError(f"unsupported operator '{expr[1]}' (+)")
@@ -178,6 +185,12 @@ def place(state, lines, pe, operations, line):
         raise ValueError("mac cannot run on the secondary FU, it must be the first operation of the pe")
       mux, code = f"vme_mux({operation['front']}, {operation['back']})", "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS"
       reads = (operation["front"], operation["back"])
+    elif operation["kind"] == "acc":
+      if number != 0:
+        raise ValueError("acc cannot run on the secondary FU, it must be the first operation of the pe")
+      source = operation["source"] or f"STAGING_{pe}"
+      mux, code = f"vme_mux(NONE, {source})", "VME_FU_OPCODE_MAC_ACC_SHIFT_BIAS"
+      reads = (operation["source"],) if operation["source"] else ()
     else:
       source = operation["source"] or f"STAGING_{pe}"
       mux, code = f"vme_mux(NONE, {source})", "fu_code(OP_CLP)"
