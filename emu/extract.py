@@ -68,7 +68,12 @@ def host_source(text, identifier, others=()):
   arrays = array_declarations(text, identifier, others)
   for declaration in arrays:
     if declaration["extern"]:
-      raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern, its contents are in another file")
+      raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern and no file defines it")
+  emulation = chosen_emulation(text, identifier)
+  declared = {name for declaration in arrays for name in declaration["names"]}
+  for source in dict.fromkeys(entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier]):
+    if source not in declared:
+      raise ValueError(f"the array {source} of the @emulate \"{identifier}\" is defined in no file")
   known = dict(defines(text))
   parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
   for origin in dict.fromkeys(declaration["origin"] for declaration in arrays if declaration["origin"] is not text):
