@@ -66,7 +66,7 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 6 "t.vmeg.c"', out)
-    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  k();\n  vmeLibDisable();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
+    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  vmeLibMemoryToRingBuffer((void*)x, VME_TOP_BUFF0_WOFF, 1);\n  k();\n  vmeLibDisable();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
     text = "kernel k direct {\n}\n@kernel k\n\n/* c */\nstatic void run(int a) { }\n"

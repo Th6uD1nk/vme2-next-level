@@ -296,7 +296,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     line = text.count("\n", 0, block[1]) + 1
     lines = ["vmeLibEnable();"]
     for name in decorator_names(text, block):
-      lines += kernel_uploads(registry, name, ("local",))
+      lines += kernel_uploads(registry, name, ("global", "local"))
       lines.append(f"{name}();")
     lines.append("vmeLibDisable();")
     at, start = function_body(text, block)
