@@ -68,9 +68,13 @@ def ring_offsets(view):
   return [view["offset"] + i * view["inner_step"] for i in range(view["inner_count"] + 1)]
 
 
+def ring_active(view):
+  return view["format0"] == RING_TOKEN and view["inner_step"] != 0
+
+
 def stream_ring(registers, kind, buffer):
   found = read_view(registers, kind, buffer)
-  return found is not None and found[1]["format0"] == RING_TOKEN
+  return found is not None and ring_active(found[1])
 
 
 def stream_offsets(registers, kind, buffer):
@@ -80,7 +84,7 @@ def stream_offsets(registers, kind, buffer):
   label, view = found
   group = TOP_OFFSET if kind == "top" else BASE_OFFSET
   first = group + buffer * BUFFER_WORDS
-  if view["format0"] == RING_TOKEN:
+  if ring_active(view):
     offsets = ring_offsets(view)
   elif view["mode"] in AGU_MODES:
     offsets = AGU_MODES[view["mode"]](view)
