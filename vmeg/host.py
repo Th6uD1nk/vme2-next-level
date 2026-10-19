@@ -256,7 +256,7 @@ def on_process_edit(text, toks, quoted):
     return None
   at, end = bodies[0]
   resume = text.count("\n", 0, at - 1) + 1
-  return (at, 0, f'\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
+  return (at, 0, f'\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
 
 
 def block_only_kernels(text, blocks):
@@ -302,7 +302,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     at, start = function_body(text, block)
     if start in on_process_starts:
       lines[0:0] = ["meCoreDcacheWritebackInvalidateAll();", "meLibExceptionHandlerInit(0);"]
-      lines[3:3] = ["vmeLibWipe();", "vmegUploadGlobals();"]
+      lines[3:3] = ["vmeLibWipe();"]
       merged.add(start)
     calls = "".join(f"\n  {code}" for code in lines)
     resume = text.count("\n", 0, at - 1) + 1

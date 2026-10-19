@@ -156,8 +156,8 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('static void vmegUploadGlobals(void);\n#line 1 "t.vmeg.c"\n'))
     self.assertTrue(out.endswith('\n#include "t.gen.h"\n'))
-    self.assertEqual(out.count("vmegUploadGlobals();"), 1)
-    self.assertIn("{\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegUploadGlobals();\n  vmeLibDisable();\n#line 3", out)
+    self.assertEqual(out.count("vmegUploadGlobals();"), 0)
+    self.assertIn("{\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmeLibDisable();\n#line 3", out)
     self.assertEqual(out.count("vmeLibWipe();"), 1)
     self.assertLess(out.index("vmeLibDisable();"), out.index("go();"))
     plain = "void f() { meLibOnProcess(); }\nvoid meLibOnProcess(void);\n"
@@ -172,7 +172,7 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
-    expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmeLibWipe();", "vmegUploadGlobals();",
+    expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmeLibWipe();",
       "vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);", "k();", "vmeLibDisable();", "go();"]
     position = out.index("void meLibOnProcess")
     for piece in expected:
@@ -180,9 +180,8 @@ class RenderTest(unittest.TestCase):
     other = "kernel k direct {\n}\n@kernel k\nvoid run() { }\nvoid meLibOnProcess(void) { }\n"
     out = render(other, find_blocks(other), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 2)
-    self.assertEqual(out.count("vmegUploadGlobals();"), 1)
+    self.assertEqual(out.count("vmegUploadGlobals();"), 0)
     self.assertEqual(out.count("vmeLibWipe();"), 1)
-    self.assertLess(out.index("vmeLibWipe();"), out.index("vmegUploadGlobals();"))
 
   def test_merge_of_global_lines(self):
     def info(source, *lines):
