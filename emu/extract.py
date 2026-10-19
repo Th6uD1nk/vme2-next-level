@@ -40,9 +40,10 @@ def array_declarations(text, identifier, others=()):
   emulation = chosen_emulation(text, identifier)
   blocks = find_blocks(text)
   available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
-  for block in blocks:
-    if block[0] == "decorator" and emulation["kernel"] in decorator_names(text, block):
-      available["local"] += declarations(text, function_tokens(text, block), 1)
+  for file in (text, *others):
+    for block in (blocks if file is text else find_blocks(file)):
+      if block[0] == "decorator" and emulation["kernel"] in decorator_names(file, block):
+        available["local"] += [dict(declaration, origin=file) for declaration in declarations(file, function_tokens(file, block), 1)]
   result = []
   seen = set()
   for qualifier in ("global", "local"):
