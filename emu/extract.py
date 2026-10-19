@@ -28,7 +28,15 @@ def kernel_code(text, identifier):
       return code
 
 
-def array_declarations(text, identifier):
+def other_declaration(others, source):
+  for other in others:
+    for declaration in declarations(other, list(tokens(other)), 0):
+      if source in declaration["names"] and not declaration["extern"] and not declaration["static"]:
+        return declaration
+  return None
+
+
+def array_declarations(text, identifier, others=()):
   emulation = chosen_emulation(text, identifier)
   blocks = find_blocks(text)
   available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
@@ -39,12 +47,15 @@ def array_declarations(text, identifier):
   seen = set()
   for qualifier in ("global", "local"):
     for source in dict.fromkeys(entry[3] for entry in emulation[qualifier]):
-      for declaration in available[qualifier]:
-        key = (qualifier, declaration["line"], declaration["text"])
-        if source in declaration["names"] and key not in seen:
-          seen.add(key)
-          result.append(dict(declaration, where=qualifier))
-          break
+      found = next((declaration for declaration in available[qualifier] if source in declaration["names"]), None)
+      if qualifier == "global" and (found is None or found["extern"]):
+        found = other_declaration(others, source) or found
+      if found is None:
+        continue
+      key = (qualifier, found["line"], found["text"])
+      if key not in seen:
+        seen.add(key)
+        result.append(dict(found, where=qualifier))
   return result
 
 
@@ -53,12 +64,13 @@ def upload_calls(text, identifier):
   return [upload_text(target, count, offset, source) for qualifier in ("global", "local") for target, count, offset, source, _ in emulation[qualifier]]
 
 
-def host_source(text, identifier):
-  for declaration in array_declarations(text, identifier):
+def host_source(text, identifier, others=()):
+  arrays = array_declarations(text, identifier, others)
+  for declaration in arrays:
     if declaration["extern"]:
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern, its contents are in another file")
   parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
-  parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in array_declarations(text, identifier)]
+  parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in arrays]
   parts.append(kernel_code(text, identifier))
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
   parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
@@ -73,5 +85,5 @@ def host_main(text, identifier):
   return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  {kernel}();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
-def host_program(text, identifier):
-  return INCLUDES + "\n" + host_source(text, identifier) + "\n" + host_main(text, identifier)
+def host_program(text, identifier, others=()):
+  return INCLUDES + "\n" + host_source(text, identifier, others) + "\n" + host_main(text, identifier)

@@ -55,7 +55,8 @@ def main(argv=None):
     if args.run is not None:
       path, text = choose_source(sources, args.run)
       where = path
-      emulator = run_emulation(text, args.run, args.trace)
+      others = [other for other_path, other in sources if other_path != path]
+      emulator = run_emulation(text, args.run, args.trace, others)
     else:
       emulator = Emulator()
       replay(emulator, text)
