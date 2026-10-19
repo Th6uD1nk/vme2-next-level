@@ -7,6 +7,7 @@ from vmeg.blocks import find_blocks
 from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
 from vmeg.kernel import generate
 from vmeg.names import SUFFIXES
+from vmeg.operations import format_operations
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
 from vmeg.scanner import tokens
 
@@ -73,10 +74,19 @@ def translate(text, blocks, path, registry=None, warnings=None):
 
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmegc")
-  parser.add_argument("inputs", nargs="+")
+  parser.add_argument("inputs", nargs="*")
   parser.add_argument("-o", "--output")
   parser.add_argument("--list", action="store_true")
+  parser.add_argument("--ops", action="store_true")
   args = parser.parse_args(argv)
+
+  if args.ops:
+    if args.inputs or args.output or args.list:
+      parser.error("--ops goes alone")
+    sys.stdout.write(format_operations())
+    return 0
+  if not args.inputs:
+    parser.error("the input files are required")
 
   if args.output and len(args.inputs) != 1:
     parser.error("-o goes with a single input file, every output is written next to its source")
