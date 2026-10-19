@@ -67,6 +67,8 @@ def unroll(loop):
         env[statement[1]] = statement[2]
       elif statement[0] == "for":
         out.extend(unroll(statement))
+      elif statement[0] == "peblock":
+        out.extend(statement[1])
       else:
         out.append(statement)
   return out
@@ -157,6 +159,9 @@ def emit_statement(statement, env, lines, state):
       lines.append(f"vme_pe{pe}(vme_fu(SECONDARY), vme_mux(NONE, STAGING_{pe}), fu_code(OP_CLP));")
       lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, A), {to_c(('num', high))});")
       lines.append(f"vme_pe{pe}(fu_reg(SECONDARY, B), {to_c(('num', low))});")
+  elif kind == "peblock":
+    for inner in statement[1]:
+      emit(inner, env, lines, state)
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
     for inner in unroll(loop):

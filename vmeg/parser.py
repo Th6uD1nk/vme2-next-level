@@ -138,21 +138,25 @@ def parse_expr(p):
     left = ("bin", op, left, parse_term(p))
 
 
-def parse_target(p):
+def parse_pe_index(p):
   tok = p.peek()
   if tok is not None and tok[0] == "ident" and tok[1] == "pe":
     p.ident()
     p.expect("[")
     index = parse_expr(p)
     p.expect("]")
-  else:
-    m = PE_NAME.match(tok[1]) if tok is not None else None
-    if m is None:
-      p.error("expected a processing element (pe0 to pe3)")
-    if int(m.group(1)) > 3:
-      p.error("processing element out of range (pe0 to pe3)")
-    p.ident()
-    index = ("num", int(m.group(1)))
+    return index
+  m = PE_NAME.match(tok[1]) if tok is not None else None
+  if m is None:
+    p.error("expected a processing element (pe0 to pe3)")
+  if int(m.group(1)) > 3:
+    p.error("processing element out of range (pe0 to pe3)")
+  p.ident()
+  return ("num", int(m.group(1)))
+
+
+def parse_target(p):
+  index = parse_pe_index(p)
   p.expect(".")
   return ("target", index, p.ident())
 
@@ -174,8 +178,7 @@ def parse_params(p):
   return ("params", items)
 
 
-def parse_pe_statement(p):
-  target = parse_target(p)
+def parse_pe_assignment(p, target):
   name_token = p.toks[p.i - 1]
   p.expect("=")
   tok = p.peek()
@@ -191,6 +194,26 @@ def parse_pe_statement(p):
     value = parse_expr(p)
   p.expect(";")
   return (kind, target, value)
+
+
+def parse_pe_block(p, index):
+  body = []
+  while not p.accept("}"):
+    if p.peek() is None:
+      p.error("expected '}'")
+    line = p.text.count("\n", 0, p.peek()[2]) + 1
+    p.expect(".")
+    target = ("target", index, p.ident())
+    body.append(parse_pe_assignment(p, target) + (line,))
+  return ("peblock", body)
+
+
+def parse_pe_statement(p):
+  index = parse_pe_index(p)
+  if p.accept("{"):
+    return parse_pe_block(p, index)
+  p.expect(".")
+  return parse_pe_assignment(p, ("target", index, p.ident()))
 
 
 def parse_const(p):
