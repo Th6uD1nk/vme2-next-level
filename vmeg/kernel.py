@@ -142,6 +142,10 @@ def emit_statement(statement, env, lines, state):
   elif kind == "agu":
     claim(state, target_pe(statement[1], env), statement[1][2], statement[-1])
     lines.extend(generate_agu(statement[1], statement[2], env))
+  elif kind == "agudecl":
+    if statement[1] in state["agus"]:
+      raise ValueError(f"the Agu variable '{statement[1]}' is declared twice")
+    state["agus"][statement[1]] = {"params": statement[2], "owners": {}}
   elif kind == "assign":
     pe = target_pe(statement[1], env)
     claim(state, pe, "out", statement[-1])
@@ -193,7 +197,7 @@ def generate(text, block):
     return ""
   lines = ["vmeLibStart();"]
   env = {}
-  state = {"swen": False, "secondary": set(), "set": {}}
+  state = {"swen": False, "secondary": set(), "set": {}, "agus": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   if state["secondary"] and not state["swen"]:

@@ -196,12 +196,24 @@ def parse_pe_assignment(p, target):
   return (kind, target, value)
 
 
+def parse_agu_declaration(p):
+  p.expect("Agu")
+  name = p.ident()
+  p.expect("=")
+  params = parse_params(p)
+  p.expect(";")
+  return ("agudecl", name, params)
+
+
 def parse_pe_block(p, index):
   body = []
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
     line = p.text.count("\n", 0, p.peek()[2]) + 1
+    if p.peek()[1] == "Agu":
+      body.append(parse_agu_declaration(p) + (line,))
+      continue
     p.expect(".")
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "punct" and following[1] == "=":
@@ -362,6 +374,8 @@ def parse_statement(p):
       return parse_icn(p) + (line,)
     if tok[1] == "const":
       return parse_const(p) + (line,)
+    if tok[1] == "Agu":
+      return parse_agu_declaration(p) + (line,)
     if tok[1] == "pe" or PE_NAME.match(tok[1]):
       return parse_pe_statement(p) + (line,)
     if tok[1] in ("global", "local"):
