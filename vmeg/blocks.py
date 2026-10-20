@@ -172,3 +172,7 @@ def header_words(text, block):
 
 def decorator_names(text, block):
   return [value for _, value, _, _ in tokens(text[block[1]:block[3]])][2::2]
+
+
+def decorator_calls(text, block):
+  return [(name, ()) for name in decorator_names(text, block)]

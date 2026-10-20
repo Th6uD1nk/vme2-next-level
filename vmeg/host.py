@@ -1,4 +1,4 @@
-from vmeg.blocks import decorator_names
+from vmeg.blocks import decorator_calls, decorator_names
 from vmeg.scanner import tokens
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
@@ -260,6 +260,12 @@ def kernel_sources(kernel, qualifier):
   return [(transfer["memory"], transfer["line"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
+def kernel_actions(name, actions):
+  if not actions or len(set(actions)) == 2:
+    return ["vmeLibStart();", f"{name}();", "vmeLibFinish();"]
+  return [f"{name}();"] if actions[0] == "config" else ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
+
+
 def kernel_uploads(registry, name):
   return [line for load in registry["kernels"][name][0]["loads"] for line in load["lines"]]
 
@@ -274,17 +280,15 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
-      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name)) + f" vmeLibStart(); {name}(); vmeLibFinish();" + "".join(f" {call}" for call in kernel_downloads(registry, name)) for name in decorator_names(text, block))
+      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name) + kernel_actions(name, actions) + kernel_downloads(registry, name)) for name, actions in decorator_calls(text, block))
       edits.append((brace, 0, f" vmeLibEnable();{calls}"))
       continue
     if block[0] != "decorator":
       continue
     line = text.count("\n", 0, block[1]) + 1
     lines = ["vmeLibEnable();"]
-    for name in decorator_names(text, block):
-      lines += kernel_uploads(registry, name)
-      lines += ["vmeLibStart();", f"{name}();", "vmeLibFinish();"]
-      lines += kernel_downloads(registry, name)
+    for name, actions in decorator_calls(text, block):
+      lines += kernel_uploads(registry, name) + kernel_actions(name, actions) + kernel_downloads(registry, name)
     lines.append("vmeLibDisable();")
     at, start = function_body(text, block)
     if start in on_process_starts:
