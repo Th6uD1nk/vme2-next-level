@@ -4,24 +4,15 @@ from emu.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.kernel import kernel_transfers
-from vmeg.macros import evaluate, known_macros
+from vmeg.macros import evaluate, known_macros, macro_events
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
 NAME = re.compile(r"(?<!\w)[A-Za-z_]\w*")
-DEFINE = re.compile(r"#\s*define\s+([A-Za-z_]\w*(?:\([^)]*\))?)(.*)", re.S)
-COMMENTS = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 
 
 def defines(text):
-  found = []
-  for kind, value, _, _ in tokens(text):
-    if kind != "pp":
-      continue
-    m = DEFINE.match(value)
-    if m:
-      found.append((m.group(1), " ".join(COMMENTS.sub(" ", m.group(2).replace("\\\n", " ")).split())))
-  return found
+  return [(event["name"] + (event["params"] or ""), event["body"]) for event in macro_events(text) if event["kind"] == "define"]
 
 
 def declared_names(text, blocks, kernel):
