@@ -17,13 +17,13 @@ class FindBlocksTest(unittest.TestCase):
   def test_valid_blocks(self):
     cases = {
       "buffers { a }": [("buffers", "buffers { a }")],
-      "kernel k { a }": [("kernel", "kernel k { a }")],
-      "kernel k direct { a }": [("kernel", "kernel k direct { a }")],
+      ".kernel k { a }": [("kernel", ".kernel k { a }")],
+      ".kernel k direct { a }": [("kernel", ".kernel k direct { a }")],
       "void f() { }\nbuffers { a }": [("buffers", "buffers { a }")],
       "#include <a.h>\nbuffers { a }": [("buffers", "buffers { a }")],
       "buffers { a { b } c }": [("buffers", "buffers { a { b } c }")],
       "buffers { /* } */ \"}\" '}' }": [("buffers", "buffers { /* } */ \"}\" '}' }")],
-      "buffers { }\nkernel k { }": [("buffers", "buffers { }"), ("kernel", "kernel k { }")],
+      "buffers { }\n.kernel k { }": [("buffers", "buffers { }"), ("kernel", ".kernel k { }")],
     }
     for text, expected in cases.items():
       with self.subTest(text=text):
@@ -42,10 +42,10 @@ class FindBlocksTest(unittest.TestCase):
       "kernel { }",
       "buffers = 1;",
       "void f() { buffers { } }",
-      "void f() { kernel k { } }",
+      "void f() { .kernel k { } }",
       "#define X buffers {\nint a;",
       "/* buffers { */ int a;",
-      "// kernel k {\nint a;",
+      "// .kernel k {\nint a;",
       "const char* s = \"buffers {\";",
     ]
     for text in cases:
@@ -248,18 +248,18 @@ class RenderTest(unittest.TestCase):
 
 class EmulateTest(unittest.TestCase):
   def test_both_forms_give_the_same_blocks(self):
-    own_line = found('@emulate "sat-1"\nkernel k direct { a }')
-    same_line = found('@emulate "sat-1" kernel k direct { a }')
+    own_line = found('@emulate "sat-1"\n.kernel k direct { a }')
+    same_line = found('@emulate "sat-1" .kernel k direct { a }')
     self.assertEqual([kind for kind, _ in own_line], ["emulate", "kernel"])
     self.assertEqual([kind for kind, _ in same_line], ["emulate", "kernel"])
     self.assertEqual(own_line[1], same_line[1])
 
   def test_bad_emulate_is_an_error_with_its_line(self):
     cases = {
-      '@emulate\nkernel k { }': "line 1: expected @emulate",
-      '@emulate "bad id"\nkernel k { }': "line 1: expected @emulate",
+      '@emulate\n.kernel k { }': "line 1: expected @emulate",
+      '@emulate "bad id"\n.kernel k { }': "line 1: expected @emulate",
       '@emulate "a"\nvoid f() { }': "line 1: @emulate \"id\" must be followed by 'kernel name'",
-      '@emulate "a"\nkernel k { }\n@emulate "a"\nkernel m { }': "line 3: the id \"a\" of @emulate is already used at line 1",
+      '@emulate "a"\n.kernel k { }\n@emulate "a"\n.kernel m { }': "line 3: the id \"a\" of @emulate is already used at line 1",
     }
     for text, message in cases.items():
       with self.subTest(text=text):
