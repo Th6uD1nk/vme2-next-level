@@ -140,9 +140,6 @@ def find_blocks(text):
     if start < skip:
       continue
     if kind == "punct" and value == "@" and depth > 0:
-      if i + 1 < len(items) and items[i + 1][1] == "vme":
-        line = text.count("\n", 0, start) + 1
-        raise ValueError(f"line {line}: @vme was removed, use @kernel name {{ ... }}")
       if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "kernel":
         blocks.extend(read_kernel_block(text, items, i))
         nested = True
@@ -150,9 +147,6 @@ def find_blocks(text):
       line = text.count("\n", 0, start) + 1
       raise ValueError(f"line {line}: inside a function only '@kernel name {{ ... }}' is accepted")
     if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
-      if i + 1 < len(items) and items[i + 1][1] == "vme":
-        line = text.count("\n", 0, start) + 1
-        raise ValueError(f"line {line}: @vme was removed, use @kernel name {{ ... }}")
       if i + 1 < len(items) and items[i + 1][1] == "emulate":
         block, name, line, kernel_start = read_emulate(text, items, i)
         if name in ids:
