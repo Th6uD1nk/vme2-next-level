@@ -4,7 +4,7 @@ from emu.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.kernel import kernel_transfers
-from vmeg.macros import known_macros
+from vmeg.macros import evaluate, known_macros
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -60,20 +60,16 @@ def emulations(text):
   return found
 
 
-def number(text, definitions):
-  value = dict(definitions).get(text, text) if text else "0"
-  try:
-    return int(value.strip().strip("()").strip(), 0)
-  except ValueError:
-    return None
+def number(text):
+  return evaluate(text or "0", lambda name: None)
 
 
-def overlap_notes(emulation, definitions):
+def overlap_notes(emulation):
   notes = {}
   placed = []
   for qualifier in ("global", "local"):
     for index, (buffer, count, offset, _, _, extended) in enumerate(emulation[qualifier]):
-      start = number(offset, definitions)
+      start = number(offset)
       if start is None or extended:
         continue
       end = start + count - 1
@@ -85,13 +81,13 @@ def overlap_notes(emulation, definitions):
 
 
 def link_notes(emulation, definitions, overlaps=True):
-  notes = overlap_notes(emulation, definitions) if overlaps else {}
+  notes = overlap_notes(emulation) if overlaps else {}
   known = {name.split("(")[0] for name, _ in definitions}
   for qualifier in ("global", "local"):
     for index, (_, count, offset, source, _, extended) in enumerate(emulation[qualifier]):
       if source not in emulation["declared"][qualifier]:
         notes.setdefault((qualifier, index), []).append(f"'{source}' is not declared with Buffer")
-      start = number(offset, definitions)
+      start = number(offset)
       if start is not None and not extended and start + count > BUFFER_WORDS:
         notes.setdefault((qualifier, index), []).append(f"goes past the end of the buffer ({hex(BUFFER_WORDS)} words)")
       for name in dict.fromkeys(NAME.findall(offset)):
