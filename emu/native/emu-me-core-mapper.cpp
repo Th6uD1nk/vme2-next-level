@@ -23,6 +23,12 @@ static void transfer(u32 address, u32 offset, u32 count, u32 control) {
 }
 
 extern "C" {
+u32 emuUsegMem(void* pointer, u32 words) {
+  u32 address = virtualAddress(pointer, words);
+  hwTraceMemory(address, (const u32*)pointer, words);
+  return (address & 0x1fffffff) | 0x40000000;
+}
+
 void meCoreDMACPrimMemoryToRingBuffer(void* src, u32 offset, u32 count) {
   u32 address = virtualAddress(src, count);
   hwTraceMemory(address & 0x1fffffff, (const u32*)src, count);

@@ -85,13 +85,28 @@ def host_source(text, identifier, others=()):
       elif known[name] != value:
         raise ValueError(f"the macro {name} has two different values in the files of the @emulate \"{identifier}\"")
   parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in arrays]
+  if declared:
+    entries = ", ".join(f"{{(u32){name}, sizeof({name}) / 4}}" for name in sorted(declared))
+    parts.append(
+      "#undef useg_mem\n"
+      "static u32 vmegUsegMem(u32 pointer) {\n"
+      f"  static const struct {{ u32 pointer; u32 words; }} arrays[] = {{ {entries} }};\n"
+      "  for (unsigned i = 0; i < sizeof(arrays) / sizeof(arrays[0]); i++) {\n"
+      "    if (arrays[i].pointer == pointer) {\n"
+      "      return emuUsegMem((void*)pointer, arrays[i].words);\n"
+      "    }\n"
+      "  }\n"
+      "  return pointer;\n"
+      "}\n"
+      "#define useg_mem(v) vmegUsegMem((u32)(v))"
+    )
   parts.append(kernel_code(text, identifier))
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
   parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
   return "\n\n".join(parts) + "\n"
 
 
-INCLUDES = '#include "hw-trace.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
+INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
 
 
 def host_main(text, identifier):

@@ -3,6 +3,7 @@ void meCoreBusClockEnableDMACPrimMux(void);
 void meCoreBusClockDisableDMACPrimMux(void);
 void meCoreBusClockEnableVMECtrl(void);
 void meCoreBusClockDisableVMECtrl(void);
+u32 emuUsegMem(void* pointer, u32 words);
 void meCoreDMACPrimMemoryToRingBuffer(void* src, u32 offset, u32 count);
 void meCoreDMACPrimRingBufferToMemory(void* dst, u32 offset, u32 count);
 void meCoreDMACPrimWaitTransferFinish(void);
