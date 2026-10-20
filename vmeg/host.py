@@ -1,5 +1,6 @@
 from vmeg.blocks import decorator_calls, decorator_names
 from vmeg.scanner import tokens
+from vmeg.vmecalls import DISABLE, ENABLE
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
 
@@ -256,7 +257,7 @@ def on_process_edit(text, toks, quoted):
     return None
   at, end = bodies[0]
   resume = text.count("\n", 0, at - 1) + 1
-  return (at, 0, f'\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
+  return (at, 0, f'\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  {ENABLE}\n  vmeLibWipe();\n  {DISABLE}\n#line {resume} "{quoted}"\n'), end
 
 
 def kernel_sources(kernel, qualifier):
@@ -284,15 +285,15 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
       calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name) + kernel_actions(name, actions) + kernel_downloads(registry, name)) for name, actions in decorator_calls(text, block))
-      edits.append((brace, 0, f" vmeLibEnable();{calls}"))
+      edits.append((brace, 0, f" {ENABLE}{calls}"))
       continue
     if block[0] != "decorator":
       continue
     line = text.count("\n", 0, block[1]) + 1
-    lines = ["vmeLibEnable();"]
+    lines = [ENABLE]
     for name, actions in decorator_calls(text, block):
       lines += kernel_uploads(registry, name) + kernel_actions(name, actions) + kernel_downloads(registry, name)
-    lines.append("vmeLibDisable();")
+    lines.append(DISABLE)
     at, start = function_body(text, block)
     if start in on_process_starts:
       lines[0:0] = ["meCoreDcacheWritebackInvalidateAll();", "meLibExceptionHandlerInit(0);"]

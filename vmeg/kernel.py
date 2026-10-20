@@ -3,6 +3,7 @@ from vmeg.expr import fold, substitute, to_c
 from vmeg.operations import OPERATIONS
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
+from vmeg.vmecalls import DISABLE
 
 KERNEL_OPTIONS = ("direct",)
 
@@ -530,7 +531,7 @@ def generate(text, block, warnings=None):
   if kind in ("decorator", "emulate", "kernel-block", "block-statement"):
     return ""
   if kind == "kernel-block-end":
-    return "vmeLibDisable();"
+    return DISABLE
   header = text[start:open_pos]
   words = [(value, start + s) for _, value, s, _ in tokens(header)]
   if words[0][0] == ".":

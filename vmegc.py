@@ -6,6 +6,7 @@ import sys
 from vmeg.blocks import find_blocks
 from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, generate
+from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
 from vmeg.operations import format_operations
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
@@ -69,9 +70,10 @@ def translate(text, blocks, path, registry=None, warnings=None):
     out.append(f'\n#line {line} "{quoted}"\n')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
+  result = finish_calls("".join(out))
   if warnings is not None:
     warnings.extend((path, line, message) for line, message in found)
-  return "".join(out)
+  return result
 
 
 def main(argv=None):
