@@ -1,5 +1,7 @@
 import re
 
+from vmeg.expr import fold
+from vmeg.parser import Parser, parse_expr
 from vmeg.scanner import tokens
 
 DIRECTIVE = re.compile(r"#\s*([A-Za-z_]\w*)\s*(.*)", re.S)
@@ -48,3 +50,26 @@ def trusted_macros(text, position):
     if len(found) == 1 and name not in undone and not event["conditional"] and event["params"] is None and event["start"] < position:
       trusted[name] = event["body"]
   return trusted
+
+
+def evaluate(body, resolve):
+  toks = list(tokens(body))
+  if not toks:
+    return None
+  env = {}
+  for kind, value, _, _ in toks:
+    if kind == "ident":
+      number = resolve(value)
+      if number is None:
+        return None
+      env[value] = ("num", number)
+  try:
+    p = Parser(body, toks, len(body))
+    expr = parse_expr(p)
+    if p.peek() is not None:
+      return None
+  except ValueError:
+    return None
+  folded = fold(expr, env)
+  return folded[1] if folded[0] == "num" else None
+
