@@ -20,7 +20,9 @@ AGU_PARAMS = {
   "write": AGU_COMMON + ("cyc", "bubbles", "sync"),
 }
 
-TRANSFER_USE = ("transfer",)
+TRANSFER_USE = ("transfer", "scope")
+
+TRANSFER_SCOPES = ("local", "global")
 
 PE_NAME = re.compile(r"pe([0-9]+)$")
 
@@ -279,7 +281,10 @@ def parse_transfer_use(p):
     if any(item[0] == name for item in items):
       p.error(f".{name} is already written in this .{direction}", start)
     p.expect("=")
+    value = p.peek()
     items.append((name, ("name", p.ident())))
+    if name == "scope" and value[1] not in TRANSFER_SCOPES:
+      p.error(f".scope must be {' or '.join(TRANSFER_SCOPES)}", value)
     p.expect(";")
   return (direction, items)
 
