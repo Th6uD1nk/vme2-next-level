@@ -1,5 +1,6 @@
 from vmeg.blocks import body_tokens
 from vmeg.expr import fold, substitute, to_c
+from vmeg.expr import value as full_value
 from vmeg.operations import OPERATIONS
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
@@ -382,10 +383,10 @@ def emit_statement(statement, env, lines, state):
   if kind == "int":
     if statement[1] in env:
       raise ValueError(f"'{statement[1]}' is defined twice")
-    env[statement[1]] = fold(statement[2], env)
+    env[statement[1]] = full_value(statement[2], env)
   elif kind == "icn":
     for icn, value in statement[1]:
-      lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
+      lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(full_value(value, env))});")
   elif kind == "agu":
     pe = target_pe(statement[1], env)
     claim(state, pe, statement[1][2], statement[-1])
