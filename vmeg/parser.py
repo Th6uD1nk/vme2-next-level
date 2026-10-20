@@ -235,8 +235,6 @@ def parse_pe_assignment(p, target):
       p.error("expected parameters { ... } or the name of an Agu variable")
     kind = "aguref"
     value = ("name", p.ident())
-  elif target[2] == "out":
-    p.error(".out was removed, write the operation in a pe block: pe0 { .expr; }", name_token)
   else:
     p.error(f"unknown element '{target[2]}' of a pe ({', '.join(AGU_PARAMS)})", name_token)
   p.expect(";")
