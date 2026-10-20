@@ -256,7 +256,7 @@ class EmulateTest(unittest.TestCase):
 
 class KernelBlockTest(unittest.TestCase):
   def test_kernel_block_in_a_function_is_wrapped_with_enable_call_and_disable(self):
-    text = ".kernel k direct {\n}\nvoid f() {\n  @kernel k {\n    a();\n  }\n}\n"
+    text = ".kernel k direct {\n}\nvoid f() {\n  @kernel k config, exec {\n    a();\n  }\n}\n"
     blocks = find_blocks(text)
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "x.vmeg.c")
@@ -270,8 +270,8 @@ class KernelBlockTest(unittest.TestCase):
       "volatile Buffer g[4] = { 1 };\n"
       ".kernel a direct {\n  Transfer tg = { type: words, mode: basic, memory: g, count: 3 };\n  Transfer tx = { type: words, mode: basic, memory: x, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = tx; .scope = local; .offsets { .top1 = 0; } }\n}\n"
       ".kernel o direct {\n  Transfer tg = { type: words, mode: basic, memory: g, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top2 = 0; } }\n}\n"
-      "@kernel o\nvoid other() {\n}\n"
-      "void f() {\n  volatile Buffer x[4];\n  @kernel a {\n  }\n}\n"
+      "@kernel o config, exec\nvoid other() {\n}\n"
+      "void f() {\n  volatile Buffer x[4];\n  @kernel a config, exec {\n  }\n}\n"
     )
     blocks = find_blocks(text)
     out = render(text, blocks, "x.vmeg.c")
@@ -282,8 +282,8 @@ class KernelBlockTest(unittest.TestCase):
     cases = {
       "void f() {\n  @kernel {\n  }\n}\n": "line 2: expected a kernel name",
       "void f() {\n  @kernel k;\n}\n": "line 2: @kernel inside a function must be followed",
-      "void f() {\n  @kernel nope {\n  }\n}\n": "line 2: @kernel refers to an unknown kernel 'nope'",
-      ".kernel k {\n}\nvoid f() {\n  @kernel k {\n  }\n}\n": "line 4: kernel 'k' is not direct",
+      "void f() {\n  @kernel nope config, exec {\n  }\n}\n": "line 2: @kernel refers to an unknown kernel 'nope'",
+      ".kernel k {\n}\nvoid f() {\n  @kernel k config, exec {\n  }\n}\n": "line 4: kernel 'k' is not direct",
     }
     for text, message in cases.items():
       with self.subTest(text=text):
@@ -343,7 +343,7 @@ class RegistryTest(unittest.TestCase):
 
   def test_a_kernel_of_another_file_is_called_with_its_prototype_extern_and_upload(self):
     a = "volatile Buffer g[4];\n" + KERNEL
-    b = "int x;\nvoid f() {\n  @kernel k {\n  }\n}\n"
+    b = "int x;\nvoid f() {\n  @kernel k config, exec {\n  }\n}\n"
     registry = project_registry([("a.vmeg.c", a), ("b.vmeg.c", b)])
     check_calls(registry)
     out = translate(b, find_blocks(b), "b.vmeg.c", registry)
