@@ -428,7 +428,7 @@ def emit_statement(statement, env, lines, state):
     transfer = state["transfers"][items["transfer"][1]]
     if transfer["type"] != "words":
       raise ValueError(f"this .{kind} is not generated yet (only the Transfer of words)")
-    record = {"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
+    record = {"kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
     state[kind + "s"].append(record)
     state["sequence"].append(record)
   elif kind == "transferdecl":

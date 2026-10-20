@@ -76,7 +76,7 @@ def block_definitions(path, text):
   blocks = find_blocks(text)
   per_block = block_statement_records(text, blocks)[1]
   return [
-    {"path": path, "global": [(record["memory"], record["line"]) for record in records if record["scope"] == "global"]}
+    {"path": path, "global": [(record["memory"], record["line"], record["kind"]) for record in records if record["scope"] == "global"]}
     for records in per_block.values()
   ]
 
@@ -121,26 +121,26 @@ def check_definitions(registry):
       raise ValueError(f"{second['path']}: line {second['line']}: the kernel '{name}' is already defined at {first['path']} line {first['line']}")
 
 
-def check_array(registry, source, path, line):
+def check_array(registry, source, path, line, kind):
   where = f"{path}: line {line}"
   declared = registry["arrays"].get(source, [])
   if not declared:
-    raise ValueError(f"{where}: the array '{source}' is not declared with Buffer in any file")
+    raise ValueError(f"{where}: the array '{source}' of a global {kind} is not declared with Buffer in any file")
   defined = [definition for definition in declared if not definition["extern"]]
   if not defined:
-    raise ValueError(f"{where}: the array '{source}' is declared extern but defined in no file")
+    raise ValueError(f"{where}: the array '{source}' of a global {kind} is declared extern but defined in no file")
   if defined[0]["static"] and defined[0]["path"] != path:
-    raise ValueError(f"{where}: the array '{source}' is static in {defined[0]['path']} line {defined[0]['line']}, it cannot be used from another file")
+    raise ValueError(f"{where}: the array '{source}' of a global {kind} is static in {defined[0]['path']} line {defined[0]['line']}, it cannot be used from another file")
 
 
 def check_uses(registry):
   for definitions in registry["kernels"].values():
     for kernel in definitions:
-      for source, line in kernel_sources(kernel, "global"):
-        check_array(registry, source, kernel["path"], line)
+      for source, line, kind in kernel_sources(kernel, "global"):
+        check_array(registry, source, kernel["path"], line, kind)
   for block in registry["block_transfers"]:
-    for source, line in block["global"]:
-      check_array(registry, source, block["path"], line)
+    for source, line, kind in block["global"]:
+      check_array(registry, source, block["path"], line, kind)
 
 
 def split_declarators(text):
@@ -188,16 +188,16 @@ def needed_externs(registry, path):
   for definitions in registry["kernels"].values():
     for kernel in definitions:
       if kernel["path"] == path:
-        for source, _ in kernel_sources(kernel, "global"):
+        for source, _, _ in kernel_sources(kernel, "global"):
           sources[source] = True
   for call in registry["calls"]:
     if call["path"] == path and call["block"]:
       for kernel in registry["kernels"].get(call["name"], []):
-        for source, _ in kernel_sources(kernel, "global"):
+        for source, _, _ in kernel_sources(kernel, "global"):
           sources[source] = True
   for block in registry["block_transfers"]:
     if block["path"] == path:
-      for source, _ in block["global"]:
+      for source, _, _ in block["global"]:
         sources[source] = True
   declarations = []
   for source in sources:

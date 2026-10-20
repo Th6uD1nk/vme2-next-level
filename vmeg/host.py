@@ -155,17 +155,17 @@ def check_local_sources(text, blocks, registry, path, per_block):
       declared = declared_buffer_names(enclosing_function_tokens(text, block[1]))
       for record in per_block[block[1]]:
         if record["scope"] == "local" and record["memory"] not in declared:
-          raise ValueError(f"line {record['line']}: '{record['memory']}' is not declared with Buffer in the function that contains the @kernel block at line {where} (local buffers)")
+          raise ValueError(f"line {record['line']}: '{record['memory']}' is not declared with Buffer in the function that contains the @kernel block at line {where} (local {record['kind']})")
     for kernel in decorator_names(text, block):
       where_text = f"the function marked with @kernel {kernel} at line {where}" if block[0] == "decorator" else f"the function that contains the @kernel {kernel} block at line {where}"
       functions.setdefault(kernel, []).append((declared, where_text))
   for kernel, callers in functions.items():
     definition = registry["kernels"][kernel][0]
     owner = "" if definition["path"] == path else f" (kernel of {definition['path']})"
-    for source, line in kernel_sources(definition, "local"):
+    for source, line, kind in kernel_sources(definition, "local"):
       for declared, where in callers:
         if source not in declared:
-          raise ValueError(f"line {line}{owner}: '{source}' is not declared with Buffer in {where} (local buffers)")
+          raise ValueError(f"line {line}{owner}: '{source}' is not declared with Buffer in {where} (local {kind})")
 
 
 def passthrough(text, begin, end, edits):
@@ -260,7 +260,7 @@ def on_process_edit(text, toks, quoted):
 
 
 def kernel_sources(kernel, qualifier):
-  return [(transfer["memory"], transfer["line"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
+  return [(transfer["memory"], transfer["line"], transfer["kind"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
 def kernel_actions(name, actions):

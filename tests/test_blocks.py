@@ -119,7 +119,7 @@ class RenderTest(unittest.TestCase):
       with self.subTest(text=text):
         with self.assertRaises(ValueError) as ctx:
           render(text, find_blocks(text), "t.vmeg.c")
-        self.assertIn("local buffers", str(ctx.exception))
+        self.assertIn("(local load)", str(ctx.exception))
     both = kernel + "@kernel k config, exec\n" + declared + "@kernel k config, exec\n" + declared.replace("f()", "g()")
     render(both, find_blocks(both), "t.vmeg.c")
 
