@@ -83,8 +83,8 @@ def overlap_notes(emulation, definitions):
   return notes
 
 
-def link_notes(emulation, definitions):
-  notes = overlap_notes(emulation, definitions)
+def link_notes(emulation, definitions, overlaps=True):
+  notes = overlap_notes(emulation, definitions) if overlaps else {}
   known = {name.split("(")[0] for name, _ in definitions}
   for qualifier in ("global", "local"):
     for index, (_, count, offset, source, _, extended) in enumerate(emulation[qualifier]):
@@ -103,11 +103,11 @@ def marked(line, notes, key):
   return f"{line}  <-- {'; '.join(notes[key])}" if key in notes else line
 
 
-def buffer_lines(entries, notes, qualifier):
+def buffer_lines(entries, notes, qualifier, way="from"):
   lines = []
   for index, (target, count, offset, source, _, extended) in enumerate(entries):
     place = f"at {offset}  " if offset else ""
-    line = f"    {target:<8}{count} words{' extended' if extended else ''}  {place}from {source}"
+    line = f"    {target:<8}{count} words{' extended' if extended else ''}  {place}{way} {source}"
     lines.append(marked(line, notes, (qualifier, index)))
   return lines
 
@@ -115,14 +115,14 @@ def buffer_lines(entries, notes, qualifier):
 BUFFERS = [f"{kind}_{n}" for kind in ("TOP", "BASE") for n in range(4)]
 
 
-def full_lines(emulation, notes):
+def full_lines(emulation, notes, way="from", empty=True):
   lines = []
   for buffer in BUFFERS:
     links = [(qualifier, index, entry) for qualifier in ("global", "local") for index, entry in enumerate(emulation[qualifier]) if entry[0] == buffer]
-    if not links:
+    if not links and empty:
       lines.append(f"  {buffer:<8}not linked")
     for qualifier, index, (_, count, offset, source, _, extended) in links:
-      line = f"  {buffer:<8}{qualifier:<8}at {offset or 0}  {count} words{' extended' if extended else ''}  from {source}"
+      line = f"  {buffer:<8}{qualifier:<8}at {offset or 0}  {count} words{' extended' if extended else ''}  {way} {source}"
       lines.append(marked(line, notes, (qualifier, index)))
   return lines
 
@@ -131,14 +131,24 @@ def format_listing(found, definitions, full=False):
   lines = []
   for emulation in found:
     notes = link_notes(emulation, definitions)
+    stored = dict(emulation["stores"], declared=emulation["declared"])
+    store_notes = link_notes(stored, definitions, overlaps=False)
+    has_stores = bool(stored["global"] or stored["local"])
     lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} (lines {emulation['first']}-{emulation['last']})")
     if full:
       lines += full_lines(emulation, notes)
+      if has_stores:
+        lines.append("  stores:")
+        lines += full_lines(stored, store_notes, "to", False)
       continue
     for qualifier in ("global", "local"):
       entries = emulation[qualifier]
       lines.append(f"  {qualifier} buffers:" if entries else f"  {qualifier} buffers: none")
       lines += buffer_lines(entries, notes, qualifier)
+    for qualifier in ("global", "local"):
+      if stored[qualifier]:
+        lines.append(f"  {qualifier} stores:")
+        lines += buffer_lines(stored[qualifier], store_notes, qualifier, "to")
   lines += ["", "defines of the file:"]
   lines += [f"  {name}  {value}" if value else f"  {name}" for name, value in definitions]
   return "\n".join(lines) + "\n"
