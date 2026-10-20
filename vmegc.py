@@ -44,7 +44,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
   check_buffers(text, toks, blocks)
   found = []
   codes = [generate(text, block, found) for block in blocks]
-  records = block_statement_records(text, blocks)
+  records, _ = block_statement_records(text, blocks)
   codes = ["\n".join(line for record in records[block[1]] for line in record["lines"]) if block[0] == "block-statement" else code for block, code in zip(blocks, codes)]
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path)

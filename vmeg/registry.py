@@ -1,6 +1,6 @@
 from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.host import declarator_names, kernel_sources
-from vmeg.kernel import kernel_transfers
+from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -72,6 +72,15 @@ def kernel_definitions(path, text):
   return found
 
 
+def block_definitions(path, text):
+  blocks = find_blocks(text)
+  per_block = block_statement_records(text, blocks)[1]
+  return [
+    {"path": path, "global": [(record["memory"], record["line"]) for record in records if record["scope"] == "global"]}
+    for records in per_block.values()
+  ]
+
+
 def call_definitions(path, text):
   return [
     {"name": name, "path": path, "line": text.count("\n", 0, block[1]) + 1, "block": block[0] == "kernel-block"}
@@ -84,18 +93,20 @@ def project_registry(sources):
   arrays = {}
   kernels = {}
   calls = []
+  block_transfers = []
   for path, text in sources:
     try:
       array_list = array_definitions(path, text)
       kernel_list = kernel_definitions(path, text)
       calls += call_definitions(path, text)
+      block_transfers += block_definitions(path, text)
     except ValueError as e:
       raise ValueError(f"{path}: {e}") from None
     for definition in array_list:
       arrays.setdefault(definition["name"], []).append(definition)
     for definition in kernel_list:
       kernels.setdefault(definition["name"], []).append(definition)
-  return {"arrays": arrays, "kernels": kernels, "calls": calls}
+  return {"arrays": arrays, "kernels": kernels, "calls": calls, "block_transfers": block_transfers}
 
 
 def check_definitions(registry):
@@ -127,6 +138,9 @@ def check_uses(registry):
     for kernel in definitions:
       for source, line in kernel_sources(kernel, "global"):
         check_array(registry, source, kernel["path"], line)
+  for block in registry["block_transfers"]:
+    for source, line in block["global"]:
+      check_array(registry, source, block["path"], line)
 
 
 def split_declarators(text):
@@ -181,6 +195,10 @@ def needed_externs(registry, path):
       for kernel in registry["kernels"].get(call["name"], []):
         for source, _ in kernel_sources(kernel, "global"):
           sources[source] = True
+  for block in registry["block_transfers"]:
+    if block["path"] == path:
+      for source, _ in block["global"]:
+        sources[source] = True
   declarations = []
   for source in sources:
     definitions = registry["arrays"].get(source, [])

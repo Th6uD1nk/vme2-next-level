@@ -504,12 +504,14 @@ def run_statements(statements):
 
 def block_statement_records(text, blocks):
   found = {}
+  per_block = {}
   state = None
   env = None
   for block in blocks:
     if block[0] == "kernel-block":
       state = new_state()
       env = new_env()
+      per_block[block[1]] = state["sequence"]
     elif block[0] == "block-statement":
       _, start, _, end = block
       toks = [(kind, value, s + start, e + start) for kind, value, s, e in tokens(text[start:end])]
@@ -517,7 +519,7 @@ def block_statement_records(text, blocks):
       for statement in parse_body(Parser(text, toks, end)):
         emit(statement, env, [], state)
       found[start] = state["sequence"][before:]
-  return found
+  return found, per_block
 
 
 def kernel_transfers(statements):
