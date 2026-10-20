@@ -1,7 +1,6 @@
 import re
 
 from vmeg.blocks import body_tokens
-from vmeg.expr import fold, to_c
 
 ICN_NAMES = {
   "swen": "SWEN",
@@ -402,81 +401,6 @@ def buffer_ref(expr):
   return None
 
 
-def parse_buffer_target(p):
-  start = p.peek()
-  if start is None:
-    p.error("expected a buffer (top0 to top3, base0 to base3)")
-  try:
-    ref = buffer_ref(fold(parse_expr(p), {}))
-  except ValueError as e:
-    p.error(str(e), start)
-  if ref is None:
-    p.error("expected a buffer (top0 to top3, base0 to base3)", start)
-  return ref
-
-
-def parse_buffer_count(p):
-  p.expect(",")
-  start = p.peek()
-  count = fold(parse_expr(p), {})
-  if count[0] != "num":
-    p.error("the number of words must be a number", start)
-  if count[1] < 1:
-    p.error("the number of words must be at least 1", start)
-  p.expect("words")
-  return count[1]
-
-
-def parse_buffer_offset(p):
-  tok = p.peek()
-  after = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
-  if tok is None or tok[1] != "," or after is None or after[1] != "at":
-    return None
-  p.expect(",")
-  p.expect("at")
-  start = p.peek()
-  offset = fold(parse_expr(p), {})
-  if offset[0] == "num" and offset[1] < 0:
-    p.error("the offset must not be negative", start)
-  return offset
-
-
-def parse_buffer_source(p):
-  p.expect(",")
-  p.expect("from")
-  return p.ident()
-
-
-def parse_buffers(p, closed=False):
-  entries = []
-  while True:
-    if closed:
-      if p.accept("}"):
-        break
-      if p.peek() is None:
-        p.error("expected '}'")
-    elif p.peek() is None:
-      break
-    line = p.text.count("\n", 0, p.peek()[2]) + 1
-    target = parse_buffer_target(p)
-    count = parse_buffer_count(p)
-    offset = parse_buffer_offset(p)
-    source = parse_buffer_source(p)
-    p.expect(";")
-    entries.append((target, count, offset, source, line))
-  return entries
-
-
-def parse_buffers_block(p):
-  p.expect("buffers")
-  tok = p.peek()
-  if tok is None or tok[1] not in ("global", "local"):
-    p.error(".buffers needs a qualifier: .buffers global or .buffers local")
-  qualifier = p.ident()
-  p.expect("{")
-  return ("buffers", qualifier, parse_buffers(p, True))
-
-
 def upload_text(target, count, offset, source):
   kind, index = target.split("_")
   destination = f"VME_{kind}_BUFF{index}_WOFF"
@@ -492,11 +416,7 @@ def parse_for(p):
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
-    start = p.peek()
-    statement = parse_statement(p)
-    if statement[0] == "buffers":
-      p.error("buffers cannot be inside a for", start)
-    body.append(statement)
+    body.append(parse_statement(p))
   return ("for", var, low, high, body)
 
 
@@ -523,10 +443,6 @@ def parse_statement(p):
       if following is not None and following[1] == "{":
         p.error(f"{tok[1]} {{ }} was removed, write .{tok[1]} {{ }}")
       p.error(f"{tok[1]}.name was removed, write .{tok[1]}.name")
-    if tok[1] in ("global", "local"):
-      p.error(f"{tok[1]} buffers {{ }} was removed, write .buffers {tok[1]} {{ }}")
-    if tok[1] == "buffers":
-      p.error("buffers was removed, write .buffers global { } or .buffers local { }")
   if tok[0] == "punct" and tok[1] == ".":
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
@@ -535,9 +451,6 @@ def parse_statement(p):
     if following is not None and following[0] == "ident" and following[1] in ("load", "store"):
       p.i += 1
       return parse_transfer_use(p) + (line,)
-    if following is not None and following[0] == "ident" and following[1] == "buffers":
-      p.i += 1
-      return parse_buffers_block(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "pe":
       p.error("pe[...] is an access by index, it takes no dot", following)
   p.error(f"unknown statement '{tok[1]}'")
