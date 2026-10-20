@@ -88,7 +88,7 @@ kernel runContext direct {
     }
   }
 
-  pe0 { .base = base; }
+  .pe0 { .base = base; }
 }
 
 void meLibOnProcess(void) {
