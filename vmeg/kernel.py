@@ -284,19 +284,23 @@ def swen_mask(pes):
   return sum(1 << (3 - pe) for pe in pes)
 
 
+def offset_text(offset):
+  return "" if offset == ("num", 0) else to_c(offset)
+
+
 def transfer_lines(transfer, targets):
   lines = [
     f"vme_dma(MEMORY, ADDR, useg_mem((u32){transfer['memory']}));",
     f"vme_dma(ITERATION, DIMS, {transfer['count']});",
   ]
-  for buffer, slot, offset in targets or [(None, 0, 0)]:
-    destination = "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset}" if offset else "")
+  for buffer, slot, offset in targets or [(None, 0, ("num", 0))]:
+    destination = "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset_text(offset)}" if offset_text(offset) else "")
     lines += [f"vme_dma(SPAD, OFFSET, {destination});", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();"]
   return lines
 
 
 def transfer_links(transfer, targets):
-  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", transfer["count"] + 1, str(offset) if offset else "", transfer["memory"]) for buffer, slot, offset in targets or [(None, 0, 0)]]
+  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", transfer["count"] + 1, offset_text(offset), transfer["memory"]) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
 
 
 def emit(statement, env, lines, state):
@@ -403,9 +407,9 @@ def emit_statement(statement, env, lines, state):
         raise ValueError(f"{buffer}{slot[1]} is already set in this .{kind}")
       seen.add((buffer, slot[1]))
       offset = fold(value, env)
-      if offset[0] != "num" or offset[1] < 0:
-        raise ValueError(f"the offset of {buffer}{slot[1]} must be a number, not negative")
-      targets.append((buffer, slot[1], offset[1]))
+      if offset[0] == "num" and offset[1] < 0:
+        raise ValueError(f"the offset of {buffer}{slot[1]} cannot be negative")
+      targets.append((buffer, slot[1], offset))
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
