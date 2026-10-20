@@ -72,8 +72,8 @@ volatile Buffer sharedVec[VECTOR_BATCH_WORD_COUNT] = {
 volatile Buffer sharedRes[VECTOR_BATCH_WORD_COUNT] = {0};
 
 .kernel mulMat direct {
-  const count = (1 + VECTOR_COUNT) * 16 - 1;
-  const lost = 12;
+  Int count = (1 + VECTOR_COUNT) * 16 - 1;
+  Int lost = 12;
 
   Agu matrix  = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
   Agu mask    = { count: 3, inner0: { count: 3, step: 1 }, repeat: true };

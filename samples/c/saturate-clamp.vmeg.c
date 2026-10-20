@@ -39,7 +39,7 @@ volatile Buffer sharedBase0[16] = {
 };
 
 .kernel runContext direct {
-  const count = 16 - 1;
+  Int count = 16 - 1;
 
   Transfer top0Transfer = { type: words, mode: basic, memory: sharedTop0, count };
   Transfer top1Transfer = { type: words, mode: basic, memory: sharedTop1, count };
