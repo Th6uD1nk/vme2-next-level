@@ -47,8 +47,10 @@ def substitute(statement, env):
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
     return ("stageset", substitute_target(statement[1], env), statement[2], fold(statement[3], env), line)
-  if kind in ("stagingdecl", "transferdecl", "load", "store"):
+  if kind in ("stagingdecl", "transferdecl"):
     return statement
+  if kind in ("load", "store"):
+    return (kind, [(name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]]) if name == "offsets" else item) for name, item in statement[1]], line)
   if kind == "agudecl":
     return ("agudecl", statement[1], ("params", fold_params(statement[2][1], env)), line)
   if kind == "aguref":
