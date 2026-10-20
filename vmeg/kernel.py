@@ -428,8 +428,8 @@ def emit_statement(statement, env, lines, state):
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
-    if transfer["type"] != "words" or (kind == "store" and transfer["mode"] != "basic"):
-      raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words and a .store of a Transfer of words in the basic mode)")
+    if transfer["type"] != "words":
+      raise ValueError(f"this .{kind} is not generated yet (only the Transfer of words)")
     state[kind + "s"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)})
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
