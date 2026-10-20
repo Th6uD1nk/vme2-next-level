@@ -160,7 +160,7 @@ def check_local_sources(text, blocks, registry, path):
   for kernel, callers in functions.items():
     definition = registry["kernels"][kernel][0]
     owner = "" if definition["path"] == path else f" (kernel of {definition['path']})"
-    for _, _, _, source, line in definition["local"]:
+    for source, line in kernel_sources(definition, "local"):
       for declared, where in callers:
         if source not in declared:
           raise ValueError(f"line {line}{owner}: '{source}' is not declared with Buffer in {where} (local buffers)")
@@ -255,6 +255,10 @@ def on_process_edit(text, toks, quoted):
   at, end = bodies[0]
   resume = text.count("\n", 0, at - 1) + 1
   return (at, 0, f'\n  meCoreDcacheWritebackInvalidateAll();\n  meLibExceptionHandlerInit(0);\n  vmeLibEnable();\n  vmeLibWipe();\n  vmeLibDisable();\n#line {resume} "{quoted}"\n'), end
+
+
+def kernel_sources(kernel, qualifier):
+  return [(source, line) for _, _, _, source, line in kernel[qualifier]] + [(load["memory"], load["line"]) for load in kernel["loads"] if load["scope"] == qualifier]
 
 
 def kernel_uploads(registry, name, qualifiers):

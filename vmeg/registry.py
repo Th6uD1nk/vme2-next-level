@@ -1,6 +1,6 @@
 from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.expr import to_c
-from vmeg.host import declarator_names
+from vmeg.host import declarator_names, kernel_sources
 from vmeg.kernel import kernel_loads
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
@@ -122,7 +122,7 @@ def check_definitions(registry):
 def check_uses(registry):
   for definitions in registry["kernels"].values():
     for kernel in definitions:
-      for _, _, _, source, line in kernel["global"]:
+      for source, line in kernel_sources(kernel, "global"):
         where = f"{kernel['path']}: line {line}"
         declared = registry["arrays"].get(source, [])
         if not declared:
@@ -179,12 +179,12 @@ def needed_externs(registry, path):
   for definitions in registry["kernels"].values():
     for kernel in definitions:
       if kernel["path"] == path:
-        for _, _, _, source, _ in kernel["global"]:
+        for source, _ in kernel_sources(kernel, "global"):
           sources[source] = True
   for call in registry["calls"]:
     if call["path"] == path and call["block"]:
       for kernel in registry["kernels"].get(call["name"], []):
-        for _, _, _, source, _ in kernel["global"]:
+        for source, _ in kernel_sources(kernel, "global"):
           sources[source] = True
   declarations = []
   for source in sources:

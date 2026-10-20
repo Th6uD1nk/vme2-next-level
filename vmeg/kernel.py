@@ -407,7 +407,7 @@ def emit_statement(statement, env, lines, state):
     transfer = state["transfers"][items["transfer"][1]]
     if kind == "store" or transfer["type"] != "words" or transfer["mode"] != "basic":
       raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words in the basic mode)")
-    state["loads"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "lines": transfer_lines(transfer, targets)})
+    state["loads"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets)})
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
       raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")
