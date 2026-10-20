@@ -60,11 +60,11 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "volatile Buffer x[1];\n.kernel k direct {\n  .buffers global {\n    top0, 1 words, from x;\n  }\n}\n@kernel k\nvoid f(void) { }\nint b;\n"
+    text = "volatile Buffer x[1];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k\nvoid f(void) { }\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
-    self.assertIn('#line 6 "t.vmeg.c"', out)
-    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  vmeLibMemoryToRingBuffer((void*)x, VME_TOP_BUFF0_WOFF, 1);\n  k();\n  vmeLibDisable();\n#line 8 "t.vmeg.c"\n }\nint b;\n'))
+    self.assertIn('#line 5 "t.vmeg.c"', out)
+    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  vme_dma(MEMORY, ADDR, useg_mem((u32)x));\n  vme_dma(ITERATION, DIMS, 0);\n  vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);\n  vme_dma(CTRL, VALUE, 0x40);\n  meCoreDMACPrimWaitTransferFinish();\n  k();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
     text = ".kernel k direct {\n}\n@kernel k\n\n/* c */\nstatic void run(int a) { }\n"
@@ -101,7 +101,7 @@ class RenderTest(unittest.TestCase):
 
   def test_global_sources_must_be_declared_with_buffer(self):
     def build(declarations):
-      return declarations + ".kernel k direct {\n  .buffers global {\n    top0, 1 words, from x;\n    top1, 1 words, from y;\n  }\n}\n@kernel k\nvoid f() { }\n"
+      return declarations + ".kernel k direct {\n  Transfer tx = { type: words, mode: basic, memory: x, count: 0 };\n  Transfer ty = { type: words, mode: basic, memory: y, count: 0 };\n  .load { .transfer = tx; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = ty; .scope = global; .offsets { .top1 = 0; } }\n}\n@kernel k\nvoid f() { }\n"
     ok = build("volatile Buffer x[1], y[1];\n")
     check_uses(project_registry([("t.vmeg.c", ok)]))
     for declarations in ["", "volatile Buffer x[1];\n", "volatile Buffer x[1], z[1];\n", "volatile u32 x[1], y[1];\n"]:
@@ -112,7 +112,7 @@ class RenderTest(unittest.TestCase):
         self.assertIn("is not declared with Buffer in any file", str(ctx.exception))
 
   def test_local_sources_must_be_declared_in_every_decorated_function(self):
-    kernel = ".kernel k direct {\n  .buffers local {\n    top0, 1 words, from x;\n  }\n}\n"
+    kernel = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n"
     declared = "void f() {\n  volatile Buffer x[1];\n}\n"
     ok = kernel + "@kernel k\n" + declared
     render(ok, find_blocks(ok), "t.vmeg.c")
@@ -131,12 +131,11 @@ class RenderTest(unittest.TestCase):
     render(both, find_blocks(both), "t.vmeg.c")
 
   def test_local_buffers_are_uploaded_in_the_decorated_function(self):
-    text = ".kernel k direct {\n  .buffers local {\n    top0, 4 words, from a;\n    base1, 2 words, at 8, from b;\n  }\n}\n@kernel k\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
+    text = ".kernel k direct {\n  Transfer ta = { type: words, mode: basic, memory: a, count: 3 };\n  Transfer tb = { type: words, mode: basic, memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     body = out[out.index("void f() {"):]
     expected = ["void f() {", "volatile u32 __attribute__((aligned(64))) a[4], b[2];", "vmeLibEnable();",
-      "vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);",
-      "vmeLibMemoryToRingBuffer((void*)b, VME_BASE_BUFF1_WOFF + 8, 2);", "k();", "vmeLibDisable();"]
+      "vme_dma(MEMORY, ADDR, useg_mem((u32)a));", "vme_dma(ITERATION, DIMS, 3);", "vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();", "vme_dma(MEMORY, ADDR, useg_mem((u32)b));", "vme_dma(ITERATION, DIMS, 1);", "vme_dma(SPAD, OFFSET, VME_BASE_BUFF1_WOFF + 8);", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();", "k();", "vmeLibDisable();"]
     position = 0
     for piece in expected:
       position = body.index(piece, position) + len(piece)
@@ -159,12 +158,12 @@ class RenderTest(unittest.TestCase):
     self.assertIn("line 2", str(ctx.exception))
 
   def test_one_block_when_on_process_carries_the_kernel(self):
-    text = ".kernel k direct {\n  .buffers local {\n    top0, 4 words, from a;\n  }\n}\n@kernel k\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
+    text = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: a, count: 3 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n@kernel k\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
     expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmeLibWipe();",
-      "vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);", "k();", "vmeLibDisable();", "go();"]
+      "vme_dma(MEMORY, ADDR, useg_mem((u32)a));", "vme_dma(ITERATION, DIMS, 3);", "vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();", "k();", "vmeLibDisable();", "go();"]
     position = out.index("void meLibOnProcess")
     for piece in expected:
       position = out.index(piece, position) + len(piece)
