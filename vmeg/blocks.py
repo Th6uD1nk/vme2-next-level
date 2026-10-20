@@ -128,6 +128,10 @@ def find_blocks(text):
       while j < len(items) and items[j][0] == "ident":
         j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
+      if value == "kernel" and not dotted:
+        line = text.count("\n", 0, start) + 1
+        header = " ".join(item[1] for item in items[i:j])
+        raise ValueError(f"line {line}: {header} {{ }} was removed, write .{header} {{ }}")
       blocks.append(("buffers" if value == "buffers" else "kernel", start, items[j][2], block_end(text, items, j, start)))
       skip = blocks[-1][3]
   if nested:
