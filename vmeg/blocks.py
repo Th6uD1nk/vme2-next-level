@@ -71,7 +71,7 @@ def read_block_statements(text, items, open_index, close):
       j += 1
       continue
     stop = None
-    if kind == "ident" and value == "Transfer" and contexts.get(depth) and j + 2 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "=":
+    if kind == "ident" and value in ("Transfer", "Int") and contexts.get(depth) and j + 2 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "=":
       k = j
       while items[k][1] != ";" or items[k][4] != depth:
         k += 1

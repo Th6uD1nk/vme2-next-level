@@ -264,6 +264,19 @@ def parse_declarators(p, keyword, kind, initialized):
   return ("declarations", members)
 
 
+def parse_int_declaration(p):
+  p.expect("Int")
+  members = []
+  while True:
+    name = p.ident()
+    p.expect("=")
+    members.append(("const", name, parse_expr(p)))
+    if not p.accept(","):
+      break
+  p.expect(";")
+  return ("declarations", members)
+
+
 def parse_agu_declaration(p):
   return parse_declarators(p, "Agu", "agudecl", True)
 
@@ -431,6 +444,8 @@ def parse_statement(p):
       return parse_staging_declaration(p) + (line,)
     if tok[1] == "Transfer":
       return parse_transfer_declaration(p) + (line,)
+    if tok[1] == "Int":
+      return parse_int_declaration(p) + (line,)
     if tok[1] == "pe":
       return parse_pe_statement(p) + (line,)
   if tok[0] == "punct" and tok[1] == ".":
