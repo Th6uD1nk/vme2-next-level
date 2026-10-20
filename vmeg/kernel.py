@@ -354,6 +354,8 @@ def generate(text, block, warnings=None):
     raise ValueError(f"line {line}: buffers must be inside a kernel (.buffers global or .buffers local)")
   header = text[start:open_pos]
   words = [(value, start + s) for _, value, s, _ in tokens(header)]
+  if words[0][0] == ".":
+    words = words[1:]
   name, options = words[1][0], []
   for word, pos in words[2:]:
     line = text.count("\n", 0, pos) + 1

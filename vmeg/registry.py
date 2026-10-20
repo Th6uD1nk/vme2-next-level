@@ -1,4 +1,4 @@
-from vmeg.blocks import decorator_names, find_blocks, kernel_name
+from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.expr import to_c
 from vmeg.host import declarator_names
 from vmeg.parser import kernel_statements
@@ -66,7 +66,7 @@ def kernel_definitions(path, text):
     if block[0] != "kernel":
       continue
     statements = kernel_statements(text, block, {})
-    words = [value for _, value, _, _ in tokens(text[block[1]:block[2]])]
+    words = header_words(text, block)
     found.append({
       "name": kernel_name(text, block),
       "path": path,

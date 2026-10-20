@@ -61,7 +61,8 @@ def read_emulate(text, items, index):
   line = text.count("\n", 0, start) + 1
   if index + 2 >= len(items) or items[index + 2][0] != "str" or not EMULATE_ID.fullmatch(items[index + 2][1]):
     raise ValueError(f"line {line}: expected @emulate \"id\", the id is made of letters, digits, - and _ between double quotes")
-  if index + 4 >= len(items) or items[index + 3][1] != "kernel" or items[index + 4][0] != "ident":
+  shift = 1 if index + 3 < len(items) and items[index + 3][1] == "." else 0
+  if index + 4 + shift >= len(items) or items[index + 3 + shift][1] != "kernel" or items[index + 4 + shift][0] != "ident":
     raise ValueError(f"line {line}: @emulate \"id\" must be followed by 'kernel name'")
   end = items[index + 2][3]
   return ("emulate", start, end, end), items[index + 2][1][1:-1], line, items[index + 3][2]
@@ -112,11 +113,14 @@ def find_blocks(text):
         continue
       blocks.append(read_decorator(text, items, i))
       continue
-    if kind != "ident" or value not in ("buffers", "kernel", "context"):
+    dotted = kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] == "kernel"
+    if not dotted and (kind != "ident" or value not in ("buffers", "kernel", "context")):
       continue
     if depth != 0 or (prev not in (";", "}") and i not in allowed):
       continue
-    j = i + 1
+    if dotted:
+      value = "kernel"
+    j = i + 1 + dotted
     if value != "buffers":
       if j >= len(items) or items[j][0] != "ident":
         continue
@@ -155,7 +159,12 @@ def body_tokens(text, block):
 
 
 def kernel_name(text, block):
-  return [value for _, value, _, _ in tokens(text[block[1]:block[2]])][1]
+  return header_words(text, block)[1]
+
+
+def header_words(text, block):
+  words = [value for _, value, _, _ in tokens(text[block[1]:block[2]])]
+  return words[1:] if words[0] == "." else words
 
 
 def decorator_names(text, block):
