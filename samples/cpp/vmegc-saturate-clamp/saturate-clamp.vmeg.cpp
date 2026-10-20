@@ -65,17 +65,21 @@ volatile Buffer sharedBase0[16] = {
 };
 
 .kernel runContext direct {
-  
-  .buffers global {
-    top0, 16 words, from sharedTop0;
-    top1, 16 words, from sharedTop1;
-    top2, 16 words, from sharedTop2;
-    top3, 16 words, from sharedTop3;
-    base0, 16 words, at SHARED_BASE_0_INPUT_OFFSET, from sharedBase0;
-  }
-
   const count = 16 - 1;
 
+  Transfer top0Transfer = { type: words, mode: basic, memory: sharedTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: sharedTop1, count };
+  Transfer top2Transfer = { type: words, mode: basic, memory: sharedTop2, count };
+  Transfer top3Transfer = { type: words, mode: basic, memory: sharedTop3, count };
+  Transfer base0Transfer = { type: words, mode: basic, memory: sharedBase0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = top2Transfer; .scope = global; .offsets { .top2 = 0; } }
+  .load { .transfer = top3Transfer; .scope = global; .offsets { .top3 = 0; } }
+  .load { .transfer = base0Transfer; .scope = global; .offsets { .base0 = SHARED_BASE_0_INPUT_OFFSET; } }
+
+  
   Agu top   = { count };
   Agu base  = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
   Agu write = { count, cyc: 0x09 };
