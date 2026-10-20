@@ -20,7 +20,7 @@ AGU_PARAMS = {
   "write": AGU_COMMON + ("cyc", "bubbles", "sync"),
 }
 
-TRANSFER_USE = ("transfer", "scope")
+TRANSFER_USE = ("transfer", "scope", "offsets")
 
 TRANSFER_SCOPES = ("local", "global")
 
@@ -266,6 +266,31 @@ def parse_transfer_declaration(p):
   return ("transferdecl", name, params)
 
 
+def parse_offsets(p):
+  entries = []
+  while not p.accept("}"):
+    if p.peek() is None:
+      p.error("expected '}'")
+    start = p.peek()
+    if p.accept("."):
+      name = p.ident()
+      m = BUFFER_NAME.match(name)
+      if m is None:
+        p.error(f"unknown offset '.{name}' (.top0 to .top3, .base0 to .base3)", start)
+      kind, index = m.group(1), ("num", int(m.group(2)))
+    else:
+      kind = p.ident()
+      if kind not in ("top", "base"):
+        p.error("expected .top0 to .top3, .base0 to .base3, top[...] or base[...]", start)
+      p.expect("[")
+      index = parse_expr(p)
+      p.expect("]")
+    p.expect("=")
+    entries.append((kind, index, parse_expr(p)))
+    p.expect(";")
+  return ("offsets", entries)
+
+
 def parse_transfer_use(p):
   direction = p.ident()
   p.expect("{")
@@ -280,6 +305,10 @@ def parse_transfer_use(p):
       p.error(f"unknown attribute '.{name}' of .{direction} ({', '.join('.' + n for n in TRANSFER_USE)})", start)
     if any(item[0] == name for item in items):
       p.error(f".{name} is already written in this .{direction}", start)
+    if name == "offsets":
+      p.expect("{")
+      items.append((name, parse_offsets(p)))
+      continue
     p.expect("=")
     value = p.peek()
     items.append((name, ("name", p.ident())))
