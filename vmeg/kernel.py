@@ -6,7 +6,11 @@ from vmeg.scanner import tokens
 
 KERNEL_OPTIONS = ("direct",)
 
-TRANSFER_FIELDS = ("type", "mode", "memory", "count")
+TRANSFER_FIELDS = ("type", "mode", "memory", "count", "dims", "step", "group")
+
+TRANSFER_NESTED = {"dims": (("count", "gap"),), "group": (("size",), ("outer", "inner"))}
+
+TRANSFER_EXTENDED = ("dims", "step", "group")
 
 TRANSFER_WORDS = {"type": ("words", "halves", "bytes"), "mode": ("basic", "extended")}
 
@@ -27,6 +31,35 @@ def constant(expr, what):
   return expr[1]
 
 
+def transfer_number(name, what, value, env):
+  number = constant(fold(value, env), f"Transfer {name}: {what}")
+  if number < 0:
+    raise ValueError(f"Transfer {name}: {what} cannot be negative")
+  return number
+
+
+def check_transfer_nested(name, key, value, env):
+  if value[0] != "params":
+    raise ValueError(f"Transfer {name}: '{key}' takes a list of fields")
+  names = [field for register in TRANSFER_NESTED[key] for field in register]
+  inner = {}
+  for field, item in value[1]:
+    if field not in names:
+      raise ValueError(f"Transfer {name}: unknown field '{field}' of {key} ({', '.join(names)})")
+    if field in inner:
+      raise ValueError(f"Transfer {name}: duplicate field '{field}' of {key}")
+    if item[0] == "params":
+      raise ValueError(f"Transfer {name}: '{field}' of {key} takes a value, not a list of fields")
+    inner[field] = transfer_number(name, f"{key}.{field}", item, env)
+  if not inner:
+    raise ValueError(f"Transfer {name}: {key} needs at least one field ({', '.join(names)})")
+  for register in TRANSFER_NESTED[key]:
+    missing = [field for field in register if field not in inner]
+    if 0 < len(missing) < len(register):
+      raise ValueError(f"Transfer {name}: the field '{missing[0]}' of {key} is needed, {' and '.join(register)} are one register")
+  return inner
+
+
 def check_transfer(name, params, env):
   values = {}
   for key, value in params[1]:
@@ -34,19 +67,20 @@ def check_transfer(name, params, env):
       raise ValueError(f"Transfer {name}: unknown field '{key}' ({', '.join(TRANSFER_FIELDS)})")
     if key in values:
       raise ValueError(f"Transfer {name}: duplicate field '{key}'")
+    if key in TRANSFER_NESTED:
+      values[key] = check_transfer_nested(name, key, value, env)
+      continue
     if value[0] == "params":
       raise ValueError(f"Transfer {name}: '{key}' takes a value, not a list of fields")
-    if key == "count":
-      values[key] = constant(fold(value, env), f"Transfer {name}: count")
-      if values[key] < 0:
-        raise ValueError(f"Transfer {name}: count cannot be negative")
+    if key in ("count", "step"):
+      values[key] = transfer_number(name, key, value, env)
       continue
     if value[0] != "name":
       raise ValueError(f"Transfer {name}: '{key}' takes a name")
     if key in TRANSFER_WORDS and value[1] not in TRANSFER_WORDS[key]:
       raise ValueError(f"Transfer {name}: {key} must be {', '.join(TRANSFER_WORDS[key][:-1])} or {TRANSFER_WORDS[key][-1]}")
     values[key] = value[1]
-  for key in TRANSFER_FIELDS:
+  for key in ("type", "mode", "memory", "count"):
     if key not in values:
       raise ValueError(f"Transfer {name}: the field '{key}' is needed")
   return values
