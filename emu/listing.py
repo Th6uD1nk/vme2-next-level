@@ -32,7 +32,7 @@ def declared_names(text, blocks, kernel):
 
 
 def load_links(loads, scope):
-  return [(*link, load["line"]) for load in loads if load["scope"] == scope for link in load["links"]]
+  return [(*link[:4], load["line"], link[4]) for load in loads if load["scope"] == scope for link in load["links"]]
 
 
 def emulations(text):
@@ -69,7 +69,7 @@ def overlap_notes(emulation, definitions):
   notes = {}
   placed = []
   for qualifier in ("global", "local"):
-    for index, (buffer, count, offset, _, _) in enumerate(emulation[qualifier]):
+    for index, (buffer, count, offset, _, _, _) in enumerate(emulation[qualifier]):
       start = number(offset, definitions)
       if start is None:
         continue
@@ -85,7 +85,7 @@ def link_notes(emulation, definitions):
   notes = overlap_notes(emulation, definitions)
   known = {name.split("(")[0] for name, _ in definitions}
   for qualifier in ("global", "local"):
-    for index, (_, count, offset, source, _) in enumerate(emulation[qualifier]):
+    for index, (_, count, offset, source, _, _) in enumerate(emulation[qualifier]):
       if source not in emulation["declared"][qualifier]:
         notes.setdefault((qualifier, index), []).append(f"'{source}' is not declared with Buffer")
       start = number(offset, definitions)
@@ -103,9 +103,9 @@ def marked(line, notes, key):
 
 def buffer_lines(entries, notes, qualifier):
   lines = []
-  for index, (target, count, offset, source, _) in enumerate(entries):
+  for index, (target, count, offset, source, _, extended) in enumerate(entries):
     place = f"at {offset}  " if offset else ""
-    line = f"    {target:<8}{count} words  {place}from {source}"
+    line = f"    {target:<8}{count} words{' extended' if extended else ''}  {place}from {source}"
     lines.append(marked(line, notes, (qualifier, index)))
   return lines
 
@@ -119,8 +119,8 @@ def full_lines(emulation, notes):
     links = [(qualifier, index, entry) for qualifier in ("global", "local") for index, entry in enumerate(emulation[qualifier]) if entry[0] == buffer]
     if not links:
       lines.append(f"  {buffer:<8}not linked")
-    for qualifier, index, (_, count, offset, source, _) in links:
-      line = f"  {buffer:<8}{qualifier:<8}at {offset or 0}  {count} words  from {source}"
+    for qualifier, index, (_, count, offset, source, _, extended) in links:
+      line = f"  {buffer:<8}{qualifier:<8}at {offset or 0}  {count} words{' extended' if extended else ''}  from {source}"
       lines.append(marked(line, notes, (qualifier, index)))
   return lines
 

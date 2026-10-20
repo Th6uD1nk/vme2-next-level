@@ -228,7 +228,7 @@ class ListingTest(unittest.TestCase):
     )
     self.assertEqual(emulations(text), [{
       "id": "first", "kernel": "k", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
-      "global": [("TOP_0", 4, "", "a", 10), ("BASE_2", 2, "OFFSET", "a", 11)],
+      "global": [("TOP_0", 4, "", "a", 10, False), ("BASE_2", 2, "OFFSET", "a", 11, False)],
       "calls": dma("a", 3, "VME_TOP_BUFF0_WOFF") + dma("a", 1, "VME_BASE_BUFF2_WOFF + OFFSET"),
     }])
 

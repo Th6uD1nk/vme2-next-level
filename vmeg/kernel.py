@@ -315,7 +315,7 @@ def transfer_lines(transfer, targets):
 
 def transfer_links(transfer, targets):
   words = transfer["count"] + 1 if transfer["mode"] == "basic" else transfer.get("dims", {"count": 0})["count"] + 1
-  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"]) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
+  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"], transfer["mode"] == "extended") for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
 
 
 def emit(statement, env, lines, state):
