@@ -73,3 +73,20 @@ def evaluate(body, resolve):
   folded = fold(expr, env)
   return folded[1] if folded[0] == "num" else None
 
+
+def known_macros(text, position):
+  bodies = trusted_macros(text, position)
+  values = {}
+  visiting = set()
+
+  def resolve(name):
+    if name in values:
+      return values[name]
+    if name not in bodies or name in visiting:
+      return None
+    visiting.add(name)
+    values[name] = evaluate(bodies[name], resolve)
+    visiting.discard(name)
+    return values[name]
+
+  return {name: number for name in bodies for number in [resolve(name)] if number is not None}
