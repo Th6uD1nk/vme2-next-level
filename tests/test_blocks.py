@@ -244,7 +244,7 @@ class EmulateTest(unittest.TestCase):
     cases = {
       '@emulate\n.kernel k { }': "line 1: expected @emulate",
       '@emulate "bad id"\n.kernel k { }': "line 1: expected @emulate",
-      '@emulate "a"\nvoid f() { }': "line 1: @emulate \"id\" must be followed by 'kernel name'",
+      '@emulate "a"\nvoid f() { }': "line 1: @emulate \"id\" must be followed by '.kernel name'",
       '@emulate "a"\n.kernel k { }\n@emulate "a"\n.kernel m { }': "line 3: the id \"a\" of @emulate is already used at line 1",
     }
     for text, message in cases.items():

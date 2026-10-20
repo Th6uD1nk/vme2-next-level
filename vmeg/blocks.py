@@ -113,9 +113,8 @@ def read_emulate(text, items, index):
   line = text.count("\n", 0, start) + 1
   if index + 2 >= len(items) or items[index + 2][0] != "str" or not EMULATE_ID.fullmatch(items[index + 2][1]):
     raise ValueError(f"line {line}: expected @emulate \"id\", the id is made of letters, digits, - and _ between double quotes")
-  shift = 1 if index + 3 < len(items) and items[index + 3][1] == "." else 0
-  if index + 4 + shift >= len(items) or items[index + 3 + shift][1] != "kernel" or items[index + 4 + shift][0] != "ident":
-    raise ValueError(f"line {line}: @emulate \"id\" must be followed by 'kernel name'")
+  if index + 5 >= len(items) or items[index + 3][1] != "." or items[index + 4][1] != "kernel" or items[index + 5][0] != "ident":
+    raise ValueError(f"line {line}: @emulate \"id\" must be followed by '.kernel name'")
   end = items[index + 2][3]
   return ("emulate", start, end, end), items[index + 2][1][1:-1], line, items[index + 3][2]
 
@@ -165,24 +164,17 @@ def find_blocks(text):
         continue
       blocks.append(read_decorator(text, items, i))
       continue
-    dotted = kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] in ("kernel", "context")
-    if not dotted and (kind != "ident" or value not in ("kernel", "context")):
+    if not (kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] in ("kernel", "context")):
       continue
     if depth != 0 or (prev not in (";", "}") and i not in allowed):
       continue
-    if dotted:
-      value = items[i + 1][1]
-    j = i + 1 + dotted
+    j = i + 2
     if j >= len(items) or items[j][0] != "ident":
       continue
     j += 1
     while j < len(items) and items[j][0] == "ident":
       j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
-      if not dotted:
-        line = text.count("\n", 0, start) + 1
-        header = " ".join(item[1] for item in items[i:j])
-        raise ValueError(f"line {line}: {header} {{ }} was removed, write .{header} {{ }}")
       blocks.append(("kernel", start, items[j][2], block_end(text, items, j, start)))
       skip = blocks[-1][3]
   if nested:
