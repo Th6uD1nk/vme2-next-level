@@ -180,7 +180,7 @@ class RenderTest(unittest.TestCase):
     self.assertEqual([block[0] for block in find_blocks(inside_kernel)], ["kernel", "decorator"])
 
   def test_context_is_an_alias_of_kernel(self):
-    mixed = ".kernel a direct {\n}\n.context b direct {\n}\n@context a, b\nvoid run() { }\n"
+    mixed = ".kernel a direct {\n}\n.context b direct {\n}\n@context a config, exec, b config, exec\nvoid run() { }\n"
     blocks = find_blocks(mixed)
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel", "decorator"])
     out = render(mixed, blocks, "t.vmeg.c")
@@ -281,7 +281,7 @@ class KernelBlockTest(unittest.TestCase):
   def test_bad_kernel_block_is_an_error_with_its_line(self):
     cases = {
       "void f() {\n  @kernel {\n  }\n}\n": "line 2: expected a kernel name",
-      "void f() {\n  @kernel k;\n}\n": "line 2: @kernel inside a function must be followed",
+      "void f() {\n  @kernel k;\n}\n": "line 2: expected config or exec after the kernel name",
       "void f() {\n  @kernel nope config, exec {\n  }\n}\n": "line 2: @kernel refers to an unknown kernel 'nope'",
       ".kernel k {\n}\nvoid f() {\n  @kernel k config, exec {\n  }\n}\n": "line 4: kernel 'k' is not direct",
     }

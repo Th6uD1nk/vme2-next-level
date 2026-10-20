@@ -12,6 +12,8 @@ def read_kernel_list(items, last, line):
     if last + 1 >= len(items) or items[last + 1][0] != "ident" or items[last + 1][1] in ACTIONS:
       raise ValueError(f"line {line}: expected a kernel name")
     last += 1
+    if last + 1 >= len(items) or items[last + 1][0] != "ident" or items[last + 1][1] not in ACTIONS:
+      raise ValueError(f"line {line}: expected config or exec after the kernel name")
     while last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
       last += 1
       if last + 2 < len(items) and items[last + 1][1] == "," and items[last + 2][1] in ACTIONS:
