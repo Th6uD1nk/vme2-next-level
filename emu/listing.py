@@ -69,9 +69,9 @@ def overlap_notes(emulation, definitions):
   notes = {}
   placed = []
   for qualifier in ("global", "local"):
-    for index, (buffer, count, offset, _, _, _) in enumerate(emulation[qualifier]):
+    for index, (buffer, count, offset, _, _, extended) in enumerate(emulation[qualifier]):
       start = number(offset, definitions)
-      if start is None:
+      if start is None or extended:
         continue
       end = start + count - 1
       hits = [(other, written, max(start, first), min(end, last)) for other, written, first, last in placed if other == buffer and max(start, first) <= min(end, last)]
@@ -85,11 +85,11 @@ def link_notes(emulation, definitions):
   notes = overlap_notes(emulation, definitions)
   known = {name.split("(")[0] for name, _ in definitions}
   for qualifier in ("global", "local"):
-    for index, (_, count, offset, source, _, _) in enumerate(emulation[qualifier]):
+    for index, (_, count, offset, source, _, extended) in enumerate(emulation[qualifier]):
       if source not in emulation["declared"][qualifier]:
         notes.setdefault((qualifier, index), []).append(f"'{source}' is not declared with Buffer")
       start = number(offset, definitions)
-      if start is not None and start + count > BUFFER_WORDS:
+      if start is not None and not extended and start + count > BUFFER_WORDS:
         notes.setdefault((qualifier, index), []).append(f"goes past the end of the buffer ({hex(BUFFER_WORDS)} words)")
       for name in dict.fromkeys(NAME.findall(offset)):
         if name not in known:
