@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.macros import evaluate, macro_events, trusted_macros
+from vmeg.macros import evaluate, known_macros, macro_events, trusted_macros
 
 
 def summary(text):
@@ -76,6 +76,26 @@ class EvaluateTest(unittest.TestCase):
   def test_an_unknown_name_or_a_body_that_is_not_an_expression_gives_nothing(self):
     numbers = {"A": 16}
     self.assertEqual([evaluate(body, numbers.get) for body in ["(FROM_A_HEADER + 1)", "sizeof(int)", "(1 +", "", "A A", "(int)A"]], [None] * 6)
+
+
+def known(text):
+  return known_macros(text, text.index("int use;"))
+
+
+class KnownMacrosTest(unittest.TestCase):
+  def test_a_macro_in_another_macro_even_through_a_chain(self):
+    text = "#define VECTOR_COUNT 16\n#define VECTOR_BATCH_WORD_COUNT (VECTOR_COUNT * 4)\n#define LAST (VECTOR_BATCH_WORD_COUNT - 1)\nint use;\n"
+    self.assertEqual(known(text), {"VECTOR_COUNT": 16, "VECTOR_BATCH_WORD_COUNT": 64, "LAST": 63})
+
+  def test_an_unknown_part_makes_the_whole_macro_and_the_ones_that_use_it_unknown(self):
+    text = "#define A (FROM_A_HEADER + 1)\n#define B (A * 2)\n#define C sizeof(int)\n#define E 8\nint use;\n"
+    self.assertEqual(known(text), {"E": 8})
+
+  def test_a_macro_that_is_not_trusted_makes_the_ones_that_use_it_unknown(self):
+    self.assertEqual(known("#define A 1\n#define A 2\n#define B (A + 1)\n#define C 3\nint use;\n"), {"C": 3})
+
+  def test_a_cycle_gives_no_number(self):
+    self.assertEqual(known("#define A B\n#define B A\n#define C 1\nint use;\n"), {"C": 1})
 
 
 if __name__ == "__main__":
