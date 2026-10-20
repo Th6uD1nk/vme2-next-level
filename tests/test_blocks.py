@@ -57,7 +57,7 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 5 "t.vmeg.c"', out)
-    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  vme_dma(MEMORY, ADDR, useg_mem((u32)x));\n  vme_dma(ITERATION, DIMS, 0);\n  vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);\n  vme_dma(CTRL, VALUE, 0x40);\n  meCoreDMACPrimWaitTransferFinish();\n  k();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
+    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  vme_dma(MEMORY, ADDR, useg_mem((u32)x));\n  vme_dma(ITERATION, DIMS, 0);\n  vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);\n  vme_dma(CTRL, VALUE, 0x40);\n  meCoreDMACPrimWaitTransferFinish();\n  vmeLibStart();\n  k();\n  vmeLibFinish();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
     text = ".kernel k direct {\n}\n@kernel k\n\n/* c */\nstatic void run(int a) { }\n"
@@ -261,7 +261,7 @@ class KernelBlockTest(unittest.TestCase):
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "x.vmeg.c")
     self.assertNotIn("@kernel", out)
-    self.assertIn("{ vmeLibEnable(); k();", out)
+    self.assertIn("{ vmeLibEnable(); vmeLibStart(); k(); vmeLibFinish();", out)
     self.assertLess(out.index("k();"), out.index("a();"))
     self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
 
@@ -348,7 +348,7 @@ class RegistryTest(unittest.TestCase):
     check_calls(registry)
     out = translate(b, find_blocks(b), "b.vmeg.c", registry)
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
-    self.assertIn("vme_dma(MEMORY, ADDR, useg_mem((u32)g)); vme_dma(ITERATION, DIMS, 3); vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF); vme_dma(CTRL, VALUE, 0x40); meCoreDMACPrimWaitTransferFinish(); k();", out)
+    self.assertIn("vme_dma(MEMORY, ADDR, useg_mem((u32)g)); vme_dma(ITERATION, DIMS, 3); vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF); vme_dma(CTRL, VALUE, 0x40); meCoreDMACPrimWaitTransferFinish(); vmeLibStart(); k(); vmeLibFinish();", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
 
 

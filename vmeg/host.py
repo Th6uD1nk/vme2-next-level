@@ -274,7 +274,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
-      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name)) + f" {name}();" + "".join(f" {call}" for call in kernel_downloads(registry, name)) for name in decorator_names(text, block))
+      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name)) + f" vmeLibStart(); {name}(); vmeLibFinish();" + "".join(f" {call}" for call in kernel_downloads(registry, name)) for name in decorator_names(text, block))
       edits.append((brace, 0, f" vmeLibEnable();{calls}"))
       continue
     if block[0] != "decorator":
@@ -283,7 +283,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     lines = ["vmeLibEnable();"]
     for name in decorator_names(text, block):
       lines += kernel_uploads(registry, name)
-      lines.append(f"{name}();")
+      lines += ["vmeLibStart();", f"{name}();", "vmeLibFinish();"]
       lines += kernel_downloads(registry, name)
     lines.append("vmeLibDisable();")
     at, start = function_body(text, block)

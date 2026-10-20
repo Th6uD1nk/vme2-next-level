@@ -484,7 +484,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def run_statements(statements):
-  lines = ["vmeLibStart();"]
+  lines = ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"]
   env = {"true": ("num", 1), "false": ("num", 0)}
   state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
@@ -531,7 +531,6 @@ def generate(text, block, warnings=None):
     lines.append(f"vme_icn({ICN_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
-  lines.append("vmeLibFinish();")
   if warnings is not None:
     warnings.extend(state["warnings"])
   body = "".join(f"  {line}\n" for line in lines)

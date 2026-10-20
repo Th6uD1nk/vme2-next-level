@@ -112,7 +112,7 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 
 def host_main(text, identifier):
   kernel = chosen_emulation(text, identifier)["kernel"]
-  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  {kernel}();\n  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
+  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  vmeLibStart();\n  {kernel}();\n  vmeLibFinish();\n  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
 def host_program(text, identifier, others=()):
