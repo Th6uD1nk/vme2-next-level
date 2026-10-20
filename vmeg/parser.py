@@ -270,7 +270,7 @@ def parse_int_declaration(p):
   while True:
     name = p.ident()
     p.expect("=")
-    members.append(("const", name, parse_expr(p)))
+    members.append(("int", name, parse_expr(p)))
     if not p.accept(","):
       break
   p.expect(";")
@@ -382,15 +382,6 @@ def parse_pe_statement(p):
   return parse_pe_assignment(p, ("target", index, p.ident()))
 
 
-def parse_const(p):
-  p.expect("const")
-  name = p.ident()
-  p.expect("=")
-  value = parse_expr(p)
-  p.expect(";")
-  return ("const", name, value)
-
-
 def parse_for_header(p):
   p.expect("for")
   var = p.ident()
@@ -436,8 +427,6 @@ def parse_statement(p):
       return parse_for(p) + (line,)
     if tok[1] == "icn":
       return parse_icn(p) + (line,)
-    if tok[1] == "const":
-      return parse_const(p) + (line,)
     if tok[1] == "Agu":
       return parse_agu_declaration(p) + (line,)
     if tok[1] == "Staging":

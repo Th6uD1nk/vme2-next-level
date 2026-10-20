@@ -185,7 +185,7 @@ def unroll(loop):
     env = {var: ("num", value)}
     for statement in body:
       statement = substitute(statement, env)
-      if statement[0] == "const":
+      if statement[0] == "int":
         env[statement[1]] = statement[2]
       elif statement[0] == "for":
         out.extend(unroll(statement))
@@ -379,7 +379,7 @@ def place(state, lines, pe, operations, line):
 
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
-  if kind == "const":
+  if kind == "int":
     if statement[1] in env:
       raise ValueError(f"'{statement[1]}' is defined twice")
     env[statement[1]] = fold(statement[2], env)

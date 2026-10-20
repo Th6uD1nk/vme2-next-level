@@ -41,8 +41,8 @@ def substitute(statement, env):
   line = statement[-1]
   if kind == "icn":
     return ("icn", [(name, fold(value, env)) for name, value in statement[1]], line)
-  if kind == "const":
-    return ("const", statement[1], fold(statement[2], env), line)
+  if kind == "int":
+    return ("int", statement[1], fold(statement[2], env), line)
   if kind == "agu":
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
