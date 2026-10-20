@@ -248,7 +248,7 @@ class ListingTest(unittest.TestCase):
     )
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
     marked = [line for line in lines if "overlaps" in line]
-    self.assertEqual(marked, ["  TOP_0   global  at OFF  16 words  from b  <-- overlaps TOP_0 at 0 (words 8-15)"])
+    self.assertEqual(marked, ["  TOP_0   global  at 8  16 words  from b  <-- overlaps TOP_0 at 0 (words 8-15)"])
 
 
   def test_an_array_without_buffer_declaration_is_marked_and_extern_counts(self):
@@ -260,7 +260,7 @@ class ListingTest(unittest.TestCase):
   def test_an_offset_name_without_define_is_marked(self):
     text = "#define KNOWN 8\n@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 4, "KNOWN", "a"), ("global", "top1", 4, "(KNOWN + MISSING)", "a"), ("global", "top2", 4, "0x28", "a")) + "}\nBuffer a[4];\n"
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
-    self.assertEqual([line for line in lines if "<--" in line], ["  TOP_1   global  at (KNOWN + MISSING)  4 words  from a  <-- 'MISSING' has no #define in this file"])
+    self.assertEqual([line for line in lines if "<--" in line], ["  TOP_1   global  at (8 + MISSING)  4 words  from a  <-- 'MISSING' has no #define in this file"])
 
 
 class ExtractTest(unittest.TestCase):
