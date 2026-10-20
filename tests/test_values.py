@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from vmeg.blocks import find_blocks
 from vmegc import render
+from emu.listing import defines, emulations, format_listing
 
 
 def agu_count(body, prefix="", suffix=""):
@@ -85,6 +86,19 @@ class TransferValuesTest(unittest.TestCase):
     with self.assertRaises(ValueError) as caught:
       dma_lines("{ type: words, mode: basic, memory: arr, count: 0 - 1 }")
     self.assertIn("cannot be negative", str(caught.exception))
+
+
+class TransferListingTest(unittest.TestCase):
+  def test_the_listing_shows_the_words_of_a_transfer_with_an_unknown_macro_as_a_text(self):
+    text = (
+      "#define KNOWN 64\nvolatile Buffer a[64];\nvolatile Buffer b[64];\n@emulate \"e\"\n.kernel k direct {\n"
+      "  Transfer t = { type: words, mode: basic, memory: a, count: HEADER_COUNT };\n"
+      "  Transfer u = { type: words, mode: basic, memory: b, count: KNOWN - 1 };\n"
+      "  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n"
+      "  .load { .transfer = u; .scope = global; .offsets { .top1 = 0; } }\n}\n"
+    )
+    lines = format_listing(emulations(text), defines(text)).splitlines()
+    self.assertEqual(lines[2:4], ["    TOP_0   (HEADER_COUNT + 1) words  from a", "    TOP_1   64 words  from b"])
 
 
 if __name__ == "__main__":
