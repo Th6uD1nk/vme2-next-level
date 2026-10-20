@@ -3,7 +3,8 @@ import re
 from emu.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import file_buffer_names, function_buffer_names
-from vmeg.parser import kernel_statements
+from vmeg.kernel import kernel_loads
+from vmeg.parser import kernel_statements, upload_text
 from vmeg.registry import buffer_links
 from vmeg.scanner import tokens
 
@@ -31,6 +32,10 @@ def declared_names(text, blocks, kernel):
   return {"global": file_buffer_names(list(tokens(text))), "local": local}
 
 
+def load_links(loads, scope):
+  return [(*link, load["line"]) for load in loads if load["scope"] == scope for link in load["links"]]
+
+
 def emulations(text):
   blocks = find_blocks(text)
   found = []
@@ -39,13 +44,16 @@ def emulations(text):
       continue
     kernel = blocks[k + 1]
     statements = kernel_statements(text, kernel, {})
+    loads = kernel_loads(statements)
+    links = {qualifier: buffer_links(statements, qualifier) for qualifier in ("global", "local")}
     found.append({
       "id": list(tokens(text[block[1]:block[2]]))[2][1][1:-1],
       "kernel": kernel_name(text, kernel),
       "first": text.count("\n", 0, kernel[1]) + 1,
       "last": text.count("\n", 0, kernel[3] - 1) + 1,
-      "global": buffer_links(statements, "global"),
-      "local": buffer_links(statements, "local"),
+      "global": links["global"] + load_links(loads, "global"),
+      "local": links["local"] + load_links(loads, "local"),
+      "calls": [upload_text(target, count, offset, source) for qualifier in ("global", "local") for target, count, offset, source, _ in links[qualifier]] + [line for load in loads for line in load["lines"]],
       "declared": declared_names(text, blocks, kernel_name(text, kernel)),
     })
   return found

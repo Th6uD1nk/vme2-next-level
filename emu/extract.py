@@ -4,7 +4,6 @@ from emu.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, function_tokens
 from vmeg.kernel import generate
-from vmeg.parser import upload_text
 from vmeg.registry import declarations
 from vmeg.scanner import tokens
 
@@ -62,7 +61,7 @@ def array_declarations(text, identifier, others=()):
 
 def upload_calls(text, identifier):
   emulation = chosen_emulation(text, identifier)
-  return [upload_text(target, count, offset, source) for qualifier in ("global", "local") for target, count, offset, source, _ in emulation[qualifier]]
+  return emulation["calls"]
 
 
 def host_source(text, identifier, others=()):

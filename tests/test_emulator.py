@@ -219,6 +219,7 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(emulations(text), [{
       "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10), ("BASE_2", 2, "OFFSET", "a", 11)],
+      "calls": ["vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);", "vmeLibMemoryToRingBuffer((void*)a, VME_BASE_BUFF2_WOFF + OFFSET, 2);"],
     }])
 
 
