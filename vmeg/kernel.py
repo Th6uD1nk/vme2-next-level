@@ -374,6 +374,12 @@ def emit_statement(statement, env, lines, state):
     if statement[1] in state["transfers"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Transfer variable")
     state["stagings"][statement[1]] = {}
+  elif kind in ("load", "store"):
+    items = dict(statement[1])
+    if "transfer" not in items:
+      raise ValueError(f".{kind} needs a .transfer = name;")
+    if items["transfer"][1] not in state["transfers"]:
+      raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
       raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")

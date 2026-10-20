@@ -20,6 +20,8 @@ AGU_PARAMS = {
   "write": AGU_COMMON + ("cyc", "bubbles", "sync"),
 }
 
+TRANSFER_USE = ("transfer",)
+
 PE_NAME = re.compile(r"pe([0-9]+)$")
 
 BUFFER_NAME = re.compile(r"(top|base)([0-3])$")
@@ -262,6 +264,26 @@ def parse_transfer_declaration(p):
   return ("transferdecl", name, params)
 
 
+def parse_transfer_use(p):
+  direction = p.ident()
+  p.expect("{")
+  items = []
+  while not p.accept("}"):
+    if p.peek() is None:
+      p.error("expected '}'")
+    p.expect(".")
+    start = p.peek()
+    name = p.ident()
+    if name not in TRANSFER_USE:
+      p.error(f"unknown attribute '.{name}' of .{direction} ({', '.join('.' + n for n in TRANSFER_USE)})", start)
+    if any(item[0] == name for item in items):
+      p.error(f".{name} is already written in this .{direction}", start)
+    p.expect("=")
+    items.append((name, ("name", p.ident())))
+    p.expect(";")
+  return (direction, items)
+
+
 def parse_staging_declaration(p):
   p.expect("Staging")
   name = p.ident()
@@ -476,6 +498,9 @@ def parse_statement(p):
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
       p.i += 1
       return parse_pe_statement(p) + (line,)
+    if following is not None and following[0] == "ident" and following[1] in ("load", "store"):
+      p.i += 1
+      return parse_transfer_use(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "buffers":
       p.i += 1
       return parse_buffers_block(p) + (line,)
