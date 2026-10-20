@@ -3,7 +3,7 @@ import re
 from emu.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import file_buffer_names, function_buffer_names
-from vmeg.kernel import kernel_loads
+from vmeg.kernel import kernel_transfers
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -43,7 +43,7 @@ def emulations(text):
       continue
     kernel = blocks[k + 1]
     statements = kernel_statements(text, kernel, {})
-    loads = kernel_loads(statements)
+    loads, _ = kernel_transfers(statements)
     found.append({
       "id": list(tokens(text[block[1]:block[2]]))[2][1][1:-1],
       "kernel": kernel_name(text, kernel),

@@ -304,9 +304,9 @@ def transfer_registers(transfer):
   return lines
 
 
-def transfer_lines(transfer, targets):
+def transfer_lines(transfer, targets, direction):
   lines = transfer_registers(transfer)
-  control = "0x40" if transfer["mode"] == "basic" else "0x50"
+  control = hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
   for buffer, slot, offset in targets or [(None, 0, ("num", 0))]:
     destination = "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset_text(offset)}" if offset_text(offset) else "")
     lines += [f"vme_dma(SPAD, OFFSET, {destination});", f"vme_dma(CTRL, VALUE, {control});", "meCoreDMACPrimWaitTransferFinish();"]
@@ -428,9 +428,9 @@ def emit_statement(statement, env, lines, state):
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
-    if kind == "store" or transfer["type"] != "words":
-      raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words)")
-    state["loads"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets), "links": transfer_links(transfer, targets)})
+    if transfer["type"] != "words" or (kind == "store" and transfer["mode"] != "basic"):
+      raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words and a .store of a Transfer of words in the basic mode)")
+    state[kind + "s"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)})
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
       raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")
@@ -486,14 +486,15 @@ def emit_statement(statement, env, lines, state):
 def run_statements(statements):
   lines = ["vmeLibStart();"]
   env = {"true": ("num", 1), "false": ("num", 0)}
-  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   return lines, state
 
 
-def kernel_loads(statements):
-  return run_statements(statements)[1]["loads"]
+def kernel_transfers(statements):
+  state = run_statements(statements)[1]
+  return state["loads"], state["stores"]
 
 
 def generate(text, block, warnings=None):
