@@ -1,5 +1,4 @@
 from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
-from vmeg.expr import to_c
 from vmeg.host import declarator_names, kernel_sources
 from vmeg.kernel import kernel_loads
 from vmeg.parser import kernel_statements
@@ -53,14 +52,6 @@ def array_definitions(path, text):
   ]
 
 
-def buffer_links(statements, qualifier):
-  return [
-    (target, count, "" if offset is None else to_c(offset), source, line)
-    for statement in statements if statement[0] == "buffers" and statement[1] == qualifier
-    for target, count, offset, source, line in statement[2]
-  ]
-
-
 def kernel_definitions(path, text):
   found = []
   for block in find_blocks(text):
@@ -74,8 +65,6 @@ def kernel_definitions(path, text):
       "path": path,
       "line": text.count("\n", 0, block[1]) + 1,
       "direct": direct,
-      "global": buffer_links(statements, "global"),
-      "local": buffer_links(statements, "local"),
       "loads": kernel_loads(statements) if direct else [],
     })
   return found

@@ -401,15 +401,6 @@ def buffer_ref(expr):
   return None
 
 
-def upload_text(target, count, offset, source):
-  kind, index = target.split("_")
-  destination = f"VME_{kind}_BUFF{index}_WOFF"
-  if offset:
-    destination += f" + {offset}"
-  return f"vmeLibMemoryToRingBuffer((void*){source}, {destination}, {count});"
-
-
-
 def parse_for(p):
   _, var, low, high = parse_for_header(p)
   body = []

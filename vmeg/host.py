@@ -1,5 +1,4 @@
 from vmeg.blocks import decorator_names
-from vmeg.parser import upload_text
 from vmeg.scanner import tokens
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
@@ -258,13 +257,11 @@ def on_process_edit(text, toks, quoted):
 
 
 def kernel_sources(kernel, qualifier):
-  return [(source, line) for _, _, _, source, line in kernel[qualifier]] + [(load["memory"], load["line"]) for load in kernel["loads"] if load["scope"] == qualifier]
+  return [(load["memory"], load["line"]) for load in kernel["loads"] if load["scope"] == qualifier]
 
 
-def kernel_uploads(registry, name, qualifiers):
-  kernel = registry["kernels"][name][0]
-  uploads = [upload_text(target, count, offset, source) for qualifier in qualifiers for target, count, offset, source, _ in kernel[qualifier]]
-  return uploads + [line for load in kernel["loads"] for line in load["lines"]]
+def kernel_uploads(registry, name):
+  return [line for load in registry["kernels"][name][0]["loads"] for line in load["lines"]]
 
 
 def call_edits(text, blocks, quoted, on_process_starts, registry):
@@ -273,7 +270,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
-      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name, ("global", "local"))) + f" {name}();" for name in decorator_names(text, block))
+      calls = "".join("".join(f" {call}" for call in kernel_uploads(registry, name)) + f" {name}();" for name in decorator_names(text, block))
       edits.append((brace, 0, f" vmeLibEnable();{calls}"))
       continue
     if block[0] != "decorator":
@@ -281,7 +278,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     line = text.count("\n", 0, block[1]) + 1
     lines = ["vmeLibEnable();"]
     for name in decorator_names(text, block):
-      lines += kernel_uploads(registry, name, ("global", "local"))
+      lines += kernel_uploads(registry, name)
       lines.append(f"{name}();")
     lines.append("vmeLibDisable();")
     at, start = function_body(text, block)
