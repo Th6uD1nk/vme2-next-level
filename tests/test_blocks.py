@@ -305,7 +305,7 @@ class KernelBlockTest(unittest.TestCase):
         self.assertIn(message, str(caught.exception))
 
 
-KERNEL = ".kernel k direct {\n  .buffers global { top0, 4 words, from g; }\n}\n"
+KERNEL = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: g, count: 3 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n"
 
 
 class RegistryTest(unittest.TestCase):
@@ -361,7 +361,7 @@ class RegistryTest(unittest.TestCase):
     check_calls(registry)
     out = translate(b, find_blocks(b), "b.vmeg.c", registry)
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
-    self.assertIn("vmeLibMemoryToRingBuffer((void*)g, VME_TOP_BUFF0_WOFF, 4); k();", out)
+    self.assertIn("vme_dma(MEMORY, ADDR, useg_mem((u32)g)); vme_dma(ITERATION, DIMS, 3); vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF); vme_dma(CTRL, VALUE, 0x40); meCoreDMACPrimWaitTransferFinish(); k();", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
 
 
