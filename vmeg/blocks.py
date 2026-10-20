@@ -4,15 +4,25 @@ from vmeg.scanner import tokens, walk
 
 EMULATE_ID = re.compile(r'"[A-Za-z0-9_-]+"')
 
+ACTIONS = ("config", "exec")
+
 
 def read_kernel_list(items, last, line):
   while True:
-    if last + 1 >= len(items) or items[last + 1][0] != "ident":
+    if last + 1 >= len(items) or items[last + 1][0] != "ident" or items[last + 1][1] in ACTIONS:
       raise ValueError(f"line {line}: expected a kernel name")
     last += 1
-    if last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
+    while last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
+      last += 1
+      if last + 2 < len(items) and items[last + 1][1] == "," and items[last + 2][1] in ACTIONS:
+        last += 1
+        continue
+      break
+    if last + 2 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == "," and items[last + 2][0] == "ident":
       last += 1
       continue
+    if last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
+      raise ValueError(f"line {line}: the actions of a kernel are separated by a comma")
     return last
 
 
@@ -169,9 +179,25 @@ def header_words(text, block):
   return words[1:] if words[0] == "." else words
 
 
-def decorator_names(text, block):
-  return [value for _, value, _, _ in tokens(text[block[1]:block[3]])][2::2]
-
-
 def decorator_calls(text, block):
-  return [(name, ()) for name in decorator_names(text, block)]
+  words = [value for _, value, _, _ in tokens(text[block[1]:block[3]])]
+  calls = []
+  i = 2
+  while i < len(words):
+    name = words[i]
+    actions = []
+    i += 1
+    while i < len(words) and words[i] in ACTIONS:
+      actions.append(words[i])
+      i += 1
+      if i + 1 < len(words) and words[i] == "," and words[i + 1] in ACTIONS:
+        i += 1
+        continue
+      break
+    calls.append((name, tuple(actions)))
+    i += 1
+  return calls
+
+
+def decorator_names(text, block):
+  return [name for name, _ in decorator_calls(text, block)]
