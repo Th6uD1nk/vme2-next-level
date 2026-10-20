@@ -212,9 +212,9 @@ class ListingTest(unittest.TestCase):
   def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
     text = (
       "volatile Buffer a[4];\n"
-      "kernel other direct {\n  .buffers global {\n    top1, 4 words, from a;\n  }\n}\n"
+      ".kernel other direct {\n  .buffers global {\n    top1, 4 words, from a;\n  }\n}\n"
       "@emulate \"first\"\n"
-      "kernel k direct {\n  .buffers global {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from a;\n  }\n}\n"
+      ".kernel k direct {\n  .buffers global {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from a;\n  }\n}\n"
     )
     self.assertEqual(emulations(text), [{
       "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [], "declared": {"global": {"a"}, "local": set()},
@@ -230,8 +230,8 @@ class ListingTest(unittest.TestCase):
   def test_overlap_is_marked_on_the_second_link_of_the_same_kernel_only(self):
     text = (
       "#define OFF 8\n"
-      "@emulate \"one\"\nkernel k direct {\n  .buffers global {\n    top0, 16 words, from a;\n    top0, 16 words, at OFF, from b;\n    top1, 4 words, at 40, from c;\n    top1, 4 words, at UNKNOWN, from d;\n  }\n}\n"
-      "@emulate \"two\"\nkernel m direct {\n  .buffers global {\n    top0, 16 words, from a;\n  }\n}\n"
+      "@emulate \"one\"\n.kernel k direct {\n  .buffers global {\n    top0, 16 words, from a;\n    top0, 16 words, at OFF, from b;\n    top1, 4 words, at 40, from c;\n    top1, 4 words, at UNKNOWN, from d;\n  }\n}\n"
+      "@emulate \"two\"\n.kernel m direct {\n  .buffers global {\n    top0, 16 words, from a;\n  }\n}\n"
       "Buffer a[4], b[4], c[4], d[4];\n"
     )
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
@@ -240,13 +240,13 @@ class ListingTest(unittest.TestCase):
 
 
   def test_an_array_without_buffer_declaration_is_marked_and_extern_counts(self):
-    text = "extern Buffer a[4];\n@emulate \"one\"\nkernel k direct {\n  .buffers global {\n    top0, 4 words, from a;\n    top1, 4 words, from nothere;\n  }\n}\n"
+    text = "extern Buffer a[4];\n@emulate \"one\"\n.kernel k direct {\n  .buffers global {\n    top0, 4 words, from a;\n    top1, 4 words, from nothere;\n  }\n}\n"
     lines = format_listing(emulations(text), [], full=True).splitlines()
     self.assertEqual(lines[1:3], ["  TOP_0   global  at 0  4 words  from a", "  TOP_1   global  at 0  4 words  from nothere  <-- 'nothere' is not declared with Buffer"])
 
 
   def test_an_offset_name_without_define_is_marked(self):
-    text = "#define KNOWN 8\n@emulate \"one\"\nkernel k direct {\n  .buffers global {\n    top0, 4 words, at KNOWN, from a;\n    top1, 4 words, at (KNOWN + MISSING), from a;\n    top2, 4 words, at 0x28, from a;\n  }\n}\nBuffer a[4];\n"
+    text = "#define KNOWN 8\n@emulate \"one\"\n.kernel k direct {\n  .buffers global {\n    top0, 4 words, at KNOWN, from a;\n    top1, 4 words, at (KNOWN + MISSING), from a;\n    top2, 4 words, at 0x28, from a;\n  }\n}\nBuffer a[4];\n"
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
     self.assertEqual([line for line in lines if "<--" in line], ["  TOP_1   global  at (KNOWN + MISSING)  4 words  from a  <-- 'MISSING' has no #define in this file"])
 
@@ -256,7 +256,7 @@ class ExtractTest(unittest.TestCase):
     text = (
       "extern Buffer ex[16];\n"
       "volatile Buffer a[2] = { 1, 2 }, b[3];\n"
-      "@emulate \"one\"\nkernel k direct {\n"
+      "@emulate \"one\"\n.kernel k direct {\n"
       "  .buffers global { top0, 2 words, from a; top1, 3 words, from b; top2, 16 words, from ex; }\n"
       "  .buffers local { top3, 4 words, from x; }\n}\n"
       "@kernel k\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
@@ -271,7 +271,7 @@ class ExtractTest(unittest.TestCase):
       array_declarations(text, "missing")
 
   def test_arrays_of_the_links_come_from_the_other_files(self):
-    text = "extern Buffer ex[2];\n@emulate \"one\"\nkernel k direct {\n  .buffers global { top0, 2 words, from ex; top1, 2 words, from absent; }\n  .buffers local { top2, 4 words, from x; }\n}\n"
+    text = "extern Buffer ex[2];\n@emulate \"one\"\n.kernel k direct {\n  .buffers global { top0, 2 words, from ex; top1, 2 words, from absent; }\n  .buffers local { top2, 4 words, from x; }\n}\n"
     arrays = "volatile Buffer ex[2] = { 1, 2 };\nvolatile Buffer absent[2] = { 3, 4 };\n"
     function = "@kernel k\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
     found = array_declarations(text, "one", [arrays, function])
