@@ -499,7 +499,7 @@ def kernel_transfers(statements):
 
 def generate(text, block, warnings=None):
   kind, start, open_pos, _ = block
-  if kind in ("decorator", "emulate", "kernel-block"):
+  if kind in ("decorator", "emulate", "kernel-block", "block-statement"):
     return ""
   if kind == "kernel-block-end":
     return "vmeLibDisable();"

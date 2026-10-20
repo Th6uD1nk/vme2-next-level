@@ -57,6 +57,46 @@ def read_decorator(text, items, index):
   raise ValueError(f"line {line}: @kernel must be followed by a function definition")
 
 
+def read_block_statements(text, items, open_index, close):
+  statements = []
+  contexts = {items[open_index][4] + 1: True}
+  j = open_index + 1
+  while j < len(items) and items[j][2] < close:
+    kind, value, start, end, depth, prev = items[j]
+    if kind == "punct" and value == "{":
+      contexts[depth + 1] = contexts.get(depth, False) if prev in (";", "}", "{") else False
+      j += 1
+      continue
+    if prev not in (";", "}", "{"):
+      j += 1
+      continue
+    stop = None
+    if kind == "ident" and value == "Transfer" and contexts.get(depth) and j + 2 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "=":
+      k = j
+      while items[k][1] != ";" or items[k][4] != depth:
+        k += 1
+      stop = k
+    elif kind == "punct" and value == "." and j + 2 < len(items) and items[j + 1][1] in ("load", "store") and items[j + 2][1] == "{":
+      k = j + 2
+      while items[k][3] < block_end(text, items, j + 2, start, f".{items[j + 1][1]}"):
+        k += 1
+      stop = k
+    elif kind == "ident" and value == "for" and contexts.get(depth) and j + 3 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "in":
+      k = j + 3
+      while items[k][1] != "{":
+        k += 1
+      end_pos = block_end(text, items, k, start, "for")
+      while items[k][3] < end_pos:
+        k += 1
+      stop = k
+    if stop is None:
+      j += 1
+      continue
+    statements.append(("block-statement", start, start, items[stop][3]))
+    j = stop + 1
+  return statements
+
+
 def read_kernel_block(text, items, index):
   start = items[index][2]
   line = text.count("\n", 0, start) + 1
@@ -64,7 +104,8 @@ def read_kernel_block(text, items, index):
   if last + 1 >= len(items) or items[last + 1][0] != "punct" or items[last + 1][1] != "{":
     raise ValueError(f"line {line}: @kernel inside a function must be followed by the kernel names and a block {{ ... }}")
   close = block_end(text, items, last + 1, start, "@kernel block") - 1
-  return [("kernel-block", start, items[last][3], items[last][3]), ("kernel-block-end", close, close, close)]
+  inner = read_block_statements(text, items, last + 1, close)
+  return [("kernel-block", start, items[last][3], items[last][3])] + inner + [("kernel-block-end", close, close, close)]
 
 
 def read_emulate(text, items, index):
