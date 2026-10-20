@@ -14,6 +14,7 @@
 #include <pspkernel.h>
 #include <psppower.h>
 #include <me-core-mapper/me-core.h>
+#include <me-core-mapper/vme-fu-opcodes.h>
 
 PSP_MODULE_INFO("vme-mat4x4-batch", 0, 1, 1);
 PSP_HEAP_SIZE_KB(-1024);
@@ -70,7 +71,33 @@ volatile Buffer sharedVec[VECTOR_BATCH_WORD_COUNT] = {
 
 volatile Buffer sharedRes[VECTOR_BATCH_WORD_COUNT] = {0};
 
+.kernel mulMat direct {
+  const count = (1 + VECTOR_COUNT) * 16 - 1;
+  const lost = 12;
+
+  Agu matrix  = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
+  Agu mask    = { count: 3, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu vectors = { count, offset: -16 };
+  Agu inter   = { count: count + lost };
+  Agu write0  = { count: count + lost, bubbles: 5, sync: true };
+  Agu write2  = { count: count + lost, bubbles: 1, sync: true };
+  Agu write3  = { count, cyc: 0x11 };
+
+  Staging s0;
+  Staging s1;
+  Staging s2;
+  Staging s3;
+
+  .pe0 { .top = matrix; .base = inter; .write = write0; s0 = mac(top0, top1); }
+  .pe1 { .top = vectors; s1 = top2 & s0; }
+  .pe2 { .top = mask; .base = inter; .write = write2; s2 = acc(s1); }
+  .pe3 { .write = write3; s3 = s2 - base2; .base0 - s3; }
+}
+
 void meLibOnProcess(void) {
+
+  @kernel mulMat config {
+  }
 
   while (1) {
 
