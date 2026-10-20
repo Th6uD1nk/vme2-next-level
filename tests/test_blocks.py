@@ -294,6 +294,27 @@ class KernelBlockTest(unittest.TestCase):
     for gone in [".load", ".store", "Transfer t", "for p in"]:
       self.assertNotIn(gone, out)
 
+  def test_a_variable_of_a_kernel_block_is_taken_out_only_in_a_vmeg_context(self):
+    text = (
+      ".kernel a direct {\n}\n"
+      "void f() {\n"
+      "  @kernel a config, exec {\n"
+      "    Transfer t = { type: words, mode: basic, memory: m, count: 3 };\n"
+      "    if (x) {\n      Transfer bad = { type: words, mode: basic, memory: m, count: 1 };\n    }\n"
+      "    {\n      Transfer inner = { type: words, mode: basic, memory: m, count: 1 };\n    }\n"
+      "  }\n}\n"
+    )
+    blocks = find_blocks(text)
+    taken = [text[block[1]:block[3]] for block in blocks if block[0] == "block-statement"]
+    self.assertEqual(taken, [
+      "Transfer t = { type: words, mode: basic, memory: m, count: 3 };",
+      "Transfer inner = { type: words, mode: basic, memory: m, count: 1 };",
+    ])
+    out = render(text, blocks, "x.vmeg.c")
+    self.assertIn("Transfer bad = { type: words, mode: basic, memory: m, count: 1 };", out)
+    for gone in ["Transfer t", "Transfer inner"]:
+      self.assertNotIn(gone, out)
+
   def test_block_sends_globals_then_locals(self):
     text = (
       "volatile Buffer g[4] = { 1 };\n"
