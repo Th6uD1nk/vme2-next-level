@@ -39,7 +39,7 @@ volatile Buffer sharedBase0[16] = {
 };
 
 kernel runContext direct {
-  global buffers {
+  .buffers global {
     top0, 16 words, from sharedTop0;
     top1, 16 words, from sharedTop1;
     top2, 16 words, from sharedTop2;
