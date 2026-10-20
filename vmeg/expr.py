@@ -64,6 +64,29 @@ def substitute(statement, env):
   return ("for", var, fold(low, env), fold(high, env), [substitute(s, inner) for s in body], line)
 
 
+def copy_text(expr, env):
+  kind = expr[0]
+  if kind == "num":
+    return str(expr[1])
+  if kind == "name":
+    known = env.get(expr[1])
+    if known is None:
+      return expr[1]
+    return str(known[1]) if known[0] == "num" else known[1]
+  if kind == "neg":
+    return f"(-{copy_text(expr[1], env)})"
+  if kind == "bin":
+    return f"({copy_text(expr[2], env)} {expr[1]} {copy_text(expr[3], env)})"
+  raise ValueError(f"'{kind}' expression not supported here")
+
+
+def value(expr, env):
+  folded = fold(expr, env)
+  if folded[0] == "num":
+    return folded
+  return ("name", copy_text(expr, env))
+
+
 def to_c(expr):
   kind = expr[0]
   if kind == "num":
