@@ -64,7 +64,7 @@ volatile Buffer sharedBase0[16] = {
   0x01, 0x40, 0x01, (0x7fffff + 0x02),
 };
 
-kernel runContext direct {
+.kernel runContext direct {
   
   .buffers global {
     top0, 16 words, from sharedTop0;
