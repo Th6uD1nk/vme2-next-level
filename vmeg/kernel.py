@@ -80,9 +80,17 @@ def check_transfer(name, params, env):
     if key in TRANSFER_WORDS and value[1] not in TRANSFER_WORDS[key]:
       raise ValueError(f"Transfer {name}: {key} must be {', '.join(TRANSFER_WORDS[key][:-1])} or {TRANSFER_WORDS[key][-1]}")
     values[key] = value[1]
-  for key in ("type", "mode", "memory", "count"):
+  for key in ("type", "mode", "memory"):
     if key not in values:
       raise ValueError(f"Transfer {name}: the field '{key}' is needed")
+  if values["mode"] == "basic":
+    if "count" not in values:
+      raise ValueError(f"Transfer {name}: the field 'count' is needed")
+    for key in TRANSFER_EXTENDED:
+      if key in values:
+        raise ValueError(f"Transfer {name}: '{key}' is for the extended mode, this Transfer is basic")
+  elif "count" in values:
+    raise ValueError(f"Transfer {name}: in the extended mode the count is written dims: {{ count, gap }}")
   return values
 
 
