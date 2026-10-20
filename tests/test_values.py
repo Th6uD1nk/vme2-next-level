@@ -60,5 +60,32 @@ class UnknownMacrosInAKernelTest(unittest.TestCase):
     self.assertEqual(agu_count("  Int n = M + 1;", "", "#define M 1\n"), count_line("(M + 1)"))
 
 
+def dma_lines(transfer, prefix=""):
+  text = prefix + "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = " + transfer + ";\n  .load { .transfer = t; .scope = global; }\n}\n@kernel k config, exec\nvoid f() { }\n"
+  out = render(text, find_blocks(text), "t.vmeg.c")
+  return [line.strip() for line in out.splitlines() if line.strip().startswith("vme_dma(ITERATION") or line.strip().startswith("vme_dma(GROUP")]
+
+
+class TransferValuesTest(unittest.TestCase):
+  def test_a_macro_that_is_not_in_the_file_is_copied_in_the_fields_of_a_transfer(self):
+    transfer = "{ type: words, mode: extended, memory: arr, dims: { count: HEADER_N - 1, gap: 0 }, step: HEADER_STEP, group: { size: 3, outer: HEADER_OUT, inner: 1 } }"
+    self.assertEqual(dma_lines(transfer), [
+      "vme_dma(ITERATION, DIMS, (HEADER_N - 1), 0);",
+      "vme_dma(ITERATION, STEP, HEADER_STEP);",
+      "vme_dma(GROUP, SIZE, 3);",
+      "vme_dma(GROUP, STEPS, HEADER_OUT, 1);",
+    ])
+
+  def test_a_known_part_is_replaced_by_its_number_in_the_copy_and_a_known_value_is_a_number(self):
+    prefix = "#define KNOWN 64\n"
+    self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN + HEADER }", prefix), ["vme_dma(ITERATION, DIMS, (64 + HEADER));"])
+    self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN - 1 }", prefix), ["vme_dma(ITERATION, DIMS, 63);"])
+
+  def test_a_negative_number_is_still_refused(self):
+    with self.assertRaises(ValueError) as caught:
+      dma_lines("{ type: words, mode: basic, memory: arr, count: 0 - 1 }")
+    self.assertIn("cannot be negative", str(caught.exception))
+
+
 if __name__ == "__main__":
   unittest.main()
