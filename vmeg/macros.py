@@ -32,3 +32,19 @@ def macro_events(text):
       if target:
         events.append({"kind": "undef", "name": target[0], "params": None, "body": "", "start": start, "conditional": depth > 0})
   return events
+
+
+def trusted_macros(text, position):
+  defined = {}
+  undone = set()
+  for event in macro_events(text):
+    if event["kind"] == "define":
+      defined.setdefault(event["name"], []).append(event)
+    else:
+      undone.add(event["name"])
+  trusted = {}
+  for name, found in defined.items():
+    event = found[0]
+    if len(found) == 1 and name not in undone and not event["conditional"] and event["params"] is None and event["start"] < position:
+      trusted[name] = event["body"]
+  return trusted
