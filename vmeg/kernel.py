@@ -381,7 +381,7 @@ def place(state, lines, pe, operations, line):
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "int":
-    if statement[1] in env:
+    if statement[1] in env and statement[1] not in state["macros"]:
       raise ValueError(f"'{statement[1]}' is defined twice")
     env[statement[1]] = full_value(statement[2], env)
   elif kind == "icn":
@@ -485,18 +485,21 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
-def new_state():
-  return {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+def new_state(macros=None):
+  return {"macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
 
 
-def new_env():
-  return {"true": ("num", 1), "false": ("num", 0)}
+def new_env(macros=None):
+  env = {"true": ("num", 1), "false": ("num", 0)}
+  for name, number in (macros or {}).items():
+    env.setdefault(name, ("num", number))
+  return env
 
 
-def run_statements(statements):
+def run_statements(statements, macros=None):
   lines = ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"]
-  env = new_env()
-  state = new_state()
+  env = new_env(macros)
+  state = new_state(macros)
   for statement in statements:
     emit(statement, env, lines, state)
   return lines, state
@@ -522,8 +525,8 @@ def block_statement_records(text, blocks):
   return found, per_block
 
 
-def kernel_transfers(statements):
-  state = run_statements(statements)[1]
+def kernel_transfers(statements, macros=None):
+  state = run_statements(statements, macros)[1]
   return state["loads"], state["stores"]
 
 
