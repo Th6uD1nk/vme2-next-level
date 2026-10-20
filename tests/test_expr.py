@@ -31,5 +31,22 @@ class KnownValueTest(unittest.TestCase):
     self.assertEqual(env, {"a": ("num", 2), "b": ("num", 6), "c": ("num", 8), "d": ("num", 36)})
 
 
+class UnknownValueTest(unittest.TestCase):
+  def test_an_unknown_name_alone_stays_a_name(self):
+    self.assertEqual(evaluate("X", {}), ("name", "X"))
+
+  def test_one_unknown_part_copies_the_whole_expression_between_parentheses(self):
+    self.assertEqual(evaluate("(1 + VECTOR_COUNT) * 16 - 1", {}), ("name", "(((1 + VECTOR_COUNT) * 16) - 1)"))
+
+  def test_a_name_of_the_language_is_replaced_by_its_value_in_a_copy(self):
+    env = chain([("k", "3")])
+    self.assertEqual(evaluate("M + k", env), ("name", "(M + 3)"))
+
+  def test_the_unknown_spreads_along_a_chain_and_never_becomes_a_number_again(self):
+    env = chain([("lost", "12"), ("m", "(1 + VECTOR_COUNT) * 16 - 1"), ("w", "m + lost"), ("z", "w - w")])
+    self.assertEqual(env["w"], ("name", "((((1 + VECTOR_COUNT) * 16) - 1) + 12)"))
+    self.assertEqual(env["z"], ("name", "(((((1 + VECTOR_COUNT) * 16) - 1) + 12) - ((((1 + VECTOR_COUNT) * 16) - 1) + 12))"))
+
+
 if __name__ == "__main__":
   unittest.main()
