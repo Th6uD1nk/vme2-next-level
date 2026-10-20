@@ -281,8 +281,8 @@ class KernelBlockTest(unittest.TestCase):
   def test_block_sends_globals_then_locals(self):
     text = (
       "volatile Buffer g[4] = { 1 };\n"
-      ".kernel a direct {\n  .buffers global {\n    top0, 4 words, from g;\n  }\n  .buffers local {\n    top1, 4 words, from x;\n  }\n}\n"
-      ".kernel o direct {\n  .buffers global {\n    top2, 4 words, from g;\n  }\n}\n"
+      ".kernel a direct {\n  Transfer tg = { type: words, mode: basic, memory: g, count: 3 };\n  Transfer tx = { type: words, mode: basic, memory: x, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = tx; .scope = local; .offsets { .top1 = 0; } }\n}\n"
+      ".kernel o direct {\n  Transfer tg = { type: words, mode: basic, memory: g, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top2 = 0; } }\n}\n"
       "@kernel o\nvoid other() {\n}\n"
       "void f() {\n  volatile Buffer x[4];\n  @kernel a {\n  }\n}\n"
     )
