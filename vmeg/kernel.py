@@ -6,6 +6,10 @@ from vmeg.scanner import tokens
 
 KERNEL_OPTIONS = ("direct",)
 
+TRANSFER_FIELDS = ("type", "mode", "memory", "count")
+
+TRANSFER_WORDS = {"type": ("words", "halves", "bytes"), "mode": ("basic", "extended")}
+
 
 def target_pe(target, env):
   index = fold(target[1], env)
@@ -21,6 +25,31 @@ def constant(expr, what):
   if expr[0] != "num":
     raise ValueError(f"{what} must be a number")
   return expr[1]
+
+
+def check_transfer(name, params, env):
+  values = {}
+  for key, value in params[1]:
+    if key not in TRANSFER_FIELDS:
+      raise ValueError(f"Transfer {name}: unknown field '{key}' ({', '.join(TRANSFER_FIELDS)})")
+    if key in values:
+      raise ValueError(f"Transfer {name}: duplicate field '{key}'")
+    if value[0] == "params":
+      raise ValueError(f"Transfer {name}: '{key}' takes a value, not a list of fields")
+    if key == "count":
+      values[key] = constant(fold(value, env), f"Transfer {name}: count")
+      if values[key] < 0:
+        raise ValueError(f"Transfer {name}: count cannot be negative")
+      continue
+    if value[0] != "name":
+      raise ValueError(f"Transfer {name}: '{key}' takes a name")
+    if key in TRANSFER_WORDS and value[1] not in TRANSFER_WORDS[key]:
+      raise ValueError(f"Transfer {name}: {key} must be {', '.join(TRANSFER_WORDS[key][:-1])} or {TRANSFER_WORDS[key][-1]}")
+    values[key] = value[1]
+  for key in TRANSFER_FIELDS:
+    if key not in values:
+      raise ValueError(f"Transfer {name}: the field '{key}' is needed")
+  return values
 
 
 def source_ref(expr, stagings):
@@ -310,7 +339,7 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
     if statement[1] in state["stagings"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
-    state["transfers"][statement[1]] = {"params": statement[2]}
+    state["transfers"][statement[1]] = check_transfer(statement[1], statement[2], env)
   elif kind == "aguref":
     variable = state["agus"].get(statement[2][1])
     if variable is None:
