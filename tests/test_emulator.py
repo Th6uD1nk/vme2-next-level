@@ -251,6 +251,27 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(marked, ["  TOP_0   global  at 8  16 words  from b  <-- overlaps TOP_0 at 0 (words 8-15)"])
 
 
+  def test_a_number_of_words_that_is_a_text_is_shown_and_noted_only_when_it_can_be_computed(self):
+    emulation = {
+      "id": "e", "kernel": "k", "first": 1, "last": 2, "declared": {"global": {"a"}, "local": set()},
+      "global": [
+        ("TOP_0", "(HEADER + 1)", "", "a", 3, False),
+        ("TOP_0", 16, "", "a", 4, False),
+        ("TOP_1", "(63 + 1)", "4", "a", 5, False),
+        ("TOP_1", 16, "8", "a", 6, False),
+        ("TOP_2", "(2048 + 1)", "", "a", 7, False),
+      ],
+      "local": [], "stores": {"global": [], "local": []},
+    }
+    lines = format_listing([emulation], []).splitlines()
+    self.assertEqual(lines[2:7], [
+      "    TOP_0   (HEADER + 1) words  from a",
+      "    TOP_0   16 words  from a",
+      "    TOP_1   (63 + 1) words  at 4  from a",
+      "    TOP_1   16 words  at 8  from a  <-- overlaps TOP_1 at 4 (words 8-23)",
+      "    TOP_2   (2048 + 1) words  from a  <-- goes past the end of the buffer (0x800 words)",
+    ])
+
   def test_an_array_without_buffer_declaration_is_marked_and_extern_counts(self):
     text = "extern Buffer a[4];\n@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 4, 0, "a"), ("global", "top1", 4, 0, "nothere")) + "}\n"
     lines = format_listing(emulations(text), [], full=True).splitlines()
