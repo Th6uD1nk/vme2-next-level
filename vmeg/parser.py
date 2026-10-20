@@ -402,16 +402,12 @@ def parse_buffers(p, closed=False):
   return entries
 
 
-def parse_buffers_block(p, dotted=False):
-  if dotted:
-    p.expect("buffers")
-    tok = p.peek()
-    if tok is None or tok[1] not in ("global", "local"):
-      p.error(".buffers needs a qualifier: .buffers global or .buffers local")
-    qualifier = p.ident()
-  else:
-    qualifier = p.ident()
-    p.expect("buffers")
+def parse_buffers_block(p):
+  p.expect("buffers")
+  tok = p.peek()
+  if tok is None or tok[1] not in ("global", "local"):
+    p.error(".buffers needs a qualifier: .buffers global or .buffers local")
+  qualifier = p.ident()
   p.expect("{")
   return ("buffers", qualifier, parse_buffers(p, True))
 
@@ -461,9 +457,9 @@ def parse_statement(p):
         p.error(f"{tok[1]} {{ }} was removed, write .{tok[1]} {{ }}")
       p.error(f"{tok[1]}.name was removed, write .{tok[1]}.name")
     if tok[1] in ("global", "local"):
-      return parse_buffers_block(p) + (line,)
+      p.error(f"{tok[1]} buffers {{ }} was removed, write .buffers {tok[1]} {{ }}")
     if tok[1] == "buffers":
-      p.error("buffers needs a qualifier: global buffers or local buffers")
+      p.error("buffers was removed, write .buffers global { } or .buffers local { }")
   if tok[0] == "punct" and tok[1] == ".":
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
@@ -471,7 +467,7 @@ def parse_statement(p):
       return parse_pe_statement(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "buffers":
       p.i += 1
-      return parse_buffers_block(p, True) + (line,)
+      return parse_buffers_block(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "pe":
       p.error("pe[...] is an access by index, it takes no dot", following)
   p.error(f"unknown statement '{tok[1]}'")
