@@ -5,16 +5,23 @@ from vmeg.scanner import tokens, walk
 EMULATE_ID = re.compile(r'"[A-Za-z0-9_-]+"')
 
 
+def read_kernel_list(items, last, line):
+  while True:
+    if last + 1 >= len(items) or items[last + 1][0] != "ident":
+      raise ValueError(f"line {line}: expected a kernel name")
+    last += 1
+    if last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
+      last += 1
+      continue
+    return last
+
+
 def read_decorator(text, items, index):
   start = items[index][2]
   line = text.count("\n", 0, start) + 1
   if index + 2 >= len(items) or items[index + 1][1] not in ("kernel", "context") or items[index + 2][0] != "ident":
     raise ValueError(f"line {line}: expected '@kernel name'")
-  last = index + 2
-  while last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
-    if last + 2 >= len(items) or items[last + 2][0] != "ident":
-      raise ValueError(f"line {line}: expected a kernel name after ','")
-    last += 2
+  last = read_kernel_list(items, index + 1, line)
   name_end = items[last][3]
   parens = 0
   seen = False
@@ -41,15 +48,7 @@ def read_decorator(text, items, index):
 def read_kernel_block(text, items, index):
   start = items[index][2]
   line = text.count("\n", 0, start) + 1
-  last = index + 1
-  while True:
-    if last + 1 >= len(items) or items[last + 1][0] != "ident":
-      raise ValueError(f"line {line}: expected a kernel name after @kernel")
-    last += 1
-    if last + 1 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == ",":
-      last += 1
-      continue
-    break
+  last = read_kernel_list(items, index + 1, line)
   if last + 1 >= len(items) or items[last + 1][0] != "punct" or items[last + 1][1] != "{":
     raise ValueError(f"line {line}: @kernel inside a function must be followed by the kernel names and a block {{ ... }}")
   close = block_end(text, items, last + 1, start, "@kernel block") - 1
