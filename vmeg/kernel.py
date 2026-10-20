@@ -378,6 +378,17 @@ def emit_statement(statement, env, lines, state):
     items = dict(statement[1])
     if "transfer" not in items:
       raise ValueError(f".{kind} needs a .transfer = name;")
+    seen = set()
+    for buffer, index, value in items.get("offsets", ("offsets", []))[1]:
+      slot = fold(index, env)
+      if slot[0] != "num" or not 0 <= slot[1] <= 3:
+        raise ValueError(f"{buffer}[...]: buffer index must be a number from 0 to 3")
+      if (buffer, slot[1]) in seen:
+        raise ValueError(f"{buffer}{slot[1]} is already set in this .{kind}")
+      seen.add((buffer, slot[1]))
+      offset = fold(value, env)
+      if offset[0] != "num" or offset[1] < 0:
+        raise ValueError(f"the offset of {buffer}{slot[1]} must be a number, not negative")
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
   elif kind == "transferdecl":
