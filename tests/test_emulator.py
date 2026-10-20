@@ -268,8 +268,8 @@ class ExtractTest(unittest.TestCase):
       "extern Buffer ex[16];\n"
       "volatile Buffer a[2] = { 1, 2 }, b[3];\n"
       "@emulate \"one\"\n.kernel k direct {\n"
-      "  .buffers global { top0, 2 words, from a; top1, 3 words, from b; top2, 16 words, from ex; }\n"
-      "  .buffers local { top3, 4 words, from x; }\n}\n"
+      + loads(("global", "top0", 2, 0, "a"), ("global", "top1", 3, 0, "b"), ("global", "top2", 16, 0, "ex"), ("local", "top3", 4, 0, "x")) +
+      "}\n"
       "@kernel k\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
     )
     found = array_declarations(text, "one")
@@ -282,7 +282,7 @@ class ExtractTest(unittest.TestCase):
       array_declarations(text, "missing")
 
   def test_arrays_of_the_links_come_from_the_other_files(self):
-    text = "extern Buffer ex[2];\n@emulate \"one\"\n.kernel k direct {\n  .buffers global { top0, 2 words, from ex; top1, 2 words, from absent; }\n  .buffers local { top2, 4 words, from x; }\n}\n"
+    text = "extern Buffer ex[2];\n@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 2, 0, "ex"), ("global", "top1", 2, 0, "absent"), ("local", "top2", 4, 0, "x")) + "}\n"
     arrays = "volatile Buffer ex[2] = { 1, 2 };\nvolatile Buffer absent[2] = { 3, 4 };\n"
     function = "@kernel k\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
     found = array_declarations(text, "one", [arrays, function])
