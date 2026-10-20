@@ -429,11 +429,6 @@ def parse_statement(p):
       return parse_transfer_declaration(p) + (line,)
     if tok[1] == "pe":
       return parse_pe_statement(p) + (line,)
-    if PE_NAME.match(tok[1]):
-      following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
-      if following is not None and following[1] == "{":
-        p.error(f"{tok[1]} {{ }} was removed, write .{tok[1]} {{ }}")
-      p.error(f"{tok[1]}.name was removed, write .{tok[1]}.name")
   if tok[0] == "punct" and tok[1] == ".":
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
