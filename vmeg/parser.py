@@ -241,22 +241,35 @@ def parse_pe_assignment(p, target):
   return (kind, target, value)
 
 
-def parse_agu_declaration(p):
-  p.expect("Agu")
-  name = p.ident()
-  p.expect("=")
-  params = parse_params(p)
+def add_statement(statements, statement):
+  if statement[0] == "declarations":
+    statements.extend(member + (statement[-1],) for member in statement[1])
+  else:
+    statements.append(statement)
+
+
+def parse_declarators(p, keyword, kind, initialized):
+  p.expect(keyword)
+  members = []
+  while True:
+    name = p.ident()
+    if initialized:
+      p.expect("=")
+      members.append((kind, name, parse_params(p)))
+    else:
+      members.append((kind, name))
+    if not p.accept(","):
+      break
   p.expect(";")
-  return ("agudecl", name, params)
+  return ("declarations", members)
+
+
+def parse_agu_declaration(p):
+  return parse_declarators(p, "Agu", "agudecl", True)
 
 
 def parse_transfer_declaration(p):
-  p.expect("Transfer")
-  name = p.ident()
-  p.expect("=")
-  params = parse_params(p)
-  p.expect(";")
-  return ("transferdecl", name, params)
+  return parse_declarators(p, "Transfer", "transferdecl", True)
 
 
 def parse_offsets(p):
@@ -312,10 +325,7 @@ def parse_transfer_use(p):
 
 
 def parse_staging_declaration(p):
-  p.expect("Staging")
-  name = p.ident()
-  p.expect(";")
-  return ("stagingdecl", name)
+  return parse_declarators(p, "Staging", "stagingdecl", False)
 
 
 def parse_pe_block(p, index):
@@ -325,10 +335,10 @@ def parse_pe_block(p, index):
       p.error("expected '}'")
     line = p.text.count("\n", 0, p.peek()[2]) + 1
     if p.peek()[1] == "Agu":
-      body.append(parse_agu_declaration(p) + (line,))
+      add_statement(body, parse_agu_declaration(p) + (line,))
       continue
     if p.peek()[1] == "Staging":
-      body.append(parse_staging_declaration(p) + (line,))
+      add_statement(body, parse_staging_declaration(p) + (line,))
       continue
     if p.peek()[0] == "ident":
       start = p.peek()
@@ -401,7 +411,7 @@ def parse_for(p):
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
-    body.append(parse_statement(p))
+    add_statement(body, parse_statement(p))
   return ("for", var, low, high, body)
 
 
@@ -439,7 +449,7 @@ def parse_statement(p):
 def parse_body(p):
   statements = []
   while p.peek() is not None:
-    statements.append(parse_statement(p))
+    add_statement(statements, parse_statement(p))
   return statements
 
 
