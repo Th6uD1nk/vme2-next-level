@@ -3,10 +3,6 @@ import re
 from vmeg.blocks import body_tokens
 
 ICN_NAMES = {
-  "swen": "SWEN",
-  "top": "AGU_TOP",
-  "base": "AGU_BASE",
-  "write": "AGU_WRITE",
   "xpcr": "XPCR",
   "skew": "SKEW",
 }

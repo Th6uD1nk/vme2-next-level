@@ -6,6 +6,8 @@ from vmeg.scanner import tokens
 
 KERNEL_OPTIONS = ("direct",)
 
+ROUTING_NAMES = {"top": "AGU_TOP", "base": "AGU_BASE", "write": "AGU_WRITE"}
+
 TRANSFER_FIELDS = ("type", "mode", "memory", "count", "dims", "step", "group")
 
 TRANSFER_NESTED = {"dims": (("count", "gap"),), "group": (("size",), ("outer", "inner"))}
@@ -382,10 +384,6 @@ def emit_statement(statement, env, lines, state):
     env[statement[1]] = fold(statement[2], env)
   elif kind == "icn":
     for icn, value in statement[1]:
-      if icn == "swen":
-        raise ValueError("icn swen was removed, SWEN is derived from the operations of the pes")
-      if icn in state["routing"]:
-        raise ValueError(f"icn {icn} was removed, the routing is derived from the .{icn} bindings")
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(fold(value, env))});")
   elif kind == "agu":
     pe = target_pe(statement[1], env)
@@ -558,7 +556,7 @@ def generate(text, block, warnings=None):
     if state["routing"]["write"][pe] == 4:
       warn(state, line, f"pe{pe} has an operation but no .write is bound, its result stays in the staging")
   for slot, nibbles in state["routing"].items():
-    lines.append(f"vme_icn({ICN_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
+    lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   if warnings is not None:
