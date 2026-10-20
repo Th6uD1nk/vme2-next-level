@@ -266,7 +266,7 @@ def kernel_sources(kernel, qualifier):
 def kernel_actions(name, actions):
   if len(set(actions)) == 2:
     return ["vmeLibStart();", f"{name}();", "vmeLibFinish();"]
-  return [f"{name}();"] if actions[0] == "config" else ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
+  return ["vmeLibSetFlow(VME_DEFAULT);", f"{name}();"] if actions[0] == "config" else ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
 
 
 def kernel_uploads(registry, name):
