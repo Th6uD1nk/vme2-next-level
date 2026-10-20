@@ -402,9 +402,16 @@ def parse_buffers(p, closed=False):
   return entries
 
 
-def parse_buffers_block(p):
-  qualifier = p.ident()
-  p.expect("buffers")
+def parse_buffers_block(p, dotted=False):
+  if dotted:
+    p.expect("buffers")
+    tok = p.peek()
+    if tok is None or tok[1] not in ("global", "local"):
+      p.error(".buffers needs a qualifier: .buffers global or .buffers local")
+    qualifier = p.ident()
+  else:
+    qualifier = p.ident()
+    p.expect("buffers")
   p.expect("{")
   return ("buffers", qualifier, parse_buffers(p, True))
 
@@ -462,6 +469,9 @@ def parse_statement(p):
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
       p.i += 1
       return parse_pe_statement(p) + (line,)
+    if following is not None and following[0] == "ident" and following[1] == "buffers":
+      p.i += 1
+      return parse_buffers_block(p, True) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "pe":
       p.error("pe[...] is an access by index, it takes no dot", following)
   p.error(f"unknown statement '{tok[1]}'")
