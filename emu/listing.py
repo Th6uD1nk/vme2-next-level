@@ -143,7 +143,7 @@ def format_listing(found, definitions, full=False):
       continue
     for qualifier in ("global", "local"):
       entries = emulation[qualifier]
-      lines.append(f"  {qualifier} buffers:" if entries else f"  {qualifier} buffers: none")
+      lines.append(f"  {qualifier} loads:" if entries else f"  {qualifier} loads: none")
       lines += buffer_lines(entries, notes, qualifier)
     for qualifier in ("global", "local"):
       if stored[qualifier]:
