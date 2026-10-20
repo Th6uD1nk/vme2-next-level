@@ -265,6 +265,35 @@ class KernelBlockTest(unittest.TestCase):
     self.assertLess(out.index("k();"), out.index("a();"))
     self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
 
+  def test_the_attributes_and_the_vmeg_for_of_a_kernel_block_are_taken_out_wherever_they_are(self):
+    text = (
+      ".kernel a direct {\n}\n"
+      "void f() {\n"
+      "  @kernel a config, exec {\n"
+      "    Transfer t = { type: words, mode: basic, memory: m, count: 3 };\n"
+      "    .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n"
+      "    for p in 0..3 {\n      .load { .transfer = t; .offsets { top[1] = p * 4; } }\n    }\n"
+      "    for (int i = 0; i < 2; i++) { go(i); }\n"
+      "    if (x) {\n      .load { .transfer = t; }\n    }\n"
+      "    while (y) { .store { .transfer = t; } }\n"
+      "    after();\n"
+      "  }\n}\n"
+    )
+    blocks = find_blocks(text)
+    taken = [text[block[1]:block[3]] for block in blocks if block[0] == "block-statement"]
+    self.assertEqual(taken, [
+      "Transfer t = { type: words, mode: basic, memory: m, count: 3 };",
+      ".load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }",
+      "for p in 0..3 {\n      .load { .transfer = t; .offsets { top[1] = p * 4; } }\n    }",
+      ".load { .transfer = t; }",
+      ".store { .transfer = t; }",
+    ])
+    out = render(text, blocks, "x.vmeg.c")
+    for kept in ["for (int i = 0; i < 2; i++) { go(i); }", "if (x) {", "while (y) {", "after();"]:
+      self.assertIn(kept, out)
+    for gone in [".load", ".store", "Transfer t", "for p in"]:
+      self.assertNotIn(gone, out)
+
   def test_block_sends_globals_then_locals(self):
     text = (
       "volatile Buffer g[4] = { 1 };\n"
