@@ -253,6 +253,15 @@ def parse_agu_declaration(p):
   return ("agudecl", name, params)
 
 
+def parse_transfer_declaration(p):
+  p.expect("Transfer")
+  name = p.ident()
+  p.expect("=")
+  params = parse_params(p)
+  p.expect(";")
+  return ("transferdecl", name, params)
+
+
 def parse_staging_declaration(p):
   p.expect("Staging")
   name = p.ident()
@@ -449,6 +458,8 @@ def parse_statement(p):
       return parse_agu_declaration(p) + (line,)
     if tok[1] == "Staging":
       return parse_staging_declaration(p) + (line,)
+    if tok[1] == "Transfer":
+      return parse_transfer_declaration(p) + (line,)
     if tok[1] == "pe":
       return parse_pe_statement(p) + (line,)
     if PE_NAME.match(tok[1]):
