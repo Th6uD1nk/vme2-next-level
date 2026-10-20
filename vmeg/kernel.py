@@ -421,7 +421,7 @@ def emit_statement(statement, env, lines, state):
       if (buffer, slot[1]) in seen:
         raise ValueError(f"{buffer}{slot[1]} is already set in this .{kind}")
       seen.add((buffer, slot[1]))
-      offset = fold(value, env)
+      offset = full_value(value, env)
       if offset[0] == "num" and offset[1] < 0:
         raise ValueError(f"the offset of {buffer}{slot[1]} cannot be negative")
       targets.append((buffer, slot[1], offset))
