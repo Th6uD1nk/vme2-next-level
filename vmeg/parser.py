@@ -452,6 +452,13 @@ def parse_statement(p):
       return parse_buffers_block(p) + (line,)
     if tok[1] == "buffers":
       p.error("buffers needs a qualifier: global buffers or local buffers")
+  if tok[0] == "punct" and tok[1] == ".":
+    following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+    if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
+      p.i += 1
+      return parse_pe_statement(p) + (line,)
+    if following is not None and following[0] == "ident" and following[1] == "pe":
+      p.error("pe[...] is an access by index, it takes no dot", following)
   p.error(f"unknown statement '{tok[1]}'")
 
 
