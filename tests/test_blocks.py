@@ -188,7 +188,7 @@ class RenderTest(unittest.TestCase):
     self.assertEqual([block[0] for block in find_blocks(inside_kernel)], ["kernel", "decorator"])
 
   def test_context_is_an_alias_of_kernel(self):
-    mixed = ".kernel a direct {\n}\ncontext b direct {\n}\n@context a, b\nvoid run() { }\n"
+    mixed = ".kernel a direct {\n}\n.context b direct {\n}\n@context a, b\nvoid run() { }\n"
     blocks = find_blocks(mixed)
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel", "decorator"])
     out = render(mixed, blocks, "t.vmeg.c")

@@ -113,13 +113,13 @@ def find_blocks(text):
         continue
       blocks.append(read_decorator(text, items, i))
       continue
-    dotted = kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] == "kernel"
+    dotted = kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] in ("kernel", "context")
     if not dotted and (kind != "ident" or value not in ("buffers", "kernel", "context")):
       continue
     if depth != 0 or (prev not in (";", "}") and i not in allowed):
       continue
     if dotted:
-      value = "kernel"
+      value = items[i + 1][1]
     j = i + 1 + dotted
     if value != "buffers":
       if j >= len(items) or items[j][0] != "ident":
@@ -128,7 +128,7 @@ def find_blocks(text):
       while j < len(items) and items[j][0] == "ident":
         j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
-      if value == "kernel" and not dotted:
+      if value != "buffers" and not dotted:
         line = text.count("\n", 0, start) + 1
         header = " ".join(item[1] for item in items[i:j])
         raise ValueError(f"line {line}: {header} {{ }} was removed, write .{header} {{ }}")
