@@ -5,7 +5,7 @@ import sys
 
 from vmeg.blocks import find_blocks
 from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
-from vmeg.kernel import generate
+from vmeg.kernel import block_statement_records, generate
 from vmeg.names import SUFFIXES
 from vmeg.operations import format_operations
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
@@ -44,6 +44,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
   check_buffers(text, toks, blocks)
   found = []
   codes = [generate(text, block, found) for block in blocks]
+  block_statement_records(text, blocks)
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)

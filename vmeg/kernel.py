@@ -430,7 +430,9 @@ def emit_statement(statement, env, lines, state):
     transfer = state["transfers"][items["transfer"][1]]
     if transfer["type"] != "words":
       raise ValueError(f"this .{kind} is not generated yet (only the Transfer of words)")
-    state[kind + "s"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)})
+    record = {"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
+    state[kind + "s"].append(record)
+    state["sequence"].append(record)
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
       raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")
@@ -483,13 +485,39 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
+def new_state():
+  return {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+
+
+def new_env():
+  return {"true": ("num", 1), "false": ("num", 0)}
+
+
 def run_statements(statements):
   lines = ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"]
-  env = {"true": ("num", 1), "false": ("num", 0)}
-  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  env = new_env()
+  state = new_state()
   for statement in statements:
     emit(statement, env, lines, state)
   return lines, state
+
+
+def block_statement_records(text, blocks):
+  found = {}
+  state = None
+  env = None
+  for block in blocks:
+    if block[0] == "kernel-block":
+      state = new_state()
+      env = new_env()
+    elif block[0] == "block-statement":
+      _, start, _, end = block
+      toks = [(kind, value, s + start, e + start) for kind, value, s, e in tokens(text[start:end])]
+      before = len(state["sequence"])
+      for statement in parse_body(Parser(text, toks, end)):
+        emit(statement, env, [], state)
+      found[start] = state["sequence"][before:]
+  return found
 
 
 def kernel_transfers(statements):
