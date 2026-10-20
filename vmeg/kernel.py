@@ -208,7 +208,7 @@ def check_inner(pe, agu, key, value, env):
       raise ValueError(f"pe{pe}.{agu}.{key}: duplicate parameter '{name}'")
     if inner_value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}.{key}: '{name}' takes a value, not a list of parameters")
-    folded = fold(inner_value, env)
+    folded = full_value(inner_value, env)
     inner[name] = f"({to_c(folded)})" if folded[0] == "name" else to_c(folded)
   for name in ("count", "step"):
     if name not in inner:
@@ -230,7 +230,7 @@ def generate_agu(target, params, env):
       continue
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
-    folded = fold(value, env)
+    folded = full_value(value, env)
     if key in ("reverse", "repeat", "sync"):
       if folded[0] != "num" or folded[1] not in (0, 1):
         raise ValueError(f"pe{pe}.{agu}: {key} takes true or false")
