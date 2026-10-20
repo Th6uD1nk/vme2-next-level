@@ -40,5 +40,16 @@ class KnownMacrosInAKernelTest(unittest.TestCase):
     self.assertIn("vme_dma(ITERATION, DIMS, 63, 0);", out)
 
 
+class UnknownMacrosInAKernelTest(unittest.TestCase):
+  def test_a_macro_that_is_not_in_the_file_copies_the_whole_chain(self):
+    self.assertEqual(agu_count("  Int a = HEADER_N * 2, n = a + 1;"), count_line("((HEADER_N * 2) + 1)"))
+
+  def test_a_known_part_is_replaced_by_its_number_in_a_copy(self):
+    self.assertEqual(agu_count("  Int n = N + HEADER;", "#define N 3\n"), count_line("(3 + HEADER)"))
+
+  def test_the_unknown_spreads_along_a_chain(self):
+    self.assertEqual(agu_count("  Int a = HEADER, b = a * 2, n = b - a;"), count_line("((HEADER * 2) - HEADER)"))
+
+
 if __name__ == "__main__":
   unittest.main()
