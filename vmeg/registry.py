@@ -1,6 +1,7 @@
 from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.host import declarator_names, kernel_sources
 from vmeg.kernel import block_statement_records, kernel_transfers
+from vmeg.macros import known_macros
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -60,7 +61,7 @@ def kernel_definitions(path, text):
     statements = kernel_statements(text, block, {})
     words = header_words(text, block)
     direct = "direct" in words[2:]
-    loads, stores = kernel_transfers(statements) if direct else ([], [])
+    loads, stores = kernel_transfers(statements, known_macros(text, block[1])) if direct else ([], [])
     found.append({
       "name": kernel_name(text, block),
       "path": path,

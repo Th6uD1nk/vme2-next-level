@@ -1,4 +1,5 @@
 from vmeg.blocks import body_tokens
+from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
 from vmeg.operations import OPERATIONS
@@ -512,8 +513,9 @@ def block_statement_records(text, blocks):
   env = None
   for block in blocks:
     if block[0] == "kernel-block":
-      state = new_state()
-      env = new_env()
+      macros = known_macros(text, block[1])
+      state = new_state(macros)
+      env = new_env(macros)
       per_block[block[1]] = state["sequence"]
     elif block[0] == "block-statement":
       _, start, _, end = block
@@ -552,7 +554,7 @@ def generate(text, block, warnings=None):
   statements = parse_body(Parser(text, toks, limit))
   if "direct" not in options:
     return ""
-  lines, state = run_statements(statements)
+  lines, state = run_statements(statements, known_macros(text, start))
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
     if state["routing"][slot][int(number)] == 4:
