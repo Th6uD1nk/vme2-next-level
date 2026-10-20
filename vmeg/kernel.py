@@ -284,6 +284,17 @@ def swen_mask(pes):
   return sum(1 << (3 - pe) for pe in pes)
 
 
+def transfer_lines(transfer, targets):
+  lines = [
+    f"vme_dma(MEMORY, ADDR, useg_mem((u32){transfer['memory']}));",
+    f"vme_dma(ITERATION, DIMS, {transfer['count']});",
+  ]
+  for buffer, slot, offset in targets or [(None, 0, 0)]:
+    destination = "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset}" if offset else "")
+    lines += [f"vme_dma(SPAD, OFFSET, {destination});", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();"]
+  return lines
+
+
 def emit(statement, env, lines, state):
   try:
     emit_statement(statement, env, lines, state)
@@ -379,6 +390,7 @@ def emit_statement(statement, env, lines, state):
     if "transfer" not in items:
       raise ValueError(f".{kind} needs a .transfer = name;")
     seen = set()
+    targets = []
     for buffer, index, value in items.get("offsets", ("offsets", []))[1]:
       slot = fold(index, env)
       if slot[0] != "num" or not 0 <= slot[1] <= 3:
@@ -389,8 +401,13 @@ def emit_statement(statement, env, lines, state):
       offset = fold(value, env)
       if offset[0] != "num" or offset[1] < 0:
         raise ValueError(f"the offset of {buffer}{slot[1]} must be a number, not negative")
+      targets.append((buffer, slot[1], offset[1]))
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
+    transfer = state["transfers"][items["transfer"][1]]
+    if kind == "store" or transfer["type"] != "words" or transfer["mode"] != "basic":
+      raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words in the basic mode)")
+    state["loads"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "lines": transfer_lines(transfer, targets)})
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
       raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")
@@ -446,10 +463,14 @@ def emit_statement(statement, env, lines, state):
 def run_statements(statements):
   lines = ["vmeLibStart();"]
   env = {"true": ("num", 1), "false": ("num", 0)}
-  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
   for statement in statements:
     emit(statement, env, lines, state)
   return lines, state
+
+
+def kernel_loads(statements):
+  return run_statements(statements)[1]["loads"]
 
 
 def generate(text, block, warnings=None):
