@@ -50,6 +50,15 @@ class UnknownMacrosInAKernelTest(unittest.TestCase):
   def test_the_unknown_spreads_along_a_chain(self):
     self.assertEqual(agu_count("  Int a = HEADER, b = a * 2, n = b - a;"), count_line("((HEADER * 2) - HEADER)"))
 
+  def test_a_macro_defined_twice_is_copied(self):
+    self.assertEqual(agu_count("  Int n = M + 1;", "#define M 1\n#define M 2\n"), count_line("(M + 1)"))
+
+  def test_a_macro_in_a_condition_is_copied(self):
+    self.assertEqual(agu_count("  Int n = M + 1;", "#ifdef Z\n#define M 1\n#endif\n"), count_line("(M + 1)"))
+
+  def test_a_macro_defined_after_the_kernel_is_copied(self):
+    self.assertEqual(agu_count("  Int n = M + 1;", "", "#define M 1\n"), count_line("(M + 1)"))
+
 
 if __name__ == "__main__":
   unittest.main()
