@@ -143,7 +143,7 @@ def check_decorators(text, blocks, registry):
         raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
 
 
-def check_local_sources(text, blocks, registry, path):
+def check_local_sources(text, blocks, registry, path, per_block):
   functions = {}
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
@@ -153,6 +153,9 @@ def check_local_sources(text, blocks, registry, path):
       declared = function_buffer_names(text, block)
     else:
       declared = declared_buffer_names(enclosing_function_tokens(text, block[1]))
+      for record in per_block[block[1]]:
+        if record["scope"] == "local" and record["memory"] not in declared:
+          raise ValueError(f"line {record['line']}: '{record['memory']}' is not declared with Buffer in the function that contains the @kernel block at line {where} (local buffers)")
     for kernel in decorator_names(text, block):
       where_text = f"the function marked with @kernel {kernel} at line {where}" if block[0] == "decorator" else f"the function that contains the @kernel {kernel} block at line {where}"
       functions.setdefault(kernel, []).append((declared, where_text))

@@ -44,10 +44,10 @@ def translate(text, blocks, path, registry=None, warnings=None):
   check_buffers(text, toks, blocks)
   found = []
   codes = [generate(text, block, found) for block in blocks]
-  records, _ = block_statement_records(text, blocks)
+  records, per_block = block_statement_records(text, blocks)
   codes = ["\n".join(line for record in records[block[1]] for line in record["lines"]) if block[0] == "block-statement" else code for block, code in zip(blocks, codes)]
   check_decorators(text, blocks, registry)
-  check_local_sources(text, blocks, registry, path)
+  check_local_sources(text, blocks, registry, path, per_block)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
   edits = []
   declarations = needed_externs(registry, path) + needed_prototypes(registry, path)

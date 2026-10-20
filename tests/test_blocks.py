@@ -269,6 +269,7 @@ class KernelBlockTest(unittest.TestCase):
     text = (
       ".kernel a direct {\n}\n"
       "void f() {\n"
+      "  volatile Buffer m[4];\n"
       "  @kernel a config, exec {\n"
       "    Transfer t = { type: words, mode: basic, memory: m, count: 3 };\n"
       "    .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n"
