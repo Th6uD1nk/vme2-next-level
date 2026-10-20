@@ -37,10 +37,14 @@ def constant(expr, what):
 
 
 def transfer_number(name, what, value, env):
-  number = constant(fold(value, env), f"Transfer {name}: {what}")
-  if number < 0:
+  folded = full_value(value, env)
+  if folded[0] == "num" and folded[1] < 0:
     raise ValueError(f"Transfer {name}: {what} cannot be negative")
-  return number
+  return folded[1]
+
+
+def plus_one(number):
+  return number + 1 if isinstance(number, int) else f"({number} + 1)"
 
 
 def check_transfer_nested(name, key, value, env):
@@ -319,7 +323,7 @@ def transfer_lines(transfer, targets, direction):
 
 
 def transfer_links(transfer, targets):
-  words = transfer["count"] + 1 if transfer["mode"] == "basic" else transfer.get("dims", {"count": 0})["count"] + 1
+  words = plus_one(transfer["count"] if transfer["mode"] == "basic" else transfer.get("dims", {"count": 0})["count"])
   return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"], transfer["mode"] == "extended") for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
 
 
