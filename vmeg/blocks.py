@@ -114,25 +114,24 @@ def find_blocks(text):
       blocks.append(read_decorator(text, items, i))
       continue
     dotted = kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] in ("kernel", "context")
-    if not dotted and (kind != "ident" or value not in ("buffers", "kernel", "context")):
+    if not dotted and (kind != "ident" or value not in ("kernel", "context")):
       continue
     if depth != 0 or (prev not in (";", "}") and i not in allowed):
       continue
     if dotted:
       value = items[i + 1][1]
     j = i + 1 + dotted
-    if value != "buffers":
-      if j >= len(items) or items[j][0] != "ident":
-        continue
+    if j >= len(items) or items[j][0] != "ident":
+      continue
+    j += 1
+    while j < len(items) and items[j][0] == "ident":
       j += 1
-      while j < len(items) and items[j][0] == "ident":
-        j += 1
     if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
-      if value != "buffers" and not dotted:
+      if not dotted:
         line = text.count("\n", 0, start) + 1
         header = " ".join(item[1] for item in items[i:j])
         raise ValueError(f"line {line}: {header} {{ }} was removed, write .{header} {{ }}")
-      blocks.append(("buffers" if value == "buffers" else "kernel", start, items[j][2], block_end(text, items, j, start)))
+      blocks.append(("kernel", start, items[j][2], block_end(text, items, j, start)))
       skip = blocks[-1][3]
   if nested:
     blocks.sort(key=lambda block: block[1])

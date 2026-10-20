@@ -487,9 +487,6 @@ def generate(text, block, warnings=None):
     return ""
   if kind == "kernel-block-end":
     return "vmeLibDisable();"
-  if kind == "buffers":
-    line = text.count("\n", 0, start) + 1
-    raise ValueError(f"line {line}: buffers must be inside a kernel (.buffers global or .buffers local)")
   header = text[start:open_pos]
   words = [(value, start + s) for _, value, s, _ in tokens(header)]
   if words[0][0] == ".":
