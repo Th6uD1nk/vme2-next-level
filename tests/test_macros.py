@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.macros import macro_events, trusted_macros
+from vmeg.macros import evaluate, macro_events, trusted_macros
 
 
 def summary(text):
@@ -62,6 +62,20 @@ class TrustedMacrosTest(unittest.TestCase):
 
   def test_a_macro_with_parameters_or_undone_is_not_trusted(self):
     self.assertEqual(trusted("#define F(x) (x)\n#define A 1\n#define B 2\n#undef B\nint use;\n"), {"A": "1"})
+
+
+class EvaluateTest(unittest.TestCase):
+  def test_a_number_in_decimal_or_hexadecimal_and_a_calculation(self):
+    nothing = lambda name: None
+    self.assertEqual([evaluate(body, nothing) for body in ["4", "0x10", "-3", "(1 << 4) & 0xff", "3 + 2 * 4"]], [4, 16, -3, 16, 11])
+
+  def test_the_names_are_given_by_the_resolver(self):
+    numbers = {"A": 16, "B": 3}
+    self.assertEqual(evaluate("(A * 4) - B", numbers.get), 61)
+
+  def test_an_unknown_name_or_a_body_that_is_not_an_expression_gives_nothing(self):
+    numbers = {"A": 16}
+    self.assertEqual([evaluate(body, numbers.get) for body in ["(FROM_A_HEADER + 1)", "sizeof(int)", "(1 +", "", "A A", "(int)A"]], [None] * 6)
 
 
 if __name__ == "__main__":
