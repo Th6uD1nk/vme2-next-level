@@ -259,7 +259,8 @@ def on_process_edit(text, toks, quoted):
 
 def kernel_uploads(registry, name, qualifiers):
   kernel = registry["kernels"][name][0]
-  return [upload_text(target, count, offset, source) for qualifier in qualifiers for target, count, offset, source, _ in kernel[qualifier]]
+  uploads = [upload_text(target, count, offset, source) for qualifier in qualifiers for target, count, offset, source, _ in kernel[qualifier]]
+  return uploads + [line for load in kernel["loads"] for line in load["lines"]]
 
 
 def call_edits(text, blocks, quoted, on_process_starts, registry):

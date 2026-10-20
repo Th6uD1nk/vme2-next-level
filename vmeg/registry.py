@@ -1,6 +1,7 @@
 from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.expr import to_c
 from vmeg.host import declarator_names
+from vmeg.kernel import kernel_loads
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -67,13 +68,15 @@ def kernel_definitions(path, text):
       continue
     statements = kernel_statements(text, block, {})
     words = header_words(text, block)
+    direct = "direct" in words[2:]
     found.append({
       "name": kernel_name(text, block),
       "path": path,
       "line": text.count("\n", 0, block[1]) + 1,
-      "direct": "direct" in words[2:],
+      "direct": direct,
       "global": buffer_links(statements, "global"),
       "local": buffer_links(statements, "local"),
+      "loads": kernel_loads(statements) if direct else [],
     })
   return found
 
