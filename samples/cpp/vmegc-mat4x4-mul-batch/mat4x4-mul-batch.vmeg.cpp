@@ -114,11 +114,17 @@ void meLibOnProcess(void) {
 
   while (1) {
 
-    if (meCoreHwMutexTryLock() >= 0) {
+    @kernel mulMat exec {
+      Transfer resultTransfer = {
+        type: words, mode: extended, memory: sharedRes,
+        dims: { count: 63, gap: 3 }, step: 4,
+        group: { size: 0, outer: 0, inner: 0 }
+      };
 
-      meCoreBusClockEnableDMACPrimMux();
-      meCoreBusClockDisableDMACPrimMux();
-      meCoreHwMutexUnlock();
+      if (meCoreHwMutexTryLock() >= 0) {
+        .store { .transfer = resultTransfer; .scope = global; .offsets { .base3 = VECTOR_MAC_WORD_COUNT + 3; } }
+        meCoreHwMutexUnlock();
+      }
     }
 
     meLibDelayPipeline();
