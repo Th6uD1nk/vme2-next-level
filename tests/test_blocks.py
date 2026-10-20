@@ -16,14 +16,13 @@ def found(text):
 class FindBlocksTest(unittest.TestCase):
   def test_valid_blocks(self):
     cases = {
-      "buffers { a }": [("buffers", "buffers { a }")],
       ".kernel k { a }": [("kernel", ".kernel k { a }")],
       ".kernel k direct { a }": [("kernel", ".kernel k direct { a }")],
-      "void f() { }\nbuffers { a }": [("buffers", "buffers { a }")],
-      "#include <a.h>\nbuffers { a }": [("buffers", "buffers { a }")],
-      "buffers { a { b } c }": [("buffers", "buffers { a { b } c }")],
-      "buffers { /* } */ \"}\" '}' }": [("buffers", "buffers { /* } */ \"}\" '}' }")],
-      "buffers { }\n.kernel k { }": [("buffers", "buffers { }"), ("kernel", ".kernel k { }")],
+      "void f() { }\n.kernel k { a }": [("kernel", ".kernel k { a }")],
+      "#include <a.h>\n.kernel k { a }": [("kernel", ".kernel k { a }")],
+      ".kernel k { a { b } c }": [("kernel", ".kernel k { a { b } c }")],
+      ".kernel k { /* } */ \"}\" '}' }": [("kernel", ".kernel k { /* } */ \"}\" '}' }")],
+      ".kernel j { }\n.kernel k { }": [("kernel", ".kernel j { }"), ("kernel", ".kernel k { }")],
     }
     for text, expected in cases.items():
       with self.subTest(text=text):
@@ -31,22 +30,16 @@ class FindBlocksTest(unittest.TestCase):
 
   def test_plain_c_is_not_a_block(self):
     cases = [
-      "struct buffers { int a; };",
       "struct kernel { int a; };",
-      "typedef struct { int a; } buffers;",
       "typedef struct { int a; } kernel;",
-      "int buffers = 3;",
       "int kernel = 1;",
       "kernel_t kernel;",
       "kernel foo;",
       "kernel { }",
-      "buffers = 1;",
-      "void f() { buffers { } }",
       "void f() { .kernel k { } }",
-      "#define X buffers {\nint a;",
-      "/* buffers { */ int a;",
+      "#define X .kernel k {\nint a;",
       "// .kernel k {\nint a;",
-      "const char* s = \"buffers {\";",
+      "const char* s = \".kernel k {\";",
     ]
     for text in cases:
       with self.subTest(text=text):
@@ -54,7 +47,7 @@ class FindBlocksTest(unittest.TestCase):
 
   def test_unterminated_block(self):
     with self.assertRaises(ValueError) as ctx:
-      find_blocks("int a;\nbuffers {\n x\n")
+      find_blocks("int a;\n.kernel k {\n x\n")
     self.assertIn("line 2", str(ctx.exception))
 
 
@@ -237,12 +230,6 @@ class RenderTest(unittest.TestCase):
     for text in ["static volatile Buffer a[4];\n", "volatile static Buffer a[4];\n", "const volatile Buffer a[4];\n", "extern volatile Buffer a[4];\n"]:
       with self.subTest(text=text):
         self.assertIn("u32 __attribute__", render(text, [], "t.vmeg.c"))
-
-  def test_top_level_buffers_is_refused(self):
-    text = "int a;\nbuffers {\n  top0, 1 words, from x;\n}\n"
-    with self.assertRaises(ValueError) as ctx:
-      render(text, find_blocks(text), "t.vmeg.c")
-    self.assertIn("line 2", str(ctx.exception))
 
 
 class EmulateTest(unittest.TestCase):
