@@ -29,6 +29,16 @@ class KnownMacrosInAKernelTest(unittest.TestCase):
   def test_an_int_takes_the_name_of_a_macro_without_an_error(self):
     self.assertEqual(agu_count("  Int n = 7;", "#define n 5\n"), count_line("7"))
 
+  def test_a_transfer_of_a_kernel_block_counts_with_a_macro_of_the_file(self):
+    text = (
+      "#define BATCH 64\nvolatile Buffer arr[64];\n.kernel k direct {\n}\n"
+      "void f() {\n  @kernel k config, exec {\n    Int last = BATCH - 1;\n"
+      "    Transfer t = { type: words, mode: extended, memory: arr, dims: { count: last, gap: 0 } };\n"
+      "    .load { .transfer = t; .scope = global; }\n  }\n}\n"
+    )
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("vme_dma(ITERATION, DIMS, 63, 0);", out)
+
 
 if __name__ == "__main__":
   unittest.main()
