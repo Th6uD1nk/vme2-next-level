@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.11)
+set(CMAKE_TOOLCHAIN_FILE "$ENV{PSPDEV}/psp/share/pspdev.cmake" CACHE PATH "toolchain file")
+project(vme-mat4x4-batch C CXX ASM)
+
+include(../../../cmake/vmegc.cmake)
+
+add_executable(vme)
+vmegc_sources(vme SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mat4x4-mul-batch.vmeg.cpp)
+
+target_include_directories(vme PRIVATE ../../../vme-ext)
+
+target_compile_options(vme PRIVATE -Os -G0 -Wall -fno-pic)
+
+target_compile_options(vme PRIVATE
+  $<$<COMPILE_LANGUAGE:CXX>:-std=c++11>
+  $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+  $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+)
+
+target_link_libraries(vme
+  me-core me-core-lib vme-lib
+  psppower pspge pspdisplay pspctrl pspdebug
+)
+
+create_pbp_file(TARGET vme TITLE "VME Mat4x4 Batch" BUILD_PRX)
