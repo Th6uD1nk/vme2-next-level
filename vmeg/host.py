@@ -257,7 +257,7 @@ def on_process_edit(text, toks, quoted):
 
 
 def kernel_sources(kernel, qualifier):
-  return [(load["memory"], load["line"]) for load in kernel["loads"] if load["scope"] == qualifier]
+  return [(transfer["memory"], transfer["line"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
 def kernel_uploads(registry, name):
