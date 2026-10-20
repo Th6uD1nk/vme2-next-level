@@ -83,10 +83,7 @@ volatile Buffer sharedRes[VECTOR_BATCH_WORD_COUNT] = {0};
   Agu write2  = { count: count + lost, bubbles: 1, sync: true };
   Agu write3  = { count, cyc: 0x11 };
 
-  Staging s0;
-  Staging s1;
-  Staging s2;
-  Staging s3;
+  Staging s0, s1, s2, s3;
 
   .pe0 { .top = matrix; .base = inter; .write = write0; s0 = mac(top0, top1); }
   .pe1 { .top = vectors; s1 = top2 & s0; }
