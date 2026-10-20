@@ -288,19 +288,34 @@ def offset_text(offset):
   return "" if offset == ("num", 0) else to_c(offset)
 
 
+def transfer_registers(transfer):
+  lines = [f"vme_dma(MEMORY, ADDR, useg_mem((u32){transfer['memory']}));"]
+  if transfer["mode"] == "basic":
+    return lines + [f"vme_dma(ITERATION, DIMS, {transfer['count']});"]
+  if "dims" in transfer:
+    lines.append(f"vme_dma(ITERATION, DIMS, {transfer['dims']['count']}, {transfer['dims']['gap']});")
+  if "step" in transfer:
+    lines.append(f"vme_dma(ITERATION, STEP, {transfer['step']});")
+  group = transfer.get("group", {})
+  if "size" in group:
+    lines.append(f"vme_dma(GROUP, SIZE, {group['size']});")
+  if "outer" in group:
+    lines.append(f"vme_dma(GROUP, STEPS, {group['outer']}, {group['inner']});")
+  return lines
+
+
 def transfer_lines(transfer, targets):
-  lines = [
-    f"vme_dma(MEMORY, ADDR, useg_mem((u32){transfer['memory']}));",
-    f"vme_dma(ITERATION, DIMS, {transfer['count']});",
-  ]
+  lines = transfer_registers(transfer)
+  control = "0x40" if transfer["mode"] == "basic" else "0x50"
   for buffer, slot, offset in targets or [(None, 0, ("num", 0))]:
     destination = "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset_text(offset)}" if offset_text(offset) else "")
-    lines += [f"vme_dma(SPAD, OFFSET, {destination});", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();"]
+    lines += [f"vme_dma(SPAD, OFFSET, {destination});", f"vme_dma(CTRL, VALUE, {control});", "meCoreDMACPrimWaitTransferFinish();"]
   return lines
 
 
 def transfer_links(transfer, targets):
-  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", transfer["count"] + 1, offset_text(offset), transfer["memory"]) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
+  words = transfer["count"] + 1 if transfer["mode"] == "basic" else transfer.get("dims", {"count": 0})["count"] + 1
+  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"]) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
 
 
 def emit(statement, env, lines, state):
@@ -413,8 +428,8 @@ def emit_statement(statement, env, lines, state):
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
-    if kind == "store" or transfer["type"] != "words" or transfer["mode"] != "basic":
-      raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words in the basic mode)")
+    if kind == "store" or transfer["type"] != "words":
+      raise ValueError(f"this .{kind} is not generated yet (only a .load of a Transfer of words)")
     state["loads"].append({"scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets), "links": transfer_links(transfer, targets)})
   elif kind == "transferdecl":
     if statement[1] in state["transfers"]:
