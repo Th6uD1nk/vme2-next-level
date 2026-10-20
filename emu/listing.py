@@ -43,7 +43,7 @@ def emulations(text):
       continue
     kernel = blocks[k + 1]
     statements = kernel_statements(text, kernel, {})
-    loads, _ = kernel_transfers(statements)
+    loads, stores = kernel_transfers(statements)
     found.append({
       "id": list(tokens(text[block[1]:block[2]]))[2][1][1:-1],
       "kernel": kernel_name(text, kernel),
@@ -52,6 +52,8 @@ def emulations(text):
       "global": load_links(loads, "global"),
       "local": load_links(loads, "local"),
       "calls": [line for load in loads for line in load["lines"]],
+      "stores": {"global": load_links(stores, "global"), "local": load_links(stores, "local")},
+      "downloads": [line for store in stores for line in store["lines"]],
       "declared": declared_names(text, blocks, kernel_name(text, kernel)),
     })
   return found

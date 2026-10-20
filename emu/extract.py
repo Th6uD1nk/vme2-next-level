@@ -46,7 +46,7 @@ def array_declarations(text, identifier, others=()):
   result = []
   seen = set()
   for qualifier in ("global", "local"):
-    for source in dict.fromkeys(entry[3] for entry in emulation[qualifier]):
+    for source in dict.fromkeys(entry[3] for entry in emulation[qualifier] + emulation["stores"][qualifier]):
       found = next((declaration for declaration in available[qualifier] if source in declaration["names"]), None)
       if qualifier == "global" and (found is None or found["extern"]):
         found = other_declaration(others, source) or found
@@ -71,7 +71,7 @@ def host_source(text, identifier, others=()):
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern and no file defines it")
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
-  for source in dict.fromkeys(entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier]):
+  for source in dict.fromkeys(entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]):
     if source not in declared:
       raise ValueError(f"the array {source} of the @emulate \"{identifier}\" is defined in no file")
   known = dict(defines(text))
@@ -102,6 +102,8 @@ def host_source(text, identifier, others=()):
   parts.append(kernel_code(text, identifier))
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
   parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
+  downloads = "".join(f"  {call}\n" for call in emulation["downloads"])
+  parts.append(f"static void vmegEmulateDownload(void) {{\n{downloads}}}")
   return "\n\n".join(parts) + "\n"
 
 
@@ -110,7 +112,7 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 
 def host_main(text, identifier):
   kernel = chosen_emulation(text, identifier)["kernel"]
-  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  {kernel}();\n  vmeLibDisable();\n  return 0;\n}}\n"
+  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  {kernel}();\n  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
 def host_program(text, identifier, others=()):
