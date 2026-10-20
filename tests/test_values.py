@@ -26,6 +26,9 @@ class KnownMacrosInAKernelTest(unittest.TestCase):
   def test_a_macro_in_a_macro_of_the_file_is_a_number(self):
     self.assertEqual(agu_count("  Int n = COUNT_OF - 1;", "#define BASE 16\n#define COUNT_OF (BASE * 4)\n"), count_line("0x3f"))
 
+  def test_an_int_takes_the_name_of_a_macro_without_an_error(self):
+    self.assertEqual(agu_count("  Int n = 7;", "#define n 5\n"), count_line("7"))
+
 
 if __name__ == "__main__":
   unittest.main()
