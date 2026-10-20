@@ -14,6 +14,16 @@ from emu.trace import replay
 from emu.machine import Emulator
 
 
+def loads(*rows):
+  declarations = "".join(f"  Transfer t{n} = {{ type: words, mode: basic, memory: {memory}, count: {words - 1} }};\n" for n, (scope, buffer, words, offset, memory) in enumerate(rows))
+  statements = "".join(f"  .load {{ .transfer = t{n}; .scope = {scope}; .offsets {{ .{buffer} = {offset}; }} }}\n" for n, (scope, buffer, words, offset, memory) in enumerate(rows))
+  return declarations + statements
+
+
+def dma(memory, count, destination):
+  return [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory}));", f"vme_dma(ITERATION, DIMS, {count});", f"vme_dma(SPAD, OFFSET, {destination});", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();"]
+
+
 class ReplayTest(unittest.TestCase):
   def test_trace_is_played_in_order(self):
     trace = "# upload\nM 0x1000 0x10 0x800001\n\nW 0x440ff010 0x40001000\nW 0x440ff014 0x1\nW 0x440ff018 0x8000\nW 0x440ff008 0x40\n"
@@ -212,14 +222,14 @@ class ListingTest(unittest.TestCase):
   def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
     text = (
       "volatile Buffer a[4];\n"
-      ".kernel other direct {\n  .buffers global {\n    top1, 4 words, from a;\n  }\n}\n"
+      ".kernel other direct {\n" + loads(("global", "top1", 4, 0, "a")) + "}\n"
       "@emulate \"first\"\n"
-      ".kernel k direct {\n  .buffers global {\n    top0, 4 words, from a;\n    base2, 2 words, at OFFSET, from a;\n  }\n}\n"
+      ".kernel k direct {\n" + loads(("global", "top0", 4, 0, "a"), ("global", "base2", 2, "OFFSET", "a")) + "}\n"
     )
     self.assertEqual(emulations(text), [{
-      "id": "first", "kernel": "k", "first": 8, "last": 13, "local": [], "declared": {"global": {"a"}, "local": set()},
+      "id": "first", "kernel": "k", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10), ("BASE_2", 2, "OFFSET", "a", 11)],
-      "calls": ["vmeLibMemoryToRingBuffer((void*)a, VME_TOP_BUFF0_WOFF, 4);", "vmeLibMemoryToRingBuffer((void*)a, VME_BASE_BUFF2_WOFF + OFFSET, 2);"],
+      "calls": dma("a", 3, "VME_TOP_BUFF0_WOFF") + dma("a", 1, "VME_BASE_BUFF2_WOFF + OFFSET"),
     }])
 
 
@@ -231,8 +241,8 @@ class ListingTest(unittest.TestCase):
   def test_overlap_is_marked_on_the_second_link_of_the_same_kernel_only(self):
     text = (
       "#define OFF 8\n"
-      "@emulate \"one\"\n.kernel k direct {\n  .buffers global {\n    top0, 16 words, from a;\n    top0, 16 words, at OFF, from b;\n    top1, 4 words, at 40, from c;\n    top1, 4 words, at UNKNOWN, from d;\n  }\n}\n"
-      "@emulate \"two\"\n.kernel m direct {\n  .buffers global {\n    top0, 16 words, from a;\n  }\n}\n"
+      "@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 16, 0, "a"), ("global", "top0", 16, "OFF", "b"), ("global", "top1", 4, 40, "c"), ("global", "top1", 4, "UNKNOWN", "d")) + "}\n"
+      "@emulate \"two\"\n.kernel m direct {\n" + loads(("global", "top0", 16, 0, "a")) + "}\n"
       "Buffer a[4], b[4], c[4], d[4];\n"
     )
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
@@ -241,13 +251,13 @@ class ListingTest(unittest.TestCase):
 
 
   def test_an_array_without_buffer_declaration_is_marked_and_extern_counts(self):
-    text = "extern Buffer a[4];\n@emulate \"one\"\n.kernel k direct {\n  .buffers global {\n    top0, 4 words, from a;\n    top1, 4 words, from nothere;\n  }\n}\n"
+    text = "extern Buffer a[4];\n@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 4, 0, "a"), ("global", "top1", 4, 0, "nothere")) + "}\n"
     lines = format_listing(emulations(text), [], full=True).splitlines()
     self.assertEqual(lines[1:3], ["  TOP_0   global  at 0  4 words  from a", "  TOP_1   global  at 0  4 words  from nothere  <-- 'nothere' is not declared with Buffer"])
 
 
   def test_an_offset_name_without_define_is_marked(self):
-    text = "#define KNOWN 8\n@emulate \"one\"\n.kernel k direct {\n  .buffers global {\n    top0, 4 words, at KNOWN, from a;\n    top1, 4 words, at (KNOWN + MISSING), from a;\n    top2, 4 words, at 0x28, from a;\n  }\n}\nBuffer a[4];\n"
+    text = "#define KNOWN 8\n@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 4, "KNOWN", "a"), ("global", "top1", 4, "(KNOWN + MISSING)", "a"), ("global", "top2", 4, "0x28", "a")) + "}\nBuffer a[4];\n"
     lines = format_listing(emulations(text), defines(text), full=True).splitlines()
     self.assertEqual([line for line in lines if "<--" in line], ["  TOP_1   global  at (KNOWN + MISSING)  4 words  from a  <-- 'MISSING' has no #define in this file"])
 
