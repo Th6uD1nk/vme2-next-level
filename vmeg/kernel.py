@@ -443,6 +443,15 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
+def run_statements(statements):
+  lines = ["vmeLibStart();"]
+  env = {"true": ("num", 1), "false": ("num", 0)}
+  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  for statement in statements:
+    emit(statement, env, lines, state)
+  return lines, state
+
+
 def generate(text, block, warnings=None):
   kind, start, open_pos, _ = block
   if kind in ("decorator", "emulate", "kernel-block"):
@@ -468,11 +477,7 @@ def generate(text, block, warnings=None):
   statements = parse_body(Parser(text, toks, limit))
   if "direct" not in options:
     return ""
-  lines = ["vmeLibStart();"]
-  env = {"true": ("num", 1), "false": ("num", 0)}
-  state = {"secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
-  for statement in statements:
-    emit(statement, env, lines, state)
+  lines, state = run_statements(statements)
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
     if state["routing"][slot][int(number)] == 4:
