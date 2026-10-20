@@ -97,6 +97,19 @@ volatile Buffer sharedRes[VECTOR_BATCH_WORD_COUNT] = {0};
 void meLibOnProcess(void) {
 
   @kernel mulMat config {
+    Transfer matrixTransfer = { type: words, mode: basic, memory: sharedMat, count: 15 };
+    Transfer maskTransfer   = { type: words, mode: basic, memory: cancelMask, count: 3 };
+    Transfer vectorTransfer = {
+      type: words, mode: extended, memory: sharedVec,
+      dims: { count: 63, gap: 0 }, step: 4,
+      group: { size: 3, outer: 16, inner: 1 }
+    };
+
+    .load { .transfer = matrixTransfer; .scope = global; .offsets { .top0 = 0; } }
+    .load { .transfer = maskTransfer; .scope = global; .offsets { .top2 = 0; } }
+    for i in 0..3 {
+      .load { .transfer = vectorTransfer; .scope = global; .offsets { top[1] = i * 4; } }
+    }
   }
 
   while (1) {
