@@ -13,6 +13,9 @@ WAITS = re.compile(r"([ \t]*\x00wait:(\w+)\x00[ \t]*\n?)((?:[ \t\r\n]|#line [^\n
 GAP = re.compile(r"[ \t]*" + re.escape(DISABLE) + r"[ \t]*\n?((?:[ \t\r\n]|#line [^\n]*\n|[{}])*?)[ \t]*" + re.escape(ENABLE) + r"[ \t]*\n?")
 
 
+ASYNC_GAP = re.compile(r"[ \t]*" + re.escape(ASYNC_END) + r"[ \t]*\n?((?:[ \t\r\n]|#line [^\n]*\n)*?)[ \t]*" + re.escape(ASYNC_START) + r"[ \t]*\n?")
+
+
 def wait_marker(name):
   return f"\x00wait:{name}\x00"
 
@@ -32,4 +35,4 @@ def merge_waits(text):
 
 
 def finish_calls(text):
-  return WAIT.sub(WAIT_CALL, merge_waits(GAP.sub(r"\1", text))).replace(ENABLE, "vmeLibEnable();").replace(DISABLE, "vmeLibDisable();").replace(ASYNC_START, "vmeLibStart();").replace(ASYNC_END, "vmeLibFinishAsync();")
+  return WAIT.sub(WAIT_CALL, merge_waits(ASYNC_GAP.sub(r"\1", GAP.sub(r"\1", text)))).replace(ENABLE, "vmeLibEnable();").replace(DISABLE, "vmeLibDisable();").replace(ASYNC_START, "vmeLibStart();").replace(ASYNC_END, "vmeLibFinishAsync();")
