@@ -51,7 +51,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
   found = []
   codes = [generate(text, block, found) for block in blocks]
   records, per_block = block_statement_records(text, blocks)
-  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else code for block, code in zip(blocks, codes)]
+  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" else code for block, code in zip(blocks, codes)]
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path, per_block)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
