@@ -265,6 +265,10 @@ def kernel_sources(kernel, qualifier):
 
 
 def kernel_actions(name, actions, mode="direct"):
+  if "build" in actions:
+    built = [f"{name}Context = {name}(0);"]
+    rest = tuple(action for action in actions if action != "build")
+    return built + kernel_actions(name, rest, mode) if rest else built
   call = f"vmeLibLoadCustomContext({name}(0));" if mode == "memory" else f"{name}();"
   if "async" in actions:
     return [ASYNC_START, call, "vmeLibProcessAsync();", ASYNC_END]
