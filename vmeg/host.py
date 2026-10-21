@@ -330,7 +330,7 @@ def block_owners(text, blocks):
   return owners
 
 
-def definition_edits(text, blocks, quoted, registry):
+def definition_edits(text, blocks, quoted, registry, per_block):
   edits = []
   seen = set()
   decorator_ends = [block[3] for block in blocks if block[0] == "decorator"]
@@ -350,6 +350,10 @@ def definition_edits(text, blocks, quoted, registry):
         if record["function"] not in seen:
           seen.add(record["function"])
           code.append(record["definition"])
+    for record in per_block.get(block[1], []):
+      if record["function"] not in seen:
+        seen.add(record["function"])
+        code.append(record["definition"])
     if code:
       resume = text.count("\n", 0, at) + 1
       edits.append((at, 0, "\n" + "\n".join(code) + f'\n#line {resume} "{quoted}"\n'))

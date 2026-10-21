@@ -58,7 +58,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
     edits.append(on_process)
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += calls
-  edits += definition_edits(text, blocks, quoted, registry)
+  edits += definition_edits(text, blocks, quoted, registry, per_block)
   edits.sort(key=lambda edit: edit[0])
   pos = 0
   for block, code in zip(blocks, codes):
