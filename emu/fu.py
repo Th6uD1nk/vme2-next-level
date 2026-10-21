@@ -53,6 +53,10 @@ def op_sub_inv_shf(back, front, fu, a, b, previous, state):
   return back - (front >> b)
 
 
+def op_sub(back, front, fu, a, b, previous, state):
+  return front - back
+
+
 def op_sub_ofb(back, front, fu, a, b, previous, state):
   return (front - back) + b
 
@@ -64,6 +68,7 @@ OPCODES = {
   0x250: (op_mac_acc_shift_bias, ("back",)),
   0x07c: (op_clp, ("back",)),
   0x0c0: (op_and, ("back", "front")),
+  0x018: (op_sub, ("back", "front")),
   0x050: (op_sub_inv_shf, ("back", "front")),
   0x200: (op_mul_rshift, ("back", "front")),
 }
