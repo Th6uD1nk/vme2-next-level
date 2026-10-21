@@ -264,10 +264,13 @@ def kernel_sources(kernel, qualifier):
   return [(transfer["memory"], transfer["line"], transfer["kind"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
-def kernel_actions(name, actions):
+def kernel_actions(name, actions, mode="direct"):
+  call = f"vmeLibLoadCustomContext({name}(0));" if mode == "memory" else f"{name}();"
   if len(set(actions)) == 2:
-    return ["vmeLibStart();", f"{name}();", "vmeLibFinish();"]
-  return ["vmeLibSetFlow(VME_DEFAULT);", f"{name}();"] if actions[0] == "config" else ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
+    return ["vmeLibStart();", call, "vmeLibFinish();"]
+  if actions[0] == "config":
+    return [call] if mode == "memory" else ["vmeLibSetFlow(VME_DEFAULT);", call]
+  return ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
 
 
 def kernel_uploads(registry, name):
