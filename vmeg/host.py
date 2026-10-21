@@ -267,8 +267,6 @@ def kernel_sources(kernel, qualifier):
 def kernel_actions(name, actions, mode="direct"):
   call = f"vmeLibLoadCustomContext({name}(0));" if mode == "memory" else f"{name}();"
   if "async" in actions:
-    if mode == "memory":
-      raise ValueError("the action async of a memory kernel is not generated yet")
     return [ASYNC_START, call, "vmeLibProcessAsync();", ASYNC_END]
   if len(set(actions)) == 2:
     return ["vmeLibStart();", call, "vmeLibFinish();"]
