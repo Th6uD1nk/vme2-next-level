@@ -380,12 +380,15 @@ def camel(*words):
 
 
 def transfer_function(name, transfer, direction):
-  body = transfer_registers(transfer, "memory") + ["vme_dma(SPAD, OFFSET, spadOffset);", f"vme_dma(CTRL, VALUE, {transfer_control(transfer, direction)});", "meCoreDMACPrimWaitTransferFinish();"]
-  return f"static inline void {name}(volatile u32* memory, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
+  names = parameter_names(transfer_names(transfer))
+  body = transfer_registers(transfer, "memory", names) + ["vme_dma(SPAD, OFFSET, spadOffset);", f"vme_dma(CTRL, VALUE, {transfer_control(transfer, direction)});", "meCoreDMACPrimWaitTransferFinish();"]
+  parameters = "".join(f", u32 {parameter}" for parameter in names.values())
+  return f"static inline void {name}(volatile u32* memory, u32 spadOffset{parameters}) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
 
 
 def transfer_calls(name, transfer, targets):
-  return [f"{name}({transfer['memory']}, {destination});" for destination in transfer_destinations(targets)]
+  arguments = "".join(f", {original}" for original in transfer_names(transfer))
+  return [f"{name}({transfer['memory']}, {destination}{arguments});" for destination in transfer_destinations(targets)]
 
 
 def transfer_links(transfer, targets):
