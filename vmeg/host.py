@@ -266,18 +266,21 @@ def kernel_sources(kernel, qualifier):
   return [(transfer["memory"], transfer["line"], transfer["kind"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
-def kernel_actions(name, actions, mode="direct"):
+def kernel_actions(name, actions, mode="direct", built=False):
   if "build" in actions:
-    built = [f"{name}Context = {name}(0);"]
+    made = [f"{name}Context = {name}(0);"]
     rest = tuple(action for action in actions if action != "build")
-    return built + kernel_actions(name, rest, mode) if rest else built
-  call = f"vmeLibLoadCustomContext({name}(0));" if mode == "memory" else f"{name}();"
+    return made + kernel_actions(name, rest, mode, True) if rest else made
+  if mode == "memory":
+    load = ([] if built else [f"if (!{name}Context) {{ {name}Context = {name}(0); }}"]) + [f"vmeLibLoadCustomContext({name}Context);"]
+  else:
+    load = [f"{name}();"]
   if "async" in actions:
-    return [ASYNC_START, call, "vmeLibProcessAsync();", ASYNC_END]
+    return [ASYNC_START] + load + ["vmeLibProcessAsync();", ASYNC_END]
   if len(set(actions)) == 2:
-    return ["vmeLibStart();", call, "vmeLibFinish();"]
+    return ["vmeLibStart();"] + load + ["vmeLibFinish();"]
   if actions[0] == "config":
-    return [call] if mode == "memory" else ["vmeLibSetFlow(VME_DEFAULT);", call]
+    return load if mode == "memory" else ["vmeLibSetFlow(VME_DEFAULT);"] + load
   return ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
 
 
