@@ -22,10 +22,7 @@ def kernel_code(text, identifier):
   emulation = chosen_emulation(text, identifier)
   for block in find_blocks(text):
     if block[0] == "kernel" and kernel_name(text, block) == emulation["kernel"]:
-      code = generate(text, block)
-      if not code:
-        raise ValueError(f"the kernel {emulation['kernel']} of the @emulate \"{identifier}\" has no code to run, it needs the option direct")
-      return code
+      return generate(text, block)
 
 
 def other_declaration(others, source):
