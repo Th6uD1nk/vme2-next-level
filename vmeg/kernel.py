@@ -313,6 +313,13 @@ def transfer_registers(transfer, memory=None):
   return lines
 
 
+def transfer_texts(transfer):
+  texts = [transfer.get("count"), transfer.get("step")]
+  for key in ("dims", "group"):
+    texts += list(transfer.get(key, {}).values())
+  return [text for text in texts if isinstance(text, str)]
+
+
 def transfer_control(transfer, direction):
   return hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
 
