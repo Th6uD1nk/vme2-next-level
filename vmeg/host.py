@@ -362,7 +362,7 @@ def definition_edits(text, blocks, quoted, registry, per_block):
         code.append(record["definition"])
     if code:
       resume = text.count("\n", 0, at) + 1
-      edits.append((at, 0, "\n" + "\n".join(code) + f'\n#line {resume} "{quoted}"\n'))
+      edits.append((at, 0, "\n" + "\n\n".join(code) + f'\n#line {resume} "{quoted}"\n'))
   return edits
 
 
