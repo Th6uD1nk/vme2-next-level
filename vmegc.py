@@ -53,6 +53,11 @@ def closing_codes(text, blocks, codes):
   return found
 
 
+def directive_break(out):
+  written = next((piece for piece in reversed(out) if piece), "")
+  return "" if written.endswith("\n") else "\n"
+
+
 def translate(text, blocks, path, registry=None, warnings=None):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
@@ -85,10 +90,10 @@ def translate(text, blocks, path, registry=None, warnings=None):
     out.append(before[:-len(indent)] if indent and before.endswith(indent) else before)
     if code:
       first = text.count("\n", 0, start) + 1
-      out.append(f'\n#line {first} "{quoted}"\n{code}')
+      out.append(f'{directive_break(out)}#line {first} "{quoted}"\n{code}')
     line = text.count("\n", 0, end) + 1
     closing = line_indent(text, end) if block[0] == "kernel-block-end" else ""
-    out.append(f'\n#line {line} "{quoted}"\n{closing}')
+    out.append(f'{directive_break(out)}#line {line} "{quoted}"\n{closing}')
     pos = end
   out.append(passthrough(text, pos, len(text), edits))
   result = finish_calls("".join(out))
