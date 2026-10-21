@@ -85,13 +85,14 @@ void setupScratchpadData() {
   }
 }
 
+@kernel add build, sub build, mul build
 void meLibOnProcess(void) {
 
   vmeLibEnable();
   setupScratchpadData();
   vmeLibDisable();
 
-  @kernel add async, sub async, mul async {
+  @kernel add config, async, sub config, async, mul config, async {
     vmeDebugFillWith(VME_BASE_BUFFERS);
     vmeDebugCopy(VME_DBG_IDX_TOP_0);
   }
