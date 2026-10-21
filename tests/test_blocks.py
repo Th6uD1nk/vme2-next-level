@@ -438,6 +438,12 @@ class WaitOfTheCallsTest(unittest.TestCase):
     text = finish_calls("f(a);\n" + wait_marker("f") + "\nf(a);\n" + wait_marker("f") + "\nf(a);\n" + wait_marker("f") + "\n")
     self.assertEqual(text, "f(a);\nf(a);\nmeCoreDMACPrimWaitTransferFinish();\nf(a);\nmeCoreDMACPrimWaitTransferFinish();\n")
 
+  def test_different_functions_keep_their_own_wait_also_a_load_then_a_store_of_the_same_transfer(self):
+    self.assertEqual(waits_after(["fMatrixLoad", "fMaskLoad", "fMaskLoad"]), 2)
+    self.assertEqual(waits_after(["fTLoad", "fTStore"]), 2)
+    text = finish_calls("fTLoad(a);\n" + wait_marker("fTLoad") + "\nfTStore(a);\n" + wait_marker("fTStore") + "\n")
+    self.assertEqual(text, "fTLoad(a);\nmeCoreDMACPrimWaitTransferFinish();\nfTStore(a);\nmeCoreDMACPrimWaitTransferFinish();\n")
+
 
 if __name__ == "__main__":
   unittest.main()
