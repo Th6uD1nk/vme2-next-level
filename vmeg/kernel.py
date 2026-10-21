@@ -573,7 +573,7 @@ def new_env(macros=None):
 
 
 def run_statements(statements, macros=None, owner=None):
-  lines = ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"]
+  lines = []
   env = new_env(macros)
   state = new_state(macros, owner)
   for statement in statements:
@@ -648,5 +648,5 @@ def generate(text, block, warnings=None):
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   if warnings is not None:
     warnings.extend(state["warnings"])
-  body = "".join(f"  {line}\n" for line in lines)
+  body = "".join(f"  {line}\n" for line in ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"] + lines)
   return f"void {name}() {{\n{body}}}"
