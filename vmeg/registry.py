@@ -61,11 +61,13 @@ def kernel_definitions(path, text):
     statements = kernel_statements(text, block, {})
     words = header_words(text, block)
     direct = "direct" in words[2:]
+    mode = next((word for word in words[2:] if word in ("direct", "memory")), None)
     loads, stores = kernel_transfers(statements, known_macros(text, block[1]), kernel_name(text, block)) if direct else ([], [])
     found.append({
       "name": kernel_name(text, block),
       "path": path,
       "line": text.count("\n", 0, block[1]) + 1,
+      "mode": mode,
       "direct": direct,
       "loads": loads,
       "stores": stores,
