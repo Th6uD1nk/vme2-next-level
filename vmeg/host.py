@@ -387,6 +387,10 @@ def definition_edits(text, blocks, quoted, registry, per_block):
   return edits
 
 
+def build_only(text, block):
+  return all(actions == ("build",) for _, actions in decorator_calls(text, block))
+
+
 def call_edits(text, blocks, quoted, on_process_starts, registry):
   edits = []
   started = set()
@@ -400,12 +404,14 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     if block[0] != "decorator":
       continue
     line = text.count("\n", 0, block[1]) + 1
-    lines = [ENABLE]
+    wrap = not build_only(text, block)
+    lines = [ENABLE] if wrap else []
     for name, actions in decorator_calls(text, block):
       lines += kernel_lines(registry, name, actions)
-    lines.append(DISABLE)
+    if wrap:
+      lines.append(DISABLE)
     at, start = function_body(text, block)
-    if start in on_process_starts:
+    if wrap and start in on_process_starts:
       lines[0:0] = ["meCoreDcacheWritebackInvalidateAll();", "meLibExceptionHandlerInit(0);"]
       lines[3:3] = ["vmeLibWipe();"]
       started.add(start)
