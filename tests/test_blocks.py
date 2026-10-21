@@ -57,7 +57,9 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 5 "t.vmeg.c"', out)
-    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  vme_dma(MEMORY, ADDR, useg_mem((u32)x));\n  vme_dma(ITERATION, DIMS, 0);\n  vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);\n  vme_dma(CTRL, VALUE, 0x40);\n  meCoreDMACPrimWaitTransferFinish();\n  vmeLibStart();\n  k();\n  vmeLibFinish();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
+    self.assertEqual(out.count("static inline void kTLoad(volatile u32* memory, u32 spadOffset) {"), 1)
+    self.assertLess(out.index("static inline void kTLoad"), out.index("void f(void) {"))
+    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  kTLoad(x, VME_TOP_BUFF0_WOFF);\n  vmeLibStart();\n  k();\n  vmeLibFinish();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
     text = ".kernel k direct {\n}\n@kernel k config, exec\n\n/* c */\nstatic void run(int a) { }\n"
@@ -128,7 +130,7 @@ class RenderTest(unittest.TestCase):
     out = render(text, find_blocks(text), "t.vmeg.c")
     body = out[out.index("void f() {"):]
     expected = ["void f() {", "volatile u32 __attribute__((aligned(64))) a[4], b[2];", "vmeLibEnable();",
-      "vme_dma(MEMORY, ADDR, useg_mem((u32)a));", "vme_dma(ITERATION, DIMS, 3);", "vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();", "vme_dma(MEMORY, ADDR, useg_mem((u32)b));", "vme_dma(ITERATION, DIMS, 1);", "vme_dma(SPAD, OFFSET, VME_BASE_BUFF1_WOFF + 8);", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();", "k();", "vmeLibDisable();"]
+      "kTaLoad(a, VME_TOP_BUFF0_WOFF);", "kTbLoad(b, VME_BASE_BUFF1_WOFF + 8);", "k();", "vmeLibDisable();"]
     position = 0
     for piece in expected:
       position = body.index(piece, position) + len(piece)
@@ -156,7 +158,7 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
     expected = ["volatile u32 __attribute__((aligned(64))) a[4];", "vmeLibEnable();", "vmeLibWipe();",
-      "vme_dma(MEMORY, ADDR, useg_mem((u32)a));", "vme_dma(ITERATION, DIMS, 3);", "vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF);", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();", "k();", "vmeLibDisable();", "go();"]
+      "kTLoad(a, VME_TOP_BUFF0_WOFF);", "k();", "vmeLibDisable();", "go();"]
     position = out.index("void meLibOnProcess")
     for piece in expected:
       position = out.index(piece, position) + len(piece)
@@ -399,7 +401,7 @@ class RegistryTest(unittest.TestCase):
     check_calls(registry)
     out = translate(b, find_blocks(b), "b.vmeg.c", registry)
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
-    self.assertIn("vme_dma(MEMORY, ADDR, useg_mem((u32)g)); vme_dma(ITERATION, DIMS, 3); vme_dma(SPAD, OFFSET, VME_TOP_BUFF0_WOFF); vme_dma(CTRL, VALUE, 0x40); meCoreDMACPrimWaitTransferFinish(); vmeLibStart(); k(); vmeLibFinish();", out)
+    self.assertIn("kTLoad(g, VME_TOP_BUFF0_WOFF); vmeLibStart(); k(); vmeLibFinish();", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
 
 
