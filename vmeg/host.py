@@ -173,7 +173,7 @@ def passthrough(text, begin, end, edits):
   out = []
   pos = begin
   for at, length, replacement in edits:
-    if begin <= at < end:
+    if begin <= at < end or at == begin == end:
       out.append(text[pos:at])
       out.append(replacement)
       pos = at + length
