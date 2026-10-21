@@ -122,3 +122,13 @@ class NamesOfATransferTest(unittest.TestCase):
     names = parameter_names(["HEADER_N", "n"])
     self.assertEqual(replace_names("((HEADER_N * 2) - n) + a->n + 0x1F + obj.n", names), "((headerN * 2) - n) + a->n + 0x1F + obj.n")
     self.assertEqual(replace_names(15, names), 15)
+
+
+class FunctionOfATransferTest(unittest.TestCase):
+  def test_the_prototype_takes_the_names_of_the_fields_and_the_call_gives_them(self):
+    text = "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: arr, count: HEADER_M + 1 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config, exec\nvoid f() { }\n"
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("static inline void kTLoad(volatile u32* memory, u32 spadOffset, u32 headerM) {", out)
+    self.assertIn("vme_dma(ITERATION, DIMS, (headerM + 1));", out)
+    self.assertIn("kTLoad(arr, VME_TOP_BUFF0_WOFF, HEADER_M);", out)
+    self.assertNotIn("HEADER_M +", out)
