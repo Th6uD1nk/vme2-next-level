@@ -267,6 +267,27 @@ class KernelBlockTest(unittest.TestCase):
     self.assertLess(out.index("k();"), out.index("a();"))
     self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
 
+  def test_a_kernel_block_keeps_its_indentation_and_leaves_no_line_of_spaces(self):
+    text = (
+      "volatile Buffer g[4];\n.kernel k direct {\n}\n"
+      "void f() {\n  while (1) {\n    @kernel k exec {\n"
+      "      Transfer u = { type: words, mode: basic, memory: g, count: 1 };\n"
+      "      if (a()) {\n        .store { .transfer = u; .scope = global; .offsets { .base1 = 8; } }\n      }\n"
+      "    }\n  }\n}\n"
+    )
+    out = render(text, find_blocks(text), "x.vmeg.c")
+    self.assertIn("    {\n      vmeLibEnable();\n      vmeLibTrigger();\n      meCoreDMACPrimWaitVMEFinish();\n", out)
+    self.assertIn("\n        fUStore(g, VME_BASE_BUFF1_WOFF + 8);\n", out)
+    self.assertIn("\n      vmeLibDisable();\n#line 11 \"x.vmeg.c\"\n    }\n", out)
+    self.assertEqual([line for line in out.split("\n") if line and not line.strip()], [])
+
+  def test_the_disable_and_the_enable_of_two_blocks_in_a_row_leave_no_line_behind(self):
+    text = ".kernel k direct {\n}\nvoid f() {\n  @kernel k config {\n  }\n  @kernel k exec {\n  }\n}\n"
+    out = render(text, find_blocks(text), "x.vmeg.c")
+    self.assertEqual(out.count("vmeLibEnable();"), 1)
+    self.assertEqual(out.count("vmeLibDisable();"), 1)
+    self.assertEqual([line for line in out.split("\n") if line and not line.strip()], [])
+
   def test_the_attributes_and_the_vmeg_for_of_a_kernel_block_are_taken_out_wherever_they_are(self):
     text = (
       ".kernel a direct {\n}\n"
