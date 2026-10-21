@@ -42,6 +42,13 @@ meLibSetSharedUncached32(10);
   .pe0 { .top = t; }
 }
 
+// (back[n] * front[n]) >> k
+.kernel mul memory {
+  Agu t = { count: 31 }, b = { count: 31 }, w = { count: 31, cyc: 6 };
+  .pe2 { .top = t; .base = b; .write = w; .base2 * top0; }
+  .pe0 { .top = t; }
+}
+
 void setupScratchpadData() {
 
   {
@@ -83,7 +90,7 @@ void meLibOnProcess(void) {
   setupScratchpadData();
   vmeLibDisable();
 
-  @kernel add async, sub async {
+  @kernel add async, sub async, mul async {
     vmeDebugFillWith(VME_BASE_BUFFERS);
     vmeDebugCopy(VME_DBG_IDX_TOP_0);
   }
