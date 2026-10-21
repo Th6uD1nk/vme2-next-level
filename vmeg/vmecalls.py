@@ -16,8 +16,15 @@ def wait_marker(name):
 
 
 def merge_waits(text):
+  pending = False
+
   def merge(found):
-    return found.group(3) if found.group(4) is not None else found.group(0)
+    nonlocal pending
+    if found.group(4) is not None and not pending:
+      pending = True
+      return found.group(3)
+    pending = False
+    return found.group(0)
 
   return WAITS.sub(merge, text)
 
