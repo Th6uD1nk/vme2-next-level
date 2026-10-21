@@ -144,6 +144,8 @@ def check_decorators(text, blocks, registry):
         raise ValueError(f"line {line}: kernel '{name}' needs the option direct or memory")
       if "build" in actions and known[name][0]["mode"] != "memory":
         raise ValueError(f"line {line}: build is for a memory kernel, kernel '{name}' is direct")
+      if "async" in actions and "config" not in actions and known[name][0]["stores"]:
+        raise ValueError(f"line {line}: async does not wait for the end of the run, the .store of kernel '{name}' would read unfinished data")
 
 
 def check_local_sources(text, blocks, registry, path, per_block):
@@ -276,6 +278,8 @@ def kernel_actions(name, actions, mode="direct", built=False):
   else:
     load = [f"{name}();"]
   if "async" in actions:
+    if "config" not in actions:
+      return ["vmeLibTrigger();"]
     return [ASYNC_START] + load + ["vmeLibProcessAsync();", ASYNC_END]
   if len(set(actions)) == 2:
     return ["vmeLibStart();"] + load + ["vmeLibFinish();"]
