@@ -278,6 +278,26 @@ def kernel_downloads(registry, name):
   return [line for store in registry["kernels"][name][0]["stores"] for line in store["lines"]]
 
 
+def function_start(text, position, floor):
+  boundary = floor
+  depth = 0
+  begin = None
+  for kind, value, start, end in tokens(text):
+    if kind == "punct" and value == "{":
+      if depth == 0:
+        begin = boundary
+      depth += 1
+    elif kind == "punct" and value == "}":
+      depth -= 1
+      if depth == 0:
+        if begin is not None and begin <= position < end:
+          return begin
+        boundary = max(boundary, end)
+    elif depth == 0 and (kind == "pp" or (kind == "punct" and value == ";")):
+      boundary = max(boundary, end)
+  return None
+
+
 def call_edits(text, blocks, quoted, on_process_starts, registry):
   edits = []
   started = set()
