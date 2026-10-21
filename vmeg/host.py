@@ -278,6 +278,12 @@ def kernel_downloads(registry, name):
   return [call for store in registry["kernels"][name][0]["stores"] for call in store["calls"]]
 
 
+def line_indent(text, position):
+  begin = text.rfind("\n", 0, position) + 1
+  before = text[begin:position]
+  return before if not before.strip() else ""
+
+
 def function_start(text, position, floor):
   boundary = floor
   depth = 0
