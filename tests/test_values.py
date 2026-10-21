@@ -71,15 +71,15 @@ class TransferValuesTest(unittest.TestCase):
   def test_a_macro_that_is_not_in_the_file_is_copied_in_the_fields_of_a_transfer(self):
     transfer = "{ type: words, mode: extended, memory: arr, dims: { count: HEADER_N - 1, gap: 0 }, step: HEADER_STEP, group: { size: 3, outer: HEADER_OUT, inner: 1 } }"
     self.assertEqual(dma_lines(transfer), [
-      "vme_dma(ITERATION, DIMS, (HEADER_N - 1), 0);",
-      "vme_dma(ITERATION, STEP, HEADER_STEP);",
+      "vme_dma(ITERATION, DIMS, (headerN - 1), 0);",
+      "vme_dma(ITERATION, STEP, headerStep);",
       "vme_dma(GROUP, SIZE, 3);",
-      "vme_dma(GROUP, STEPS, HEADER_OUT, 1);",
+      "vme_dma(GROUP, STEPS, headerOut, 1);",
     ])
 
   def test_a_known_part_is_replaced_by_its_number_in_the_copy_and_a_known_value_is_a_number(self):
     prefix = "#define KNOWN 64\n"
-    self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN + HEADER }", prefix), ["vme_dma(ITERATION, DIMS, (64 + HEADER));"])
+    self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN + HEADER }", prefix), ["vme_dma(ITERATION, DIMS, (64 + header));"])
     self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN - 1 }", prefix), ["vme_dma(ITERATION, DIMS, 63);"])
 
   def test_a_negative_number_is_still_refused(self):
