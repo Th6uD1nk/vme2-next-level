@@ -16,6 +16,7 @@
 #include <psppower.h>
 
 #include <me-core-mapper/me-core.h>
+#include <me-core-mapper/vme-fu-opcodes.h>
 #include <vme-ext.h>
 #include <debug.h>
 
