@@ -161,6 +161,11 @@ def flatten(expr, stagings):
       if operations:
         raise ValueError("acc takes a buffer or a Staging variable")
       return [{"kind": "acc", "source": source, "sat": None}]
+    if name == "subacst":
+      if len(args) != 3:
+        raise ValueError("subacst takes 3 arguments (front, back, b)")
+      constant_b = constant(args[2], "the constant of subacst")
+      return [{"kind": "subacst", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": constant_b, "sat": None}]
     if name == "mac":
       if len(args) != len(OPERATIONS["mac"]["operands"]):
         raise ValueError(f"mac takes 2 arguments ({', '.join(OPERATIONS['mac']['operands'])})")
@@ -447,6 +452,8 @@ def place(state, lines, pe, operations, line):
     if operation.get("shift"):
       sat += f", {operation['shift']}"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
+    if operation["kind"] == "subacst":
+      lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['b']))});")
     if operation["kind"] == "clamp":
       lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
       lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")

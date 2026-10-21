@@ -15,6 +15,14 @@ OPERATIONS = {
     "units": "any",
     "note": "(a - b) + register B of the FU, a on the front socket and b on the back one",
   },
+  "subacst": {
+    "opcode": 0x048,
+    "syntax": "subacst(a, b, c)",
+    "code": "fu_code(OP_SUB_OFB)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "(a - b) + c, a on the front socket and b on the back one, c is a number written in the register B of the FU",
+  },
   "mul": {
     "opcode": 0x200,
     "syntax": "a * b",
