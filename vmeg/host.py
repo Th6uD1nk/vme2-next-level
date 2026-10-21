@@ -271,11 +271,11 @@ def kernel_actions(name, actions):
 
 
 def kernel_uploads(registry, name):
-  return [line for load in registry["kernels"][name][0]["loads"] for line in load["lines"]]
+  return [call for load in registry["kernels"][name][0]["loads"] for call in load["calls"]]
 
 
 def kernel_downloads(registry, name):
-  return [line for store in registry["kernels"][name][0]["stores"] for line in store["lines"]]
+  return [call for store in registry["kernels"][name][0]["stores"] for call in store["calls"]]
 
 
 def function_start(text, position, floor):
@@ -296,6 +296,32 @@ def function_start(text, position, floor):
     elif depth == 0 and (kind == "pp" or (kind == "punct" and value == ";")):
       boundary = max(boundary, end)
   return None
+
+
+def definition_edits(text, blocks, quoted, registry):
+  edits = []
+  seen = set()
+  decorator_ends = [block[3] for block in blocks if block[0] == "decorator"]
+  for block in blocks:
+    if block[0] not in ("decorator", "kernel-block"):
+      continue
+    if block[0] == "decorator":
+      at = block[3]
+    else:
+      floor = max([end for end in decorator_ends if end <= block[1]], default=0)
+      at = function_start(text, block[1], floor)
+      if at is None:
+        continue
+    code = []
+    for name, _ in decorator_calls(text, block):
+      for record in registry["kernels"][name][0]["loads"] + registry["kernels"][name][0]["stores"]:
+        if record["function"] not in seen:
+          seen.add(record["function"])
+          code.append(record["definition"])
+    if code:
+      resume = text.count("\n", 0, at) + 1
+      edits.append((at, 0, "\n" + "\n".join(code) + f'\n#line {resume} "{quoted}"\n'))
+  return edits
 
 
 def call_edits(text, blocks, quoted, on_process_starts, registry):

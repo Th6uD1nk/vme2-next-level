@@ -4,7 +4,7 @@ import re
 import sys
 
 from vmeg.blocks import find_blocks
-from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, generate
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
@@ -58,6 +58,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
     edits.append(on_process)
   edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
   edits += calls
+  edits += definition_edits(text, blocks, quoted, registry)
   edits.sort(key=lambda edit: edit[0])
   pos = 0
   for block, code in zip(blocks, codes):
