@@ -6,6 +6,7 @@ from vmeg.host import BUFFER_TYPE, function_tokens
 from vmeg.kernel import generate
 from vmeg.registry import declarations
 from vmeg.scanner import tokens
+from vmeg.vmecalls import finish_calls
 
 
 def chosen_emulation(text, identifier):
@@ -106,7 +107,7 @@ def host_source(text, identifier, others=()):
   parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
   downloads = "".join(f"  {call}\n" for call in emulation["downloads"])
   parts.append(f"static void vmegEmulateDownload(void) {{\n{downloads}}}")
-  return "\n\n".join(parts) + "\n"
+  return finish_calls("\n\n".join(parts) + "\n")
 
 
 INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
