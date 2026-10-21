@@ -632,8 +632,6 @@ def generate(text, block, warnings=None):
   statements = parse_body(Parser(text, toks, limit))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
-  if "direct" not in options:
-    return ""
   lines, state = run_statements(statements, known_macros(text, start), name)
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
@@ -648,5 +646,7 @@ def generate(text, block, warnings=None):
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   if warnings is not None:
     warnings.extend(state["warnings"])
+  if "memory" in options:
+    return f"VME_LIB_CONTEXT_BUILDER({name}, param, {{\n" + "".join(f"  {line}\n" for line in lines) + "});"
   body = "".join(f"  {line}\n" for line in ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"] + lines)
   return f"void {name}() {{\n{body}}}"
