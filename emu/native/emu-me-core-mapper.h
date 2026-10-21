@@ -11,4 +11,5 @@ void meCoreDMACPrimWaitVMEFinish(void);
 void meCoreDMACPrimMuxSetCtrl_0x018(void);
 void meCoreMemset(void* dst, int value, u32 size);
 int meCoreDcacheWritebackRange(void* address, u32 size);
+int meCoreDMACPrimPreloadVMEContext(void* context);
 }

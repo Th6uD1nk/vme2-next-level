@@ -48,6 +48,12 @@ int meCoreDcacheWritebackRange(void* address, u32 size) {
   return 0;
 }
 
+int meCoreDMACPrimPreloadVMEContext(void* context) {
+  hw(0x440ff010) = emuUsegMem(context, 112);
+  hw(0x440ff008) = 5;
+  return 0;
+}
+
 void meCoreDMACPrimWaitTransferFinish(void) {
   hw(0x440ff000) = (0x200 >> 8) | 0x80;
 }
