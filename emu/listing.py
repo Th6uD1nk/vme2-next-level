@@ -1,7 +1,7 @@
 import re
 
 from emu.memory import BUFFER_WORDS
-from vmeg.blocks import decorator_names, find_blocks, kernel_name
+from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.kernel import kernel_transfers
 from vmeg.macros import evaluate, known_macros, macro_events
@@ -39,6 +39,7 @@ def emulations(text):
     found.append({
       "id": list(tokens(text[block[1]:block[2]]))[2][1][1:-1],
       "kernel": kernel_name(text, kernel),
+      "mode": next((word for word in header_words(text, kernel)[2:] if word in ("direct", "memory")), None),
       "first": text.count("\n", 0, kernel[1]) + 1,
       "last": text.count("\n", 0, kernel[3] - 1) + 1,
       "global": load_links(loads, "global"),
@@ -129,7 +130,8 @@ def format_listing(found, definitions, full=False):
     stored = dict(emulation["stores"], declared=emulation["declared"])
     store_notes = link_notes(stored, definitions, overlaps=False)
     has_stores = bool(stored["global"] or stored["local"])
-    lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} (lines {emulation['first']}-{emulation['last']})")
+    mode = f"{emulation['mode']}, " if emulation.get("mode") else ""
+    lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} ({mode}lines {emulation['first']}-{emulation['last']})")
     if full:
       lines += full_lines(emulation, notes)
       if has_stores:
