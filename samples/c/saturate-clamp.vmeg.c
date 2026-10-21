@@ -68,6 +68,6 @@ volatile Buffer sharedBase0[16] = {
   .pe0 { .base = base; }
 }
 
-@kernel runContext config, exec
+@kernel runContext config | exec
 void run(void) {
 }

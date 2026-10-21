@@ -98,7 +98,7 @@ volatile Buffer sharedBase0[16] = {
 
 void meLibOnProcess(void) {
 
-  @kernel runContext config, exec {
+  @kernel runContext config | exec {
     vmeDebugFillWith(VME_BASE_BUFFERS);
   }
 
