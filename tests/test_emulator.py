@@ -12,6 +12,7 @@ from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from emu.registers import CONTEXT_WORDS, agu_register, fu_register
 from emu.trace import replay
 from emu.machine import Emulator
+from vmeg.vmecalls import wait_marker
 
 
 def loads(*rows):
@@ -25,7 +26,7 @@ def dma(memory, count, destination):
 
 
 def function(name, count):
-  return f"static inline void {name}(volatile u32* memory, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in dma("memory", count, "spadOffset")) + "}"
+  return f"static inline void {name}(volatile u32* memory, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in dma("memory", count, "spadOffset")[:-1]) + "}"
 
 
 class ReplayTest(unittest.TestCase):
@@ -233,7 +234,7 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(emulations(text), [{
       "id": "first", "kernel": "k", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10, False), ("BASE_2", 2, "OFFSET", "a", 11, False)],
-      "calls": ["kT0Load(a, VME_TOP_BUFF0_WOFF);", "kT1Load(a, VME_BASE_BUFF2_WOFF + OFFSET);"],
+      "calls": ["kT0Load(a, VME_TOP_BUFF0_WOFF);", wait_marker("kT0Load"), "kT1Load(a, VME_BASE_BUFF2_WOFF + OFFSET);", wait_marker("kT1Load")],
       "definitions": [function("kT0Load", 3), function("kT1Load", 1)],
       "stores": {"global": [], "local": []}, "downloads": [],
     }])
