@@ -313,11 +313,21 @@ def transfer_registers(transfer):
   return lines
 
 
+def transfer_control(transfer, direction):
+  return hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
+
+
+def transfer_destinations(targets):
+  return [
+    "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset_text(offset)}" if offset_text(offset) else "")
+    for buffer, slot, offset in targets or [(None, 0, ("num", 0))]
+  ]
+
+
 def transfer_lines(transfer, targets, direction):
   lines = transfer_registers(transfer)
-  control = hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
-  for buffer, slot, offset in targets or [(None, 0, ("num", 0))]:
-    destination = "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset_text(offset)}" if offset_text(offset) else "")
+  control = transfer_control(transfer, direction)
+  for destination in transfer_destinations(targets):
     lines += [f"vme_dma(SPAD, OFFSET, {destination});", f"vme_dma(CTRL, VALUE, {control});", "meCoreDMACPrimWaitTransferFinish();"]
   return lines
 
