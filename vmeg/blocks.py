@@ -18,7 +18,7 @@ def read_kernel_list(items, last, line):
     while last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
       last += 1
       actions.append(items[last][1])
-      if last + 2 < len(items) and items[last + 1][1] in (",", "|") and items[last + 2][1] in ACTIONS:
+      if last + 2 < len(items) and items[last + 1][1] == "|" and items[last + 2][1] in ACTIONS:
         last += 1
         continue
       break
@@ -30,7 +30,7 @@ def read_kernel_list(items, last, line):
       last += 1
       continue
     if last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
-      raise ValueError(f"line {line}: the actions of a kernel are separated by a comma")
+      raise ValueError(f"line {line}: the actions of a kernel are separated by |")
     return last
 
 
@@ -225,7 +225,7 @@ def decorator_calls(text, block):
     while i < len(words) and words[i] in ACTIONS:
       actions.append(words[i])
       i += 1
-      if i + 1 < len(words) and words[i] in (",", "|") and words[i + 1] in ACTIONS:
+      if i + 1 < len(words) and words[i] == "|" and words[i + 1] in ACTIONS:
         i += 1
         continue
       break
