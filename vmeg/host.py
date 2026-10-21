@@ -136,12 +136,14 @@ def check_decorators(text, blocks, registry):
     if block[0] not in ("decorator", "kernel-block"):
       continue
     line = text.count("\n", 0, block[1]) + 1
-    for name in decorator_names(text, block):
+    for name, actions in decorator_calls(text, block):
       if name not in known:
         names = f"kernels: {', '.join(known)}" if known else "there is no kernel in the project"
         raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({names})")
       if not known[name][0]["mode"]:
         raise ValueError(f"line {line}: kernel '{name}' needs the option direct or memory")
+      if "build" in actions and known[name][0]["mode"] != "memory":
+        raise ValueError(f"line {line}: build is for a memory kernel, kernel '{name}' is direct")
 
 
 def check_local_sources(text, blocks, registry, path, per_block):
