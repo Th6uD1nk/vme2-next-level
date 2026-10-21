@@ -24,6 +24,10 @@ def dma(memory, count, destination):
   return [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory}));", f"vme_dma(ITERATION, DIMS, {count});", f"vme_dma(SPAD, OFFSET, {destination});", "vme_dma(CTRL, VALUE, 0x40);", "meCoreDMACPrimWaitTransferFinish();"]
 
 
+def function(name, count):
+  return f"static inline void {name}(volatile u32* memory, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in dma("memory", count, "spadOffset")) + "}"
+
+
 class ReplayTest(unittest.TestCase):
   def test_trace_is_played_in_order(self):
     trace = "# upload\nM 0x1000 0x10 0x800001\n\nW 0x440ff010 0x40001000\nW 0x440ff014 0x1\nW 0x440ff018 0x8000\nW 0x440ff008 0x40\n"
@@ -229,7 +233,8 @@ class ListingTest(unittest.TestCase):
     self.assertEqual(emulations(text), [{
       "id": "first", "kernel": "k", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10, False), ("BASE_2", 2, "OFFSET", "a", 11, False)],
-      "calls": dma("a", 3, "VME_TOP_BUFF0_WOFF") + dma("a", 1, "VME_BASE_BUFF2_WOFF + OFFSET"),
+      "calls": ["kT0Load(a, VME_TOP_BUFF0_WOFF);", "kT1Load(a, VME_BASE_BUFF2_WOFF + OFFSET);"],
+      "definitions": [function("kT0Load", 3), function("kT1Load", 1)],
       "stores": {"global": [], "local": []}, "downloads": [],
     }])
 
