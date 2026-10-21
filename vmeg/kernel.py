@@ -350,6 +350,10 @@ def parameter_names(names, taken=("memory", "spadOffset")):
   return found
 
 
+def replace_names(text, names):
+  return NAME_IN_TEXT.sub(lambda found: names.get(found.group(), found.group()), text) if isinstance(text, str) else text
+
+
 def transfer_control(transfer, direction):
   return hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
 
