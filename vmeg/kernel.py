@@ -166,6 +166,13 @@ def flatten(expr, stagings):
         raise ValueError("subacst takes 3 arguments (front, back, b)")
       constant_b = constant(args[2], "the constant of subacst")
       return [{"kind": "subacst", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": constant_b, "sat": None}]
+    if name == "subshr":
+      if len(args) != 3:
+        raise ValueError("subshr takes 3 arguments (front, back, n)")
+      amount = constant(args[2], "the shift of subshr")
+      if amount < 0:
+        raise ValueError("the shift of subshr cannot be negative")
+      return [{"kind": "subshr", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": amount, "sat": None}]
     if name == "mac":
       if len(args) != len(OPERATIONS["mac"]["operands"]):
         raise ValueError(f"mac takes 2 arguments ({', '.join(OPERATIONS['mac']['operands'])})")
@@ -452,7 +459,7 @@ def place(state, lines, pe, operations, line):
     if operation.get("shift"):
       sat += f", {operation['shift']}"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
-    if operation["kind"] == "subacst":
+    if "b" in operation:
       lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['b']))});")
     if operation["kind"] == "clamp":
       lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")

@@ -23,6 +23,14 @@ OPERATIONS = {
     "units": "any",
     "note": "(a - b) + c, a on the front socket and b on the back one, c is a number written in the register B of the FU",
   },
+  "subshr": {
+    "opcode": 0x050,
+    "syntax": "subshr(a, b, n)",
+    "code": "fu_code(OP_SUB_INV_SHF)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "b - (a >> n), a on the front socket and b on the back one, n is a number written in the register B of the FU",
+  },
   "mul": {
     "opcode": 0x200,
     "syntax": "a * b",
