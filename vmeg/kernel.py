@@ -334,6 +334,22 @@ def transfer_names(transfer):
   return names
 
 
+def parameter_names(names, taken=("memory", "spadOffset")):
+  used = set(taken)
+  found = {}
+  for name in names:
+    words = [word for word in name.lower().split("_") if word] if "_" in name or name.isupper() else [name]
+    base = camel(*words) if words else name
+    candidate = base
+    number = 2
+    while candidate in used:
+      candidate = f"{base}{number}"
+      number += 1
+    used.add(candidate)
+    found[name] = candidate
+  return found
+
+
 def transfer_control(transfer, direction):
   return hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
 
