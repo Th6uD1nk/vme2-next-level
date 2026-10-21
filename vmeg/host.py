@@ -1,6 +1,6 @@
 from vmeg.blocks import decorator_calls, decorator_names
 from vmeg.scanner import tokens
-from vmeg.vmecalls import DISABLE, ENABLE
+from vmeg.vmecalls import ASYNC_END, ASYNC_START, DISABLE, ENABLE
 
 DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "restrict")
 
@@ -265,9 +265,11 @@ def kernel_sources(kernel, qualifier):
 
 
 def kernel_actions(name, actions, mode="direct"):
-  if "async" in actions:
-    raise ValueError("the action async is not generated yet")
   call = f"vmeLibLoadCustomContext({name}(0));" if mode == "memory" else f"{name}();"
+  if "async" in actions:
+    if mode == "memory":
+      raise ValueError("the action async of a memory kernel is not generated yet")
+    return [ASYNC_START, call, "vmeLibProcessAsync();", ASYNC_END]
   if len(set(actions)) == 2:
     return ["vmeLibStart();", call, "vmeLibFinish();"]
   if actions[0] == "config":
