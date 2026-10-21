@@ -1,3 +1,5 @@
+import re
+
 from vmeg.blocks import body_tokens
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
@@ -318,6 +320,18 @@ def transfer_texts(transfer):
   for key in ("dims", "group"):
     texts += list(transfer.get(key, {}).values())
   return [text for text in texts if isinstance(text, str)]
+
+
+NAME_IN_TEXT = re.compile(r"(?<![\w.])(?<!->)[A-Za-z_]\w*")
+
+
+def transfer_names(transfer):
+  names = []
+  for text in transfer_texts(transfer):
+    for name in NAME_IN_TEXT.findall(text):
+      if name not in names:
+        names.append(name)
+  return names
 
 
 def transfer_control(transfer, direction):
