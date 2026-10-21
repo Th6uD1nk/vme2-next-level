@@ -22,8 +22,8 @@ def read_kernel_list(items, last, line):
         last += 1
         continue
       break
-    if "async" in actions and len(actions) > 1:
-      raise ValueError(f"line {line}: async is a configuration and an execution, it cannot be combined with config or exec")
+    if "async" in actions and "exec" in actions:
+      raise ValueError(f"line {line}: exec and async are two different executions, they cannot be combined")
     if last + 2 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == "," and items[last + 2][0] == "ident":
       last += 1
       continue
