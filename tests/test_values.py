@@ -11,7 +11,7 @@ from emu.listing import defines, emulations, format_listing
 
 
 def agu_count(body, prefix="", suffix=""):
-  text = prefix + ".kernel k direct {\n" + body + "\n  Agu t = { count: n };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .top0 + top0; }\n}\n@kernel k config, exec\nvoid f() { }\n" + suffix
+  text = prefix + ".kernel k direct {\n" + body + "\n  Agu t = { count: n };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .top0 + top0; }\n}\n@kernel k config | exec\nvoid f() { }\n" + suffix
   out = render(text, find_blocks(text), "t.vmeg.c")
   line = next(line for line in out.splitlines() if "agu_top(COUNT)" in line)
   return line.strip()
@@ -34,7 +34,7 @@ class KnownMacrosInAKernelTest(unittest.TestCase):
   def test_a_transfer_of_a_kernel_block_counts_with_a_macro_of_the_file(self):
     text = (
       "#define BATCH 64\nvolatile Buffer arr[64];\n.kernel k direct {\n}\n"
-      "void f() {\n  @kernel k config, exec {\n    Int last = BATCH - 1;\n"
+      "void f() {\n  @kernel k config | exec {\n    Int last = BATCH - 1;\n"
       "    Transfer t = { type: words, mode: extended, memory: arr, dims: { count: last, gap: 0 } };\n"
       "    .load { .transfer = t; .scope = global; }\n  }\n}\n"
     )
@@ -63,7 +63,7 @@ class UnknownMacrosInAKernelTest(unittest.TestCase):
 
 
 def dma_lines(transfer, prefix=""):
-  text = prefix + "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = " + transfer + ";\n  .load { .transfer = t; .scope = global; }\n}\n@kernel k config, exec\nvoid f() { }\n"
+  text = prefix + "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = " + transfer + ";\n  .load { .transfer = t; .scope = global; }\n}\n@kernel k config | exec\nvoid f() { }\n"
   out = render(text, find_blocks(text), "t.vmeg.c")
   return [line.strip() for line in out.splitlines() if line.strip().startswith("vme_dma(ITERATION") or line.strip().startswith("vme_dma(GROUP")]
 
@@ -126,7 +126,7 @@ class NamesOfATransferTest(unittest.TestCase):
 
 class FunctionOfATransferTest(unittest.TestCase):
   def test_the_prototype_takes_the_names_of_the_fields_and_the_call_gives_them(self):
-    text = "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: arr, count: HEADER_M + 1 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config, exec\nvoid f() { }\n"
+    text = "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: arr, count: HEADER_M + 1 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid f() { }\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertIn("static inline void kTLoad(volatile u32* memory, u32 spadOffset, u32 headerM) {", out)
     self.assertIn("vme_dma(ITERATION, DIMS, (headerM + 1));", out)

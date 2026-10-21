@@ -298,7 +298,7 @@ class ExtractTest(unittest.TestCase):
       "@emulate \"one\"\n.kernel k direct {\n"
       + loads(("global", "top0", 2, 0, "a"), ("global", "top1", 3, 0, "b"), ("global", "top2", 16, 0, "ex"), ("local", "top3", 4, 0, "x")) +
       "}\n"
-      "@kernel k config, exec\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
+      "@kernel k config | exec\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
     )
     found = array_declarations(text, "one")
     self.assertEqual([(d["where"], d["names"], d["extern"], d["text"]) for d in found], [
@@ -312,7 +312,7 @@ class ExtractTest(unittest.TestCase):
   def test_arrays_of_the_links_come_from_the_other_files(self):
     text = "extern Buffer ex[2];\n@emulate \"one\"\n.kernel k direct {\n" + loads(("global", "top0", 2, 0, "ex"), ("global", "top1", 2, 0, "absent"), ("local", "top2", 4, 0, "x")) + "}\n"
     arrays = "volatile Buffer ex[2] = { 1, 2 };\nvolatile Buffer absent[2] = { 3, 4 };\n"
-    function = "@kernel k config, exec\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
+    function = "@kernel k config | exec\nvoid f() {\n  Buffer x[4] = { 5, 6, 7, 8 };\n}\n"
     found = array_declarations(text, "one", [arrays, function])
     self.assertEqual([(d["where"], d["names"], d["extern"], d["text"]) for d in found], [
       ("global", ["ex"], False, "volatile Buffer ex[2] = { 1, 2 };"),
