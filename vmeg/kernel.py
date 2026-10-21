@@ -630,6 +630,8 @@ def generate(text, block, warnings=None):
     options.append(word)
   toks, limit = body_tokens(text, block)
   statements = parse_body(Parser(text, toks, limit))
+  if not options:
+    raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
   if "direct" not in options:
     return ""
   lines, state = run_statements(statements, known_macros(text, start), name)
