@@ -8,12 +8,12 @@ OPERATIONS = {
     "note": "a on the front socket, b on the back one",
   },
   "sub": {
-    "opcode": 0x048,
+    "opcode": 0x018,
     "syntax": "a - b",
-    "code": "fu_code(OP_SUB_OFB)",
+    "code": "fu_code(OP_SUB)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "(a - b) + register B of the FU, a on the front socket and b on the back one",
+    "note": "a on the front socket and b on the back one, no constant",
   },
   "subacst": {
     "opcode": 0x048,
