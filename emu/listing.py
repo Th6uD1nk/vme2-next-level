@@ -43,6 +43,7 @@ def emulations(text):
       "last": text.count("\n", 0, kernel[3] - 1) + 1,
       "global": load_links(loads, "global"),
       "local": load_links(loads, "local"),
+      "definitions": list(dict.fromkeys(record["definition"] for record in loads + stores)),
       "calls": [line for load in loads for line in load["lines"]],
       "stores": {"global": load_links(stores, "global"), "local": load_links(stores, "local")},
       "downloads": [line for store in stores for line in store["lines"]],
