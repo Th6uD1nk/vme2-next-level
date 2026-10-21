@@ -43,6 +43,10 @@ def op_mac_inner_product_bias(back, front, fu, a, b, previous, state):
   return (state["sum"] + b) >> fu["k"]
 
 
+def op_mul_rshift(back, front, fu, a, b, previous, state):
+  return (back * front) >> fu["k"]
+
+
 def op_sub_ofb(back, front, fu, a, b, previous, state):
   return (front - back) + b
 
@@ -54,6 +58,7 @@ OPCODES = {
   0x250: (op_mac_acc_shift_bias, ("back",)),
   0x07c: (op_clp, ("back",)),
   0x0c0: (op_and, ("back", "front")),
+  0x200: (op_mul_rshift, ("back", "front")),
 }
 
 
