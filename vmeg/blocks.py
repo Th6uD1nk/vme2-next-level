@@ -18,10 +18,12 @@ def read_kernel_list(items, last, line):
     while last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
       last += 1
       actions.append(items[last][1])
-      if last + 2 < len(items) and items[last + 1][1] == "," and items[last + 2][1] in ACTIONS:
+      if last + 2 < len(items) and items[last + 1][1] in (",", "|") and items[last + 2][1] in ACTIONS:
         last += 1
         continue
       break
+    if last + 1 < len(items) and items[last + 1][1] == "|":
+      raise ValueError(f"line {line}: expected an action after |")
     if "async" in actions and "exec" in actions:
       raise ValueError(f"line {line}: exec and async are two different executions, they cannot be combined")
     if last + 2 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == "," and items[last + 2][0] == "ident":
@@ -223,7 +225,7 @@ def decorator_calls(text, block):
     while i < len(words) and words[i] in ACTIONS:
       actions.append(words[i])
       i += 1
-      if i + 1 < len(words) and words[i] == "," and words[i + 1] in ACTIONS:
+      if i + 1 < len(words) and words[i] in (",", "|") and words[i + 1] in ACTIONS:
         i += 1
         continue
       break
