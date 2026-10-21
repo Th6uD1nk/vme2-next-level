@@ -263,7 +263,7 @@ class KernelBlockTest(unittest.TestCase):
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "x.vmeg.c")
     self.assertNotIn("@kernel", out)
-    self.assertIn("{ vmeLibEnable(); vmeLibStart(); k(); vmeLibFinish();", out)
+    self.assertIn("  {\n    vmeLibEnable();\n    vmeLibStart();\n    k();\n    vmeLibFinish();\n    a();\n", out)
     self.assertLess(out.index("k();"), out.index("a();"))
     self.assertLess(out.index("a();"), out.index("vmeLibDisable();"))
 
@@ -401,7 +401,7 @@ class RegistryTest(unittest.TestCase):
     check_calls(registry)
     out = translate(b, find_blocks(b), "b.vmeg.c", registry)
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
-    self.assertIn("kTLoad(g, VME_TOP_BUFF0_WOFF); vmeLibStart(); k(); vmeLibFinish();", out)
+    self.assertIn("  {\n    vmeLibEnable();\n    kTLoad(g, VME_TOP_BUFF0_WOFF);\n    vmeLibStart();\n    k();\n    vmeLibFinish();\n", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
 
 
