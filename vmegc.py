@@ -68,7 +68,9 @@ def translate(text, blocks, path, registry=None, warnings=None):
   pos = 0
   for block, code in zip(blocks, codes):
     _, start, _, end = block
-    out.append(passthrough(text, pos, start, edits))
+    before = passthrough(text, pos, start, edits)
+    indent = line_indent(text, start)
+    out.append(before[:-len(indent)] if indent and before.endswith(indent) else before)
     if code:
       first = text.count("\n", 0, start) + 1
       out.append(f'\n#line {first} "{quoted}"\n{code}')
