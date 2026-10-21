@@ -8,7 +8,7 @@ from vmeg.expr import value as full_value
 from vmeg.operations import OPERATIONS
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
-from vmeg.vmecalls import DISABLE
+from vmeg.vmecalls import DISABLE, wait_marker
 
 KERNEL_OPTIONS = ("direct",)
 
@@ -382,14 +382,14 @@ def camel(*words):
 
 def transfer_function(name, transfer, direction):
   names = parameter_names(transfer_names(transfer))
-  body = transfer_registers(transfer, "memory", names) + ["vme_dma(SPAD, OFFSET, spadOffset);", f"vme_dma(CTRL, VALUE, {transfer_control(transfer, direction)});", "meCoreDMACPrimWaitTransferFinish();"]
+  body = transfer_registers(transfer, "memory", names) + ["vme_dma(SPAD, OFFSET, spadOffset);", f"vme_dma(CTRL, VALUE, {transfer_control(transfer, direction)});"]
   parameters = "".join(f", u32 {parameter}" for parameter in names.values())
   return f"static inline void {name}(volatile u32* memory, u32 spadOffset{parameters}) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
 
 
 def transfer_calls(name, transfer, targets):
   arguments = "".join(f", {original}" for original in transfer_names(transfer))
-  return [f"{name}({transfer['memory']}, {destination}{arguments});" for destination in transfer_destinations(targets)]
+  return [line for destination in transfer_destinations(targets) for line in (f"{name}({transfer['memory']}, {destination}{arguments});", wait_marker(name))]
 
 
 def transfer_links(transfer, targets):
