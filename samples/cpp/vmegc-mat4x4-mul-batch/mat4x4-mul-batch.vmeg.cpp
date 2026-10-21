@@ -89,7 +89,7 @@ volatile Buffer sharedRes[VECTOR_BATCH_WORD_COUNT] = {0};
   .pe0 { .top = matrix; .base = inter; .write = write0; s0 = mac(top0, top1); }
   .pe1 { .top = vectors; s1 = top2 & s0; }
   .pe2 { .top = mask; .base = inter; .write = write2; s2 = acc(s1); }
-  .pe3 { .write = write3; s3 = s2 - base2; .base0 - s3; }
+  .pe3 { .write = write3; s3 = subacst(s2, base2, 0); .subacst(base0, s3, 0); }
 }
 
 void meLibOnProcess(void) {
