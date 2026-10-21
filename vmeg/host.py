@@ -283,6 +283,12 @@ def kernel_mode(registry, name):
   return registry["kernels"][name][0]["mode"]
 
 
+def kernel_lines(registry, name, actions):
+  if actions == ("build",):
+    return kernel_actions(name, actions, kernel_mode(registry, name))
+  return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name)) + kernel_downloads(registry, name)
+
+
 def kernel_uploads(registry, name):
   return [call for load in registry["kernels"][name][0]["loads"] for call in load["calls"]]
 
@@ -386,7 +392,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
       indent = line_indent(text, block[1])
-      lines = [ENABLE] + [call for name, actions in decorator_calls(text, block) for call in kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name)) + kernel_downloads(registry, name)]
+      lines = [ENABLE] + [call for name, actions in decorator_calls(text, block) for call in kernel_lines(registry, name, actions)]
       edits.append((block[3], brace - block[3], indent + "{" + "".join(f"\n{indent}  {line}" for line in lines)))
       continue
     if block[0] != "decorator":
@@ -394,7 +400,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     line = text.count("\n", 0, block[1]) + 1
     lines = [ENABLE]
     for name, actions in decorator_calls(text, block):
-      lines += kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name)) + kernel_downloads(registry, name)
+      lines += kernel_lines(registry, name, actions)
     lines.append(DISABLE)
     at, start = function_body(text, block)
     if start in on_process_starts:
