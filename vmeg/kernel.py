@@ -297,8 +297,8 @@ def offset_text(offset):
   return "" if offset == ("num", 0) else to_c(offset)
 
 
-def transfer_registers(transfer):
-  lines = [f"vme_dma(MEMORY, ADDR, useg_mem((u32){transfer['memory']}));"]
+def transfer_registers(transfer, memory=None):
+  lines = [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory or transfer['memory']}));"]
   if transfer["mode"] == "basic":
     return lines + [f"vme_dma(ITERATION, DIMS, {transfer['count']});"]
   if "dims" in transfer:
@@ -330,6 +330,19 @@ def transfer_lines(transfer, targets, direction):
   for destination in transfer_destinations(targets):
     lines += [f"vme_dma(SPAD, OFFSET, {destination});", f"vme_dma(CTRL, VALUE, {control});", "meCoreDMACPrimWaitTransferFinish();"]
   return lines
+
+
+def camel(*words):
+  return words[0] + "".join(word[:1].upper() + word[1:] for word in words[1:])
+
+
+def transfer_function(name, transfer, direction):
+  body = transfer_registers(transfer, "memory") + ["vme_dma(SPAD, OFFSET, spadOffset);", f"vme_dma(CTRL, VALUE, {transfer_control(transfer, direction)});", "meCoreDMACPrimWaitTransferFinish();"]
+  return f"static inline void {name}(volatile u32* memory, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
+
+
+def transfer_calls(name, transfer, targets):
+  return [f"{name}({transfer['memory']}, {destination});" for destination in transfer_destinations(targets)]
 
 
 def transfer_links(transfer, targets):
@@ -445,7 +458,8 @@ def emit_statement(statement, env, lines, state):
     transfer = state["transfers"][items["transfer"][1]]
     if transfer["type"] != "words":
       raise ValueError(f"this .{kind} is not generated yet (only the Transfer of words)")
-    record = {"kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
+    function = camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
+    record = {"function": function, "definition": transfer_function(function, transfer, kind) if function else None, "calls": transfer_calls(function, transfer, targets) if function else None, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
     state[kind + "s"].append(record)
     state["sequence"].append(record)
   elif kind == "transferdecl":
