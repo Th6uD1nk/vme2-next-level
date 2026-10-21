@@ -54,7 +54,7 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "volatile Buffer x[1];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config, exec\nvoid f(void) { }\nint b;\n"
+    text = "volatile Buffer x[1];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid f(void) { }\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 5 "t.vmeg.c"', out)
@@ -63,19 +63,19 @@ class RenderTest(unittest.TestCase):
     self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  kTLoad(x, VME_TOP_BUFF0_WOFF);\n  meCoreDMACPrimWaitTransferFinish();\n  vmeLibStart();\n  k();\n  vmeLibFinish();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
-    text = ".kernel k direct {\n}\n@kernel k config, exec\n\n/* c */\nstatic void run(int a) { }\n"
+    text = ".kernel k direct {\n}\n@kernel k config | exec\n\n/* c */\nstatic void run(int a) { }\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertNotIn("@", out)
     self.assertIn("static void run(int a) {", out)
     self.assertIn("\n  k();", out)
-    bad = ["@kernel\nvoid run() { }\n", "@kernel k config, exec\nrun() { }\n", "@kernel k config, exec\nint x;\n", "@kernel k config, exec\nvoid run();\n", "@other k\nvoid run() { }\n", "@kernel k config, exec\n"]
+    bad = ["@kernel\nvoid run() { }\n", "@kernel k config | exec\nrun() { }\n", "@kernel k config | exec\nint x;\n", "@kernel k config | exec\nvoid run();\n", "@other k\nvoid run() { }\n", "@kernel k config | exec\n"]
     for text in bad:
       with self.subTest(text=text):
         with self.assertRaises(ValueError):
           find_blocks(text)
 
   def test_decorator_needs_a_known_kernel(self):
-    text = ".kernel k direct {\n}\n@kernel z config, exec\nvoid run() { }\n"
+    text = ".kernel k direct {\n}\n@kernel z config | exec\nvoid run() { }\n"
     with self.assertRaises(ValueError) as ctx:
       render(text, find_blocks(text), "t.vmeg.c")
     self.assertIn("line 3", str(ctx.exception))
@@ -83,21 +83,21 @@ class RenderTest(unittest.TestCase):
 
   def test_decorator_with_a_list_of_kernels(self):
     kernels = ".kernel a direct {\n}\n.kernel b direct {\n}\n.kernel c direct {\n}\n"
-    ok = kernels + "@kernel a config, exec, b config, exec\nvoid r1() { }\n@kernel c config, exec\nvoid r2() { }\n"
+    ok = kernels + "@kernel a config | exec, b config | exec\nvoid r1() { }\n@kernel c config | exec\nvoid r2() { }\n"
     out = render(ok, find_blocks(ok), "t.vmeg.c")
     self.assertNotIn("@", out)
-    again = kernels + "@kernel a config, exec, a config, exec, b config, exec\nvoid r() { }\n@kernel c config, exec\nvoid s() { }\n"
+    again = kernels + "@kernel a config | exec, a config | exec, b config | exec\nvoid r() { }\n@kernel c config | exec\nvoid s() { }\n"
     render(again, find_blocks(again), "t.vmeg.c")
-    unknown = kernels + "@kernel a config, exec, z config, exec\nvoid r() { }\n"
+    unknown = kernels + "@kernel a config | exec, z config | exec\nvoid r() { }\n"
     with self.assertRaises(ValueError):
       render(unknown, find_blocks(unknown), "t.vmeg.c")
-    forgotten = kernels + "@kernel a config, exec, b config, exec\nvoid r() { }\n"
+    forgotten = kernels + "@kernel a config | exec, b config | exec\nvoid r() { }\n"
     with self.assertRaises(ValueError):
       check_calls(project_registry([("t.vmeg.c", forgotten)]))
 
   def test_global_sources_must_be_declared_with_buffer(self):
     def build(declarations):
-      return declarations + ".kernel k direct {\n  Transfer tx = { type: words, mode: basic, memory: x, count: 0 };\n  Transfer ty = { type: words, mode: basic, memory: y, count: 0 };\n  .load { .transfer = tx; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = ty; .scope = global; .offsets { .top1 = 0; } }\n}\n@kernel k config, exec\nvoid f() { }\n"
+      return declarations + ".kernel k direct {\n  Transfer tx = { type: words, mode: basic, memory: x, count: 0 };\n  Transfer ty = { type: words, mode: basic, memory: y, count: 0 };\n  .load { .transfer = tx; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = ty; .scope = global; .offsets { .top1 = 0; } }\n}\n@kernel k config | exec\nvoid f() { }\n"
     ok = build("volatile Buffer x[1], y[1];\n")
     check_uses(project_registry([("t.vmeg.c", ok)]))
     for declarations in ["", "volatile Buffer x[1];\n", "volatile Buffer x[1], z[1];\n", "volatile u32 x[1], y[1];\n"]:
@@ -110,24 +110,24 @@ class RenderTest(unittest.TestCase):
   def test_local_sources_must_be_declared_in_every_decorated_function(self):
     kernel = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n"
     declared = "void f() {\n  volatile Buffer x[1];\n}\n"
-    ok = kernel + "@kernel k config, exec\n" + declared
+    ok = kernel + "@kernel k config | exec\n" + declared
     render(ok, find_blocks(ok), "t.vmeg.c")
     bad = [
-      kernel + "@kernel k config, exec\nvoid f() { }\n",
-      "volatile Buffer x[1];\n" + kernel + "@kernel k config, exec\nvoid f() { }\n",
-      kernel + "@kernel k config, exec\nvoid f() {\n  if (1) { volatile Buffer x[1]; }\n}\n",
-      kernel + "@kernel k config, exec\n" + declared + "@kernel k config, exec\nvoid g() { }\n",
+      kernel + "@kernel k config | exec\nvoid f() { }\n",
+      "volatile Buffer x[1];\n" + kernel + "@kernel k config | exec\nvoid f() { }\n",
+      kernel + "@kernel k config | exec\nvoid f() {\n  if (1) { volatile Buffer x[1]; }\n}\n",
+      kernel + "@kernel k config | exec\n" + declared + "@kernel k config | exec\nvoid g() { }\n",
     ]
     for text in bad:
       with self.subTest(text=text):
         with self.assertRaises(ValueError) as ctx:
           render(text, find_blocks(text), "t.vmeg.c")
         self.assertIn("(local load)", str(ctx.exception))
-    both = kernel + "@kernel k config, exec\n" + declared + "@kernel k config, exec\n" + declared.replace("f()", "g()")
+    both = kernel + "@kernel k config | exec\n" + declared + "@kernel k config | exec\n" + declared.replace("f()", "g()")
     render(both, find_blocks(both), "t.vmeg.c")
 
   def test_local_buffers_are_uploaded_in_the_decorated_function(self):
-    text = ".kernel k direct {\n  Transfer ta = { type: words, mode: basic, memory: a, count: 3 };\n  Transfer tb = { type: words, mode: basic, memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k config, exec\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
+    text = ".kernel k direct {\n  Transfer ta = { type: words, mode: basic, memory: a, count: 3 };\n  Transfer tb = { type: words, mode: basic, memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k config | exec\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     body = out[out.index("void f() {"):]
     expected = ["void f() {", "volatile u32 __attribute__((aligned(64))) a[4], b[2];", "vmeLibEnable();",
@@ -154,7 +154,7 @@ class RenderTest(unittest.TestCase):
     self.assertIn("line 2", str(ctx.exception))
 
   def test_one_block_when_on_process_carries_the_kernel(self):
-    text = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: a, count: 3 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n@kernel k config, exec\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
+    text = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: a, count: 3 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
@@ -163,14 +163,14 @@ class RenderTest(unittest.TestCase):
     position = out.index("void meLibOnProcess")
     for piece in expected:
       position = out.index(piece, position) + len(piece)
-    other = ".kernel k direct {\n}\n@kernel k config, exec\nvoid run() { }\nvoid meLibOnProcess(void) { }\n"
+    other = ".kernel k direct {\n}\n@kernel k config | exec\nvoid run() { }\nvoid meLibOnProcess(void) { }\n"
     out = render(other, find_blocks(other), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 2)
     self.assertEqual(out.count("vmegUploadGlobals();"), 0)
     self.assertEqual(out.count("vmeLibWipe();"), 1)
 
   def test_kernel_block_is_removed_and_the_block_is_kept(self):
-    text = ".kernel k direct {\n  icn skew = 0;\n}\nvoid f(void) {\n  before();\n  @kernel k config, exec {\n    after();\n  }\n  while (1) { }\n}\n"
+    text = ".kernel k direct {\n  icn skew = 0;\n}\nvoid f(void) {\n  before();\n  @kernel k config | exec {\n    after();\n  }\n  while (1) { }\n}\n"
     blocks = find_blocks(text)
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel-block", "kernel-block-end"])
     out = render(text, blocks, "t.vmeg.c")
@@ -179,11 +179,11 @@ class RenderTest(unittest.TestCase):
     self.assertEqual(out.count("vmeLibDisable();"), 1)
     for piece in ["before();", "{", "k();", "after();", "}", "while (1)"]:
       self.assertIn(piece, out)
-    inside_kernel = ".kernel k direct {\n  icn skew = 0;\n}\n@kernel k config, exec\nvoid f() {\n  const char* s = \"@kernel k config, exec {\";\n}\n"
+    inside_kernel = ".kernel k direct {\n  icn skew = 0;\n}\n@kernel k config | exec\nvoid f() {\n  const char* s = \"@kernel k config | exec {\";\n}\n"
     self.assertEqual([block[0] for block in find_blocks(inside_kernel)], ["kernel", "decorator"])
 
   def test_context_is_an_alias_of_kernel(self):
-    mixed = ".kernel a direct {\n}\n.context b direct {\n}\n@context a config, exec, b config, exec\nvoid run() { }\n"
+    mixed = ".kernel a direct {\n}\n.context b direct {\n}\n@context a config | exec, b config | exec\nvoid run() { }\n"
     blocks = find_blocks(mixed)
     self.assertEqual([block[0] for block in blocks], ["kernel", "kernel", "decorator"])
     out = render(mixed, blocks, "t.vmeg.c")
@@ -204,9 +204,9 @@ class RenderTest(unittest.TestCase):
       check_calls(project_registry([("t.vmeg.c", kernel)]))
     self.assertIn("t.vmeg.c: line 1", str(ctx.exception))
     self.assertIn("'k'", str(ctx.exception))
-    text = kernel + "@kernel k config, exec\nvoid run() { }\n"
+    text = kernel + "@kernel k config | exec\nvoid run() { }\n"
     check_calls(project_registry([("t.vmeg.c", text)]))
-    check_calls(project_registry([("a.vmeg.c", kernel), ("b.vmeg.c", "@kernel k config, exec\nvoid run() { }\n")]))
+    check_calls(project_registry([("a.vmeg.c", kernel), ("b.vmeg.c", "@kernel k config | exec\nvoid run() { }\n")]))
 
   def test_buffer_keyword(self):
     text = 'volatile Buffer a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) { static volatile Buffer b[2]; }\n'
