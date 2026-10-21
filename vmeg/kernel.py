@@ -10,7 +10,7 @@ from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
 
-KERNEL_OPTIONS = ("direct",)
+KERNEL_OPTIONS = ("direct", "memory")
 
 ROUTING_NAMES = {"top": "AGU_TOP", "base": "AGU_BASE", "write": "AGU_WRITE"}
 
@@ -625,6 +625,8 @@ def generate(text, block, warnings=None):
       raise ValueError(f"line {line}: unknown kernel option '{word}' ({', '.join(KERNEL_OPTIONS)})")
     if word in options:
       raise ValueError(f"line {line}: duplicate kernel option '{word}'")
+    if options:
+      raise ValueError(f"line {line}: a kernel is either direct or memory, not both")
     options.append(word)
   toks, limit = body_tokens(text, block)
   statements = parse_body(Parser(text, toks, limit))
