@@ -140,8 +140,8 @@ def check_decorators(text, blocks, registry):
       if name not in known:
         names = f"kernels: {', '.join(known)}" if known else "there is no kernel in the project"
         raise ValueError(f"line {line}: @kernel refers to an unknown kernel '{name}' ({names})")
-      if not known[name][0]["direct"]:
-        raise ValueError(f"line {line}: kernel '{name}' is not direct, calling it is not supported yet")
+      if not known[name][0]["mode"]:
+        raise ValueError(f"line {line}: kernel '{name}' needs the option direct or memory")
 
 
 def check_local_sources(text, blocks, registry, path, per_block):
@@ -273,6 +273,10 @@ def kernel_actions(name, actions, mode="direct"):
   return ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
 
 
+def kernel_mode(registry, name):
+  return registry["kernels"][name][0]["mode"]
+
+
 def kernel_uploads(registry, name):
   return [call for load in registry["kernels"][name][0]["loads"] for call in load["calls"]]
 
@@ -376,7 +380,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
       indent = line_indent(text, block[1])
-      lines = [ENABLE] + [call for name, actions in decorator_calls(text, block) for call in kernel_uploads(registry, name) + kernel_actions(name, actions) + kernel_downloads(registry, name)]
+      lines = [ENABLE] + [call for name, actions in decorator_calls(text, block) for call in kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name)) + kernel_downloads(registry, name)]
       edits.append((block[3], brace - block[3], indent + "{" + "".join(f"\n{indent}  {line}" for line in lines)))
       continue
     if block[0] != "decorator":
@@ -384,7 +388,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     line = text.count("\n", 0, block[1]) + 1
     lines = [ENABLE]
     for name, actions in decorator_calls(text, block):
-      lines += kernel_uploads(registry, name) + kernel_actions(name, actions) + kernel_downloads(registry, name)
+      lines += kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name)) + kernel_downloads(registry, name)
     lines.append(DISABLE)
     at, start = function_body(text, block)
     if start in on_process_starts:
