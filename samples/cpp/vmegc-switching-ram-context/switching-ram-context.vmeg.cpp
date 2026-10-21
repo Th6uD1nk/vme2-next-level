@@ -92,7 +92,7 @@ void meLibOnProcess(void) {
   setupScratchpadData();
   vmeLibDisable();
 
-  @kernel add config, async, sub config, async, mul config, async {
+  @kernel add config | async, sub config | async, mul config | async {
     vmeDebugFillWith(VME_BASE_BUFFERS);
     vmeDebugCopy(VME_DBG_IDX_TOP_0);
   }
