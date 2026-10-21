@@ -2,6 +2,8 @@ import re
 
 ENABLE = "\x00enable\x00"
 DISABLE = "\x00disable\x00"
+ASYNC_START = "\x00asyncstart\x00"
+ASYNC_END = "\x00asyncend\x00"
 
 WAIT = re.compile(r"\x00wait:\w+\x00")
 WAIT_CALL = "meCoreDMACPrimWaitTransferFinish();"
@@ -30,4 +32,4 @@ def merge_waits(text):
 
 
 def finish_calls(text):
-  return WAIT.sub(WAIT_CALL, merge_waits(GAP.sub(r"\1", text))).replace(ENABLE, "vmeLibEnable();").replace(DISABLE, "vmeLibDisable();")
+  return WAIT.sub(WAIT_CALL, merge_waits(GAP.sub(r"\1", text))).replace(ENABLE, "vmeLibEnable();").replace(DISABLE, "vmeLibDisable();").replace(ASYNC_START, "vmeLibStart();").replace(ASYNC_END, "vmeLibFinishAsync();")
