@@ -298,6 +298,23 @@ def function_start(text, position, floor):
   return None
 
 
+def function_name(text, start):
+  parens = 0
+  previous = None
+  for kind, value, begin, _ in tokens(text[start:]):
+    if kind == "punct" and value == "(":
+      if parens == 0 and previous is not None:
+        return previous
+      parens += 1
+    elif kind == "punct" and value == ")":
+      parens -= 1
+    elif kind == "punct" and value == "{" and parens == 0:
+      return None
+    elif kind == "ident" and parens == 0:
+      previous = value
+  return None
+
+
 def definition_edits(text, blocks, quoted, registry):
   edits = []
   seen = set()
