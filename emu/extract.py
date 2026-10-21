@@ -2,9 +2,9 @@ import re
 
 from emu.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, function_tokens
+from vmeg.host import BUFFER_TYPE, function_tokens, kernel_actions
 from vmeg.kernel import generate
-from vmeg.registry import declarations
+from vmeg.registry import declarations, kernel_definitions
 from vmeg.scanner import tokens
 from vmeg.vmecalls import finish_calls
 
@@ -115,7 +115,9 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 
 def host_main(text, identifier):
   kernel = chosen_emulation(text, identifier)["kernel"]
-  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n  vmeLibStart();\n  {kernel}();\n  vmeLibFinish();\n  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
+  mode = next(found["mode"] for found in kernel_definitions("", text) if found["name"] == kernel)
+  actions = "".join(f"  {call}\n" for call in kernel_actions(kernel, ("config", "exec"), mode))
+  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
 def host_program(text, identifier, others=()):
