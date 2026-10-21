@@ -59,7 +59,7 @@ class RenderTest(unittest.TestCase):
     self.assertIn('#line 5 "t.vmeg.c"', out)
     self.assertEqual(out.count("static inline void kTLoad(volatile u32* memory, u32 spadOffset) {"), 1)
     self.assertLess(out.index("static inline void kTLoad"), out.index("void f(void) {"))
-    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  kTLoad(x, VME_TOP_BUFF0_WOFF);\n  vmeLibStart();\n  k();\n  vmeLibFinish();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
+    self.assertTrue(out.endswith('void f(void) {\n  vmeLibEnable();\n  kTLoad(x, VME_TOP_BUFF0_WOFF);\n  meCoreDMACPrimWaitTransferFinish();\n  vmeLibStart();\n  k();\n  vmeLibFinish();\n  vmeLibDisable();\n#line 7 "t.vmeg.c"\n }\nint b;\n'))
 
   def test_decorator(self):
     text = ".kernel k direct {\n}\n@kernel k config, exec\n\n/* c */\nstatic void run(int a) { }\n"
@@ -422,7 +422,7 @@ class RegistryTest(unittest.TestCase):
     check_calls(registry)
     out = translate(b, find_blocks(b), "b.vmeg.c", registry)
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
-    self.assertIn("  {\n    vmeLibEnable();\n    kTLoad(g, VME_TOP_BUFF0_WOFF);\n    vmeLibStart();\n    k();\n    vmeLibFinish();\n", out)
+    self.assertIn("  {\n    vmeLibEnable();\n    kTLoad(g, VME_TOP_BUFF0_WOFF);\n    meCoreDMACPrimWaitTransferFinish();\n    vmeLibStart();\n    k();\n    vmeLibFinish();\n", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
 
 
