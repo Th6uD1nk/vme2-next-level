@@ -100,6 +100,8 @@ def host_source(text, identifier, others=()):
       "#define useg_mem(v) vmegUsegMem((u32)(v))"
     )
   parts.append(kernel_code(text, identifier))
+  if emulation["definitions"]:
+    parts.append("\n".join(emulation["definitions"]))
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
   parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
   downloads = "".join(f"  {call}\n" for call in emulation["downloads"])
