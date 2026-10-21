@@ -299,19 +299,21 @@ def offset_text(offset):
   return "" if offset == ("num", 0) else to_c(offset)
 
 
-def transfer_registers(transfer, memory=None):
+def transfer_registers(transfer, memory=None, names=None):
+  def text(value):
+    return replace_names(value, names or {})
   lines = [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory or transfer['memory']}));"]
   if transfer["mode"] == "basic":
-    return lines + [f"vme_dma(ITERATION, DIMS, {transfer['count']});"]
+    return lines + [f"vme_dma(ITERATION, DIMS, {text(transfer['count'])});"]
   if "dims" in transfer:
-    lines.append(f"vme_dma(ITERATION, DIMS, {transfer['dims']['count']}, {transfer['dims']['gap']});")
+    lines.append(f"vme_dma(ITERATION, DIMS, {text(transfer['dims']['count'])}, {text(transfer['dims']['gap'])});")
   if "step" in transfer:
-    lines.append(f"vme_dma(ITERATION, STEP, {transfer['step']});")
+    lines.append(f"vme_dma(ITERATION, STEP, {text(transfer['step'])});")
   group = transfer.get("group", {})
   if "size" in group:
-    lines.append(f"vme_dma(GROUP, SIZE, {group['size']});")
+    lines.append(f"vme_dma(GROUP, SIZE, {text(group['size'])});")
   if "outer" in group:
-    lines.append(f"vme_dma(GROUP, STEPS, {group['outer']}, {group['inner']});")
+    lines.append(f"vme_dma(GROUP, STEPS, {text(group['outer'])}, {text(group['inner'])});")
   return lines
 
 
