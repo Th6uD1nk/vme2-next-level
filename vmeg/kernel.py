@@ -1,6 +1,7 @@
 import re
 
 from vmeg.blocks import body_tokens
+from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
@@ -585,10 +586,11 @@ def block_statement_records(text, blocks):
   per_block = {}
   state = None
   env = None
+  owners = block_owners(text, blocks)
   for block in blocks:
     if block[0] == "kernel-block":
       macros = known_macros(text, block[1])
-      state = new_state(macros)
+      state = new_state(macros, owners[block[1]])
       env = new_env(macros)
       per_block[block[1]] = state["sequence"]
     elif block[0] == "block-statement":
