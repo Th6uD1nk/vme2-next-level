@@ -315,6 +315,21 @@ def function_name(text, start):
   return None
 
 
+def block_owners(text, blocks):
+  owners = {}
+  counts = {}
+  decorator_ends = [block[3] for block in blocks if block[0] == "decorator"]
+  for block in blocks:
+    if block[0] != "kernel-block":
+      continue
+    floor = max([end for end in decorator_ends if end <= block[1]], default=0)
+    start = function_start(text, block[1], floor)
+    name = (function_name(text, start) if start is not None else None) or "block"
+    counts[name] = counts.get(name, 0) + 1
+    owners[block[1]] = name if counts[name] == 1 else f"{name}{counts[name]}"
+  return owners
+
+
 def definition_edits(text, blocks, quoted, registry):
   edits = []
   seen = set()
