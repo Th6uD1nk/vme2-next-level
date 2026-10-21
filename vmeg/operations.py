@@ -15,6 +15,14 @@ OPERATIONS = {
     "units": "any",
     "note": "(a - b) + register B of the FU, a on the front socket and b on the back one",
   },
+  "mul": {
+    "opcode": 0x200,
+    "syntax": "a * b",
+    "code": "VME_FU_OPCODE_MUL_RSHIFT_0",
+    "operands": ("front", "back"),
+    "units": "primary",
+    "note": "(a * b) >> k, a on the front socket and b on the back one, k is the `>> n` written after the operation",
+  },
   "and": {
     "opcode": 0x0c0,
     "syntax": "a & b",
