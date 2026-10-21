@@ -4,7 +4,7 @@ import re
 import sys
 
 from vmeg.blocks import find_blocks
-from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, line_indent, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, generate
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
@@ -36,6 +36,11 @@ def extern_edit(text, toks, blocks, quoted, declarations):
   return (at, 0, f'{lines}\n#line {resume} "{quoted}"')
 
 
+def statement_code(text, block, records):
+  indent = line_indent(text, block[1])
+  return "\n".join(f"{indent}{call}" for record in records for call in record["calls"])
+
+
 def translate(text, blocks, path, registry=None, warnings=None):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
@@ -46,7 +51,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
   found = []
   codes = [generate(text, block, found) for block in blocks]
   records, per_block = block_statement_records(text, blocks)
-  codes = ["\n".join(line for record in records[block[1]] for line in record["calls"]) if block[0] == "block-statement" else code for block, code in zip(blocks, codes)]
+  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else code for block, code in zip(blocks, codes)]
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path, per_block)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
