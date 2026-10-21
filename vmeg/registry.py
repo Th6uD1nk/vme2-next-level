@@ -227,4 +227,10 @@ def needed_prototypes(registry, path):
     definitions = registry["kernels"].get(call["name"], [])
     if call["path"] == path and definitions and definitions[0]["path"] != path:
       names[call["name"]] = True
-  return [f"void* {name}(void*);" if registry["kernels"][name][0]["mode"] == "memory" else f"void {name}();" for name in names]
+  found = []
+  for name in names:
+    if registry["kernels"][name][0]["mode"] == "memory":
+      found += [f"void* {name}(void*);", f"extern void* {name}Context;"]
+    else:
+      found.append(f"void {name}();")
+  return found

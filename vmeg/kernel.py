@@ -661,6 +661,6 @@ def generate(text, block, warnings=None):
   if warnings is not None:
     warnings.extend(state["warnings"])
   if "memory" in options:
-    return f"VME_LIB_CONTEXT_BUILDER({name}, param, {{\n" + "".join(f"  {line}\n" for line in lines) + "});"
+    return f"VME_LIB_CONTEXT_BUILDER({name}, param, {{\n" + "".join(f"  {line}\n" for line in lines) + f"}});\nvoid* {name}Context;"
   body = "".join(f"  {line}\n" for line in ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"] + lines)
   return f"void {name}() {{\n{body}}}"
