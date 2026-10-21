@@ -398,7 +398,7 @@ def call_edits(text, blocks, quoted, on_process_starts, registry):
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
       indent = line_indent(text, block[1])
-      lines = [ENABLE] + [call for name, actions in decorator_calls(text, block) for call in kernel_lines(registry, name, actions)]
+      lines = ([] if build_only(text, block) else [ENABLE]) + [call for name, actions in decorator_calls(text, block) for call in kernel_lines(registry, name, actions)]
       edits.append((block[3], brace - block[3], indent + "{" + "".join(f"\n{indent}  {line}" for line in lines)))
       continue
     if block[0] != "decorator":

@@ -4,7 +4,7 @@ import re
 import sys
 
 from vmeg.blocks import find_blocks
-from vmeg.host import BUFFER_TYPE, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, line_indent, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, build_only, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, line_indent, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, generate
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
@@ -41,6 +41,18 @@ def statement_code(text, block, records):
   return "\n".join(f"{indent}{call}" for record in records for call in record["calls"])
 
 
+def closing_codes(text, blocks, codes):
+  opened = []
+  found = []
+  for block, code in zip(blocks, codes):
+    if block[0] == "kernel-block":
+      opened.append(build_only(text, block))
+    elif block[0] == "kernel-block-end" and opened.pop():
+      code = ""
+    found.append(code)
+  return found
+
+
 def translate(text, blocks, path, registry=None, warnings=None):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
@@ -51,7 +63,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
   found = []
   codes = [generate(text, block, found) for block in blocks]
   records, per_block = block_statement_records(text, blocks)
-  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" else code for block, code in zip(blocks, codes)]
+  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
   check_decorators(text, blocks, registry)
   check_local_sources(text, blocks, registry, path, per_block)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
