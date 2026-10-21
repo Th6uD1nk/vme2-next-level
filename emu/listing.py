@@ -35,7 +35,7 @@ def emulations(text):
       continue
     kernel = blocks[k + 1]
     statements = kernel_statements(text, kernel, {})
-    loads, stores = kernel_transfers(statements, known_macros(text, kernel[1]))
+    loads, stores = kernel_transfers(statements, known_macros(text, kernel[1]), kernel_name(text, kernel))
     found.append({
       "id": list(tokens(text[block[1]:block[2]]))[2][1][1:-1],
       "kernel": kernel_name(text, kernel),

@@ -61,7 +61,7 @@ def kernel_definitions(path, text):
     statements = kernel_statements(text, block, {})
     words = header_words(text, block)
     direct = "direct" in words[2:]
-    loads, stores = kernel_transfers(statements, known_macros(text, block[1])) if direct else ([], [])
+    loads, stores = kernel_transfers(statements, known_macros(text, block[1]), kernel_name(text, block)) if direct else ([], [])
     found.append({
       "name": kernel_name(text, block),
       "path": path,

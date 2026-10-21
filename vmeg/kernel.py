@@ -500,8 +500,8 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
-def new_state(macros=None):
-  return {"macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+def new_state(macros=None, owner=None):
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
 
 
 def new_env(macros=None):
@@ -511,10 +511,10 @@ def new_env(macros=None):
   return env
 
 
-def run_statements(statements, macros=None):
+def run_statements(statements, macros=None, owner=None):
   lines = ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"]
   env = new_env(macros)
-  state = new_state(macros)
+  state = new_state(macros, owner)
   for statement in statements:
     emit(statement, env, lines, state)
   return lines, state
@@ -541,8 +541,8 @@ def block_statement_records(text, blocks):
   return found, per_block
 
 
-def kernel_transfers(statements, macros=None):
-  state = run_statements(statements, macros)[1]
+def kernel_transfers(statements, macros=None, owner=None):
+  state = run_statements(statements, macros, owner)[1]
   return state["loads"], state["stores"]
 
 
@@ -568,7 +568,7 @@ def generate(text, block, warnings=None):
   statements = parse_body(Parser(text, toks, limit))
   if "direct" not in options:
     return ""
-  lines, state = run_statements(statements, known_macros(text, start))
+  lines, state = run_statements(statements, known_macros(text, start), name)
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
     if state["routing"][slot][int(number)] == 4:
