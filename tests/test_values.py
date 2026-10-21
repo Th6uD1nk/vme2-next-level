@@ -5,6 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import find_blocks
+from vmeg.kernel import parameter_names, replace_names, transfer_names
 from vmegc import render
 from emu.listing import defines, emulations, format_listing
 
@@ -103,3 +104,21 @@ class TransferListingTest(unittest.TestCase):
 
 if __name__ == "__main__":
   unittest.main()
+
+
+class NamesOfATransferTest(unittest.TestCase):
+  def test_the_names_are_found_once_in_the_order_of_the_fields(self):
+    transfer = {"mode": "extended", "dims": {"count": "((HEADER_N * 2) - n)", "gap": "n"}, "step": "HEADER_STEP", "group": {"size": 3}}
+    self.assertEqual(transfer_names(transfer), ["HEADER_STEP", "HEADER_N", "n"])
+
+  def test_a_number_a_member_and_a_value_that_is_not_a_text_have_no_name(self):
+    self.assertEqual(transfer_names({"mode": "basic", "count": "0x1F + obj.size + p->len"}), ["obj", "p"])
+    self.assertEqual(transfer_names({"mode": "basic", "count": 15}), [])
+
+  def test_the_parameters_are_camel_case_and_never_collide(self):
+    self.assertEqual(parameter_names(["HEADER_N", "n", "memory", "HEADER", "headerN", "N_"]), {"HEADER_N": "headerN", "n": "n", "memory": "memory2", "HEADER": "header", "headerN": "headerN2", "N_": "n2"})
+
+  def test_the_names_of_a_text_are_replaced_and_the_rest_is_kept(self):
+    names = parameter_names(["HEADER_N", "n"])
+    self.assertEqual(replace_names("((HEADER_N * 2) - n) + a->n + 0x1F + obj.n", names), "((headerN * 2) - n) + a->n + 0x1F + obj.n")
+    self.assertEqual(replace_names(15, names), 15)
