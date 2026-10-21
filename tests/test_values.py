@@ -132,3 +132,18 @@ class FunctionOfATransferTest(unittest.TestCase):
     self.assertIn("vme_dma(ITERATION, DIMS, (headerM + 1));", out)
     self.assertIn("kTLoad(arr, VME_TOP_BUFF0_WOFF, HEADER_M);", out)
     self.assertNotIn("HEADER_M +", out)
+
+  def test_a_load_and_a_store_of_the_blocks_are_functions_before_the_function_that_holds_them(self):
+    text = (
+      "volatile Buffer arr[64];\n.kernel k direct {\n}\n"
+      "void f(int n) {\n"
+      "  @kernel k config {\n    Transfer t = { type: words, mode: basic, memory: arr, count: n };\n    .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n  }\n"
+      "  @kernel k exec {\n    Transfer t = { type: words, mode: basic, memory: arr, count: 3 };\n    .store { .transfer = t; .scope = global; .offsets { .base1 = 8; } }\n  }\n}\n"
+    )
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("static inline void fTLoad(volatile u32* memory, u32 spadOffset, u32 n) {", out)
+    self.assertIn("static inline void f2TStore(volatile u32* memory, u32 spadOffset) {", out)
+    self.assertLess(out.index("static inline void f2TStore"), out.index("void f(int n) {"))
+    self.assertLess(out.index("void f(int n) {"), out.index("fTLoad(arr, VME_TOP_BUFF0_WOFF, n);"))
+    self.assertLess(out.index("fTLoad(arr, VME_TOP_BUFF0_WOFF, n);"), out.index("f2TStore(arr, VME_BASE_BUFF1_WOFF + 8);"))
+    self.assertEqual(out.count("vme_dma(MEMORY"), 2)
