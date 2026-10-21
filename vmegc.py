@@ -152,6 +152,8 @@ def main(argv=None):
     print(f"{path}: line {line}: warning: {message}", file=sys.stderr)
 
   for output, result in results:
+    if os.path.dirname(output):
+      os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, "w", encoding="utf-8", newline="") as f:
       f.write(result)
   return 0
