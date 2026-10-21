@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmeg.blocks import find_blocks
 from vmeg.registry import array_definitions, check_calls, check_definitions, check_uses, extern_declaration, needed_externs, project_registry
+from vmeg.vmecalls import finish_calls, wait_marker
 from vmegc import default_output, render, translate
 
 
@@ -424,6 +425,18 @@ class RegistryTest(unittest.TestCase):
     self.assertIn("extern volatile u32 __attribute__((aligned(64))) g[4];\nvoid k();\n", out)
     self.assertIn("  {\n    vmeLibEnable();\n    kTLoad(g, VME_TOP_BUFF0_WOFF);\n    meCoreDMACPrimWaitTransferFinish();\n    vmeLibStart();\n    k();\n    vmeLibFinish();\n", out)
     self.assertIn("never called", self.failure(check_calls, [("a.vmeg.c", a)]))
+
+
+def waits_after(names):
+  text = "".join(f"  {name}(a);\n  {wait_marker(name)}\n" for name in names)
+  return finish_calls(text).count("meCoreDMACPrimWaitTransferFinish();")
+
+
+class WaitOfTheCallsTest(unittest.TestCase):
+  def test_at_most_two_calls_of_the_same_function_share_a_wait(self):
+    self.assertEqual([waits_after(["f"] * count) for count in (1, 2, 3, 4, 5)], [1, 1, 2, 2, 3])
+    text = finish_calls("f(a);\n" + wait_marker("f") + "\nf(a);\n" + wait_marker("f") + "\nf(a);\n" + wait_marker("f") + "\n")
+    self.assertEqual(text, "f(a);\nf(a);\nmeCoreDMACPrimWaitTransferFinish();\nf(a);\nmeCoreDMACPrimWaitTransferFinish();\n")
 
 
 if __name__ == "__main__":
