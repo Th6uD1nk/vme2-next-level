@@ -4,7 +4,7 @@ from vmeg.scanner import tokens, walk
 
 EMULATE_ID = re.compile(r'"[A-Za-z0-9_-]+"')
 
-ACTIONS = ("config", "exec")
+ACTIONS = ("config", "exec", "async")
 
 
 def read_kernel_list(items, last, line):
@@ -13,13 +13,17 @@ def read_kernel_list(items, last, line):
       raise ValueError(f"line {line}: expected a kernel name")
     last += 1
     if last + 1 >= len(items) or items[last + 1][0] != "ident" or items[last + 1][1] not in ACTIONS:
-      raise ValueError(f"line {line}: expected config or exec after the kernel name")
+      raise ValueError(f"line {line}: expected config, exec or async after the kernel name")
+    actions = []
     while last + 1 < len(items) and items[last + 1][0] == "ident" and items[last + 1][1] in ACTIONS:
       last += 1
+      actions.append(items[last][1])
       if last + 2 < len(items) and items[last + 1][1] == "," and items[last + 2][1] in ACTIONS:
         last += 1
         continue
       break
+    if "async" in actions and len(actions) > 1:
+      raise ValueError(f"line {line}: async is a configuration and an execution, it cannot be combined with config or exec")
     if last + 2 < len(items) and items[last + 1][0] == "punct" and items[last + 1][1] == "," and items[last + 2][0] == "ident":
       last += 1
       continue
