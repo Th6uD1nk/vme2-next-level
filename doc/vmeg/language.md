@@ -111,3 +111,33 @@ An `Int` can be written in a kernel, in a `@kernel` block and in the body of a l
 | Error | Cause |
 |---|---|
 | `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
+
+## 2.5 Expressions
+
+An expression between numbers uses these operators, from the strongest to the weakest. Operators of the same level group from the left.
+
+| Level | Operators |
+|---|---|
+| 1 | `-` (negation), parentheses |
+| 2 | `*` |
+| 3 | `+` `-` |
+| 4 | `<<` `>>` |
+| 5 | `&` |
+
+| Written | Value |
+|---|---|
+| `1 + 2 * 3` | `7` |
+| `(1 + 2) * 3` | `9` |
+| `10 - 2 - 3` | `5` |
+| `1 << 2 + 1` | `8` |
+| `6 & 3 + 1` | `4` |
+
+The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numbers-macros-and-unknown-names)). A number is written in decimal (`15`), in hexadecimal (`0x0f`) or in binary (`0b1111`). `true` is `1` and `false` is `0`.
+
+Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they act on the FU, see [Operations](operations.md).
+
+Currently not supported: `/`, `%`, `|`, `~` and the comparisons.
+
+| Error | Cause |
+|---|---|
+| `invalid number '010'` | a number with a leading zero |
