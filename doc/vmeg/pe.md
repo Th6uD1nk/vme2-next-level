@@ -95,5 +95,5 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `expected '='` | in a pe block, an operation that leaves written without its dot (`top0 + top1;`), or an `Int` or a loop in the block (currently not supported) |
 | [5.2](#52-what-a-block-holds) | `pe0.top is already set at line N` | the same member (`.top`, `.base`, `.write`) set twice in a pe |
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
-| [5.3](#53-operations-in-a-pe) | `a pe has two FUs, this pe needs 3 operations` | more than two operations in a pe |
-| [5.3](#53-operations-in-a-pe) | `mac cannot run on the secondary FU, it must be the first operation of the pe` | `mul`, `mac` or `acc` (the message names the one used) as the output operation of a pe that holds more than one operation |
+| [5.3](#53-operations-in-a-pe) | `a pe holds two operations at most, this pe needs 3` | more than two operations in a pe |
+| [5.3](#53-operations-in-a-pe) | `mac must be the first operation of the pe` | `mul`, `mac` or `acc` (the message names the one used) as the output operation of a pe that holds more than one operation |

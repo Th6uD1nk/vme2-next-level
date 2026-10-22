@@ -41,7 +41,7 @@ Agu name = { count: 15 };
 | `repeat` | yes | no | the inner range is repeated ([4.2.3](#423-read-agus)) |
 | `cyc` | no | yes | a delay in cycles ([4.2.4](#424-write-agus)) |
 | `bubbles` | no | yes | words of zero before the data ([4.2.4](#424-write-agus)) |
-| `sync` | no | yes | the data can be read by a FU of the same run ([4.2.4](#424-write-agus)) |
+| `sync` | no | yes | the data can be read by an operation of the same run ([4.2.4](#424-write-agus)) |
 
 The other bits of the format registers are currently not supported.
 
@@ -104,11 +104,11 @@ Agu w = { count: 15, cyc: 9, bubbles: 5, sync: true };
 |---|---|
 | `cyc` | the delay of the write, from 0 to 255 (currently not checked): a number, `auto`, or `auto` with a shift, see below. A result computed at the cycle `c` is written on the word `c + 6 - cyc + bubbles`: a larger `cyc` writes earlier |
 | `bubbles` | from 0 to 4095. The written stream is shifted by `bubbles` words, and the first ones are zeros |
-| `sync` | `true` makes the data readable by a FU of the same run |
+| `sync` | `true` makes the data readable by an operation of the same run |
 
-- `sync` waits no cycle. For a FU to see the data, the write has to come at least 7 positions after the cycle that computed it, that is `6 - cyc + bubbles >= 7`. This is for you to set with `cyc` and `bubbles`: `vmegc` does not compute it.
+- `sync` waits no cycle. For an operation to see the data, the write has to come at least 7 positions after the cycle that computed it, that is `6 - cyc + bubbles >= 7`. This is for you to set with `cyc` and `bubbles`: `vmegc` does not compute it.
 
-`cyc` compensates the time that the FUs of the pe need to produce the data. It is written as a number, as `auto`, or as `auto` with a shift:
+`cyc` compensates the time that the operations of the pe need to produce the data. It is written as a number, as `auto`, or as `auto` with a shift:
 
 ```c
 Agu a = { count: 15, cyc: 9 };
@@ -119,13 +119,13 @@ Agu d = { count: 15, cyc: auto + shift };
 
 **Explanation of the code above:**
 
-- `auto` lets vmeg work out the number, so that the stream is aligned on the first element that leaves the pe. A FU takes 3 cycles to write its result and the write to the buffer takes 3 more: one FU gives 6, two chained FUs give 9. A FU that reads a Staging variable comes after the FU that set it, so the chain goes across the pes. `mac` and `acc` count like the other FUs.
+- `auto` lets vmeg work out the number, so that the stream is aligned on the first element that leaves the pe. An operation takes 3 cycles to write its result and the write to the buffer takes 3 more: one operation gives 6, two chained operations give 9. An operation that reads a Staging variable comes after the operation that set it, so the chain goes across the pes. `mac` and `acc` count like the other operations.
 - A shift is written after `auto`: `auto - 1`, `auto + 1`, or `auto` plus or minus an `Int` or a macro. It uses the same expressions as the rest of the language, and it is the way to read an element other than the first one, for example the fourth element of each group of a `mac`.
 
 **Rules:**
 
 - `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it.
-- The rule is checked for one and two FUs. Three chained FUs (12) and a Staging variable read by another pe are not yet verified on the hardware.
+- The rule is checked for one and two operations. Three chained operations (12) and a Staging variable read by another pe are not yet verified on the hardware.
 
 ## 4.3 Binding an AGU to a pe
 

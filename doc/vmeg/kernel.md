@@ -69,7 +69,7 @@ The body of a kernel (.kernel) describes what the VME computes and moves. It hol
 |---|---|---|
 | `Int name = expression;` | names a number | [2.4](language.md#24-int) |
 | `Agu name = { … };` | declares an address generator | [AGU variables](agu.md) |
-| `Staging name;` | declares a result kept in a FU | [Staging, routing and warnings](staging-routing.md) |
+| `Staging name;` | declares a result kept in a pe | [Staging, routing and warnings](staging-routing.md) |
 | `Transfer name = { … };` | declares a DMAC transfer | [Transfers](transfers.md) |
 | `.pe0 { … }` to `.pe3 { … }`, `pe[i] { … }` | describes a processing element | [Processing elements](pe.md) |
 | `.load { … }`, `.store { … }` | moves data between the RAM and the scratchpad | [Transfers](transfers.md) |
@@ -94,7 +94,7 @@ A variable declared in a kernel can only be used inside that kernel. Two kernels
 
 ### 3.3.3 Order of the writes
 
-The registers are written in the order of the statements. The routing of the buffers and the enabling of the outputs of the secondary FUs, which `vmegc` works out from the kernel, are written last.
+The registers are written in the order of the statements. The routing of the buffers and the enabling of the outputs of the pes that hold two operations, which `vmegc` works out from the kernel, are written last.
 
 
 ## 3.4 Interconnect registers
@@ -112,7 +112,7 @@ icn xpcr = 5, skew = 0x10;
 
 - The two can be written in one statement or in two. Each one at most once in a kernel.
 - The value is a number, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)). It is written as it is and not checked. The meaning of the bits of the value is currently not documented.
-- The other interconnect registers, the routing of the buffers and the outputs of the secondary FUs, are not written with `icn`: they are set from the kernel, see [Staging, routing and warnings](staging-routing.md).
+- The other interconnect registers, the routing of the buffers and the outputs of the pes that hold two operations, are not written with `icn`: they are set from the kernel, see [Staging, routing and warnings](staging-routing.md).
 
 ## 3.5 Errors
 

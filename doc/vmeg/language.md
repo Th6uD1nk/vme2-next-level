@@ -46,7 +46,7 @@ A variable has a type and starts with no dot. `Agu`, `Transfer` and `Int` are de
 | Type | Declares | Example |
 |---|---|---|
 | `Agu` | an address generator | `Agu t = { count: 15 };` |
-| `Staging` | a result kept in the FU | `Staging s;` |
+| `Staging` | a result kept in the pe | `Staging s;` |
 | `Transfer` | a DMAC transfer | `Transfer in = { type: words, mode: basic, memory: a, count: 15 };` |
 | `Int` | a number known at compile time | `Int n = 16 - 1;` |
 
@@ -125,7 +125,7 @@ An expression between numbers uses these operators, from the strongest to the we
 
 The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numbers-macros-and-unknown-names)). A number is written in decimal (`15`), in hexadecimal (`0x0f`) or in binary (`0b1111`). `true` is `1` and `false` is `0`.
 
-Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they act on the FU, see [Operations](operations.md).
+Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they apply to that result, see [Operations](operations.md).
 
 Currently not supported: `/`, `%`, `|`, `~` and the comparisons.
 
