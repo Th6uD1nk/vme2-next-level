@@ -57,3 +57,41 @@ A memory kernel is written in a context in RAM (`build`), then the context is se
 
 - Loading a context replaces all the registers: the ones that the kernel does not write are 0.
 - The writes of a direct kernel that come after the load are applied on top of the loaded context.
+
+## 3.3 Body
+
+The body of a kernel (.kernel) describes what the VME computes and moves. It holds vmeg statements only, no C.
+
+### 3.3.1 Statements
+
+| Statement | What it does | Page |
+|---|---|---|
+| `Int name = expression;` | names a number | [2.4](language.md#24-int) |
+| `Agu name = { … };` | declares an address generator | [AGU variables](agu.md) |
+| `Staging name;` | declares a result kept in a FU | [Staging, routing and warnings](staging-routing.md) |
+| `Transfer name = { … };` | declares a DMAC transfer | [Transfers](transfers.md) |
+| `.pe0 { … }` to `.pe3 { … }`, `pe[i] { … }` | describes a processing element | [Processing elements](pe.md) |
+| `.load { … }`, `.store { … }` | moves data between the RAM and the scratchpad | [Transfers](transfers.md) |
+| `icn xpcr = …, skew = …;` | writes the interconnect registers | [3.4](#34-interconnect-registers) |
+| `for p in a..b { … }` | repeats statements | [2.7](language.md#27-loops) |
+
+### 3.3.2 Scope of the variables
+
+A variable declared in a kernel can only be used inside that kernel. Two kernels can each declare a variable with the same name: they are two different variables.
+
+```c
+.kernel add direct {
+  Agu t = { count: 15 };
+  .pe0 { .top = t; .top0 + top0; }
+}
+
+.kernel sub direct {
+  Agu t = { count: 7 };
+  .pe0 { .top = t; .top0 + top0; }
+}
+```
+
+### 3.3.3 Order of the writes
+
+The registers are written in the order of the statements. The routing of the buffers and the enabling of the outputs of the secondary FUs, which `vmegc` works out from the kernel, are written last.
+
