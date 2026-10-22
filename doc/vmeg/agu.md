@@ -54,3 +54,34 @@ Agu name = { count: 15 };
 ```c
 Agu t = { count: 15, offset: -16, step: 2, reverse: true };
 ```
+
+### 4.2.2 inner0
+
+`inner0` describes a range of words inside the AGU. It has its own parameters, `count` and `step`, written in braces.
+
+```c
+Agu t = { count: 15, inner0: { count: 15, step: 1 } };
+```
+
+| Parameter of `inner0` | Value |
+|---|---|
+| `count` | the number of words of the range, minus 1. Required |
+| `step` | the distance between two words of the range, in words. Required. A `step` of 0 means no range |
+
+- The parameters of `inner0` can not have parameters of their own.
+- `inner1` is currently not supported.
+- What the range does on its own is currently not documented. With `repeat` it is the range that is repeated, see [4.2.3](#423-read-agus).
+
+### 4.2.3 Read AGUs
+
+A read AGU is bound with `.top` or `.base`. It takes the common parameters and `repeat`.
+
+`repeat: true` repeats the range of `inner0` for as long as the run lasts, whatever the `count` of the AGU. The matrix of the mat4x4 sample is read this way: its 16 words are read again and again while the vectors go by.
+
+```c
+Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
+```
+
+- `repeat` needs `inner0`.
+- It works in the mode 4, the default mode.
+- It does not work together with `reverse`: `vmegc` does not check it.
