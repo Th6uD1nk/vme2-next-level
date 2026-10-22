@@ -21,6 +21,23 @@ def count_line(value):
   return f"vme_pe0(agu_top(COUNT), VME_DEF_STEP, {value});"
 
 
+def cyc_line(operation, cyc="auto"):
+  text = ".kernel k direct {\n  Agu t = { count: 3 }, b = { count: 3 };\n  Agu w = { count: 3, cyc: " + cyc + " };\n  .pe0 { .top = t; .base = b; .write = w; " + operation + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
+  out = render(text, find_blocks(text), "t.vmeg.c")
+  return next(line for line in out.splitlines() if "vme_cyc" in line).strip()
+
+
+def cyc_mode(value):
+  return f"vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc({value}));"
+
+
+class CycAutoTest(unittest.TestCase):
+  def test_auto_is_three_cycles_plus_three_per_fu_of_the_chain_and_a_shift_follows_it(self):
+    self.assertEqual(cyc_line(".top0 + base0;"), cyc_mode("6"))
+    self.assertEqual(cyc_line(".clamp(top0 + base0, 0, 255);"), cyc_mode("9"))
+    self.assertEqual(cyc_line(".clamp(top0 + base0, 0, 255);", "auto - 1"), cyc_mode("8"))
+
+
 class KnownMacrosInAKernelTest(unittest.TestCase):
   def test_a_chain_of_int_built_from_a_macro_of_the_file_is_a_number(self):
     self.assertEqual(agu_count("  Int a = STEP * 2, n = a + 1;", "#define STEP 4\n"), count_line("9"))
