@@ -58,7 +58,6 @@ A direct kernel writes its registers in the VME. The registers that it does not 
 A memory kernel is written in a context in RAM (`build`), then the context is sent to the VME (`config`), see [Calling a kernel](calling.md).
 
 - Loading a context replaces all the registers: the ones that the kernel does not write are 0.
-- The writes of a direct kernel that come after the load are applied on top of the loaded context.
 
 ## 3.3 Body
 
