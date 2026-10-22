@@ -38,6 +38,7 @@ volatile Buffer sharedBase0[16] = {
   0x01, 0x40, 0x01, (0x7fffff + 0x02),
 };
 
+@emulate "saturate-clamp"
 .kernel runContext direct {
   Int count = 16 - 1;
 
