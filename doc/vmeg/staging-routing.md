@@ -88,3 +88,17 @@ main.vmeg.c: line 3: warning: pe0 has an operation but no .write is bound in thi
 |---|---|
 | `top1 is read but no .top is bound in pe1 of this kernel` | a buffer `topN` or `baseN` read by an operation, with no `.top` or `.base` bound in `peN` ([7.2](#72-the-routing)) |
 | `pe0 has an operation but no .write is bound in this kernel` | the operation that leaves a pe, with no `.write` bound in this pe |
+
+## 7.4 Errors
+
+The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [7.1](#71-staging-variables) | `the Staging variable 's' is declared twice` | two `Staging` with the same name |
+| [7.1](#71-staging-variables) | `'a' is already declared as an Agu variable` | a `Staging` named like an `Agu` (or `a Transfer variable`) |
+| [7.1](#71-staging-variables) | `'a' is already declared as a Staging variable` | an `Agu` or a `Transfer` named like a `Staging` |
+| [7.1](#71-staging-variables) | `unknown Staging variable 'zz'` | `zz = …;` in a pe, with a name that is not declared |
+| [7.1](#71-staging-variables) | `'a' is an Agu variable, only a Staging variable can receive an operation` | an operation assigned to an `Agu` |
+| [7.1](#71-staging-variables) | `the Staging variable 's' is already set at line N` | a `Staging` set twice |
+| [7.1](#71-staging-variables) | `the Staging variable 's' is read before it is set` | a `Staging` read before the statement that sets it |
