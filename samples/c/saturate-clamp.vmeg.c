@@ -56,7 +56,7 @@ volatile Buffer sharedBase0[16] = {
 
   Agu top   = { count };
   Agu base  = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
-  Agu write = { count, cyc: 0x09 };
+  Agu write = { count, cyc: auto };
 
   for p in 0..3 {
     pe[p] {
