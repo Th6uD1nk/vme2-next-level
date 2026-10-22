@@ -41,6 +41,8 @@ Agu name = { count: 15 };
 | `bubbles` | no | yes | words of zero before the data ([4.2.4](#424-write-agus)) |
 | `sync` | no | yes | the data can be read by a FU of the same run ([4.2.4](#424-write-agus)) |
 
+The other bits of the format registers are currently not supported.
+
 ### 4.2.1 Common parameters
 
 | Parameter | Value | Default |
@@ -84,7 +86,7 @@ Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
 
 - `repeat` needs `inner0`.
 - It works in the mode 4, the default mode.
-- It does not work together with `reverse`: `vmegc` does not check it.
+- Currently not supported: `repeat` together with `reverse`.
 
 ### 4.2.4 Write AGUs
 
