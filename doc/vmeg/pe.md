@@ -70,7 +70,7 @@ Staging s;
 - `pe2` holds two: the one kept in `s`, and the one that leaves.
 - A third operation in the same pe is an error.
 - `sat` and the shifts `>>` and `<<` are not operations: they set the saturation and the shift of the operation they wrap, and are not counted. Currently not supported: the signed zero option.
-- `mul`, `mac` and `acc` cannot be the output operation of a pe when the pe holds more than one operation. They go through a `Staging` variable, or inside the output operation.
+- `mul`, `mac` and `acc` must be the first operation of the pe: the innermost one, or the first one written. Written after another operation of the pe, they are refused.
 
 ```c
 Staging s, t;
@@ -96,4 +96,4 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `pe0.top is already set at line N` | the same member (`.top`, `.base`, `.write`) set twice in a pe |
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
 | [5.3](#53-operations-in-a-pe) | `a pe holds two operations at most, this pe needs 3` | more than two operations in a pe |
-| [5.3](#53-operations-in-a-pe) | `mac must be the first operation of the pe` | `mul`, `mac` or `acc` (the message names the one used) as the output operation of a pe that holds more than one operation |
+| [5.3](#53-operations-in-a-pe) | `mac must be the first operation of the pe` | `mul`, `mac` or `acc` (the message names the one used) after another operation of the same pe |

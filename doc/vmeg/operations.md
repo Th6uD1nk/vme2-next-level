@@ -36,7 +36,7 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 | `mac(a, b)` | `0x240` | two operands | a running inner product |
 | `acc(x)` | `0x250` | one operand | a running sum |
 
-- `mul`, `mac` and `acc` cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
+- `mul`, `mac` and `acc` must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
 - `acc` reads a buffer or a `Staging` variable only. `clamp` also reads an operation.
 
 ## 6.2 Operators
@@ -112,7 +112,7 @@ Staging s;
 **Rules:**
 
 - A shift written after it, `mac(top0, top1) >> 4`, is applied to the result ([6.4](#64-sat-and-the-shifts)).
-- It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
+- It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
 
 ### 6.3.5 acc
 
@@ -127,7 +127,7 @@ Staging s;
 
 **Rules:**
 
-- It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
+- It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
 - The `mat4x4` sample reads the 4th word of each group of a `mac`, with `cyc: auto - 1` ([4.2.4](agu.md#424-write-agus)).
 
 ## 6.4 sat and the shifts
