@@ -58,3 +58,33 @@ Agu t = { count: 15 };
 - A buffer `topN` or `baseN` needs the AGU `.top` or `.base` bound in `peN`.
 - The result of a pe leaves on its write AGU. A result kept in a `Staging` variable stays in the pe.
 - The registers of the interconnect that are written by hand are `xpcr` and `skew` ([3.4](kernel.md#34-interconnect-registers)).
+
+## 7.3 Warnings
+
+`vmegc` warns when something is likely wrong in a kernel. A warning does not stop it: the files are written ([1.3](running.md#13-messages)).
+
+```c
+.kernel k direct {
+  Agu t = { count: 15 };
+  .pe0 { .top = t; .top0 + top1; }
+}
+```
+
+```
+main.vmeg.c: line 3: warning: top1 is read but no .top is bound in pe1 of this kernel
+main.vmeg.c: line 3: warning: pe0 has an operation but no .write is bound in this kernel
+```
+
+**Explanation of the code above:**
+
+- `pe0` reads `top1`, but this kernel binds no `.top` in `pe1`.
+- `pe0` has an operation that leaves, but this kernel binds no `.write` in `pe0`.
+
+**Rules:**
+
+- A warning is about the kernel only. An AGU that the kernel does not bind can be set by another kernel in a direct kernel, which keeps the registers it does not write; a memory kernel sets them to 0 ([3.2](kernel.md#32-modes)).
+
+| Warning | Cause |
+|---|---|
+| `top1 is read but no .top is bound in pe1 of this kernel` | a buffer `topN` or `baseN` read by an operation, with no `.top` or `.base` bound in `peN` ([7.2](#72-the-routing)) |
+| `pe0 has an operation but no .write is bound in this kernel` | the operation that leaves a pe, with no `.write` bound in this pe |

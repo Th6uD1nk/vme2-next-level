@@ -46,7 +46,7 @@ python3 vmegc.py kernels.vmeg.cpp main.vmeg.cpp
 
 ```
 main.vmeg.cpp: line 12: unknown Agu variable 'u'
-main.vmeg.cpp: line 7: warning: pe0 has an operation but no .write is bound, its result stays in the staging
+main.vmeg.cpp: line 7: warning: pe0 has an operation but no .write is bound in this kernel
 ```
 
 **Rules:**
