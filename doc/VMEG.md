@@ -49,6 +49,8 @@ vmegc_sources(app SOURCES main.vmeg.cpp)
 
 ## 1. Running vmegc
 
+`vmegc` reads one or several `.vmeg.c` or `.vmeg.cpp` files and writes, for each one, a plain C or C++ file. It runs from the command line, or as a step of a CMake build.
+
 Details: [Running vmegc](vmeg/running.md)
 
 ## 2. The language
