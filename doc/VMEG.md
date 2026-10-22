@@ -39,6 +39,8 @@ Details: [The kernel](vmeg/kernel.md)
 
 ## 4. AGU variables
 
+An AGU (address generator) says which words of a buffer a processing element reads or writes, and in which order. `Agu name = { count: 15 };` declares one, and a pe uses it once it is bound with `.top`, `.base` or `.write`.
+
 Details: [AGU variables](vmeg/agu.md)
 
 ## 5. Processing elements
