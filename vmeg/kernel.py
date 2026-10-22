@@ -456,14 +456,14 @@ def place(state, lines, pe, operations, line):
   depths = staging_depths(state)
   depth = 0
   if used + len(operations) > 2:
-    raise ValueError(f"a pe has two FUs, this pe needs {used + len(operations)} operations")
+    raise ValueError(f"a pe holds two operations at most, this pe needs {used + len(operations)}")
   for operation in operations:
     number = state["fus"].get(pe, 0)
     state["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
     specification = OPERATIONS[operation["kind"]]
     if specification["units"] == "primary" and number != 0:
-      raise ValueError(f"{operation['kind']} cannot run on the secondary FU, it must be the first operation of the pe")
+      raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     code = specification["code"]
     if specification["operands"] == ("front", "back"):
       mux = f"vme_mux({operation['front']}, {operation['back']})"

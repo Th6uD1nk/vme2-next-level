@@ -21,7 +21,7 @@ OPERATIONS = {
     "code": "fu_code(OP_SUB_OFB)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "(a - b) + c, a on the front socket and b on the back one, c is a number written in the register B of the FU",
+    "note": "(a - b) + c, a on the front socket and b on the back one, c is a number written in the register B of the operation",
   },
   "subshr": {
     "opcode": 0x050,
@@ -29,7 +29,7 @@ OPERATIONS = {
     "code": "fu_code(OP_SUB_INV_SHF)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "b - (a >> n), a on the front socket and b on the back one, n is a number written in the register B of the FU",
+    "note": "b - (a >> n), a on the front socket and b on the back one, n is a number written in the register B of the operation",
   },
   "mul": {
     "opcode": 0x200,
@@ -74,26 +74,26 @@ OPERATIONS = {
 }
 
 FIELDS = (
-  ("sat(op, bits)", "fu_sat(bits)", "the saturator of the FU of the operation it wraps, bits 0 to 31"),
-  ("op >> n", "k = n", "the shift in the 6 low bits of the FU register, n 0 to 63, the last layer of an operation"),
+  ("sat(op, bits)", "fu_sat(bits)", "the saturation of the operation it wraps, bits 0 to 31"),
+  ("op >> n", "k = n", "the shift applied to the result of the operation, n 0 to 63"),
   ("op << n", "k = 64 - n", "the rotary shift, n 0 to 63"),
 )
 
 
 def operation_columns(specification):
-  units = "primary FU only" if specification["units"] == "primary" else "any FU"
+  units = "first operation of the pe only" if specification["units"] == "primary" else "any position"
   return (specification["syntax"], f"0x{specification['opcode']:03x}", specification["code"], ", ".join(specification["operands"]), units)
 
 
 def format_operations():
   rows = [operation_columns(specification) for specification in OPERATIONS.values()]
   widths = [max(len(row[i]) for row in rows) for i in range(5)]
-  lines = ["operations, each one takes one FU:"]
+  lines = ["operations:"]
   for specification, row in zip(OPERATIONS.values(), rows):
     lines.append("  " + "  ".join(column.ljust(width) for column, width in zip(row, widths)).rstrip())
     lines.append("      " + specification["note"])
   lines.append("")
-  lines.append("fields of the FU of the operation they wrap:")
+  lines.append("options of the operation they wrap:")
   syntax_width = max(len(field[0]) for field in FIELDS)
   code_width = max(len(field[1]) for field in FIELDS)
   for syntax, code, note in FIELDS:
