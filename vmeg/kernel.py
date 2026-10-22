@@ -10,6 +10,8 @@ from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
 
+AUTO = "@auto@"
+
 KERNEL_OPTIONS = ("direct", "memory")
 
 ROUTING_NAMES = {"top": "AGU_TOP", "base": "AGU_BASE", "write": "AGU_WRITE"}
@@ -236,7 +238,13 @@ def check_inner(pe, agu, key, value, env):
   return inner
 
 
-def generate_agu(target, params, env):
+def has_auto(expr):
+  if expr[0] == "name":
+    return expr[1] == "auto"
+  return any(has_auto(part) for part in expr[1:] if isinstance(part, tuple))
+
+
+def generate_agu(target, params, env, state, at, line):
   pe = target_pe(target, env)
   agu = target[2]
   values = {}
@@ -250,6 +258,10 @@ def generate_agu(target, params, env):
       continue
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
+    if has_auto(value):
+      values[key] = AUTO
+      state["autos"].append({"pe": pe, "expr": value, "env": env, "at": at, "line": line})
+      continue
     folded = full_value(value, env)
     if key in ("reverse", "repeat", "sync"):
       if folded[0] != "num" or folded[1] not in (0, 1):
@@ -487,7 +499,7 @@ def emit_statement(statement, env, lines, state):
     pe = target_pe(statement[1], env)
     claim(state, pe, statement[1][2], statement[-1])
     state["routing"][statement[1][2]][pe] = pe
-    lines.extend(generate_agu(statement[1], statement[2], env))
+    lines.extend(generate_agu(statement[1], statement[2], env, state, len(lines), statement[-1]))
   elif kind == "agudecl":
     if statement[1] in state["agus"]:
       raise ValueError(f"the Agu variable '{statement[1]}' is declared twice")
@@ -550,7 +562,7 @@ def emit_statement(statement, env, lines, state):
     claim(state, pe, slot, statement[-1])
     if slot not in variable["owners"]:
       variable["owners"][slot] = pe
-      lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env))
+      lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1]))
     state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "operation":
     pe = target_pe(statement[1], env)
@@ -584,7 +596,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": []}
 
 
 def new_env(macros=None):
@@ -594,12 +606,23 @@ def new_env(macros=None):
   return env
 
 
+def resolve_auto(lines, state):
+  for pending in state["autos"]:
+    pe = pending["pe"]
+    if pe not in state["depths"]:
+      raise ValueError(f"line {pending['line']}: pe{pe}.write: cyc auto needs an operation in pe{pe}")
+    env = dict(pending["env"])
+    env["auto"] = ("num", 3 + 3 * state["depths"][pe])
+    lines[pending["at"]] = lines[pending["at"]].replace(AUTO, to_c(full_value(pending["expr"], env)))
+
+
 def run_statements(statements, macros=None, owner=None):
   lines = []
   env = new_env(macros)
   state = new_state(macros, owner)
   for statement in statements:
     emit(statement, env, lines, state)
+  resolve_auto(lines, state)
   return lines, state
 
 
