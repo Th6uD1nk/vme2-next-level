@@ -85,3 +85,20 @@ Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
 - `repeat` needs `inner0`.
 - It works in the mode 4, the default mode.
 - It does not work together with `reverse`: `vmegc` does not check it.
+
+### 4.2.4 Write AGUs
+
+A write AGU is bound with `.write`. It writes the result of the pe into the buffer of the pe. It takes the common parameters and `cyc`, `bubbles` and `sync`.
+
+```c
+Agu w = { count: 15, cyc: 9, bubbles: 5, sync: true };
+```
+
+| Parameter | Value |
+|---|---|
+| `cyc` | a number of cycles, from 0 to 255 (currently not checked). A result computed at the cycle `c` is written on the word `c + 6 - cyc + bubbles`: a larger `cyc` writes earlier. It compensates the delay of the FUs, the samples use 6, 9 and 0x11 |
+| `bubbles` | from 0 to 4095. The written stream is shifted by `bubbles` words, and the first ones are zeros |
+| `sync` | `true` makes the data readable by a FU of the same run |
+
+- `sync` waits no cycle. For a FU to see the data, the write has to come at least 7 positions after the cycle that computed it, that is `6 - cyc + bubbles >= 7`. This is for you to set with `cyc` and `bubbles`: `vmegc` does not compute it.
+- The meaning of `cyc` comes from the samples, it is not yet tested on its own.
