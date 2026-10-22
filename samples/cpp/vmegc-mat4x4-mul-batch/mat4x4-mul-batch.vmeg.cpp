@@ -82,7 +82,7 @@ volatile Buffer sharedRes[VECTOR_BATCH_WORD_COUNT] = {0};
   Agu inter   = { count: count + lost };
   Agu write0  = { count: count + lost, bubbles: 5, sync: true };
   Agu write2  = { count: count + lost, bubbles: 1, sync: true };
-  Agu write3  = { count, cyc: 0x11 };
+  Agu write3  = { count, cyc: auto - 1 };
 
   Staging s0, s1, s2, s3;
 
