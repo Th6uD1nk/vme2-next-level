@@ -134,6 +134,18 @@ def check_emulate(blocks, ids, kernels):
       raise ValueError(f"line {kernels[block[1]][0]}: @emulate must be followed by a kernel definition with its body")
 
 
+def kernel_opening(items, i):
+  j = i + 2
+  if j >= len(items) or items[j][0] != "ident":
+    return None
+  j += 1
+  while j < len(items) and items[j][0] == "ident":
+    j += 1
+  if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
+    return j
+  return None
+
+
 def find_blocks(text):
   items = list(walk(text))
   blocks = []
@@ -166,16 +178,16 @@ def find_blocks(text):
       continue
     if not (kind == "punct" and value == "." and i + 1 < len(items) and items[i + 1][1] in ("kernel", "context")):
       continue
-    if depth != 0 or (prev not in (";", "}") and i not in allowed):
+    opening = kernel_opening(items, i)
+    if depth != 0:
+      if opening is not None and prev in (";", "}", "{"):
+        line = text.count("\n", 0, start) + 1
+        raise ValueError(f"line {line}: a kernel is written at the top level of a file, not inside a function")
       continue
-    j = i + 2
-    if j >= len(items) or items[j][0] != "ident":
+    if prev not in (";", "}") and i not in allowed:
       continue
-    j += 1
-    while j < len(items) and items[j][0] == "ident":
-      j += 1
-    if j < len(items) and items[j][0] == "punct" and items[j][1] == "{":
-      blocks.append(("kernel", start, items[j][2], block_end(text, items, j, start)))
+    if opening is not None:
+      blocks.append(("kernel", start, items[opening][2], block_end(text, items, opening, start)))
       skip = blocks[-1][3]
   if nested:
     blocks.sort(key=lambda block: block[1])

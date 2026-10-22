@@ -37,7 +37,6 @@ class FindBlocksTest(unittest.TestCase):
       "kernel_t kernel;",
       "kernel foo;",
       "kernel { }",
-      "void f() { .kernel k { } }",
       "#define X .kernel k {\nint a;",
       "// .kernel k {\nint a;",
       "const char* s = \".kernel k {\";",
