@@ -1,5 +1,31 @@
 # vmeg
 
+**vmeg** is a language for the PSP Virtual Mobile Engine (VME), the small reconfigurable chip of the Media Engine. You write a kernel as a graph of buffers, address generators and processing elements, **inside your own C or C++ file**, next to the rest of your code. The **g** stands for *graph* and for *generator*.
+
+**vmegc** is the compiler. It runs as a step of your **CMake build**: it replaces the vmeg blocks with plain C or C++ that drives the VME, leaves the rest of the file as it is, and your toolchain builds the result as usual. There is no separate tool to run by hand.
+
+A quick example, a kernel that adds two buffers and the function that runs it:
+
+```c
+// main.vmeg.cpp
+.kernel add direct {
+  Agu t = { count: 15 }, b = { count: 15 }, w = { count: 15, cyc: 6 };
+  .pe0 { .top = t; .base = b; .write = w; .top0 + base0; }
+}
+
+@kernel add config | exec
+void run(void) {
+}
+```
+
+And the CMake lines that build it:
+
+```cmake
+include(cmake/vmegc.cmake)
+add_executable(app)
+vmegc_sources(app SOURCES main.vmeg.cpp)
+```
+
 ## Contents
 
 | | Page | What it covers |
