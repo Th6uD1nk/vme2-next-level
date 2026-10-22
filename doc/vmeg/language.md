@@ -89,11 +89,6 @@ for p in 0..3 {
 }
 ```
 
-| Error | Cause |
-|---|---|
-| `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 |
-| `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 |
-
 ## 2.4 Int
 
 `Int name = expression;` names a number known at compile time. It writes no code. Where the name is used, its number is used instead: in the fields of an `Agu` or of a `Transfer`, in the offsets, in an index, in the bounds of a loop, in another `Int`.
@@ -107,10 +102,6 @@ for p in 0..last {
 ```
 
 An `Int` can be written in a kernel, in a `@kernel` block and in the body of a loop. How an expression is computed is in [2.5](#25-expressions), and what happens when a part of it is not known in [2.6](#26-numbers-macros-and-unknown-names).
-
-| Error | Cause |
-|---|---|
-| `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
 
 ## 2.5 Expressions
 
@@ -138,10 +129,6 @@ Between numbers, `<<` and `>>` are the plain C shifts. On the result of an opera
 
 Currently not supported: `/`, `%`, `|`, `~` and the comparisons.
 
-| Error | Cause |
-|---|---|
-| `invalid number '010'` | a number with a leading zero |
-
 ## 2.6 Numbers, macros and unknown names
 
 A value is a **number** when everything it uses is known: literals, `Int` names, loop variables and the trusted macros of the file ([2.6.1](#261-trusted-macros)). `vmegc` computes it and writes the number.
@@ -159,12 +146,6 @@ When one part is not known (a macro of a header, a variable of the function, a m
 The text is copied in the fields of an `Agu` and of a `Transfer`, in the offsets and in an `Int`. In the function generated for a transfer, each unknown name of the text becomes a parameter, see [Transfers](transfers.md).
 
 Where a register needs a constant, an unknown part is an error: the constants of the functions of a pe and the shifts (each one is listed in [Operations](operations.md)), an index, the bounds of a loop.
-
-| Error | Cause |
-|---|---|
-| `processing element index must be a number` | an unknown part in the index of a pe |
-| `for p: bounds must be numbers` | an unknown part in the bounds of a loop |
-| `'call' expression not supported here` | a macro with parameters used like a function, `F(3)`: currently not supported |
 
 ### 2.6.1 Trusted macros
 
@@ -188,3 +169,46 @@ A macro that is not trusted is an unknown name.
 | `N` defined inside `#ifdef` | `(N - 1)` |
 | `N` defined, then `#undef N` | `(N - 1)` |
 | `#define N (3 + )`, a body that is not an expression | `(N - 1)` |
+
+## 2.7 Loops
+
+`for p in a..b { … }` repeats its body for each value of `p` from `a` to `b`, both included. `vmegc` unrolls it: the body is written once per turn. The bounds are numbers ([2.6](#26-numbers-macros-and-unknown-names)). When `a` is above `b` the body is not written. Loops can be nested. Their body can hold `Int`, `.load` and `.store`, in a kernel as well as in a `@kernel` block, and pe blocks in a kernel.
+
+```c
+for p in 0..1 {
+  pe[p] { .top = t; .top0 + top0; }
+}
+```
+
+writes the same as `pe[0] { .top = t; .top0 + top0; }` followed by `pe[1] { .top = t; .top0 + top0; }`.
+
+This is not the C `for (…)`, which stays C code.
+
+## 2.8 Synonyms
+
+`context` is a synonym of `kernel`.
+
+| Written | Same as |
+|---|---|
+| `.context name mode { }` | `.kernel name mode { }` |
+| `@context name config` above a function | `@kernel name config` above a function |
+
+The block form `@context name config { }` inside a function is currently not supported, use `@kernel`.
+
+## 2.9 Errors
+
+| Section | Message | Cause |
+|---|---|---|
+| [2.2](#22-variables) | `expected '='` | an `Agu`, a `Transfer` or an `Int` declared without initializer |
+| [2.2](#22-variables) | `expected ';'` | a `Staging` declared with an initializer |
+| [2.2.2](#222-names) | `the Agu variable 'x' is declared twice` | a name declared twice with the same type (the message names the type) |
+| [2.2.2](#222-names) | `'x' is already declared as an Agu variable` | a name declared again with another type |
+| [2.2.2](#222-names) | `unknown Agu variable 't'` | a variable used before its declaration or where it is not visible (the message names the type) |
+| [2.3](#23-accesses-by-index) | `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 |
+| [2.3](#23-accesses-by-index) | `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 |
+| [2.4](#24-int) | `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
+| [2.5](#25-expressions) | `invalid number '010'` | a number with a leading zero |
+| [2.6](#26-numbers-macros-and-unknown-names) | `processing element index must be a number` | an unknown part in the index of a pe |
+| [2.6](#26-numbers-macros-and-unknown-names) | `for p: bounds must be numbers` | an unknown part in the bounds of a loop |
+| [2.6](#26-numbers-macros-and-unknown-names) | `'call' expression not supported here` | a macro with parameters used like a function, `F(3)`: currently not supported |
+| [2.8](#28-synonyms) | `inside a function only '@kernel name { ... }' is accepted` | the block form of `@context` |
