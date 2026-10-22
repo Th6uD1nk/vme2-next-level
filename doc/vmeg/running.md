@@ -75,3 +75,27 @@ python3 vmegc.py --ops
 `--ops` shows the table of the operations that a pe can run, and writes nothing. For each operation: how it is written, its opcode, the buffers or Staging variables it reads (`front`, `back`, or only `back`), and the FUs that can run it (any FU, or the primary one only). Under the table, the fields that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
 
 `--ops` goes alone, without a file or another option.
+
+## 1.6 CMake
+
+`cmake/vmegc.cmake` runs `vmegc` as a step of the build.
+
+```cmake
+include(cmake/vmegc.cmake)
+
+add_executable(app)
+vmegc_sources(app SOURCES kernels.vmeg.cpp main.vmeg.cpp)
+```
+
+- `vmegc_sources(target SOURCES …)` runs `vmegc` on all the files as one project ([1.2](#12-several-files)) and adds the generated files to the target. It needs CMake 3.11.
+- The generated files are written in the build directory, named after the sources ([1.1](#11-command-line)). They are generated again when a source changes.
+- For a single file that holds a kernel and the call of this kernel, `vmegc_translate` gives the path of the generated file, to use as any source:
+
+```cmake
+vmegc_translate(GENERATED_C saturate-clamp.vmeg.c)
+add_library(saturate-clamp OBJECT ${GENERATED_C})
+```
+
+- `vmegc` needs `python3`: CMake stops if it does not find it.
+
+The `samples` folder has a `CMakeLists.txt` for each sample.
