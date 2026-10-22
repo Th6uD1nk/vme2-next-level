@@ -162,14 +162,14 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 | [4.2](#42-parameters) | `pe0.top: 'count' is required` | an AGU without `count` |
 | [4.2](#42-parameters) | `pe0.top: unknown parameter 'foo' (count, offset, …)` | a name that is not a parameter of this kind of AGU, the message lists the ones that are |
 | [4.2](#42-parameters) | `pe0.top: duplicate parameter 'count'` | the same parameter written twice |
-| [4.2](#42-parameters) | `pe0.top: 'count' takes a value, not a list of parameters` | braces given to a parameter that takes a value |
+| [4.2](#42-parameters) | `pe0.top: 'count' takes a value, not parameters between braces` | braces given to a parameter that takes a value |
 | [4.2.1](#421-common-parameters) | `pe0.top: the offset 40000 is outside -32768 to 32767` | an `offset` that does not fit in 16 bits |
 | [4.2.1](#421-common-parameters) | `pe0.top: reverse takes true or false` | `reverse` with another value (same for `repeat` and `sync`) |
 | [4.2.2](#422-inner0) | `pe0.top: 'inner0' takes parameters between braces: inner0: { count: 15, step: 1 }` | `inner0` with a value |
 | [4.2.2](#422-inner0) | `pe0.top.inner0: unknown parameter 'foo' (count, step)` | a parameter of `inner0` other than `count` and `step` |
 | [4.2.2](#422-inner0) | `pe0.top.inner0: duplicate parameter 'count'` | the same parameter of `inner0` written twice |
 | [4.2.2](#422-inner0) | `pe0.top.inner0: 'step' is required` | `inner0` without `count` or without `step` |
-| [4.2.2](#422-inner0) | `a list of parameters cannot be nested more than one level` | braces inside the braces of `inner0` |
+| [4.2.2](#422-inner0) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `inner0` |
 | [4.2.3](#423-read-agus) | `pe0.top: repeat needs inner0, the range to repeat` | `repeat` without `inner0` |
 | [4.2.3](#423-read-agus) | `pe0.top: repeat works in the AGU mode 4` | `repeat` with a `mode` other than 4 |
 | [4.2.4](#424-write-agus) | `pe0.write: the bubbles 5000 are outside 0 to 4095` | `bubbles` out of range |
