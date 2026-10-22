@@ -119,7 +119,7 @@ def main(argv=None):
     parser.error("the input files are required")
 
   if args.output and len(args.inputs) != 1:
-    parser.error("-o goes with a single input file, every output is written next to its source")
+    parser.error("-o goes with a single input file, every output is written in the current directory")
 
   for path in args.inputs:
     if path.endswith(".vmeg.h"):
