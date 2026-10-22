@@ -164,11 +164,11 @@ The messages start with `line N:`, left out here.
 | [6.2](#62-operators) | `expected ';'` | an operator that is not supported, such as `/` |
 | [6.2](#62-operators) | `an operation is expected (an addition, sat or clamp)` | a statement that leaves, with a buffer alone instead of an operation |
 | [6.3.1](#631-clamp) | `clamp takes 3 arguments (value, low, high)` | `clamp` with another number of arguments |
-| [6.3.2](#632-subacst) | `subacst takes 3 arguments (front, back, b)` | `subacst` with another number of arguments |
-| [6.3.3](#633-subshr) | `subshr takes 3 arguments (front, back, n)` | `subshr` with another number of arguments |
+| [6.3.2](#632-subacst) | `subacst takes 3 arguments (a, b, c)` | `subacst` with another number of arguments |
+| [6.3.3](#633-subshr) | `subshr takes 3 arguments (a, b, n)` | `subshr` with another number of arguments |
 | [6.3.3](#633-subshr) | `the shift of subshr cannot be negative` | a negative `n` |
-| [6.3.4](#634-mac) | `mac takes 2 arguments (front, back)` | `mac` with another number of arguments |
-| [6.3.5](#635-acc) | `acc takes 1 argument (back)` | `acc` with another number of arguments |
+| [6.3.4](#634-mac) | `mac takes 2 arguments (a, b)` | `mac` with another number of arguments |
+| [6.3.5](#635-acc) | `acc takes 1 argument (x)` | `acc` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes a buffer or a Staging variable` | an operation inside `acc` |
 | [6.3](#63-functions) | `unknown operation 'foo' (sat, sub, subacst, subshr, mul, and, clamp, mac, acc)` | a function that does not exist |
 | [6.4](#64-sat-and-the-shifts) | `sat takes 2 arguments (value, bits)` | `sat` with another number of arguments |

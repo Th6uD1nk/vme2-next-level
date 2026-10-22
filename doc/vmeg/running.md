@@ -80,7 +80,7 @@ main.vmeg.cpp:95-95: @kernel add config | async, sub config | async, mul config 
 python3 vmegc.py --ops
 ```
 
-`--ops` shows the table of the operations that a pe can run, and writes nothing. For each operation: how it is written, its opcode, the buffers or Staging variables it reads (`front`, `back`, or only `back`), and the FUs that can run it (any FU, or the primary one only). Under the table, the fields that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
+`--ops` shows the table of the operations that a pe can run, and writes nothing. For each operation: how it is written, its opcode, the operands it reads (`a, b`, or `x`), and where it can stand in a pe (any position, or the first operation of the pe only). Under the table, the options that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
 
 `--ops` goes alone, without a file or another option.
 
