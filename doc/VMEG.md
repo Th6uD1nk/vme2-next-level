@@ -75,6 +75,8 @@ Details: [AGU variables](vmeg/agu.md)
 
 ## 5. Processing elements
 
+The VME has four processing elements, `pe0` to `pe3`. A pe reads its data through its read AGUs, runs an operation on its FUs and writes the result through its write AGU. A kernel describes each pe in a block: `.pe0 { … }`.
+
 Details: [Processing elements](vmeg/pe.md)
 
 ## 6. Operations
