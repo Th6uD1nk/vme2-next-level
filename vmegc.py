@@ -127,8 +127,12 @@ def main(argv=None):
 
   found = []
   for path in args.inputs:
-    with open(path, encoding="utf-8", newline="") as f:
-      text = f.read()
+    try:
+      with open(path, encoding="utf-8", newline="") as f:
+        text = f.read()
+    except OSError as e:
+      print(f"{path}: {e.strerror.lower()}", file=sys.stderr)
+      return 1
     try:
       found.append((path, text, find_blocks(text)))
     except ValueError as e:
