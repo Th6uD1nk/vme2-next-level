@@ -47,7 +47,7 @@ The body of a kernel is the same in both modes. The mode says where the register
 }
 ```
 
-Replace `direct` with `memory` and the same kernel is a memory kernel. The names of the operations (`OP_ADD`, …) come from `<me-core-mapper/vme-fu-opcodes.h>`: the file includes it.
+Replace `direct` with `memory` and the same kernel is a memory kernel. Your file must include `<me-core-mapper/vme-fu-opcodes.h>`: `vmegc` does not add it.
 
 ### 3.2.1 direct
 
