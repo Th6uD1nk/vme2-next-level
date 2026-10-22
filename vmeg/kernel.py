@@ -685,10 +685,10 @@ def generate(text, block, warnings=None):
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
     if state["routing"][slot][int(number)] == 4:
-      warn(state, line, f"{slot}{number} is read but no .{slot} is bound in pe{number}, it reads zero")
+      warn(state, line, f"{slot}{number} is read but no .{slot} is bound in pe{number} of this kernel")
   for pe, line in state["outputs"].items():
     if state["routing"]["write"][pe] == 4:
-      warn(state, line, f"pe{pe} has an operation but no .write is bound, its result stays in the staging")
+      warn(state, line, f"pe{pe} has an operation but no .write is bound in this kernel")
   for slot, nibbles in state["routing"].items():
     lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"]:
