@@ -38,3 +38,27 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 
 - `mul`, `mac` and `acc` cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
 - `acc` reads a buffer or a `Staging` variable only. `clamp` also reads an operation.
+
+## 6.2 Operators
+
+The operators `+`, `-`, `*` and `&` take two operands, each one a buffer or a `Staging` variable. A number or another operation is refused: keep the first result in a `Staging` variable, or wrap it in a function such as `clamp`.
+
+```c
+.pe0 { .top0 + base0; }
+.pe1 { .top1 - base1; }
+.pe2 { .top2 * base2 >> 8; }
+.pe3 { .top3 & base3; }
+```
+
+- `a + b` adds the two operands.
+- `a - b` subtracts `b` from `a`.
+- `a * b` multiplies them. A shift written after the product, `a * b >> 8`, is applied to the product ([6.4](#64-sat-and-the-shifts)).
+- `a & b` is the bitwise and.
+
+An operand can be the `Staging` variable of another operation:
+
+```c
+Staging s;
+
+.pe0 { s = top0 + top1; .top2 - s; }
+```
