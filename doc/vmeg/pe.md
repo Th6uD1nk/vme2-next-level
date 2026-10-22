@@ -6,7 +6,7 @@
 
 - [5.1 The pe block](#51-the-pe-block)
 - [5.2 What a block holds](#52-what-a-block-holds)
-- [5.3 The FUs of a pe](#53-the-fus-of-a-pe)
+- [5.3 Operations in a pe](#53-operations-in-a-pe)
 - [5.4 Errors](#54-errors)
 
 ## 5.1 The pe block
@@ -26,3 +26,54 @@ A kernel has four processing elements, `pe0` to `pe3`. Each one is described in 
 .pe0 { .top = t; .top0 + top0; }
 .pe0 { .write = w; }
 ```
+
+## 5.2 What a block holds
+
+```c
+Staging s;
+
+.pe0 {
+  Agu t = { count: 15 };
+  .top = t;
+  .write = { count: 15 };
+  s = top1 + top2;
+  .clamp(s, 0, 255);
+}
+```
+
+- The bindings of the AGUs: `.top`, `.base` and `.write` ([4.3](agu.md#43-binding-an-agu-to-a-pe)).
+- The operation of the pe, which starts with a dot: its result leaves on the write AGU (`.clamp(s, 0, 255);`). A pe has one.
+- An operation kept in a `Staging` variable, which starts with the name of the variable (`s = top1 + top2;`): the result stays in the pe and another operation can read it.
+- The declaration of an `Agu` or of a `Staging` variable for this block.
+- Currently not supported: `Int` and loops inside a pe block, write them around the block.
+
+## 5.3 Operations in a pe
+
+A pe holds at most two operations. An operation written inside another one counts for itself:
+
+```c
+Staging s;
+
+.pe0 { .top0 + top1; }
+.pe1 { .clamp(top0 + top1, 0, 255); }
+.pe2 { s = top0 + top1; .clamp(top2, 0, 255); }
+```
+
+- `pe0` holds one operation.
+- `pe1` holds two: the addition, inside the `clamp`.
+- `pe2` holds two: the one kept in `s`, and the one that leaves.
+- A third operation in the same pe is an error.
+- `sat` and the shifts `>>` and `<<` are not operations: they set the saturation and the shift of the operation they wrap, and are not counted. Currently not supported: the minus zero option.
+- `mul`, `mac` and `acc` cannot be the output operation of a pe when the pe holds more than one operation. They go through a `Staging` variable, or inside the output operation.
+
+```c
+Staging s, t;
+
+.pe0 { .clamp(mac(top0, top1), 0, 9); }
+.pe1 { s = mac(top0, top1); .clamp(s, 0, 9); }
+.pe2 { t = top0 + top1; .mac(top2, top3); }
+```
+
+`pe0` and `pe1` are accepted, `pe2` is refused.
+
+The operations are described in [Operations](operations.md).
