@@ -259,6 +259,8 @@ def generate_agu(target, params, env, state, at, line):
     if value[0] == "params":
       raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not a list of parameters")
     if has_auto(value):
+      if key != "cyc":
+        raise ValueError(f"pe{pe}.{agu}: auto is only for cyc")
       values[key] = AUTO
       state["autos"].append({"pe": pe, "expr": value, "env": env, "at": at, "line": line})
       continue
@@ -489,6 +491,8 @@ def place(state, lines, pe, operations, line):
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "int":
+    if statement[1] == "auto":
+      raise ValueError("auto is reserved for the cyc of a write AGU")
     if statement[1] in env and statement[1] not in state["macros"]:
       raise ValueError(f"'{statement[1]}' is defined twice")
     env[statement[1]] = full_value(statement[2], env)
