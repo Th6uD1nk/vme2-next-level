@@ -27,6 +27,8 @@ Details: [Running vmegc](vmeg/running.md)
 
 ## 2. The language
 
+A vmeg file is C or C++ with a few extra constructs, written in three forms: attributes with a leading dot (`.kernel`, `.pe0`, `.load`), typed variables without a dot (`Agu`, `Staging`, `Transfer`, `Int`), and accesses by index (`pe[1]`, `top[2]`). A number comes from a literal, from an `Int` or from a macro of the file.
+
 Details: [The language](vmeg/language.md)
 
 ## 3. The kernel
