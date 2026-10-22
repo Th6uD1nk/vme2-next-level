@@ -87,6 +87,8 @@ Details: [Operations](vmeg/operations.md)
 
 ## 7. Staging, routing and warnings
 
+A `Staging` variable keeps the result of an operation in a pe, so that another operation can read it. `vmegc` works out by itself how the AGUs and the results are connected, from the bindings and the operations, and it warns when something is likely wrong, such as a buffer that is read without an AGU.
+
 Details: [Staging, routing and warnings](vmeg/staging-routing.md)
 
 ## 8. Arrays
