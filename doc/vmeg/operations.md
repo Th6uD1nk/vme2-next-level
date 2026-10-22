@@ -144,4 +144,4 @@ Staging s;
 - `sat` and the shifts wrap an operation: `sat(top0, 7)` and `top0 >> 2` are refused.
 - An operation takes one `sat` and one shift. When both are used, the shift goes after the `sat`: `sat(x, 7) >> 2`.
 - A shift after a product, `a * b >> 8`, is the shift of the product ([6.2](#62-operators)).
-- Currently not supported: the minus zero option.
+- Currently not supported: the signed zero option.

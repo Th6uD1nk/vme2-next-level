@@ -63,7 +63,7 @@ Staging s;
 - `pe1` holds two: the addition, inside the `clamp`.
 - `pe2` holds two: the one kept in `s`, and the one that leaves.
 - A third operation in the same pe is an error.
-- `sat` and the shifts `>>` and `<<` are not operations: they set the saturation and the shift of the operation they wrap, and are not counted. Currently not supported: the minus zero option.
+- `sat` and the shifts `>>` and `<<` are not operations: they set the saturation and the shift of the operation they wrap, and are not counted. Currently not supported: the signed zero option.
 - `mul`, `mac` and `acc` cannot be the output operation of a pe when the pe holds more than one operation. They go through a `Staging` variable, or inside the output operation.
 
 ```c
