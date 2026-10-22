@@ -208,7 +208,7 @@ def parse_params(p, nested=False):
         tok = p.peek()
         if tok is not None and tok[1] == "{":
           if nested:
-            p.error("a list of parameters cannot be nested more than one level", tok)
+            p.error("braces cannot be nested more than one level inside the parameters", tok)
           value = parse_params(p, True)
         else:
           value = parse_expr(p)
