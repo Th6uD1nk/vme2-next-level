@@ -28,7 +28,7 @@ An attribute is a named member of a kernel. It starts with a dot. Its content is
 | `.load { }`, `.store { }` | a DMAC transfer | [Transfers](transfers.md) |
 | `.offsets { }` | the scratchpad offsets of a transfer | [Transfers](transfers.md) |
 
-A member of an attribute has one of two forms: `.member = variable;` or `.member { … }`. An operation of a pe starts with a dot too. A variable can be replaced by its fields written in place.
+A member of an attribute has one of two forms: `.member = variable;` or `.member { … }`. The operation of a pe whose result leaves on the write starts with a dot too (`.top0 + base0;`); an operation kept in a `Staging` variable is written without it (`s = top0 + base0;`). A variable can be replaced by its fields written in place.
 
 ```c
 .pe0 { .top = t; .write = { count: 15 }; .top0 + base0; }
