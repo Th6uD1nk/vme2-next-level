@@ -115,3 +115,36 @@ Agu d = { count: 15, cyc: auto + shift };
 - A shift is written after `auto`: `auto - 1`, `auto + 1`, or `auto` plus or minus an `Int` or a macro. It uses the same expressions as the rest of the language, and it is the way to read an element other than the first one, for example the fourth element of each group of a `mac`.
 - `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it.
 - The rule is checked for one and two FUs. Three chained FUs (12) and a Staging variable read by another pe are not yet verified on the hardware.
+
+## 4.3 Binding an AGU to a pe
+
+An AGU is bound to a pe in the block of the pe, with `.top`, `.base` or `.write`:
+
+```c
+Agu t = { count: 15 }, w = { count: 15 };
+
+.pe0 { .top = t; .write = w; }
+.pe1 { .top = { count: 15 }; }
+```
+
+- `.top` and `.base` bind a read AGU, `.write` binds a write AGU. A pe has one AGU of each of the three.
+- The AGU is an `Agu` variable (`.top = t;`), or its parameters written directly in braces (`.top = { count: 15 };`).
+- The pe is written `pe0` to `pe3`, or `pe[p]` with a number or a loop variable.
+- Each of the three can be set once in a pe.
+- An `Agu` variable is bound to one kind only: the same variable cannot be given to `.top` and to `.base`.
+
+### 4.3.1 Sharing an AGU
+
+An `Agu` variable that several pes bind is **one** AGU. It belongs to the first pe that binds it, its parameters are written once, and the other pes read or write through it: they get the same addresses.
+
+```c
+Agu t = { count: 15 };
+Agu w = { count: 15 };
+
+for p in 0..3 {
+  pe[p] { .top = t; .write = w; .top0 + top0; }
+}
+```
+
+- Sharing is the way to give the same stream to several pes. With the parameters written directly in each pe, every pe has its own AGU.
+- The owner pe is also the pe that `cyc: auto` looks at ([4.2.4](#424-write-agus)).
