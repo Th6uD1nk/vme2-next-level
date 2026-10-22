@@ -148,3 +148,33 @@ for p in 0..3 {
 
 - Sharing is the way to give the same stream to several pes. With the parameters written directly in each pe, every pe has its own AGU.
 - The owner pe is also the pe that `cyc: auto` looks at ([4.2.4](#424-write-agus)).
+
+## 4.4 Errors
+
+The parameters of an `Agu` variable are checked when a pe binds it, so the messages name the pe (`pe0.top`). The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [4.1](#41-declaring-an-agu) | `the Agu variable 'a' is declared twice` | two `Agu` with the same name |
+| [4.1](#41-declaring-an-agu) | `'a' is already declared as a Staging variable` | the name belongs to a Staging variable (or `a Transfer variable`) |
+| [4.2](#42-parameters) | `pe0.top: 'count' is required` | an AGU without `count` |
+| [4.2](#42-parameters) | `pe0.top: unknown parameter 'foo' (count, offset, …)` | a name that is not a parameter of this kind of AGU, the message lists the ones that are |
+| [4.2](#42-parameters) | `pe0.top: duplicate parameter 'count'` | the same parameter written twice |
+| [4.2](#42-parameters) | `pe0.top: 'count' takes a value, not a list of parameters` | braces given to a parameter that takes a value |
+| [4.2.1](#421-common-parameters) | `pe0.top: the offset 40000 is outside -32768 to 32767` | an `offset` that does not fit in 16 bits |
+| [4.2.1](#421-common-parameters) | `pe0.top: reverse takes true or false` | `reverse` with another value (same for `repeat` and `sync`) |
+| [4.2.2](#422-inner0) | `pe0.top: 'inner0' takes parameters between braces: inner0: { count: 15, step: 1 }` | `inner0` with a value |
+| [4.2.2](#422-inner0) | `pe0.top.inner0: unknown parameter 'foo' (count, step)` | a parameter of `inner0` other than `count` and `step` |
+| [4.2.2](#422-inner0) | `pe0.top.inner0: duplicate parameter 'count'` | the same parameter of `inner0` written twice |
+| [4.2.2](#422-inner0) | `pe0.top.inner0: 'step' is required` | `inner0` without `count` or without `step` |
+| [4.2.2](#422-inner0) | `a list of parameters cannot be nested more than one level` | braces inside the braces of `inner0` |
+| [4.2.3](#423-read-agus) | `pe0.top: repeat needs inner0, the range to repeat` | `repeat` without `inner0` |
+| [4.2.3](#423-read-agus) | `pe0.top: repeat works in the AGU mode 4` | `repeat` with a `mode` other than 4 |
+| [4.2.4](#424-write-agus) | `pe0.write: the bubbles 5000 are outside 0 to 4095` | `bubbles` out of range |
+| [4.2.4](#424-write-agus) | `pe0.write: auto is only for cyc` | `auto` in a parameter other than `cyc` |
+| [4.2.4](#424-write-agus) | `auto is reserved for the cyc of a write AGU` | an `Int` named `auto` |
+| [4.2.4](#424-write-agus) | `pe0.write: cyc auto needs an operation in pe0` | `cyc: auto` on a pe without an operation that leaves it |
+| [4.3](#43-binding-an-agu-to-a-pe) | `unknown Agu variable 'zzz'` | `.top = zzz;` with a name that is not an `Agu` |
+| [4.3](#43-binding-an-agu-to-a-pe) | `pe0.top is already set at line N` | the same AGU kind set twice in a pe |
+| [4.3](#43-binding-an-agu-to-a-pe) | `the Agu variable 'a' is already bound to .top, it cannot be bound to .base` | one variable given to two kinds |
+| [4.3](#43-binding-an-agu-to-a-pe) | `pe6: processing element out of range (pe0 to pe3)` | a pe number above 3 |
