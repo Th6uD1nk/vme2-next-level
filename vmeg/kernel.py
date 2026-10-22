@@ -433,8 +433,14 @@ def staging_refs(state):
   return {name: f"STAGING_{variable['pe'] + 4 * variable['unit']}" if "pe" in variable else None for name, variable in state["stagings"].items()}
 
 
+def staging_depths(state):
+  return {f"STAGING_{variable['pe'] + 4 * variable['unit']}": variable["depth"] for variable in state["stagings"].values() if "pe" in variable}
+
+
 def place(state, lines, pe, operations, line):
   used = state["fus"].get(pe, 0)
+  depths = staging_depths(state)
+  depth = 0
   if used + len(operations) > 2:
     raise ValueError(f"a pe has two FUs, this pe needs {used + len(operations)} operations")
   for operation in operations:
@@ -455,6 +461,7 @@ def place(state, lines, pe, operations, line):
     for ref in reads:
       if not ref.startswith("STAGING"):
         state["reads"].setdefault(ref, line)
+    depth = max([depth] + [depths.get(ref, 0) for ref in reads]) + 1
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
     if operation.get("shift"):
       sat += f", {operation['shift']}"
@@ -464,7 +471,7 @@ def place(state, lines, pe, operations, line):
     if operation["kind"] == "clamp":
       lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
       lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")
-  return number
+  return number, depth
 
 
 def emit_statement(statement, env, lines, state):
@@ -550,8 +557,9 @@ def emit_statement(statement, env, lines, state):
     if (pe, "operation") in state["set"]:
       raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
-    last = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state)), statement[-1])
+    last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state)), statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
+    state["depths"][pe] = depth
     if last == 1:
       state["secondary"].add(pe)
   elif kind == "stageset":
@@ -564,8 +572,8 @@ def emit_statement(statement, env, lines, state):
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
     pe = target_pe(statement[1], env)
-    last = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state)), statement[-1])
-    variable.update({"pe": pe, "unit": last, "line": statement[-1]})
+    last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state)), statement[-1])
+    variable.update({"pe": pe, "unit": last, "line": statement[-1], "depth": depth})
   elif kind == "peblock":
     for inner in statement[1]:
       emit(inner, env, lines, state)
@@ -576,7 +584,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}}
 
 
 def new_env(macros=None):
