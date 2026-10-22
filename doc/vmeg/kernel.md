@@ -128,4 +128,5 @@ icn xpcr = 5, skew = 0x10;
 | [3.3.2](#332-scope-of-the-variables) | `unknown Agu variable 't'` | a variable of another kernel (the message names the type) |
 | [3.4](#34-interconnect-registers) | `duplicate interconnect 'xpcr'` | the same register written twice |
 | [3.4](#34-interconnect-registers) | `unknown interconnect 'foo' (xpcr, skew)` | a register other than `xpcr` and `skew` |
+| [3.1](#31-header) | `a kernel is written at the top level of a file, not inside a function` | a `.kernel` or a `.context` written inside a function |
 | [3.1](#31-header) | `unterminated block` | a `{` of a kernel that is never closed |
