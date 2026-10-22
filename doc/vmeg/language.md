@@ -72,3 +72,42 @@ Int n = 1, m = n + 1;
 ### 2.2.2 Names
 
 `Agu`, `Staging`, `Transfer` and `Int` share one set of names: a name is declared once, whatever its type. A variable is declared before the statement that uses it, in the kernel or in the block where it is used.
+
+## 2.3 Accesses by index
+
+An access by index starts with no dot: `pe[p]`, `top[t]`, `base[b]`. The index is a number from 0 to 3, or an `Int`, a loop variable or an expression of those.
+
+| Written | Same as |
+|---|---|
+| `pe[1] { … }` | `.pe1 { … }` |
+| `pe[1].top = t;` | `.pe1.top = t;` |
+| `top[2] = 8;` in a `.offsets` | `.top2 = 8;` |
+
+```c
+for p in 0..3 {
+  pe[p] { .top = t; .top0 + top0; }
+}
+```
+
+| Error | Cause |
+|---|---|
+| `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 |
+| `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 |
+
+## 2.4 Int
+
+`Int name = expression;` names a number known at compile time. It writes no code. Where the name is used, its number is used instead: in the fields of an `Agu` or of a `Transfer`, in the offsets, in an index, in the bounds of a loop, in another `Int`.
+
+```c
+Int last = 3;
+Agu x = { count: last };
+for p in 0..last {
+  pe[p] { .top = x; .top0 + top0; }
+}
+```
+
+An `Int` can be written in a kernel, in a `@kernel` block and in the body of a loop. How an expression is computed is in [2.5](#25-expressions), and what happens when a part of it is not known in [2.6](#26-numbers-macros-and-unknown-names).
+
+| Error | Cause |
+|---|---|
+| `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
