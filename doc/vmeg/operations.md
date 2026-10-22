@@ -62,3 +62,37 @@ Staging s;
 
 .pe0 { s = top0 + top1; .top2 - s; }
 ```
+
+## 6.3 Functions
+
+A function is written like an operator, with its operands between parentheses. The numbers it takes are known at compile time.
+
+### 6.3.1 clamp
+
+`clamp(x, low, high)` limits `x` between `low` and `high`. `x` is a buffer, a `Staging` variable or an operation.
+
+```c
+Staging s;
+
+.pe0 { .clamp(top0, 0, 255); }
+.pe1 { .clamp(top0 + base0, 0, 255); }
+.pe2 { s = top0 + base0; .clamp(s, -5, 5); }
+```
+
+### 6.3.2 subacst
+
+`subacst(a, b, c)` computes `(a - b) + c`. `a` and `b` are buffers or `Staging` variables, `c` is a number.
+
+```c
+.pe0 { .subacst(top0, base0, 16); }
+```
+
+### 6.3.3 subshr
+
+`subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number that cannot be negative.
+
+```c
+.pe0 { .subshr(top0, base0, 2); }
+```
+
+The sign of the result and the place of `n` are not yet verified on the hardware.
