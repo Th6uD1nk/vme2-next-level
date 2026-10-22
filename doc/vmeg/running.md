@@ -48,3 +48,30 @@ main.vmeg.cpp: line 7: warning: pe0 has an operation but no .write is bound, its
 - An error stops `vmegc` with the exit code 1. Nothing is written, even for the files that have no error.
 - A warning does not stop `vmegc`: the files are written and the exit code is 0. The warnings are printed once all the files are translated.
 - The generated code keeps the lines of the `.vmeg` file, so the errors of the C or C++ compiler name the line of the file you wrote.
+
+## 1.4 --list
+
+```
+python3 vmegc.py --list main.vmeg.cpp
+```
+
+`--list` shows the kernels and the `@kernel` of the files, one line each, and writes nothing:
+
+```
+main.vmeg.cpp:34-37: .kernel add memory
+main.vmeg.cpp:88-88: @kernel add build, sub build, mul build
+main.vmeg.cpp:95-95: @kernel add config | async, sub config | async, mul config | async
+```
+
+- A line is the file, the first and the last line of the block, and its header.
+- The kernels and their calls are checked before the list: an error of these is shown instead of it.
+
+## 1.5 --ops
+
+```
+python3 vmegc.py --ops
+```
+
+`--ops` shows the table of the operations that a pe can run, and writes nothing. For each operation: how it is written, its opcode, the buffers or Staging variables it reads (`front`, `back`, or only `back`), and the FUs that can run it (any FU, or the primary one only). Under the table, the fields that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
+
+`--ops` goes alone, without a file or another option.
