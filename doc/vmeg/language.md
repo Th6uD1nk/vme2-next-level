@@ -184,6 +184,8 @@ writes the same as `pe[0] { .top = t; .top0 + top0; }` followed by `pe[1] { .top
 
 This is not the C `for (…)`, which stays C code.
 
+An `Int` declared in the body is computed again at each turn. An `Agu`, a `Staging` or a `Transfer` declared in the body is declared again at each turn, which fails at the second one: currently, declare it before the loop.
+
 ## 2.8 Synonyms
 
 `context` is a synonym of `kernel`.
@@ -211,4 +213,5 @@ The block form `@context name config { }` inside a function is currently not sup
 | [2.6](#26-numbers-macros-and-unknown-names) | `processing element index must be a number` | an unknown part in the index of a pe |
 | [2.6](#26-numbers-macros-and-unknown-names) | `for p: bounds must be numbers` | an unknown part in the bounds of a loop |
 | [2.6](#26-numbers-macros-and-unknown-names) | `'call' expression not supported here` | a macro with parameters used like a function, `F(3)`: currently not supported |
+| [2.7](#27-loops) | `the Agu variable 'x' is declared twice` | an `Agu`, a `Staging` or a `Transfer` declared in the body of a loop with two turns or more (currently not supported) |
 | [2.8](#28-synonyms) | `inside a function only '@kernel name { ... }' is accepted` | the block form of `@context` |
