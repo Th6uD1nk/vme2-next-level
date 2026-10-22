@@ -123,3 +123,25 @@ Staging s;
 
 - It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
 - The `mat4x4` sample reads the 4th word of each group of a `mac`, with `cyc: auto - 1` ([4.2.4](agu.md#424-write-agus)).
+
+## 6.4 sat and the shifts
+
+`sat` and the shifts are not operations of their own: they set the saturation and the shift of the operation they wrap.
+
+```c
+.pe0 { .sat(top0 + base0, 7); }
+.pe1 { .top1 + base1 >> 2; }
+.pe2 { .sat(top2 + base2, 7) >> 2; }
+.pe3 { .top3 + base3 << 4; }
+```
+
+| Form | Meaning |
+|---|---|
+| `sat(op, bits)` | limits the result of `op` to `bits` bits, signed: from `-2^(bits-1)` to `2^(bits-1)-1`. `bits` is from 0 to 31, and 0 means no saturation |
+| `op >> n` | shifts the result of `op` to the right by `n`, from 0 to 63 |
+| `op << n` | the rotary shift by `n`, from 0 to 63 |
+
+- `sat` and the shifts wrap an operation: `sat(top0, 7)` and `top0 >> 2` are refused.
+- An operation takes one `sat` and one shift. When both are used, the shift goes after the `sat`: `sat(x, 7) >> 2`.
+- A shift after a product, `a * b >> 8`, is the shift of the product ([6.2](#62-operators)).
+- Currently not supported: the minus zero option.
