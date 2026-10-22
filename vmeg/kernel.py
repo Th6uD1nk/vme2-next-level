@@ -157,27 +157,27 @@ def flatten(expr, stagings):
       source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
     if name == "acc":
-      if len(args) != len(OPERATIONS["acc"]["operands"]):
-        raise ValueError(f"acc takes 1 argument ({', '.join(OPERATIONS['acc']['operands'])})")
+      if len(args) != len(OPERATIONS["acc"]["reads"]):
+        raise ValueError(f"acc takes 1 argument ({', '.join(OPERATIONS['acc']['reads'])})")
       source, operations = split_source(args[0], stagings)
       if operations:
         raise ValueError("acc takes a buffer or a Staging variable")
       return [{"kind": "acc", "source": source, "sat": None}]
     if name == "subacst":
       if len(args) != 3:
-        raise ValueError("subacst takes 3 arguments (front, back, b)")
+        raise ValueError("subacst takes 3 arguments (a, b, c)")
       constant_b = constant(args[2], "the constant of subacst")
       return [{"kind": "subacst", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": constant_b, "sat": None}]
     if name == "subshr":
       if len(args) != 3:
-        raise ValueError("subshr takes 3 arguments (front, back, n)")
+        raise ValueError("subshr takes 3 arguments (a, b, n)")
       amount = constant(args[2], "the shift of subshr")
       if amount < 0:
         raise ValueError("the shift of subshr cannot be negative")
       return [{"kind": "subshr", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": amount, "sat": None}]
     if name == "mac":
-      if len(args) != len(OPERATIONS["mac"]["operands"]):
-        raise ValueError(f"mac takes 2 arguments ({', '.join(OPERATIONS['mac']['operands'])})")
+      if len(args) != len(OPERATIONS["mac"]["reads"]):
+        raise ValueError(f"mac takes 2 arguments ({', '.join(OPERATIONS['mac']['reads'])})")
       return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat'] + [kind for kind in OPERATIONS if kind != 'add'])})")
   if kind == "bin":
