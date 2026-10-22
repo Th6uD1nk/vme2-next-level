@@ -81,6 +81,8 @@ Details: [Processing elements](vmeg/pe.md)
 
 ## 6. Operations
 
+A pe computes with operators (`+`, `-`, `*`, `&`) and with functions (`clamp`, `mac`, `acc`, `subacst`, `subshr`). `sat` and the shifts `>>` and `<<` adjust the operation they wrap. `vmegc --ops` shows the table of all of them.
+
 Details: [Operations](vmeg/operations.md)
 
 ## 7. Staging, routing and warnings
