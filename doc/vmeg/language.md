@@ -141,3 +141,50 @@ Currently not supported: `/`, `%`, `|`, `~` and the comparisons.
 | Error | Cause |
 |---|---|
 | `invalid number '010'` | a number with a leading zero |
+
+## 2.6 Numbers, macros and unknown names
+
+A value is a **number** when everything it uses is known: literals, `Int` names, loop variables and the trusted macros of the file ([2.6.1](#261-trusted-macros)). `vmegc` computes it and writes the number.
+
+When one part is not known (a macro of a header, a variable of the function, a macro that is not trusted), the **whole expression** is copied as C text between parentheses. The known parts are replaced by their value. The C compiler then computes it.
+
+| Written | Generated |
+|---|---|
+| `count: N - 1`, with `#define N 16` before the kernel | `0xf` |
+| `count: N - 1`, `N` not known | `(N - 1)` |
+| `count: N + HEADER`, with `#define N 16` before the kernel | `(16 + HEADER)` |
+| `count: HEADER` | `HEADER` |
+| `Int n = HEADER * 2;` then `count: n + 1` | `((HEADER * 2) + 1)` |
+
+The text is copied in the fields of an `Agu` and of a `Transfer`, in the offsets and in an `Int`. In the function generated for a transfer, each unknown name of the text becomes a parameter, see [Transfers](transfers.md).
+
+Where a register needs a constant, an unknown part is an error: the constants of the functions of a pe and the shifts (each one is listed in [Operations](operations.md)), an index, the bounds of a loop.
+
+| Error | Cause |
+|---|---|
+| `processing element index must be a number` | an unknown part in the index of a pe |
+| `for p: bounds must be numbers` | an unknown part in the bounds of a loop |
+| `'call' expression not supported here` | a macro with parameters used like a function, `F(3)`: currently not supported |
+
+### 2.6.1 Trusted macros
+
+A macro of the file is trusted when all of these are true:
+
+- it is defined **once** in the file;
+- it is defined **before** the kernel or the block that uses it;
+- it is **outside** any `#if`, `#ifdef`, `#ifndef` and `#else`;
+- it has **no parameters**;
+- it is never `#undef`ed;
+- its body is a number or an expression whose parts are known, which includes other trusted macros.
+
+A macro that is not trusted is an unknown name.
+
+| Case | `count: N - 1` gives |
+|---|---|
+| `#define N 16` | `0xf` |
+| `#define A 4`, `#define B (A * 2)`, then `B - 1` | `7` |
+| `N` defined after the kernel | `(N - 1)` |
+| `N` defined twice | `(N - 1)` |
+| `N` defined inside `#ifdef` | `(N - 1)` |
+| `N` defined, then `#undef N` | `(N - 1)` |
+| `#define N (3 + )`, a body that is not an expression | `(N - 1)` |
