@@ -96,3 +96,30 @@ Staging s;
 ```
 
 The sign of the result and the place of `n` are not yet verified on the hardware.
+
+### 6.3.4 mac
+
+`mac(a, b)` is a running inner product: at each word it adds `a * b` to the sum of the previous words. The result is a ramp of partial sums, and the result of a product of 4 elements is the 4th word of each group of 4. `a` and `b` are buffers or `Staging` variables.
+
+```c
+Staging s;
+
+.pe0 { s = mac(top0, top1); }
+```
+
+- A shift written after it, `mac(top0, top1) >> 4`, is applied to the result ([6.4](#64-sat-and-the-shifts)).
+- It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
+
+### 6.3.5 acc
+
+`acc(x)` is a running sum: each word adds `x` to the previous ones. For the words 1 2 3 4 it gives 1 3 6 10. `x` is a buffer or a `Staging` variable.
+
+```c
+Staging s;
+
+.pe0 { s = mac(top0, top1); }
+.pe1 { .acc(s); }
+```
+
+- It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
+- The `mat4x4` sample reads the 4th word of each group of a `mac`, with `cyc: auto - 1` ([4.2.4](agu.md#424-write-agus)).
