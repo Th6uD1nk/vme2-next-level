@@ -9,7 +9,7 @@ A quick example, a kernel that adds two buffers and the function that runs it:
 ```c
 // main.vmeg.cpp
 .kernel add direct {
-  Agu t = { count: 15 }, b = { count: 15 }, w = { count: 15, cyc: 6 };
+  Agu t = { count: 15 }, b = { count: 15 }, w = { count: 15, cyc: auto };
   .pe0 { .top = t; .base = b; .write = w; .top0 + base0; }
 }
 

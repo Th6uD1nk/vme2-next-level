@@ -40,7 +40,7 @@ The body of a kernel is the same in both modes. The mode says where the register
 
 ```c
 .kernel add direct {
-  Agu t = { count: 15 }, w = { count: 15, cyc: 6 };
+  Agu t = { count: 15 }, w = { count: 15, cyc: auto };
   .pe0 { .top = t; .write = w; .top0 + top0; }
 }
 ```
