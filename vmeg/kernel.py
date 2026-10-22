@@ -498,6 +498,9 @@ def emit_statement(statement, env, lines, state):
     env[statement[1]] = full_value(statement[2], env)
   elif kind == "icn":
     for icn, value in statement[1]:
+      if icn in state["icn"]:
+        raise ValueError(f"duplicate interconnect '{icn}'")
+      state["icn"].add(icn)
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(full_value(value, env))});")
   elif kind == "agu":
     pe = target_pe(statement[1], env)
@@ -600,7 +603,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": []}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set()}
 
 
 def new_env(macros=None):
