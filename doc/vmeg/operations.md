@@ -145,3 +145,31 @@ Staging s;
 - An operation takes one `sat` and one shift. When both are used, the shift goes after the `sat`: `sat(x, 7) >> 2`.
 - A shift after a product, `a * b >> 8`, is the shift of the product ([6.2](#62-operators)).
 - Currently not supported: the signed zero option.
+
+## 6.5 Errors
+
+The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [6.1](#61-operands-and-results) | `an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable` | an operand that is a number or another operation |
+| [6.1](#61-operands-and-results) | `the Staging variable 's' is read before it is set` | a `Staging` variable read before the statement that sets it |
+| [6.1](#61-operands-and-results) | `clamp low must be a number` | a bound, a constant or a shift that is not a number known at compile time. The message names it: `clamp high`, `the constant of subacst`, `the shift of subshr`, `sat bits`, `the shift` |
+| [6.2](#62-operators) | `expected ';'` | an operator that is not supported, such as `/` |
+| [6.2](#62-operators) | `an operation is expected (an addition, sat or clamp)` | a statement that leaves, with a buffer alone instead of an operation |
+| [6.3.1](#631-clamp) | `clamp takes 3 arguments (value, low, high)` | `clamp` with another number of arguments |
+| [6.3.2](#632-subacst) | `subacst takes 3 arguments (front, back, b)` | `subacst` with another number of arguments |
+| [6.3.3](#633-subshr) | `subshr takes 3 arguments (front, back, n)` | `subshr` with another number of arguments |
+| [6.3.3](#633-subshr) | `the shift of subshr cannot be negative` | a negative `n` |
+| [6.3.4](#634-mac) | `mac takes 2 arguments (front, back)` | `mac` with another number of arguments |
+| [6.3.5](#635-acc) | `acc takes 1 argument (back)` | `acc` with another number of arguments |
+| [6.3.5](#635-acc) | `acc takes a buffer or a Staging variable` | an operation inside `acc` |
+| [6.3](#63-functions) | `unknown operation 'foo' (sat, sub, subacst, subshr, mul, and, clamp, mac, acc)` | a function that does not exist |
+| [6.4](#64-sat-and-the-shifts) | `sat takes 2 arguments (value, bits)` | `sat` with another number of arguments |
+| [6.4](#64-sat-and-the-shifts) | `sat bits out of range (0 to 31)` | `bits` above 31 |
+| [6.4](#64-sat-and-the-shifts) | `sat must wrap an operation` | `sat` on a buffer or a `Staging` variable |
+| [6.4](#64-sat-and-the-shifts) | `an operation takes only one sat` | two `sat` on the same operation |
+| [6.4](#64-sat-and-the-shifts) | `the shift goes after the sat: sat(x, n) >> k` | a shift inside the `sat` |
+| [6.4](#64-sat-and-the-shifts) | `a shift must wrap an operation` | `>>` or `<<` on a buffer or a `Staging` variable |
+| [6.4](#64-sat-and-the-shifts) | `the shift must be 0 to 63` | a shift above 63 |
+| [6.4](#64-sat-and-the-shifts) | `an operation takes only one shift` | two shifts on the same operation |
