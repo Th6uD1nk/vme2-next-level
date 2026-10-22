@@ -33,6 +33,8 @@ Details: [The language](vmeg/language.md)
 
 ## 3. The kernel
 
+A kernel is the description of what the VME computes: `.kernel name mode { … }`. Its body holds the address generators, the processing elements and the transfers. The mode says where its registers are written: `direct` writes them in the VME, `memory` writes them in a context in RAM that is sent to the VME.
+
 Details: [The kernel](vmeg/kernel.md)
 
 ## 4. AGU variables
