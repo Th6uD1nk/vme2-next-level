@@ -161,13 +161,19 @@ def main(argv=None):
 
   results = []
   warnings = []
+  named = {}
   for path, text, blocks in found:
     try:
       result = translate(text, blocks, path, registry, warnings)
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
-    results.append((args.output or default_output(path), result))
+    output = args.output or default_output(path)
+    if output in named:
+      print(f"{path}: the output '{output}' is already the output of {named[output]}", file=sys.stderr)
+      return 1
+    named[output] = path
+    results.append((output, result))
 
   for path, line, message in warnings:
     print(f"{path}: line {line}: warning: {message}", file=sys.stderr)
