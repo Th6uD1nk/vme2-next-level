@@ -23,6 +23,8 @@
 }
 ```
 
+**Explanation of the code above:**
+
 - `name` is the name of the kernel. It is unique in the project: two kernels with the same name, in the same file or in two files, are an error.
 - `mode` is `direct` or `memory` ([3.2](#32-modes)). It is compulsory and there is only one.
 - A kernel is written at the top level of a file, not inside a function. `.context` is a synonym of `.kernel` ([2.8](language.md#28-synonyms)).

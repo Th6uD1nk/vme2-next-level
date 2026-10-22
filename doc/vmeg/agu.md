@@ -20,6 +20,8 @@
 Agu name = { count: 15 };
 ```
 
+**Rules:**
+
 - An `Agu` is declared in a kernel, or in the block of a pe.
 - The parameters are written in braces, each one with `:` between its name and its value ([2.2](language.md#22-variables)).
 - A value is a number, an `Int`, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)).
@@ -84,6 +86,8 @@ A read AGU is bound with `.top` or `.base`. It takes the common parameters and `
 Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
 ```
 
+**Rules:**
+
 - `repeat` needs `inner0`.
 - It works in the mode 4, the default mode.
 - Currently not supported: `repeat` together with `reverse`.
@@ -113,8 +117,13 @@ Agu c = { count: 15, cyc: auto - 1 };
 Agu d = { count: 15, cyc: auto + shift };
 ```
 
+**Explanation of the code above:**
+
 - `auto` lets vmeg work out the number, so that the stream is aligned on the first element that leaves the pe. A FU takes 3 cycles to write its result and the write to the buffer takes 3 more: one FU gives 6, two chained FUs give 9. A FU that reads a Staging variable comes after the FU that set it, so the chain goes across the pes. `mac` and `acc` count like the other FUs.
 - A shift is written after `auto`: `auto - 1`, `auto + 1`, or `auto` plus or minus an `Int` or a macro. It uses the same expressions as the rest of the language, and it is the way to read an element other than the first one, for example the fourth element of each group of a `mac`.
+
+**Rules:**
+
 - `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it.
 - The rule is checked for one and two FUs. Three chained FUs (12) and a Staging variable read by another pe are not yet verified on the hardware.
 
@@ -128,6 +137,8 @@ Agu t = { count: 15 }, w = { count: 15 };
 .pe0 { .top = t; .write = w; }
 .pe1 { .top = { count: 15 }; }
 ```
+
+**Rules:**
 
 - `.top` and `.base` bind a read AGU, `.write` binds a write AGU. A pe has one AGU of each of the three.
 - The AGU is an `Agu` variable (`.top = t;`), or its parameters written directly in braces (`.top = { count: 15 };`).
@@ -147,6 +158,8 @@ for p in 0..3 {
   pe[p] { .top = t; .write = w; .top0 + top0; }
 }
 ```
+
+**Rules:**
 
 - Sharing is the way to give the same stream to several pes. With the parameters written directly in each pe, every pe has its own AGU.
 - The owner pe is also the pe that `cyc: auto` looks at ([4.2.4](#424-write-agus)).

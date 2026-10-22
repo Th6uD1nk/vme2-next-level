@@ -50,6 +50,8 @@ The operators `+`, `-`, `*` and `&` take two operands, each one a buffer or a `S
 .pe3 { .top3 & base3; }
 ```
 
+**Explanation of the code above:**
+
 - `a + b` adds the two operands.
 - `a - b` subtracts `b` from `a`.
 - `a * b` multiplies them. A shift written after the product, `a * b >> 8`, is applied to the product ([6.4](#64-sat-and-the-shifts)).
@@ -107,6 +109,8 @@ Staging s;
 .pe0 { s = mac(top0, top1); }
 ```
 
+**Rules:**
+
 - A shift written after it, `mac(top0, top1) >> 4`, is applied to the result ([6.4](#64-sat-and-the-shifts)).
 - It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
 
@@ -120,6 +124,8 @@ Staging s;
 .pe0 { s = mac(top0, top1); }
 .pe1 { .acc(s); }
 ```
+
+**Rules:**
 
 - It cannot be the output operation of a pe that holds more than one operation ([5.3](pe.md#53-operations-in-a-pe)).
 - The `mat4x4` sample reads the 4th word of each group of a `mac`, with `cyc: auto - 1` ([4.2.4](agu.md#424-write-agus)).

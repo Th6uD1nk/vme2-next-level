@@ -17,6 +17,8 @@ A kernel has four processing elements, `pe0` to `pe3`. Each one is described in 
 .pe0 { .top = t; .write = w; .top0 + top0; }
 ```
 
+**Rules:**
+
 - Inside the block, a dot refers to the pe of the block ([2.1](language.md#21-attributes)).
 - The pe can be given by an index, `pe[p]`, where `p` is a number, an `Int` or a loop variable ([2.3](language.md#23-accesses-by-index)).
 - A member can be written outside a block, with the pe in front: `.pe0.top = t;` is the same as `.pe0 { .top = t; }`.
@@ -41,6 +43,8 @@ Staging s;
 }
 ```
 
+**Explanation of the code above:**
+
 - The bindings of the AGUs: `.top`, `.base` and `.write` ([4.3](agu.md#43-binding-an-agu-to-a-pe)).
 - The operation of the pe, which starts with a dot: its result leaves on the write AGU (`.clamp(s, 0, 255);`). A pe has one.
 - An operation kept in a `Staging` variable, which starts with the name of the variable (`s = top1 + top2;`): the result stays in the pe and another operation can read it.
@@ -58,6 +62,8 @@ Staging s;
 .pe1 { .clamp(top0 + top1, 0, 255); }
 .pe2 { s = top0 + top1; .clamp(top2, 0, 255); }
 ```
+
+**Explanation of the code above:**
 
 - `pe0` holds one operation.
 - `pe1` holds two: the addition, inside the `clamp`.
