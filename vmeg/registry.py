@@ -218,7 +218,7 @@ def check_calls(registry):
   for name, definitions in registry["kernels"].items():
     if name not in called:
       definition = definitions[0]
-      raise ValueError(f"{definition['path']}: line {definition['line']}: kernel '{name}' is never called, add a function marked with @kernel {name} config, exec or a block @kernel {name} config, exec {{ ... }}")
+      raise ValueError(f"{definition['path']}: line {definition['line']}: kernel '{name}' is never called, add a function marked with @kernel {name} config | exec or a block @kernel {name} config | exec {{ ... }}")
 
 
 def needed_prototypes(registry, path):
