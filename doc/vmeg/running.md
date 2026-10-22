@@ -99,3 +99,19 @@ add_library(saturate-clamp OBJECT ${GENERATED_C})
 - `vmegc` needs `python3`: CMake stops if it does not find it.
 
 The `samples` folder has a `CMakeLists.txt` for each sample.
+
+## 1.7 Errors
+
+The errors of the command line start with `vmegc: error:`, left out here. The errors inside a file are described with the part of the language they come from.
+
+| Section | Message | Cause |
+|---|---|---|
+| [1.1](#11-command-line) | `the input files are required` | no input file |
+| [1.1](#11-command-line) | `input must end with .vmeg.c or .vmeg.cpp (or pass -o)` | an input with another name, without `-o` |
+| [1.1](#11-command-line) | `file.vmeg.c: no such file or directory` | an input that does not exist (or `is a directory`, or another reason the file cannot be read) |
+| [1.2](#12-several-files) | `-o goes with a single input file, every output is written in the current directory` | `-o` with several inputs |
+| [1.2](#12-several-files) | `b/x.vmeg.c: the output 'x.c' is already the output of a/x.vmeg.c` | two inputs that give the same output |
+| [1.2](#12-several-files) | `a.vmeg.h: a .vmeg.h is not a source, the buffers are declared in .vmeg.c or .vmeg.cpp files` | a `.vmeg.h` given as an input |
+| [1.5](#15---ops) | `--ops goes alone` | `--ops` with a file or another option |
+| [1.6](#16-cmake) | `vmegc needs python3` | CMake does not find `python3` |
+| [1.6](#16-cmake) | `vmegc_sources needs cmake 3.11 or newer` | `vmegc_sources` with an older CMake |
