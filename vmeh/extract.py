@@ -1,8 +1,10 @@
 from emu.extract import chosen_emulation, declared_parts
+from emu.memory import BUFFER_WORDS
 from vmeg.blocks import find_blocks, kernel_name
 
 
-PROLOGUE = """#include <pspctrl.h>
+def prologue(words):
+  return f"""#include <pspctrl.h>
 #include <pspdisplay.h>
 #include <pspkernel.h>
 #include <psppower.h>
@@ -15,7 +17,7 @@ PSP_HEAP_SIZE_KB(-1024);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU | PSP_THREAD_ATTR_USER);
 
 ME_LIB_SETUP_SIMPLE_SUSPEND_HANDLER();
-VME_DEBUG_SET_BUFFER_WORD_COUNT(32);
+VME_DEBUG_SET_BUFFER_WORD_COUNT({words});
 
 meLibSetSharedUncached32(1);
 #define meFinish (meLibSharedMemory[0])"""
@@ -32,7 +34,7 @@ MAIN = """int main() {
   }
 
   vmeDebugTouch();
-  vmeDebugDumpBuffers();
+  vmeDebugDumpWindow();
   vmeDebugFreeBuffers();
 
   sceKernelExitGame();
@@ -47,24 +49,38 @@ def kernel_text(text, identifier):
       return text[block[1]:block[3]]
 
 
-def process_function(text, identifier, locals_):
+def process_function(text, identifier, locals_, start):
   kernel = chosen_emulation(text, identifier)["kernel"]
   lines = ["void meLibOnProcess(void) {"]
   for declaration in locals_:
     lines += [f"  {declaration['text']}", ""]
-  lines += [f"  @kernel {kernel} config | exec {{", "    vmeDebugFillWith(VME_BASE_BUFFERS);", "  }", "", "  meFinish = 1;", "", "  while (1) {", "  }", "}"]
+  lines += [f"  @kernel {kernel} config | exec {{", f"    vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});", "  }", "", "  meFinish = 1;", "", "  while (1) {", "  }", "}"]
   return "\n".join(lines)
 
 
-def extract_source(text, identifier, others=()):
+def fill_offset(start):
+  return f" + {start} * 4" if start else ""
+
+
+def check_window(start, words):
+  if start < 0:
+    raise ValueError("the first word of the buffers cannot be negative")
+  if words <= 0:
+    raise ValueError("the number of words of the buffers must be 1 or more")
+  if start + words > BUFFER_WORDS:
+    raise ValueError(f"the window of the buffers goes past the end of a buffer ({BUFFER_WORDS} words)")
+
+
+def extract_source(text, identifier, others=(), start=0, words=32):
+  check_window(start, words)
   arrays, macros = declared_parts(text, identifier, others)
-  sections = [PROLOGUE]
+  sections = [prologue(words)]
   if macros:
     sections.append("\n".join(macros))
   globals_ = [declaration["text"] for declaration in arrays if declaration["where"] == "global"]
   if globals_:
     sections.append("\n\n".join(globals_))
   sections.append(kernel_text(text, identifier))
-  sections.append(process_function(text, identifier, [declaration for declaration in arrays if declaration["where"] == "local"]))
+  sections.append(process_function(text, identifier, [declaration for declaration in arrays if declaration["where"] == "local"], start))
   sections.append(MAIN)
   return "\n\n".join(sections) + "\n"
