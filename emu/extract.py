@@ -62,7 +62,7 @@ def upload_calls(text, identifier):
   return emulation["calls"]
 
 
-def host_source(text, identifier, others=()):
+def declared_parts(text, identifier, others=()):
   arrays = array_declarations(text, identifier, others)
   for declaration in arrays:
     if declaration["extern"]:
@@ -81,6 +81,13 @@ def host_source(text, identifier, others=()):
         parts.append(f"#define {name} {value}".rstrip())
       elif known[name] != value:
         raise ValueError(f"the macro {name} has two different values in the files of the @emulate \"{identifier}\"")
+  return arrays, parts
+
+
+def host_source(text, identifier, others=()):
+  arrays, parts = declared_parts(text, identifier, others)
+  emulation = chosen_emulation(text, identifier)
+  declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in arrays]
   if declared:
     entries = ", ".join(f"{{(u32){name}, sizeof({name}) / 4}}" for name in sorted(declared))
