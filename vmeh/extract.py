@@ -15,7 +15,10 @@ PSP_HEAP_SIZE_KB(-1024);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU | PSP_THREAD_ATTR_USER);
 
 ME_LIB_SETUP_SIMPLE_SUSPEND_HANDLER();
-VME_DEBUG_SET_BUFFER_WORD_COUNT(32);"""
+VME_DEBUG_SET_BUFFER_WORD_COUNT(32);
+
+meLibSetSharedUncached32(1);
+#define meFinish (meLibSharedMemory[0])"""
 
 
 def kernel_text(text, identifier):
@@ -30,7 +33,7 @@ def process_function(text, identifier, locals_):
   lines = ["void meLibOnProcess(void) {"]
   for declaration in locals_:
     lines += [f"  {declaration['text']}", ""]
-  lines += [f"  @kernel {kernel} config | exec {{", "    vmeDebugFillWith(VME_BASE_BUFFERS);", "  }", "", "  while (1) {", "  }", "}"]
+  lines += [f"  @kernel {kernel} config | exec {{", "    vmeDebugFillWith(VME_BASE_BUFFERS);", "  }", "", "  meFinish = 1;", "", "  while (1) {", "  }", "}"]
   return "\n".join(lines)
 
 
