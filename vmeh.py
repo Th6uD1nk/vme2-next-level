@@ -11,6 +11,8 @@ def main(argv=None):
   parser.add_argument("input", nargs="+")
   parser.add_argument("--extract", required=True)
   parser.add_argument("-o", "--output", required=True)
+  parser.add_argument("--buffers-start", type=int, default=0)
+  parser.add_argument("--buffers-words", type=int, default=32)
   args = parser.parse_args(argv)
 
   where = ", ".join(args.input)
@@ -23,7 +25,7 @@ def main(argv=None):
     path, text = choose_source(sources, args.extract)
     where = path
     others = [other for other_path, other in sources if other_path != path]
-    result = extract_source(text, args.extract, others)
+    result = extract_source(text, args.extract, others, args.buffers_start, args.buffers_words)
     where = args.output
     if os.path.dirname(args.output):
       os.makedirs(os.path.dirname(args.output), exist_ok=True)
