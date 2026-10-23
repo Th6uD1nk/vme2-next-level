@@ -29,3 +29,23 @@ if(VMEH_RESULT)
 endif()
 
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${VMEH_INPUT}")
+
+add_executable(vme)
+vmegc_sources(vme SOURCES "${VMEH_OUTPUT}")
+
+target_include_directories(vme PRIVATE ../../vmeh)
+
+target_compile_options(vme PRIVATE -Os -G0 -Wall -fno-pic)
+
+target_compile_options(vme PRIVATE
+  $<$<COMPILE_LANGUAGE:CXX>:-std=c++11>
+  $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+  $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+)
+
+target_link_libraries(vme
+  me-core me-core-lib vme-lib
+  psppower pspge pspdisplay pspctrl pspdebug
+)
+
+create_pbp_file(TARGET vme TITLE "VME Hardware" BUILD_PRX)
