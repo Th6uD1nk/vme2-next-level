@@ -70,6 +70,32 @@ static inline void vmeDebugDump(const char* const path,
   fclose(f);
 }
 
+static inline void vmeDebugDumpWords(const char* const path,
+  const int size, u32* const data, const char* const name) {
+
+  FILE *f = fopen(path, "a");
+
+  if (!f) {
+    return;
+  }
+
+  fprintf(f, "Buffer: %s\n", name);
+
+  for (int i = 0; i < size; i += 4) {
+
+    const int count = (size - i < 4) ? (size - i) : 4;
+
+    for (int k = 0; k < count; k++) {
+      fprintf(f, k ? ", 0x%08lx" : "0x%08lx", data[i+k]);
+    }
+
+    fprintf(f, ",\n");
+  }
+
+  fprintf(f, "\n");
+  fclose(f);
+}
+
 #define vmeDebugSetupBuffers()                                                 \
   meLibGetUncached32(vmeDebugBuffers, 8*VME_DEBUG_BUFFER_WORD_COUNT);
 
@@ -83,6 +109,15 @@ static inline void vmeDebugDump(const char* const path,
   vmeDebugDump("./log.txt", count, (u32*)&(vmeDebugBuffers[count*1]), "BASE 1"); \
   vmeDebugDump("./log.txt", count, (u32*)&(vmeDebugBuffers[count*2]), "BASE 2"); \
   vmeDebugDump("./log.txt", count, (u32*)&(vmeDebugBuffers[count*3]), "BASE 3"); \
+}
+
+#define vmeDebugDumpWindow() {                                                 \
+                                                                               \
+  const int count = VME_DEBUG_BUFFER_WORD_COUNT;                               \
+  vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*0]), "BASE 0"); \
+  vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*1]), "BASE 1"); \
+  vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*2]), "BASE 2"); \
+  vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*3]), "BASE 3"); \
 }
 
 #define vmeDebugGetValue(index, offset) \
