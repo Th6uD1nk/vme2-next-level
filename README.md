@@ -34,6 +34,24 @@ It needs `g++` with 32 bit support (`-m32`) and the `me-custom-core` submodule (
 
 More details in the documentation: [vmee](doc/VMEE.md) (work in progress)
 
+## vmeh
+
+**vmeh** (VME hardware) generates the code that runs a kernel marked with `@emulate` on the real PSP. This code writes the content of the buffers in a log file, in the same format as vmee, so that the two results can be compared. The program shows nothing on the screen.
+
+Go to `samples/vmeh`, give the vmeg file (a path relative to the root of the project) and the id of its `@emulate`, then build:
+```
+cd samples/vmeh
+mkdir build && cd build
+cmake -DVMEH_SOURCE=samples/c/saturate-clamp.vmeg.c -DVMEH_ID=saturate-clamp ..
+make
+```
+
+The EBOOT is in `build`. Run it on the PSP: it writes `log.txt` in the folder of the EBOOT and exits.
+
+The window of the buffers that is written can be changed with `-DVMEH_BUFFERS_START=0` and `-DVMEH_BUFFERS_WORDS=32` (the defaults). `vmeemu.py --run` has the same options, `--buffers-start` and `--buffers-words`.
+
+It needs the PSP toolchain, like the other samples.
+
 ## Related Project
 
 [PSP Media Engine Custom Core](https://github.com/mcidclan/psp-media-engine-custom-core)  
