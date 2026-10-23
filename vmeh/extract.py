@@ -8,7 +8,7 @@ PROLOGUE = """#include <pspctrl.h>
 #include <psppower.h>
 #include <me-core-mapper/me-core.h>
 #include <me-core-mapper/vme-fu-opcodes.h>
-#include <debug.h>
+#include <vme-debug.h>
 
 PSP_MODULE_INFO("vmeh", 0, 1, 1);
 PSP_HEAP_SIZE_KB(-1024);
