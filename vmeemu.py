@@ -26,7 +26,8 @@ def list_emulations(text, kernel, full):
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmeemu")
   parser.add_argument("input", nargs="+")
-  parser.add_argument("--words", type=int, default=32)
+  parser.add_argument("--buffers-start", type=int, default=0)
+  parser.add_argument("--buffers-words", type=int, default=32)
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--kernel")
   parser.add_argument("--full", action="store_true")
@@ -60,7 +61,7 @@ def main(argv=None):
     else:
       emulator = Emulator()
       replay(emulator, text)
-    sys.stdout.write(dump_base_buffers(emulator.scratchpad, 0, args.words))
+    sys.stdout.write(dump_base_buffers(emulator.scratchpad, args.buffers_start, args.buffers_words))
   except (ValueError, OSError) as e:
     print(f"{where}: {e}", file=sys.stderr)
     return 1
