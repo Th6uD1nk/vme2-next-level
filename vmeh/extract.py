@@ -21,6 +21,25 @@ meLibSetSharedUncached32(1);
 #define meFinish (meLibSharedMemory[0])"""
 
 
+MAIN = """int main() {
+  scePowerSetClockFrequency(333, 333, 166);
+  vmeDebugSetupBuffers();
+
+  meLibDefaultInit();
+
+  while (!meFinish) {
+    sceKernelDelayThread(100);
+  }
+
+  vmeDebugTouch();
+  vmeDebugDumpBuffers();
+  vmeDebugFreeBuffers();
+
+  sceKernelExitGame();
+  return 0;
+}"""
+
+
 def kernel_text(text, identifier):
   name = chosen_emulation(text, identifier)["kernel"]
   for block in find_blocks(text):
@@ -47,4 +66,5 @@ def extract_source(text, identifier, others=()):
     sections.append("\n\n".join(globals_))
   sections.append(kernel_text(text, identifier))
   sections.append(process_function(text, identifier, [declaration for declaration in arrays if declaration["where"] == "local"]))
+  sections.append(MAIN)
   return "\n\n".join(sections) + "\n"
