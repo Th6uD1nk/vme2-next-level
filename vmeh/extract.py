@@ -25,6 +25,15 @@ def kernel_text(text, identifier):
       return text[block[1]:block[3]]
 
 
+def process_function(text, identifier, locals_):
+  kernel = chosen_emulation(text, identifier)["kernel"]
+  lines = ["void meLibOnProcess(void) {"]
+  for declaration in locals_:
+    lines += [f"  {declaration['text']}", ""]
+  lines += [f"  @kernel {kernel} config | exec {{", "    vmeDebugFillWith(VME_BASE_BUFFERS);", "  }", "", "  while (1) {", "  }", "}"]
+  return "\n".join(lines)
+
+
 def extract_source(text, identifier, others=()):
   arrays, macros = declared_parts(text, identifier, others)
   sections = [PROLOGUE]
@@ -34,4 +43,5 @@ def extract_source(text, identifier, others=()):
   if globals_:
     sections.append("\n\n".join(globals_))
   sections.append(kernel_text(text, identifier))
+  sections.append(process_function(text, identifier, [declaration for declaration in arrays if declaration["where"] == "local"]))
   return "\n\n".join(sections) + "\n"
