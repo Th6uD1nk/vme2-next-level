@@ -1,5 +1,5 @@
 from emu.extract import chosen_emulation, declared_parts
-from emu.memory import BUFFER_WORDS
+from emu.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
 
 
@@ -60,15 +60,6 @@ def process_function(text, identifier, locals_, start):
 
 def fill_offset(start):
   return f" + {start} * 4" if start else ""
-
-
-def check_window(start, words):
-  if start < 0:
-    raise ValueError("the first word of the buffers cannot be negative")
-  if words <= 0:
-    raise ValueError("the number of words of the buffers must be 1 or more")
-  if start + words > BUFFER_WORDS:
-    raise ValueError(f"the window of the buffers goes past the end of a buffer ({BUFFER_WORDS} words)")
 
 
 def extract_source(text, identifier, others=(), start=0, words=32):
