@@ -60,7 +60,7 @@ def main(argv=None):
     else:
       emulator = Emulator()
       replay(emulator, text)
-    sys.stdout.write(dump_base_buffers(emulator.scratchpad, args.words))
+    sys.stdout.write(dump_base_buffers(emulator.scratchpad, 0, args.words))
   except (ValueError, OSError) as e:
     print(f"{where}: {e}", file=sys.stderr)
     return 1

@@ -49,14 +49,22 @@ class Scratchpad:
     self.words[first:first + count] = [value & 0xffffff for value in values]
 
 
-def dump_base_buffers(scratchpad, count):
-  if count <= 0 or count > BUFFER_WORDS or count % 4:
-    raise ValueError(f"the dump needs a number of words that is a multiple of 4, at most {BUFFER_WORDS}, not {count}")
+def check_window(start, words):
+  if start < 0:
+    raise ValueError("the first word of the buffers cannot be negative")
+  if words <= 0:
+    raise ValueError("the number of words of the buffers must be 1 or more")
+  if start + words > BUFFER_WORDS:
+    raise ValueError(f"the window of the buffers goes past the end of a buffer ({BUFFER_WORDS} words)")
+
+
+def dump_base_buffers(scratchpad, start, words):
+  check_window(start, words)
   rows = []
   for n in range(BUFFER_COUNT):
     rows.append(f"Buffer: BASE {n}")
-    first = BASE_OFFSET + n * BUFFER_WORDS
-    for i in range(0, count, 4):
-      rows.append(", ".join(f"0x{scratchpad.read(first + i + k):08x}" for k in range(4)) + ",")
+    first = BASE_OFFSET + n * BUFFER_WORDS + start
+    for i in range(0, words, 4):
+      rows.append(", ".join(f"0x{scratchpad.read(first + i + k):08x}" for k in range(min(4, words - i))) + ",")
     rows.append("")
   return "\n".join(rows) + "\n"
