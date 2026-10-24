@@ -59,6 +59,10 @@ def op_nor(back, front, fu, a, b, previous, state):
   return ~(back | front)
 
 
+def op_nor_cst(back, front, fu, a, b, previous, state):
+  return (~back) & ~b
+
+
 def op_xor(back, front, fu, a, b, previous, state):
   return back ^ front
 
@@ -111,6 +115,7 @@ HANDLERS = {
   "or": op_or,
   "or_cst": op_or_cst,
   "nor": op_nor,
+  "nor_cst": op_nor_cst,
   "xor": op_xor,
   "xor_cst": op_xor_cst,
   "not": op_not,
