@@ -124,7 +124,7 @@ Agu d = { count: 15, cyc: auto + shift };
 
 **Rules:**
 
-- `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it.
+- `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it. `vmegc` warns when another pe that shares it needs a different delay ([7.3](staging-routing.md#73-warnings)).
 - The rule is checked for one and two operations. Three chained operations (12) and a Staging variable read by another pe are not yet verified on the hardware.
 
 ## 4.3 Binding an AGU to a pe

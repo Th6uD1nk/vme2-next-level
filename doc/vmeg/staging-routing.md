@@ -88,6 +88,7 @@ main.vmeg.c: line 3: warning: pe0 has an operation but no .write is bound in thi
 |---|---|
 | `top1 is read but no .top is bound in pe1 of this kernel` | a buffer `topN` or `baseN` read by an operation, with no `.top` or `.base` bound in `peN` ([7.2](#72-the-routing)) |
 | `pe0 has an operation but no .write is bound in this kernel` | the operation that leaves a pe, with no `.write` bound in this pe |
+| `pe1 shares the write Agu 'w' with pe0 but its operations need another delay, cyc: auto follows pe0` | a write `Agu` with `cyc: auto` bound in several pes whose operations need different delays: the delay is the one of the first pe ([4.2.4](agu.md#424-write-agus)) |
 
 ## 7.4 Errors
 
