@@ -26,6 +26,10 @@ class KnownValueTest(unittest.TestCase):
     results = [evaluate(text, {}) for text in ["2", "3 + 2 * 4", "(1 << 4) & 0xff", "0 - 3"]]
     self.assertEqual(results, [("num", 2), ("num", 11), ("num", 16), ("num", -3)])
 
+  def test_and_binds_over_xor_over_or_below_the_shifts_and_the_complement_binds_first(self):
+    results = [evaluate(text, {}) for text in ["1 | 6 & 3", "5 ^ 3 & 1", "1 | 4 ^ 5", "1 << 2 | 1", "~5 & 0xff"]]
+    self.assertEqual(results, [("num", 3), ("num", 4), ("num", 1), ("num", 5), ("num", 250)])
+
   def test_a_chain_of_assignments_is_evaluated_from_the_previous_ones(self):
     env = chain([("a", "2"), ("b", "a * 3"), ("c", "b + a"), ("d", "(c - a) * b")])
     self.assertEqual(env, {"a": ("num", 2), "b": ("num", 6), "c": ("num", 8), "d": ("num", 36)})
