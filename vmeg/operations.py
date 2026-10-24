@@ -60,6 +60,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise and of a and b",
   },
+  "or": {
+    "opcode": 0x0d0,
+    "form": ("operator", "|"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "code": "fu_code(OP_OR)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "the bitwise or of a and b",
+  },
   "clamp": {
     "opcode": 0x07c,
     "form": ("function", "clamp"),
