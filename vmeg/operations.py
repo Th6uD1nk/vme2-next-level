@@ -80,6 +80,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise or of a and b",
   },
+  "nor": {
+    "opcode": 0x0d8,
+    "form": ("fused", "or"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "code": "fu_code(OP_NOR)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "the complement of the bitwise or of a and b, one operation",
+  },
   "xor": {
     "opcode": 0x0e0,
     "form": ("operator", "^"),
