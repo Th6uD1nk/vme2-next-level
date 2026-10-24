@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import OPERATIONS, reads
+from vmeg.operations import OPERATIONS, OPERATORS, reads
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -192,10 +192,9 @@ def flatten(expr, stagings):
         raise ValueError("an operation takes only one shift")
       operations[-1]["shift"] = amount if expr[1] == ">>" else (64 - amount) % 64
       return operations
-    kinds = {"+": "add", "-": "sub", "*": "mul", "&": "and"}
-    if expr[1] not in kinds:
-      raise ValueError(f"unsupported operator '{expr[1]}' (+, -, *, &, >>, <<)")
-    return [{"kind": kinds[expr[1]], "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
+    if expr[1] not in OPERATORS:
+      raise ValueError(f"unsupported operator '{expr[1]}' ({', '.join([*OPERATORS, '>>', '<<'])})")
+    return [{"kind": OPERATORS[expr[1]], "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
