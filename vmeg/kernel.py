@@ -136,6 +136,17 @@ def check_arguments(name, args):
     raise ValueError(f"{name} takes {len(names)} argument{'' if len(names) == 1 else 's'} ({', '.join(names)})")
 
 
+def function_operands(name, args, stagings):
+  specification = OPERATIONS[FUNCTIONS[name]]
+  given = [(kind, expr) for (_, kind), expr in zip(specification["arguments"], args) if kind != "number"]
+  if specification["operands"] == ("front", "back"):
+    return {"front": operand(given[0][1], stagings), "back": operand(given[1][1], stagings)}, []
+  source, operations = split_source(given[0][1], stagings)
+  if operations and given[0][0] == "operand":
+    raise ValueError(f"{name} takes a buffer or a Staging variable")
+  return {"source": source}, operations
+
+
 def flatten(expr, stagings):
   kind = expr[0]
   if kind == "call":
@@ -160,23 +171,24 @@ def flatten(expr, stagings):
     if name == "clamp":
       low = constant(args[1], "clamp low")
       high = constant(args[2], "clamp high")
-      source, operations = split_source(args[0], stagings)
-      return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
+      operands, operations = function_operands(name, args, stagings)
+      return operations + [{"kind": "clamp", **operands, "low": low, "high": high, "sat": None}]
     if name == "acc":
-      source, operations = split_source(args[0], stagings)
-      if operations:
-        raise ValueError("acc takes a buffer or a Staging variable")
-      return [{"kind": "acc", "source": source, "sat": None}]
+      operands, _ = function_operands(name, args, stagings)
+      return [{"kind": "acc", **operands, "sat": None}]
     if name == "subacst":
       constant_b = constant(args[2], "the constant of subacst")
-      return [{"kind": "subacst", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": constant_b, "sat": None}]
+      operands, _ = function_operands(name, args, stagings)
+      return [{"kind": "subacst", **operands, "b": constant_b, "sat": None}]
     if name == "subshr":
       amount = constant(args[2], "the shift of subshr")
       if amount < 0:
         raise ValueError("the shift of subshr cannot be negative")
-      return [{"kind": "subshr", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": amount, "sat": None}]
+      operands, _ = function_operands(name, args, stagings)
+      return [{"kind": "subshr", **operands, "b": amount, "sat": None}]
     if name == "mac":
-      return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
+      operands, _ = function_operands(name, args, stagings)
+      return [{"kind": "mac", **operands, "sat": None}]
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
   if kind == "bin":
     if expr[1] in (">>", "<<"):
