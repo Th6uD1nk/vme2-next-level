@@ -1,6 +1,6 @@
 ## VME2 Next Level. (Transpiler, Emulator and Debugger)
 
-A transpiler, emulator and debugger for the PSP Virtual Mobile Engine (VME2). Write kernels in vmeg, a graph-like language embedded in C/C++, compile them to plain C/C++ for vme-lib, play them in an emulator, and check them on a real PSP.
+VME2 Next Level is a toolkit for the PSP Virtual Mobile Engine (VME2), including a transpiler, an emulator and a debugger. Write kernels in vmeg, a graph-like language embedded in C/C++, compile them to plain C/C++ for vme-lib, play them in an emulator, and check them on a real PSP.
 
 ## vmeg
 
