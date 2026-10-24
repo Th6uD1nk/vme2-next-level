@@ -160,17 +160,17 @@ The messages start with `line N:`, left out here.
 |---|---|---|
 | [6.1](#61-operands-and-results) | `an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable` | an operand that is a number or another operation |
 | [6.1](#61-operands-and-results) | `the Staging variable 's' is read before it is set` | a `Staging` variable read before the statement that sets it |
-| [6.1](#61-operands-and-results) | `clamp low must be a number` | a bound, a constant or a shift that is not a number known at compile time. The message names it: `clamp high`, `the constant of subacst`, `the shift of subshr`, `sat bits`, `the shift` |
+| [6.1](#61-operands-and-results) | `clamp low must be a number` | a bound, a constant or a shift that is not a number known at compile time. The message names it: `clamp high`, `subacst c`, `subshr n`, `sat bits`, `the shift` |
 | [6.2](#62-operators) | `expected ';'` | an operator that is not supported, such as `/` |
 | [6.2](#62-operators) | `an operation is expected (an addition, sat or clamp)` | a statement that leaves, with a buffer alone instead of an operation |
-| [6.3.1](#631-clamp) | `clamp takes 3 arguments (value, low, high)` | `clamp` with another number of arguments |
+| [6.3.1](#631-clamp) | `clamp takes 3 arguments (x, low, high)` | `clamp` with another number of arguments |
 | [6.3.2](#632-subacst) | `subacst takes 3 arguments (a, b, c)` | `subacst` with another number of arguments |
 | [6.3.3](#633-subshr) | `subshr takes 3 arguments (a, b, n)` | `subshr` with another number of arguments |
-| [6.3.3](#633-subshr) | `the shift of subshr cannot be negative` | a negative `n` |
+| [6.3.3](#633-subshr) | `subshr n cannot be less than 0` | a negative `n` |
 | [6.3.4](#634-mac) | `mac takes 2 arguments (a, b)` | `mac` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes 1 argument (x)` | `acc` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes a buffer or a Staging variable` | an operation inside `acc` |
-| [6.3](#63-functions) | `unknown operation 'foo' (sat, sub, subacst, subshr, mul, and, clamp, mac, acc)` | a function that does not exist |
+| [6.3](#63-functions) | `unknown operation 'foo' (sat, subacst, subshr, clamp, mac, acc)` | a function that does not exist |
 | [6.4](#64-sat-and-the-shifts) | `sat takes 2 arguments (value, bits)` | `sat` with another number of arguments |
 | [6.4](#64-sat-and-the-shifts) | `sat bits out of range (0 to 31)` | `bits` above 31 |
 | [6.4](#64-sat-and-the-shifts) | `sat must wrap an operation` | `sat` on a buffer or a `Staging` variable |
