@@ -60,6 +60,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise and of a and b",
   },
+  "and_cst": {
+    "opcode": 0x0c4,
+    "form": ("function", "and"),
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_AND_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the bitwise and of x and c, c is a number written in the register B",
+  },
   "nand": {
     "opcode": 0x0c8,
     "form": ("fused", "and"),
