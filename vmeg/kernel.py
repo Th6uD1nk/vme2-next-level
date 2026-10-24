@@ -136,15 +136,27 @@ def check_arguments(name, args):
     raise ValueError(f"{name} takes {len(names)} argument{'' if len(names) == 1 else 's'} ({', '.join(names)})")
 
 
-def function_operands(name, args, stagings):
-  specification = OPERATIONS[FUNCTIONS[name]]
+def table_operands(label, specification, args, stagings):
   given = [(kind, expr) for (_, kind), expr in zip(specification["arguments"], args) if kind != "number"]
   if specification["operands"] == ("front", "back"):
     return {"front": operand(given[0][1], stagings), "back": operand(given[1][1], stagings)}, []
   source, operations = split_source(given[0][1], stagings)
   if operations and given[0][0] == "operand":
-    raise ValueError(f"{name} takes a buffer or a Staging variable")
+    raise ValueError(f"{label} takes a buffer or a Staging variable")
   return {"source": source}, operations
+
+
+def table_operation(kind, label, args, stagings):
+  specification = OPERATIONS[kind]
+  numbers = {}
+  for (argument, argument_kind), expr_argument in zip(specification["arguments"], args):
+    if argument_kind == "number":
+      numbers[argument] = constant(expr_argument, f"{label} {argument}")
+      minimum = specification.get("minimums", {}).get(argument)
+      if minimum is not None and numbers[argument] < minimum:
+        raise ValueError(f"{label} {argument} cannot be less than {minimum}")
+  operands, operations = table_operands(label, specification, args, stagings)
+  return operations + [{"kind": kind, **operands, "numbers": numbers, "sat": None}]
 
 
 def flatten(expr, stagings):
@@ -168,16 +180,7 @@ def flatten(expr, stagings):
       return operations
     if name in FUNCTIONS:
       check_arguments(name, args)
-      specification = OPERATIONS[FUNCTIONS[name]]
-      numbers = {}
-      for (argument, argument_kind), expr_argument in zip(specification["arguments"], args):
-        if argument_kind == "number":
-          numbers[argument] = constant(expr_argument, f"{name} {argument}")
-          minimum = specification.get("minimums", {}).get(argument)
-          if minimum is not None and numbers[argument] < minimum:
-            raise ValueError(f"{name} {argument} cannot be less than {minimum}")
-      operands, operations = function_operands(name, args, stagings)
-      return operations + [{"kind": FUNCTIONS[name], **operands, "numbers": numbers, "sat": None}]
+      return table_operation(FUNCTIONS[name], name, args, stagings)
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
   if kind == "bin":
     if expr[1] in (">>", "<<"):
@@ -193,7 +196,7 @@ def flatten(expr, stagings):
       return operations
     if expr[1] not in OPERATORS:
       raise ValueError(f"unsupported operator '{expr[1]}' ({', '.join([*OPERATORS, '>>', '<<'])})")
-    return [{"kind": OPERATORS[expr[1]], "front": operand(expr[2], stagings), "back": operand(expr[3], stagings), "sat": None}]
+    return table_operation(OPERATORS[expr[1]], expr[1], [expr[2], expr[3]], stagings)
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
