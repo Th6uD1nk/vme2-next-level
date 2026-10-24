@@ -126,6 +126,8 @@ OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATION
 
 UNARY_OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator" and len(specification["arguments"]) == 1}
 
+FUSIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "fused"}
+
 FUNCTIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "function"}
 
 FIELDS = (
@@ -142,6 +144,9 @@ def reads(specification):
 def syntax(specification):
   names = [name for name, _ in specification["arguments"]]
   form, name = specification["form"]
+  if form == "fused":
+    inner = OPERATIONS[name]
+    return f"~({syntax(inner)})" if inner["form"][0] == "operator" else f"~{syntax(inner)}"
   if form == "operator":
     return f"{name}{names[0]}" if len(names) == 1 else f"{names[0]} {name} {names[1]}"
   return f"{name}({', '.join(names)})"
