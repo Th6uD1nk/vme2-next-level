@@ -573,6 +573,8 @@ def emit_statement(statement, env, lines, state):
     if slot not in variable["owners"]:
       variable["owners"][slot] = pe
       lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1]))
+    if any(key == "cyc" and has_auto(value) for key, value in variable["params"][1]):
+      state["sharers"].setdefault(statement[2][1], []).append((pe, statement[-1]))
     state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "operation":
     pe = target_pe(statement[1], env)
@@ -606,7 +608,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set()}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}}
 
 
 def new_env(macros=None):
@@ -614,6 +616,14 @@ def new_env(macros=None):
   for name, number in (macros or {}).items():
     env.setdefault(name, ("num", number))
   return env
+
+
+def check_shared_auto(state):
+  for name, sharers in state["sharers"].items():
+    owner = sharers[0][0]
+    for pe, line in sharers[1:]:
+      if pe in state["depths"] and state["depths"][pe] != state["depths"][owner]:
+        warn(state, line, f"pe{pe} shares the write Agu '{name}' with pe{owner} but its operations need another delay, cyc: auto follows pe{owner}")
 
 
 def resolve_auto(lines, state):
@@ -624,6 +634,7 @@ def resolve_auto(lines, state):
     env = dict(pending["env"])
     env["auto"] = ("num", 3 + 3 * state["depths"][pe])
     lines[pending["at"]] = lines[pending["at"]].replace(AUTO, to_c(full_value(pending["expr"], env)))
+  check_shared_auto(state)
 
 
 def run_statements(statements, macros=None, owner=None):
