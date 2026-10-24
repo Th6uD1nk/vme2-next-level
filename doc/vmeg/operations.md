@@ -8,6 +8,7 @@ This page presents the operations currently supported. The list is not complete.
 
 - [6.1 Operands and results](#61-operands-and-results)
 - [6.2 Operators](#62-operators)
+  - [6.2.1 The complement](#621-the-complement)
 - [6.3 Functions](#63-functions)
   - [6.3.1 clamp](#631-clamp)
   - [6.3.2 subacst](#632-subacst)
@@ -87,6 +88,39 @@ Staging s;
 
 .pe0 { s = top0 + top1; .top2 - s; }
 ```
+
+### 6.2.1 The complement
+
+`~` complements the bits of what follows it: a buffer, a `Staging` variable, or an operation between parentheses. Between numbers, `~` is the plain C complement ([2.5](language.md#25-expressions)).
+
+```c
+.pe0 { .~top0; }
+.pe1 { .~(top1 & base1); }
+.pe2 { .~(top2 + base2); }
+.pe3 { .~(top3 ^ base3); }
+```
+
+**Explanation of the code above:**
+
+- `~top0` is one operation: the complement of a buffer.
+- `~(top1 & base1)` is **one** operation: the hardware has a single operation for the complement of an and.
+- `~(top2 + base2)` and `~(top3 ^ base3)` are **two** operations: the sum or the exclusive or, then the complement. The hardware has no single operation for them.
+
+**Rules:**
+
+- `~` is one operation when its content is a single operation that the hardware combines with a complement, with no `sat` and no shift. Otherwise it is a second operation, applied to the result of its content.
+- A `sat` or a shift belongs to the operation it wraps: `~sat(a & b, 7)` is two operations.
+- The operations that the hardware combines with a complement:
+
+| Written | Opcode |
+|---|---|
+| `~(a & b)` | `0x0c8` |
+| `~(a \| b)` | `0x0d8` |
+| `~and(x, c)` | `0x0cc` |
+| `~or(x, c)` | `0x0dc` |
+| `~xor(x, c)` | `0x0ec` |
+
+A pe holds two operations at most ([5.3](pe.md#53-operations-in-a-pe)): `~and(top0 + top1, 255)` would need three and is refused.
 
 ## 6.3 Functions
 
