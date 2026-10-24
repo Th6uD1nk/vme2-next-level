@@ -80,6 +80,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise exclusive or of a and b",
   },
+  "not": {
+    "opcode": 0x0fc,
+    "form": ("operator", "~"),
+    "arguments": (("x", "source"),),
+    "registers": {},
+    "code": "fu_code(OP_NOT)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the bitwise complement of x, x is a buffer, a Staging variable or an operation",
+  },
   "clamp": {
     "opcode": 0x07c,
     "form": ("function", "clamp"),
@@ -112,7 +122,9 @@ OPERATIONS = {
   },
 }
 
-OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator"}
+OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator" and len(specification["arguments"]) == 2}
+
+UNARY_OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator" and len(specification["arguments"]) == 1}
 
 FUNCTIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "function"}
 
@@ -131,7 +143,7 @@ def syntax(specification):
   names = [name for name, _ in specification["arguments"]]
   form, name = specification["form"]
   if form == "operator":
-    return f"{names[0]} {name} {names[1]}"
+    return f"{name}{names[0]}" if len(names) == 1 else f"{names[0]} {name} {names[1]}"
   return f"{name}({', '.join(names)})"
 
 

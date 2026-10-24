@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
+from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -182,6 +182,8 @@ def flatten(expr, stagings):
       check_arguments(name, args)
       return table_operation(FUNCTIONS[name], name, args, stagings)
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
+  if kind == "not":
+    return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings)
   if kind == "bin":
     if expr[1] in (">>", "<<"):
       _, operations = split_source(expr[2], stagings)
