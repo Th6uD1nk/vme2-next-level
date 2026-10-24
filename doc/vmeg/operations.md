@@ -15,6 +15,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.3 subshr](#633-subshr)
   - [6.3.4 mac](#634-mac)
   - [6.3.5 acc](#635-acc)
+  - [6.3.6 and, or and xor](#636-and-or-and-xor)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 
@@ -186,6 +187,29 @@ Staging s;
 
 - It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
 - The `mat4x4` sample reads the 4th word of each group of a `mac`, with `cyc: auto - 1` ([4.2.4](agu.md#424-write-agus)).
+
+### 6.3.6 and, or and xor
+
+`and(x, c)`, `or(x, c)` and `xor(x, c)` give the bitwise and, or and exclusive or of `x` and a number `c`. `x` is a buffer, a `Staging` variable or an operation, `c` is a number. They are the forms with a number of the operators `&`, `|` and `^` ([6.2](#62-operators)), which take two operands.
+
+```c
+.pe0 { .and(top0, 0xff); }
+.pe1 { .or(top1, 0x80); }
+.pe2 { .xor(top2, 0x55); }
+.pe3 { .and(top3 + base3, 0xff); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` keeps the low byte of `top0`.
+- `pe1` sets the bit 7 of `top1`.
+- `pe2` inverts the bits of `top2` that are set in `0x55`.
+- `pe3` holds two operations: the sum, then the and with `0xff`.
+
+**Rules:**
+
+- The number is known at compile time, like the numbers of the other functions.
+- The complement of these functions is one operation: `~and(x, c)`, `~or(x, c)` and `~xor(x, c)` ([6.2.1](#621-the-complement)).
 
 ## 6.4 sat and the shifts
 
