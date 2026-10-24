@@ -109,7 +109,7 @@ An expression between numbers uses these operators, from the strongest to the we
 
 | Level | Operators |
 |---|---|
-| 1 | `-` (negation), parentheses |
+| 1 | `-` (negation), `~` (complement), parentheses |
 | 2 | `*` |
 | 3 | `+` `-` |
 | 4 | `<<` `>>` |
@@ -126,12 +126,14 @@ An expression between numbers uses these operators, from the strongest to the we
 | `6 & 3 + 1` | `4` |
 | `1 \| 6 & 3` | `3` |
 | `5 ^ 3 & 1` | `4` |
+| `~5` | `-6` |
+| `0xff & ~0xf` | `240` |
 
 The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numbers-macros-and-unknown-names)). A number is written in decimal (`15`), in hexadecimal (`0x0f`) or in binary (`0b1111`). `true` is `1` and `false` is `0`.
 
 Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they apply to that result, see [Operations](operations.md).
 
-Currently not supported: `/`, `%`, `~` and the comparisons.
+Currently not supported: `/`, `%` and the comparisons.
 
 ## 2.6 Numbers, macros and unknown names
 
