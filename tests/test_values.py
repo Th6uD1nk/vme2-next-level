@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import find_blocks
-from vmeg.kernel import parameter_names, replace_names, transfer_names
+from vmeg.kernel import generate, parameter_names, replace_names, transfer_names
 from vmegc import render
 from emu.listing import defines, emulations, format_listing
 
@@ -31,11 +31,22 @@ def cyc_mode(value):
   return f"vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc({value}));"
 
 
+def shared_warnings(second):
+  text = ".kernel k direct {\n  Agu t = { count: 3 }, w = { count: 3, cyc: auto };\n  .pe0 { .top = t; .write = w; .top0 + top0; }\n  .pe1 { .top = t; .write = w; " + second + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
+  warnings = []
+  generate(text, find_blocks(text)[0], warnings)
+  return [message for _, message in warnings if "shares" in message]
+
+
 class CycAutoTest(unittest.TestCase):
   def test_auto_is_three_cycles_plus_three_per_fu_of_the_chain_and_a_shift_follows_it(self):
     self.assertEqual(cyc_line(".top0 + base0;"), cyc_mode("6"))
     self.assertEqual(cyc_line(".clamp(top0 + base0, 0, 255);"), cyc_mode("9"))
     self.assertEqual(cyc_line(".clamp(top0 + base0, 0, 255);", "auto - 1"), cyc_mode("8"))
+
+  def test_a_shared_write_agu_with_auto_warns_only_when_the_pes_need_different_delays(self):
+    self.assertEqual(shared_warnings(".clamp(top1 + top1, 0, 9);"), ["pe1 shares the write Agu 'w' with pe0 but its operations need another delay, cyc: auto follows pe0"])
+    self.assertEqual(shared_warnings(".top1 - top1;"), [])
 
 
 class KnownMacrosInAKernelTest(unittest.TestCase):
