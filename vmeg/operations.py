@@ -60,6 +60,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise and of a and b",
   },
+  "nand": {
+    "opcode": 0x0c8,
+    "form": ("fused", "and"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "code": "fu_code(OP_NAD)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "the complement of the bitwise and of a and b, one operation",
+  },
   "or": {
     "opcode": 0x0d0,
     "form": ("operator", "|"),

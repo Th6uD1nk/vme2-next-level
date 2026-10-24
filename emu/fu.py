@@ -35,6 +35,10 @@ def op_and(back, front, fu, a, b, previous, state):
   return back & front
 
 
+def op_nand(back, front, fu, a, b, previous, state):
+  return ~(back & front)
+
+
 def op_or(back, front, fu, a, b, previous, state):
   return back | front
 
@@ -81,6 +85,7 @@ HANDLERS = {
   "subshr": op_sub_inv_shf,
   "mul": op_mul_rshift,
   "and": op_and,
+  "nand": op_nand,
   "or": op_or,
   "xor": op_xor,
   "not": op_not,
