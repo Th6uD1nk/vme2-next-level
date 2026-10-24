@@ -1,4 +1,5 @@
 from emu.registers import FU_OPERAND_REGISTERS
+from vmeg.operations import OPERATIONS
 
 
 def signed32(value):
@@ -61,23 +62,25 @@ def op_sub_ofb(back, front, fu, a, b, previous, state):
   return (front - back) + b
 
 
-OPCODES = {
-  0x010: (op_add, ("back", "front")),
-  0x240: (op_mac_inner_product_bias, ("back", "front")),
-  0x048: (op_sub_ofb, ("back", "front")),
-  0x250: (op_mac_acc_shift_bias, ("back",)),
-  0x07c: (op_clp, ("back",)),
-  0x0c0: (op_and, ("back", "front")),
-  0x018: (op_sub, ("back", "front")),
-  0x050: (op_sub_inv_shf, ("back", "front")),
-  0x200: (op_mul_rshift, ("back", "front")),
+HANDLERS = {
+  "add": op_add,
+  "sub": op_sub,
+  "subacst": op_sub_ofb,
+  "subshr": op_sub_inv_shf,
+  "mul": op_mul_rshift,
+  "and": op_and,
+  "clamp": op_clp,
+  "mac": op_mac_inner_product_bias,
+  "acc": op_mac_acc_shift_bias,
 }
+
+OPCODES = {specification["opcode"]: (HANDLERS[kind], specification["operands"]) for kind, specification in OPERATIONS.items()}
 
 
 def opcode_entry(fu):
   entry = OPCODES.get(fu["opcode"])
   if entry is None:
-    raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in OPCODES)})")
+    raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in sorted(OPCODES))})")
   return entry
 
 
