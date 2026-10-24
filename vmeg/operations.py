@@ -100,6 +100,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the complement of the bitwise or of a and b, one operation",
   },
+  "or_cst": {
+    "opcode": 0x0d4,
+    "form": ("function", "or"),
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_OR_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the bitwise or of x and c, c is a number written in the register B",
+  },
   "xor": {
     "opcode": 0x0e0,
     "form": ("operator", "^"),
