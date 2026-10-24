@@ -52,7 +52,7 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 
 ## 6.2 Operators
 
-The operators `+`, `-`, `*` and `&` take two operands, each one a buffer or a `Staging` variable. A number or another operation is refused: keep the first result in a `Staging` variable, or wrap it in a function such as `clamp`.
+The operators `+`, `-`, `*`, `&`, `|` and `^` take two operands, each one a buffer or a `Staging` variable. A number or another operation is refused: keep the first result in a `Staging` variable, or wrap it in a function such as `clamp`.
 
 ```c
 .pe0 { .top0 + base0; }
@@ -67,6 +67,18 @@ The operators `+`, `-`, `*` and `&` take two operands, each one a buffer or a `S
 - `a - b` subtracts `b` from `a`.
 - `a * b` multiplies them. A shift written after the product, `a * b >> 8`, is applied to the product ([6.4](#64-sat-and-the-shifts)).
 - `a & b` is the bitwise and.
+
+The bitwise or and exclusive or are written `|` and `^`:
+
+```c
+.pe0 { .top0 | base0; }
+.pe1 { .top1 ^ base1; }
+```
+
+**Explanation of the code above:**
+
+- `a | b` is the bitwise or of the two operands.
+- `a ^ b` is the bitwise exclusive or of the two operands.
 
 An operand can be the `Staging` variable of another operation:
 
