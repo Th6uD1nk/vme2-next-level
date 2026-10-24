@@ -4,7 +4,6 @@ OPERATIONS = {
     "form": ("operator", "+"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
-    "syntax": "a + b",
     "code": "fu_code(OP_ADD)",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -16,7 +15,6 @@ OPERATIONS = {
     "form": ("operator", "-"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
-    "syntax": "a - b",
     "code": "fu_code(OP_SUB)",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -28,7 +26,6 @@ OPERATIONS = {
     "form": ("function", "subacst"),
     "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
     "registers": {"B": "c"},
-    "syntax": "subacst(a, b, c)",
     "code": "fu_code(OP_SUB_OFB)",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -41,7 +38,6 @@ OPERATIONS = {
     "arguments": (("a", "operand"), ("b", "operand"), ("n", "number")),
     "registers": {"B": "n"},
     "minimums": {"n": 0},
-    "syntax": "subshr(a, b, n)",
     "code": "fu_code(OP_SUB_INV_SHF)",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -53,7 +49,6 @@ OPERATIONS = {
     "form": ("operator", "*"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
-    "syntax": "a * b",
     "code": "VME_FU_OPCODE_MUL_RSHIFT_0",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -65,7 +60,6 @@ OPERATIONS = {
     "form": ("operator", "&"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
-    "syntax": "a & b",
     "code": "fu_code(OP_AND)",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -77,7 +71,6 @@ OPERATIONS = {
     "form": ("function", "clamp"),
     "arguments": (("x", "source"), ("low", "number"), ("high", "number")),
     "registers": {"A": "high", "B": "low"},
-    "syntax": "clamp(x, low, high)",
     "code": "fu_code(OP_CLP)",
     "operands": ("back",),
     "reads": ("x",),
@@ -89,7 +82,6 @@ OPERATIONS = {
     "form": ("function", "mac"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
-    "syntax": "mac(a, b)",
     "code": "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS",
     "operands": ("front", "back"),
     "reads": ("a", "b"),
@@ -101,7 +93,6 @@ OPERATIONS = {
     "form": ("function", "acc"),
     "arguments": (("x", "operand"),),
     "registers": {},
-    "syntax": "acc(x)",
     "code": "VME_FU_OPCODE_MAC_ACC_SHIFT_BIAS",
     "operands": ("back",),
     "reads": ("x",),
@@ -117,9 +108,17 @@ FIELDS = (
 )
 
 
+def syntax(specification):
+  names = [name for name, _ in specification["arguments"]]
+  form, name = specification["form"]
+  if form == "operator":
+    return f"{names[0]} {name} {names[1]}"
+  return f"{name}({', '.join(names)})"
+
+
 def operation_columns(specification):
   units = "first operation of the pe only" if specification["units"] == "primary" else "any position"
-  return (specification["syntax"], f"0x{specification['opcode']:03x}", specification["code"], ", ".join(specification["reads"]), units)
+  return (syntax(specification), f"0x{specification['opcode']:03x}", specification["code"], ", ".join(specification["reads"]), units)
 
 
 def format_operations():
