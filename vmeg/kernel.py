@@ -172,20 +172,20 @@ def flatten(expr, stagings):
       low = constant(args[1], "clamp low")
       high = constant(args[2], "clamp high")
       operands, operations = function_operands(name, args, stagings)
-      return operations + [{"kind": "clamp", **operands, "low": low, "high": high, "sat": None}]
+      return operations + [{"kind": "clamp", **operands, "numbers": {"low": low, "high": high}, "sat": None}]
     if name == "acc":
       operands, _ = function_operands(name, args, stagings)
       return [{"kind": "acc", **operands, "sat": None}]
     if name == "subacst":
       constant_b = constant(args[2], "the constant of subacst")
       operands, _ = function_operands(name, args, stagings)
-      return [{"kind": "subacst", **operands, "b": constant_b, "sat": None}]
+      return [{"kind": "subacst", **operands, "numbers": {"c": constant_b}, "sat": None}]
     if name == "subshr":
       amount = constant(args[2], "the shift of subshr")
       if amount < 0:
         raise ValueError("the shift of subshr cannot be negative")
       operands, _ = function_operands(name, args, stagings)
-      return [{"kind": "subshr", **operands, "b": amount, "sat": None}]
+      return [{"kind": "subshr", **operands, "numbers": {"n": amount}, "sat": None}]
     if name == "mac":
       operands, _ = function_operands(name, args, stagings)
       return [{"kind": "mac", **operands, "sat": None}]
@@ -489,11 +489,8 @@ def place(state, lines, pe, operations, line):
     if operation.get("shift"):
       sat += f", {operation['shift']}"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
-    if "b" in operation:
-      lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['b']))});")
-    if operation["kind"] == "clamp":
-      lines.append(f"vme_pe{pe}(fu_reg({unit}, A), {to_c(('num', operation['high']))});")
-      lines.append(f"vme_pe{pe}(fu_reg({unit}, B), {to_c(('num', operation['low']))});")
+    for register, argument in specification["registers"].items():
+      lines.append(f"vme_pe{pe}(fu_reg({unit}, {register}), {to_c(('num', operation['numbers'][argument]))});")
   return number, depth
 
 
