@@ -120,6 +120,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise exclusive or of a and b",
   },
+  "xor_cst": {
+    "opcode": 0x0e4,
+    "form": ("function", "xor"),
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_XOR_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the bitwise exclusive or of x and c, c is a number written in the register B",
+  },
   "not": {
     "opcode": 0x0fc,
     "form": ("operator", "~"),
