@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import OPERATIONS, OPERATORS, reads
+from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -130,6 +130,12 @@ def split_source(expr, stagings):
   return None, flatten(expr, stagings)
 
 
+def check_arguments(name, args):
+  names = [argument for argument, _ in OPERATIONS[FUNCTIONS[name]]["arguments"]]
+  if len(args) != len(names):
+    raise ValueError(f"{name} takes {len(names)} argument{'' if len(names) == 1 else 's'} ({', '.join(names)})")
+
+
 def flatten(expr, stagings):
   kind = expr[0]
   if kind == "call":
@@ -149,37 +155,29 @@ def flatten(expr, stagings):
         raise ValueError("the shift goes after the sat: sat(x, n) >> k")
       operations[-1]["sat"] = bits
       return operations
+    if name in FUNCTIONS:
+      check_arguments(name, args)
     if name == "clamp":
-      if len(args) != 3:
-        raise ValueError("clamp takes 3 arguments (value, low, high)")
       low = constant(args[1], "clamp low")
       high = constant(args[2], "clamp high")
       source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
     if name == "acc":
-      if len(args) != len(reads(OPERATIONS["acc"])):
-        raise ValueError(f"acc takes 1 argument ({', '.join(reads(OPERATIONS['acc']))})")
       source, operations = split_source(args[0], stagings)
       if operations:
         raise ValueError("acc takes a buffer or a Staging variable")
       return [{"kind": "acc", "source": source, "sat": None}]
     if name == "subacst":
-      if len(args) != 3:
-        raise ValueError("subacst takes 3 arguments (a, b, c)")
       constant_b = constant(args[2], "the constant of subacst")
       return [{"kind": "subacst", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": constant_b, "sat": None}]
     if name == "subshr":
-      if len(args) != 3:
-        raise ValueError("subshr takes 3 arguments (a, b, n)")
       amount = constant(args[2], "the shift of subshr")
       if amount < 0:
         raise ValueError("the shift of subshr cannot be negative")
       return [{"kind": "subshr", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": amount, "sat": None}]
     if name == "mac":
-      if len(args) != len(reads(OPERATIONS["mac"])):
-        raise ValueError(f"mac takes 2 arguments ({', '.join(reads(OPERATIONS['mac']))})")
       return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
-    raise ValueError(f"unknown operation '{name}' ({', '.join(['sat'] + [kind for kind in OPERATIONS if kind != 'add'])})")
+    raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
   if kind == "bin":
     if expr[1] in (">>", "<<"):
       _, operations = split_source(expr[2], stagings)

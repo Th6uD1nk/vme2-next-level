@@ -94,6 +94,8 @@ OPERATIONS = {
 
 OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator"}
 
+FUNCTIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "function"}
+
 FIELDS = (
   ("sat(op, bits)", "fu_sat(bits)", "the saturation of the operation it wraps, bits 0 to 31"),
   ("op >> n", "k = n", "the shift applied to the result of the operation, n 0 to 63"),
