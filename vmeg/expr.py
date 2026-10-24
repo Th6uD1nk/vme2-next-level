@@ -17,6 +17,9 @@ def fold(expr, env):
   if kind == "neg":
     inner = fold(expr[1], env)
     return ("num", -inner[1]) if inner[0] == "num" else ("neg", inner)
+  if kind == "not":
+    inner = fold(expr[1], env)
+    return ("num", ~inner[1]) if inner[0] == "num" else ("not", inner)
   if kind == "bin":
     left = fold(expr[2], env)
     right = fold(expr[3], env)
@@ -77,6 +80,8 @@ def copy_text(expr, env):
     return str(known[1]) if known[0] == "num" else known[1]
   if kind == "neg":
     return f"(-{copy_text(expr[1], env)})"
+  if kind == "not":
+    return f"(~{copy_text(expr[1], env)})"
   if kind == "bin":
     return f"({copy_text(expr[2], env)} {expr[1]} {copy_text(expr[3], env)})"
   raise ValueError(f"'{kind}' expression not supported here")
@@ -97,6 +102,8 @@ def to_c(expr):
     return expr[1]
   if kind == "neg":
     return f"(-{to_c(expr[1])})"
+  if kind == "not":
+    return f"(~{to_c(expr[1])})"
   if kind == "bin":
     return f"({to_c(expr[2])} {expr[1]} {to_c(expr[3])})"
   raise ValueError(f"'{kind}' expression not supported here")

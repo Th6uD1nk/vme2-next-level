@@ -98,6 +98,8 @@ def parse_primary(p):
     return expr
   if p.accept("-"):
     return ("neg", parse_primary(p))
+  if p.accept("~"):
+    return ("not", parse_primary(p))
   tok = p.peek()
   if tok is not None and tok[0] == "ident":
     name = p.ident()
