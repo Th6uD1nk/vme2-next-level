@@ -150,6 +150,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise exclusive or of x and c, c is a number written in the register B",
   },
+  "xnor_cst": {
+    "opcode": 0x0ec,
+    "form": ("fused", "xor_cst"),
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_XOR_CST_NOT)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the complement of the bitwise exclusive or of x and c, one operation, c is a number written in the register B",
+  },
   "not": {
     "opcode": 0x0fc,
     "form": ("operator", "~"),

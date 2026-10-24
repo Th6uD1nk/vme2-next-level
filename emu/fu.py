@@ -71,6 +71,10 @@ def op_xor_cst(back, front, fu, a, b, previous, state):
   return back ^ b
 
 
+def op_xnor_cst(back, front, fu, a, b, previous, state):
+  return (~back) ^ b
+
+
 def op_not(back, front, fu, a, b, previous, state):
   return ~back
 
@@ -118,6 +122,7 @@ HANDLERS = {
   "nor_cst": op_nor_cst,
   "xor": op_xor,
   "xor_cst": op_xor_cst,
+  "xnor_cst": op_xnor_cst,
   "not": op_not,
   "clamp": op_clp,
   "mac": op_mac_inner_product_bias,
