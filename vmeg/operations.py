@@ -1,6 +1,9 @@
 OPERATIONS = {
   "add": {
     "opcode": 0x010,
+    "form": ("operator", "+"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
     "syntax": "a + b",
     "code": "fu_code(OP_ADD)",
     "operands": ("front", "back"),
@@ -10,6 +13,9 @@ OPERATIONS = {
   },
   "sub": {
     "opcode": 0x018,
+    "form": ("operator", "-"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
     "syntax": "a - b",
     "code": "fu_code(OP_SUB)",
     "operands": ("front", "back"),
@@ -19,6 +25,9 @@ OPERATIONS = {
   },
   "subacst": {
     "opcode": 0x048,
+    "form": ("function", "subacst"),
+    "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
+    "registers": {"B": "c"},
     "syntax": "subacst(a, b, c)",
     "code": "fu_code(OP_SUB_OFB)",
     "operands": ("front", "back"),
@@ -28,6 +37,10 @@ OPERATIONS = {
   },
   "subshr": {
     "opcode": 0x050,
+    "form": ("function", "subshr"),
+    "arguments": (("a", "operand"), ("b", "operand"), ("n", "number")),
+    "registers": {"B": "n"},
+    "minimums": {"n": 0},
     "syntax": "subshr(a, b, n)",
     "code": "fu_code(OP_SUB_INV_SHF)",
     "operands": ("front", "back"),
@@ -37,6 +50,9 @@ OPERATIONS = {
   },
   "mul": {
     "opcode": 0x200,
+    "form": ("operator", "*"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
     "syntax": "a * b",
     "code": "VME_FU_OPCODE_MUL_RSHIFT_0",
     "operands": ("front", "back"),
@@ -46,6 +62,9 @@ OPERATIONS = {
   },
   "and": {
     "opcode": 0x0c0,
+    "form": ("operator", "&"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
     "syntax": "a & b",
     "code": "fu_code(OP_AND)",
     "operands": ("front", "back"),
@@ -55,6 +74,9 @@ OPERATIONS = {
   },
   "clamp": {
     "opcode": 0x07c,
+    "form": ("function", "clamp"),
+    "arguments": (("x", "source"), ("low", "number"), ("high", "number")),
+    "registers": {"A": "high", "B": "low"},
     "syntax": "clamp(x, low, high)",
     "code": "fu_code(OP_CLP)",
     "operands": ("back",),
@@ -64,6 +86,9 @@ OPERATIONS = {
   },
   "mac": {
     "opcode": 0x240,
+    "form": ("function", "mac"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
     "syntax": "mac(a, b)",
     "code": "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS",
     "operands": ("front", "back"),
@@ -73,6 +98,9 @@ OPERATIONS = {
   },
   "acc": {
     "opcode": 0x250,
+    "form": ("function", "acc"),
+    "arguments": (("x", "operand"),),
+    "registers": {},
     "syntax": "acc(x)",
     "code": "VME_FU_OPCODE_MAC_ACC_SHIFT_BIAS",
     "operands": ("back",),
