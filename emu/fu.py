@@ -39,6 +39,10 @@ def op_or(back, front, fu, a, b, previous, state):
   return back | front
 
 
+def op_xor(back, front, fu, a, b, previous, state):
+  return back ^ front
+
+
 def op_mac_acc_shift_bias(back, front, fu, a, b, previous, state):
   return (b >> fu["k"] if previous is None else previous) + (back >> fu["k"])
 
@@ -74,6 +78,7 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "and": op_and,
   "or": op_or,
+  "xor": op_xor,
   "clamp": op_clp,
   "mac": op_mac_inner_product_bias,
   "acc": op_mac_acc_shift_bias,

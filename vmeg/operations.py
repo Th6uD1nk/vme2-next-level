@@ -70,6 +70,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise or of a and b",
   },
+  "xor": {
+    "opcode": 0x0e0,
+    "form": ("operator", "^"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "code": "fu_code(OP_XOR)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "the bitwise exclusive or of a and b",
+  },
   "clamp": {
     "opcode": 0x07c,
     "form": ("function", "clamp"),
