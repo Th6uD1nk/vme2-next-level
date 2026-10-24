@@ -168,27 +168,16 @@ def flatten(expr, stagings):
       return operations
     if name in FUNCTIONS:
       check_arguments(name, args)
-    if name == "clamp":
-      low = constant(args[1], "clamp low")
-      high = constant(args[2], "clamp high")
+      specification = OPERATIONS[FUNCTIONS[name]]
+      numbers = {}
+      for (argument, argument_kind), expr_argument in zip(specification["arguments"], args):
+        if argument_kind == "number":
+          numbers[argument] = constant(expr_argument, f"{name} {argument}")
+          minimum = specification.get("minimums", {}).get(argument)
+          if minimum is not None and numbers[argument] < minimum:
+            raise ValueError(f"{name} {argument} cannot be less than {minimum}")
       operands, operations = function_operands(name, args, stagings)
-      return operations + [{"kind": "clamp", **operands, "numbers": {"low": low, "high": high}, "sat": None}]
-    if name == "acc":
-      operands, _ = function_operands(name, args, stagings)
-      return [{"kind": "acc", **operands, "sat": None}]
-    if name == "subacst":
-      constant_b = constant(args[2], "the constant of subacst")
-      operands, _ = function_operands(name, args, stagings)
-      return [{"kind": "subacst", **operands, "numbers": {"c": constant_b}, "sat": None}]
-    if name == "subshr":
-      amount = constant(args[2], "the shift of subshr")
-      if amount < 0:
-        raise ValueError("the shift of subshr cannot be negative")
-      operands, _ = function_operands(name, args, stagings)
-      return [{"kind": "subshr", **operands, "numbers": {"n": amount}, "sat": None}]
-    if name == "mac":
-      operands, _ = function_operands(name, args, stagings)
-      return [{"kind": "mac", **operands, "sat": None}]
+      return operations + [{"kind": FUNCTIONS[name], **operands, "numbers": numbers, "sat": None}]
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
   if kind == "bin":
     if expr[1] in (">>", "<<"):
