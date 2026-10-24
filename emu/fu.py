@@ -43,6 +43,10 @@ def op_nand(back, front, fu, a, b, previous, state):
   return ~(back & front)
 
 
+def op_nand_cst(back, front, fu, a, b, previous, state):
+  return ~(b & back)
+
+
 def op_or(back, front, fu, a, b, previous, state):
   return back | front
 
@@ -103,6 +107,7 @@ HANDLERS = {
   "and": op_and,
   "and_cst": op_and_cst,
   "nand": op_nand,
+  "nand_cst": op_nand_cst,
   "or": op_or,
   "or_cst": op_or_cst,
   "nor": op_nor,

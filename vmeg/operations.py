@@ -80,6 +80,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the complement of the bitwise and of a and b, one operation",
   },
+  "nand_cst": {
+    "opcode": 0x0cc,
+    "form": ("fused", "and_cst"),
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_NAD_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the complement of the bitwise and of x and c, one operation, c is a number written in the register B",
+  },
   "or": {
     "opcode": 0x0d0,
     "form": ("operator", "|"),
