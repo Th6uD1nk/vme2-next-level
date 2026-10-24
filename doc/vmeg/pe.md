@@ -70,6 +70,7 @@ Staging s;
 - `pe2` holds two: the one kept in `s`, and the one that leaves.
 - A third operation in the same pe is an error.
 - `sat` and the shifts `>>` and `<<` are not operations: they set the saturation and the shift of the operation they wrap, and are not counted. Currently not supported: the signed zero option.
+- `~` is one operation when it combines with what it complements, as in `~(a & b)`, and two operations otherwise, as in `~(a + b)` ([6.2.1](operations.md#621-the-complement)).
 - `mul`, `mac` and `acc` must be the first operation of the pe: the innermost one, or the first one written. Written after another operation of the pe, they are refused.
 
 ```c
