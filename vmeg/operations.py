@@ -108,6 +108,10 @@ FIELDS = (
 )
 
 
+def reads(specification):
+  return tuple(name for name, kind in specification["arguments"] if kind in ("operand", "source"))
+
+
 def syntax(specification):
   names = [name for name, _ in specification["arguments"]]
   form, name = specification["form"]
@@ -118,7 +122,7 @@ def syntax(specification):
 
 def operation_columns(specification):
   units = "first operation of the pe only" if specification["units"] == "primary" else "any position"
-  return (syntax(specification), f"0x{specification['opcode']:03x}", specification["code"], ", ".join(specification["reads"]), units)
+  return (syntax(specification), f"0x{specification['opcode']:03x}", specification["code"], ", ".join(reads(specification)), units)
 
 
 def format_operations():

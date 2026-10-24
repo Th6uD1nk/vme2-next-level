@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import OPERATIONS
+from vmeg.operations import OPERATIONS, reads
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -157,8 +157,8 @@ def flatten(expr, stagings):
       source, operations = split_source(args[0], stagings)
       return operations + [{"kind": "clamp", "source": source, "low": low, "high": high, "sat": None}]
     if name == "acc":
-      if len(args) != len(OPERATIONS["acc"]["reads"]):
-        raise ValueError(f"acc takes 1 argument ({', '.join(OPERATIONS['acc']['reads'])})")
+      if len(args) != len(reads(OPERATIONS["acc"])):
+        raise ValueError(f"acc takes 1 argument ({', '.join(reads(OPERATIONS['acc']))})")
       source, operations = split_source(args[0], stagings)
       if operations:
         raise ValueError("acc takes a buffer or a Staging variable")
@@ -176,8 +176,8 @@ def flatten(expr, stagings):
         raise ValueError("the shift of subshr cannot be negative")
       return [{"kind": "subshr", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "b": amount, "sat": None}]
     if name == "mac":
-      if len(args) != len(OPERATIONS["mac"]["reads"]):
-        raise ValueError(f"mac takes 2 arguments ({', '.join(OPERATIONS['mac']['reads'])})")
+      if len(args) != len(reads(OPERATIONS["mac"])):
+        raise ValueError(f"mac takes 2 arguments ({', '.join(reads(OPERATIONS['mac']))})")
       return [{"kind": "mac", "front": operand(args[0], stagings), "back": operand(args[1], stagings), "sat": None}]
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat'] + [kind for kind in OPERATIONS if kind != 'add'])})")
   if kind == "bin":
