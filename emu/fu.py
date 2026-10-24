@@ -74,7 +74,13 @@ HANDLERS = {
   "acc": op_mac_acc_shift_bias,
 }
 
+if sorted(HANDLERS) != sorted(OPERATIONS):
+  raise ValueError(f"the computations of the emulator and the operations table differ: {', '.join(sorted(set(HANDLERS) ^ set(OPERATIONS)))}")
+
 OPCODES = {specification["opcode"]: (HANDLERS[kind], specification["operands"]) for kind, specification in OPERATIONS.items()}
+
+if len(OPCODES) != len(OPERATIONS):
+  raise ValueError("two operations of the table have the same opcode")
 
 
 def opcode_entry(fu):
