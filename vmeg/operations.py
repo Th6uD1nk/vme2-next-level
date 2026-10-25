@@ -1,3 +1,5 @@
+from vmeg.pattern import check_patterns
+
 OPERATIONS = {
   "add": {
     "opcode": 0x010,
@@ -233,6 +235,9 @@ OPERATIONS = {
     "note": "running sum, x is a buffer or a Staging variable",
   },
 }
+
+check_patterns(OPERATIONS)
+
 
 def first_by_name(form, arity=None):
   found = {}

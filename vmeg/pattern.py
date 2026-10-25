@@ -122,3 +122,18 @@ def canonical(tree, roles):
     return ("bin", tree[1], *sorted(tree[2:], key=repr))
   return tree
 
+
+def check_patterns(operations):
+  seen = {}
+  for kind, specification in operations.items():
+    try:
+      tree = parse_pattern(specification["pattern"])
+    except ValueError as error:
+      raise ValueError(f"the pattern of '{kind}' is not valid: {error}")
+    roles = dict(specification["arguments"])
+    if sorted(set(names_of(tree))) != sorted(roles):
+      raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(roles)})")
+    key = repr(canonical(tree, roles))
+    if key in seen:
+      raise ValueError(f"'{kind}' and '{seen[key]}' have the same pattern")
+    seen[key] = kind
