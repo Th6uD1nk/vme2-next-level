@@ -488,6 +488,8 @@ def place(state, lines, pe, operations, line):
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
     for register, argument in specification["registers"].items():
       lines.append(f"vme_pe{pe}(fu_reg({unit}, {register}), {to_c(('num', operation['numbers'][argument]))});")
+    for register, fixed in specification.get("fixed", {}).items():
+      lines.append(f"vme_pe{pe}(fu_reg({unit}, {register}), {to_c(('num', fixed))});")
   return number, depth
 
 
