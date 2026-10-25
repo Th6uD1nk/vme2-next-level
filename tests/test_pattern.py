@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.pattern import match, parse_pattern
+from vmeg.pattern import match, parse_pattern, simplify
 
 
 class ParsePatternTest(unittest.TestCase):
@@ -61,6 +61,28 @@ class MatchTest(unittest.TestCase):
     self.assertEqual(found("~and(x, c)", "~and(top0, 255)", "c"), {"x": ("name", "top0"), "c": ("num", 255)})
     self.assertIsNone(found("~and(x, c)", "~or(top0, 255)", "c"))
     self.assertIsNone(found("~and(x, c)", "and(top0, 255)", "c"))
+
+
+def simplified(text):
+  return simplify(parse_pattern(text))
+
+
+class SimplifyTest(unittest.TestCase):
+  def test_a_zero_that_changes_nothing_is_dropped(self):
+    for text in ["a + 0", "0 + a", "a | 0", "0 | a", "a ^ 0", "0 ^ a", "a - 0", "a << 0", "a >> 0"]:
+      self.assertEqual(simplified(text), ("name", "a"), text)
+
+  def test_a_product_or_an_and_with_zero_is_zero(self):
+    for text in ["a * 0", "0 * a", "a & 0", "0 & a"]:
+      self.assertEqual(simplified(text), ("num", 0), text)
+
+  def test_what_is_not_neutral_stays(self):
+    for text in ["0 - a", "0 << a", "a + 1", "a * 1", "~and(a, 0)"]:
+      self.assertEqual(simplified(text), parse_pattern(text), text)
+
+  def test_the_zeros_inside_an_expression_are_dropped_too(self):
+    self.assertEqual(simplified("(a + 0) * (b | 0)"), parse_pattern("a * b"))
+    self.assertEqual(simplified("a * 0 + b"), ("name", "b"))
 
 
 if __name__ == "__main__":
