@@ -15,9 +15,8 @@ OPERATIONS = {
     "opcode": 0x030,
     "form": ("operator", "+"),
     "pattern": "a + b + c",
-    "arguments": (("a", "operand"), ("b", "operand")),
-    "registers": {},
-    "fixed": {"A": 0},
+    "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
+    "registers": {"A": "c"},
     "code": "fu_code(OP_ADD_OFA)",
     "operands": ("front", "back"),
     "units": "any",
@@ -263,11 +262,11 @@ def reads(specification):
 
 
 def slots(specification):
-  return len(reads(specification)) + len(specification["registers"]) + len(specification.get("fixed", {}))
+  return len(reads(specification)) + len(specification["registers"])
 
 
 def shape(specification):
-  return specification["form"], tuple(kind for _, kind in specification["arguments"])
+  return specification["form"], tuple(kind for _, kind in specification["arguments"] if kind != "number")
 
 
 def candidates_by_kind():
