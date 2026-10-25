@@ -12,14 +12,14 @@ OPERATIONS = {
   },
   "add_ofa": {
     "opcode": 0x030,
-    "form": ("variant", "add"),
+    "form": ("operator", "+"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "fixed": {"A": 0},
     "code": "fu_code(OP_ADD_OFA)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "variant of a + b for the models where 0x010 does not work: (a + b) + A, with the register A written at 0",
+    "note": "another way to write a + b: (a + b) + A with the register A written at 0, taken when 0x010 is excluded (--compat fat)",
   },
   "sub": {
     "opcode": 0x018,
@@ -214,15 +214,21 @@ OPERATIONS = {
   },
 }
 
-OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator" and len(specification["arguments"]) == 2}
+def first_by_name(form, arity=None):
+  found = {}
+  for kind, specification in OPERATIONS.items():
+    if specification["form"][0] == form and (arity is None or len(specification["arguments"]) == arity):
+      found.setdefault(specification["form"][1], kind)
+  return found
 
-UNARY_OPERATORS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "operator" and len(specification["arguments"]) == 1}
 
-FUSIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "fused"}
+OPERATORS = first_by_name("operator", 2)
 
-VARIANTS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "variant"}
+UNARY_OPERATORS = first_by_name("operator", 1)
 
-FUNCTIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "function"}
+FUSIONS = first_by_name("fused")
+
+FUNCTIONS = first_by_name("function")
 
 FIELDS = (
   ("sat(op, bits)", "fu_sat(bits)", "the saturation of the operation it wraps, bits 0 to 31"),
@@ -231,23 +237,38 @@ FIELDS = (
 )
 
 
-def resolve(kind, compat):
-  if compat == "fat" and OPERATIONS[kind].get("not_portable"):
-    if kind not in VARIANTS:
-      raise ValueError(f"{kind} does not work on the fat and has no variant")
-    return VARIANTS[kind]
-  return kind
-
-
 def reads(specification):
   return tuple(name for name, kind in specification["arguments"] if kind in ("operand", "source"))
+
+
+def slots(specification):
+  return len(reads(specification)) + len(specification["registers"]) + len(specification.get("fixed", {}))
+
+
+def shape(specification):
+  return specification["form"], tuple(kind for _, kind in specification["arguments"])
+
+
+def candidates_by_kind():
+  groups = {}
+  for kind, specification in OPERATIONS.items():
+    groups.setdefault(shape(specification), []).append(kind)
+  return {kind: sorted(group, key=lambda candidate: slots(OPERATIONS[candidate])) for group in groups.values() for kind in group}
+
+
+CANDIDATES = candidates_by_kind()
+
+
+def choose(kind, compat):
+  for candidate in CANDIDATES[kind]:
+    if not (compat == "fat" and OPERATIONS[candidate].get("not_portable")):
+      return candidate
+  raise ValueError(f"{kind} does not work on the fat and nothing replaces it")
 
 
 def syntax(specification):
   names = [name for name, _ in specification["arguments"]]
   form, name = specification["form"]
-  if form == "variant":
-    return syntax(OPERATIONS[name])
   if form == "fused":
     inner = OPERATIONS[name]
     return f"~({syntax(inner)})" if inner["form"][0] == "operator" else f"~{syntax(inner)}"

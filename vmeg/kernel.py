@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, FUSIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS, resolve
+from vmeg.operations import FUNCTIONS, FUSIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS, choose
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -467,7 +467,7 @@ def place(state, lines, pe, operations, line):
     number = state["fus"].get(pe, 0)
     state["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
-    specification = OPERATIONS[resolve(operation["kind"], state["compat"])]
+    specification = OPERATIONS[choose(operation["kind"], state["compat"])]
     if specification["units"] == "primary" and number != 0:
       raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     code = specification["code"]
