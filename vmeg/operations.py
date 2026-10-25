@@ -10,6 +10,17 @@ OPERATIONS = {
     "units": "any",
     "note": "the sum of a and b",
   },
+  "add_ofa": {
+    "opcode": 0x030,
+    "form": ("variant", "add"),
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "fixed": {"A": 0},
+    "code": "fu_code(OP_ADD_OFA)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "variant of a + b for the models where 0x010 does not work: (a + b) + A, with the register A written at 0",
+  },
   "sub": {
     "opcode": 0x018,
     "form": ("operator", "-"),
@@ -225,6 +236,8 @@ def reads(specification):
 def syntax(specification):
   names = [name for name, _ in specification["arguments"]]
   form, name = specification["form"]
+  if form == "variant":
+    return syntax(OPERATIONS[name])
   if form == "fused":
     inner = OPERATIONS[name]
     return f"~({syntax(inner)})" if inner["form"][0] == "operator" else f"~{syntax(inner)}"
