@@ -58,7 +58,7 @@ def directive_break(out):
   return "" if written.endswith("\n") else "\n"
 
 
-def translate(text, blocks, path, registry=None, warnings=None):
+def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   quoted = path.replace("\\", "\\\\").replace('"', '\\"')
   toks = list(tokens(text))
   registry = registry or project_registry([(path, text)])
@@ -66,7 +66,7 @@ def translate(text, blocks, path, registry=None, warnings=None):
   out = [f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   found = []
-  codes = [generate(text, block, found) for block in blocks]
+  codes = [generate(text, block, found, compat) for block in blocks]
   records, per_block = block_statement_records(text, blocks)
   codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
   check_decorators(text, blocks, registry)
@@ -108,10 +108,11 @@ def main(argv=None):
   parser.add_argument("-o", "--output")
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--ops", action="store_true")
+  parser.add_argument("--compat", choices=["fat"])
   args = parser.parse_args(argv)
 
   if args.ops:
-    if args.inputs or args.output or args.list:
+    if args.inputs or args.output or args.list or args.compat:
       parser.error("--ops goes alone")
     sys.stdout.write(format_operations())
     return 0
@@ -164,7 +165,7 @@ def main(argv=None):
   named = {}
   for path, text, blocks in found:
     try:
-      result = translate(text, blocks, path, registry, warnings)
+      result = translate(text, blocks, path, registry, warnings, args.compat)
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
       return 1
