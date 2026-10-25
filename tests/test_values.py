@@ -49,6 +49,19 @@ class CycAutoTest(unittest.TestCase):
     self.assertEqual(shared_warnings(".top1 - top1;"), [])
 
 
+def kernel_lines(body, compat):
+  text = ".kernel k direct {\n  .pe0 { " + body + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
+  code = generate(text, find_blocks(text)[0], [], compat)
+  return [line.strip() for line in code.splitlines() if "vme_fu" in line or "fu_reg" in line]
+
+
+class CompatTest(unittest.TestCase):
+  def test_the_option_fat_replaces_the_opcode_that_is_not_portable_by_its_variant(self):
+    self.assertEqual(kernel_lines(".top0 + base0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));"])
+    self.assertEqual(kernel_lines(".top0 + base0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);"])
+    self.assertEqual(kernel_lines(".top0 - base0;", "fat"), kernel_lines(".top0 - base0;", None))
+
+
 class KnownMacrosInAKernelTest(unittest.TestCase):
   def test_a_chain_of_int_built_from_a_macro_of_the_file_is_a_number(self):
     self.assertEqual(agu_count("  Int a = STEP * 2, n = a + 1;", "#define STEP 4\n"), count_line("9"))
