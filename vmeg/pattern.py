@@ -54,3 +54,35 @@ def bind_name(name, expr, constants, found):
   if name in found:
     return found if found[name] == expr else None
   return {**found, name: expr}
+
+
+ZERO = ("num", 0)
+
+
+def rebuild(tree, change):
+  kind = tree[0]
+  if kind == "bin":
+    return ("bin", tree[1], change(tree[2]), change(tree[3]))
+  if kind in ("not", "neg"):
+    return (kind, change(tree[1]))
+  if kind == "call":
+    return ("call", tree[1], [change(argument) for argument in tree[2]])
+  return tree
+
+
+def simplify(tree):
+  tree = rebuild(tree, simplify)
+  if tree[0] != "bin":
+    return tree
+  _, operator, left, right = tree
+  if operator in ("+", "|", "^"):
+    if left == ZERO:
+      return right
+    if right == ZERO:
+      return left
+  if operator in ("-", "<<", ">>") and right == ZERO:
+    return left
+  if operator in ("*", "&") and ZERO in (left, right):
+    return ZERO
+  return tree
+
