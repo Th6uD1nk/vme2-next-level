@@ -1,6 +1,7 @@
 OPERATIONS = {
   "add": {
     "opcode": 0x010,
+    "not_portable": True,
     "form": ("operator", "+"),
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
