@@ -33,6 +33,7 @@ def main(argv=None):
   parser.add_argument("--full", action="store_true")
   parser.add_argument("--run")
   parser.add_argument("--trace")
+  parser.add_argument("--compat", choices=["fat"])
   args = parser.parse_args(argv)
   if (args.kernel is not None or args.full) and not args.list:
     parser.error("--kernel and --full go with --list")
@@ -40,6 +41,8 @@ def main(argv=None):
     parser.error("--run does not go with --list")
   if args.trace is not None and args.run is None:
     parser.error("--trace goes with --run")
+  if args.compat is not None and args.run is None:
+    parser.error("--compat goes with --run")
   if args.run is None and len(args.input) != 1:
     parser.error("several files go only with --run")
 
@@ -57,7 +60,7 @@ def main(argv=None):
       path, text = choose_source(sources, args.run)
       where = path
       others = [other for other_path, other in sources if other_path != path]
-      emulator = run_emulation(text, args.run, args.trace, others)
+      emulator = run_emulation(text, args.run, args.trace, others, args.compat)
     else:
       emulator = Emulator()
       replay(emulator, text)

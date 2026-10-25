@@ -19,9 +19,9 @@ def choose_source(sources, identifier):
   raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in these files'})")
 
 
-def run_emulation(text, identifier, trace_path=None, others=()):
+def run_emulation(text, identifier, trace_path=None, others=(), compat=None):
   with tempfile.TemporaryDirectory() as folder:
-    trace = run_program(build_program(host_program(text, identifier, others), folder))
+    trace = run_program(build_program(host_program(text, identifier, others, compat), folder))
   if trace_path is not None:
     with open(trace_path, "w", encoding="utf-8") as f:
       f.write(trace)

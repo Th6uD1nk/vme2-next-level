@@ -18,11 +18,11 @@ def chosen_emulation(text, identifier):
   return chosen[0]
 
 
-def kernel_code(text, identifier):
+def kernel_code(text, identifier, compat=None):
   emulation = chosen_emulation(text, identifier)
   for block in find_blocks(text):
     if block[0] == "kernel" and kernel_name(text, block) == emulation["kernel"]:
-      return generate(text, block)
+      return generate(text, block, None, compat)
 
 
 def other_declaration(others, source):
@@ -84,7 +84,7 @@ def declared_parts(text, identifier, others=()):
   return arrays, parts
 
 
-def host_source(text, identifier, others=()):
+def host_source(text, identifier, others=(), compat=None):
   arrays, parts = declared_parts(text, identifier, others)
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
@@ -104,7 +104,7 @@ def host_source(text, identifier, others=()):
       "}\n"
       "#define useg_mem(v) vmegUsegMem((u32)(v))"
     )
-  parts.append(kernel_code(text, identifier))
+  parts.append(kernel_code(text, identifier, compat))
   if emulation["definitions"]:
     parts.append("\n".join(emulation["definitions"]))
   calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
@@ -124,5 +124,5 @@ def host_main(text, identifier):
   return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
-def host_program(text, identifier, others=()):
-  return INCLUDES + "\n" + host_source(text, identifier, others) + "\n" + host_main(text, identifier)
+def host_program(text, identifier, others=(), compat=None):
+  return INCLUDES + "\n" + host_source(text, identifier, others, compat) + "\n" + host_main(text, identifier)
