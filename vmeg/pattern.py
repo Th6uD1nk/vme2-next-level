@@ -114,10 +114,10 @@ def names_of(tree):
   return [name for child in children(tree) for name in names_of(child)]
 
 
-def canonical(tree, roles):
+def canonical(tree):
   if tree[0] == "name":
-    return ("name", "#" if roles[tree[1]] == "number" else "_")
-  tree = rebuild(tree, lambda child: canonical(child, roles))
+    return tree
+  tree = rebuild(tree, canonical)
   if tree[0] == "bin" and tree[1] in COMMUTATIVE:
     return ("bin", tree[1], *sorted(tree[2:], key=repr))
   return tree
@@ -130,10 +130,10 @@ def check_patterns(operations):
       tree = parse_pattern(specification["pattern"])
     except ValueError as error:
       raise ValueError(f"the pattern of '{kind}' is not valid: {error}")
-    roles = dict(specification["arguments"])
-    if sorted(set(names_of(tree))) != sorted(roles):
-      raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(roles)})")
-    key = repr(canonical(tree, roles))
+    names = [name for name, _ in specification["arguments"]]
+    if sorted(set(names_of(tree))) != sorted(names):
+      raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(names)})")
+    key = repr(canonical(tree))
     if key in seen:
       raise ValueError(f"'{kind}' and '{seen[key]}' have the same pattern")
     seen[key] = kind
