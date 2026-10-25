@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.pattern import match, parse_pattern, simplify
+from vmeg.pattern import match, parse_pattern, simplify, without
 
 
 class ParsePatternTest(unittest.TestCase):
@@ -83,6 +83,28 @@ class SimplifyTest(unittest.TestCase):
   def test_the_zeros_inside_an_expression_are_dropped_too(self):
     self.assertEqual(simplified("(a + 0) * (b | 0)"), parse_pattern("a * b"))
     self.assertEqual(simplified("a * 0 + b"), ("name", "b"))
+
+
+def reduced(pattern, names):
+  return without(parse_pattern(pattern), names)
+
+
+class WithoutTest(unittest.TestCase):
+  def test_a_constant_set_to_zero_leaves_what_the_operation_does_without_it(self):
+    self.assertEqual(reduced("a + b + c", ["c"]), parse_pattern("a + b"))
+    self.assertEqual(reduced("a - b + c", ["c"]), parse_pattern("a - b"))
+    self.assertEqual(reduced("(a - b) >> n", ["n"]), parse_pattern("a - b"))
+
+  def test_a_constant_that_makes_the_whole_pattern_zero_gives_zero(self):
+    self.assertEqual(reduced("a * b * c", ["c"]), ("num", 0))
+
+  def test_only_the_named_constants_are_set_to_zero(self):
+    self.assertEqual(reduced("a + b + c", []), parse_pattern("a + b + c"))
+    self.assertEqual(reduced("(a + c) * d", ["c"]), parse_pattern("a * d"))
+
+  def test_a_reduced_pattern_is_found_in_the_written_expression_only_when_it_is_the_same(self):
+    self.assertIsNotNone(match(reduced("a + b + c", ["c"]), parse_pattern("x + y"), ()))
+    self.assertIsNone(match(reduced("a * b * c", ["c"]), parse_pattern("x * y"), ()))
 
 
 if __name__ == "__main__":
