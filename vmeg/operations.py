@@ -3,6 +3,7 @@ OPERATIONS = {
     "opcode": 0x010,
     "not_portable": True,
     "form": ("operator", "+"),
+    "pattern": "a + b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_ADD)",
@@ -13,6 +14,7 @@ OPERATIONS = {
   "add_ofa": {
     "opcode": 0x030,
     "form": ("operator", "+"),
+    "pattern": "a + b + c",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "fixed": {"A": 0},
@@ -24,6 +26,7 @@ OPERATIONS = {
   "sub": {
     "opcode": 0x018,
     "form": ("operator", "-"),
+    "pattern": "a - b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_SUB)",
@@ -34,6 +37,7 @@ OPERATIONS = {
   "subacst": {
     "opcode": 0x048,
     "form": ("function", "subacst"),
+    "pattern": "a - b + c",
     "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_SUB_OFB)",
@@ -44,6 +48,7 @@ OPERATIONS = {
   "subshr": {
     "opcode": 0x050,
     "form": ("function", "subshr"),
+    "pattern": "b - (a >> n)",
     "arguments": (("a", "operand"), ("b", "operand"), ("n", "number")),
     "registers": {"B": "n"},
     "minimums": {"n": 0},
@@ -55,6 +60,7 @@ OPERATIONS = {
   "mul": {
     "opcode": 0x200,
     "form": ("operator", "*"),
+    "pattern": "a * b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "VME_FU_OPCODE_MUL_RSHIFT_0",
@@ -65,6 +71,7 @@ OPERATIONS = {
   "and": {
     "opcode": 0x0c0,
     "form": ("operator", "&"),
+    "pattern": "a & b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_AND)",
@@ -75,6 +82,7 @@ OPERATIONS = {
   "and_cst": {
     "opcode": 0x0c4,
     "form": ("function", "and"),
+    "pattern": "x & c",
     "arguments": (("x", "source"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_AND_CST)",
@@ -85,6 +93,7 @@ OPERATIONS = {
   "nand": {
     "opcode": 0x0c8,
     "form": ("fused", "and"),
+    "pattern": "~(a & b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_NAD)",
@@ -95,6 +104,7 @@ OPERATIONS = {
   "nand_cst": {
     "opcode": 0x0cc,
     "form": ("fused", "and_cst"),
+    "pattern": "~(x & c)",
     "arguments": (("x", "source"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_NAD_CST)",
@@ -105,6 +115,7 @@ OPERATIONS = {
   "or": {
     "opcode": 0x0d0,
     "form": ("operator", "|"),
+    "pattern": "a | b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_OR)",
@@ -115,6 +126,7 @@ OPERATIONS = {
   "nor": {
     "opcode": 0x0d8,
     "form": ("fused", "or"),
+    "pattern": "~(a | b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_NOR)",
@@ -125,6 +137,7 @@ OPERATIONS = {
   "or_cst": {
     "opcode": 0x0d4,
     "form": ("function", "or"),
+    "pattern": "x | c",
     "arguments": (("x", "source"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_OR_CST)",
@@ -135,6 +148,7 @@ OPERATIONS = {
   "nor_cst": {
     "opcode": 0x0dc,
     "form": ("fused", "or_cst"),
+    "pattern": "~(x | c)",
     "arguments": (("x", "source"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_NOR_CST)",
@@ -145,6 +159,7 @@ OPERATIONS = {
   "xor": {
     "opcode": 0x0e0,
     "form": ("operator", "^"),
+    "pattern": "a ^ b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "fu_code(OP_XOR)",
@@ -155,6 +170,7 @@ OPERATIONS = {
   "xor_cst": {
     "opcode": 0x0e4,
     "form": ("function", "xor"),
+    "pattern": "x ^ c",
     "arguments": (("x", "source"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_XOR_CST)",
@@ -165,6 +181,7 @@ OPERATIONS = {
   "xnor_cst": {
     "opcode": 0x0ec,
     "form": ("fused", "xor_cst"),
+    "pattern": "~(x ^ c)",
     "arguments": (("x", "source"), ("c", "number")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_XOR_CST_NOT)",
@@ -175,6 +192,7 @@ OPERATIONS = {
   "not": {
     "opcode": 0x0fc,
     "form": ("operator", "~"),
+    "pattern": "~x",
     "arguments": (("x", "source"),),
     "registers": {},
     "code": "fu_code(OP_NOT)",
@@ -185,6 +203,7 @@ OPERATIONS = {
   "clamp": {
     "opcode": 0x07c,
     "form": ("function", "clamp"),
+    "pattern": "clamp(x, low, high)",
     "arguments": (("x", "source"), ("low", "number"), ("high", "number")),
     "registers": {"A": "high", "B": "low"},
     "code": "fu_code(OP_CLP)",
@@ -195,6 +214,7 @@ OPERATIONS = {
   "mac": {
     "opcode": 0x240,
     "form": ("function", "mac"),
+    "pattern": "mac(a, b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
     "code": "VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS",
@@ -205,6 +225,7 @@ OPERATIONS = {
   "acc": {
     "opcode": 0x250,
     "form": ("function", "acc"),
+    "pattern": "acc(x)",
     "arguments": (("x", "operand"),),
     "registers": {},
     "code": "VME_FU_OPCODE_MAC_ACC_SHIFT_BIAS",
