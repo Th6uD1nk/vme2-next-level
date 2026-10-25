@@ -70,6 +70,12 @@ def rebuild(tree, change):
   return tree
 
 
+def substitute(tree, names):
+  if tree[0] == "name" and tree[1] in names:
+    return ZERO
+  return rebuild(tree, lambda child: substitute(child, names))
+
+
 def simplify(tree):
   tree = rebuild(tree, simplify)
   if tree[0] != "bin":
@@ -86,3 +92,6 @@ def simplify(tree):
     return ZERO
   return tree
 
+
+def without(pattern, names):
+  return simplify(substitute(pattern, names))
