@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.pattern import match, parse_pattern, simplify, without
+from vmeg.pattern import check_patterns, match, parse_pattern, simplify, without
 
 
 class ParsePatternTest(unittest.TestCase):
@@ -105,6 +105,36 @@ class WithoutTest(unittest.TestCase):
   def test_a_reduced_pattern_is_found_in_the_written_expression_only_when_it_is_the_same(self):
     self.assertIsNotNone(match(reduced("a + b + c", ["c"]), parse_pattern("x + y"), ()))
     self.assertIsNone(match(reduced("a * b * c", ["c"]), parse_pattern("x * y"), ()))
+
+
+def entry(pattern, *arguments):
+  return {"pattern": pattern, "arguments": arguments}
+
+
+OPERANDS = (("a", "operand"), ("b", "operand"))
+
+
+class CheckPatternsTest(unittest.TestCase):
+  def test_a_table_whose_patterns_use_their_arguments_is_accepted(self):
+    check_patterns({"add": entry("a + b", *OPERANDS), "addc": entry("a + b + c", *OPERANDS, ("c", "number"))})
+
+  def test_a_pattern_that_cannot_be_read_is_refused(self):
+    with self.assertRaisesRegex(ValueError, "the pattern of 'sub' is not valid"):
+      check_patterns({"sub": entry("a - ", *OPERANDS)})
+
+  def test_a_pattern_must_use_exactly_its_arguments(self):
+    with self.assertRaisesRegex(ValueError, r"the pattern of 'sub' must use its arguments \(a, b\)"):
+      check_patterns({"sub": entry("a - b + c", *OPERANDS)})
+    with self.assertRaisesRegex(ValueError, r"the pattern of 'sub' must use its arguments \(a, b\)"):
+      check_patterns({"sub": entry("a - a", *OPERANDS)})
+
+  def test_two_patterns_that_differ_only_by_the_order_of_a_commutative_operator_are_refused(self):
+    with self.assertRaisesRegex(ValueError, "'or' and 'xor' have the same pattern"):
+      check_patterns({"xor": entry("a | b", *OPERANDS), "or": entry("b | a", *OPERANDS)})
+
+  def test_a_constant_instead_of_an_operand_or_a_minus_reversed_make_two_different_patterns(self):
+    check_patterns({"and": entry("a & b", *OPERANDS), "and_cst": entry("x & c", ("x", "source"), ("c", "number"))})
+    check_patterns({"sub": entry("a - b", *OPERANDS), "rsub": entry("b - a", *OPERANDS)})
 
 
 if __name__ == "__main__":
