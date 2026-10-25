@@ -220,6 +220,8 @@ UNARY_OPERATORS = {specification["form"][1]: kind for kind, specification in OPE
 
 FUSIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "fused"}
 
+VARIANTS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "variant"}
+
 FUNCTIONS = {specification["form"][1]: kind for kind, specification in OPERATIONS.items() if specification["form"][0] == "function"}
 
 FIELDS = (
@@ -227,6 +229,14 @@ FIELDS = (
   ("op >> n", "k = n", "the shift applied to the result of the operation, n 0 to 63"),
   ("op << n", "k = 64 - n", "the rotary shift, n 0 to 63"),
 )
+
+
+def resolve(kind, compat):
+  if compat == "fat" and OPERATIONS[kind].get("not_portable"):
+    if kind not in VARIANTS:
+      raise ValueError(f"{kind} does not work on the fat and has no variant")
+    return VARIANTS[kind]
+  return kind
 
 
 def reads(specification):
