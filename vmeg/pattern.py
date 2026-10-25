@@ -95,3 +95,30 @@ def simplify(tree):
 
 def without(pattern, names):
   return simplify(substitute(pattern, names))
+
+
+def children(tree):
+  kind = tree[0]
+  if kind == "bin":
+    return [tree[2], tree[3]]
+  if kind in ("not", "neg"):
+    return [tree[1]]
+  if kind == "call":
+    return tree[2]
+  return []
+
+
+def names_of(tree):
+  if tree[0] == "name":
+    return [tree[1]]
+  return [name for child in children(tree) for name in names_of(child)]
+
+
+def canonical(tree, roles):
+  if tree[0] == "name":
+    return ("name", "#" if roles[tree[1]] == "number" else "_")
+  tree = rebuild(tree, lambda child: canonical(child, roles))
+  if tree[0] == "bin" and tree[1] in COMMUTATIVE:
+    return ("bin", tree[1], *sorted(tree[2:], key=repr))
+  return tree
+
