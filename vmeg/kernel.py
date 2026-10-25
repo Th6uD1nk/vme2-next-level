@@ -609,8 +609,8 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
-def new_state(macros=None, owner=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}}
+def new_state(macros=None, owner=None, compat=None):
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat}
 
 
 def new_env(macros=None):
@@ -639,10 +639,10 @@ def resolve_auto(lines, state):
   check_shared_auto(state)
 
 
-def run_statements(statements, macros=None, owner=None):
+def run_statements(statements, macros=None, owner=None, compat=None):
   lines = []
   env = new_env(macros)
-  state = new_state(macros, owner)
+  state = new_state(macros, owner, compat)
   for statement in statements:
     emit(statement, env, lines, state)
   resolve_auto(lines, state)
@@ -676,7 +676,7 @@ def kernel_transfers(statements, macros=None, owner=None):
   return state["loads"], state["stores"]
 
 
-def generate(text, block, warnings=None):
+def generate(text, block, warnings=None, compat=None):
   kind, start, open_pos, _ = block
   if kind in ("decorator", "emulate", "kernel-block", "block-statement"):
     return ""
@@ -700,7 +700,7 @@ def generate(text, block, warnings=None):
   statements = parse_body(Parser(text, toks, limit))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
-  lines, state = run_statements(statements, known_macros(text, start), name)
+  lines, state = run_statements(statements, known_macros(text, start), name, compat)
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
     if state["routing"][slot][int(number)] == 4:
