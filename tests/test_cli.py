@@ -77,6 +77,22 @@ class KernelOperationsTest(unittest.TestCase):
     self.assertIn("0x0c4", out)
     self.assertNotIn("0x030", out)
 
+  def test_the_fat_option_changes_the_opcode_of_the_listed_operations(self):
+    source = SOURCE.replace("top0 + base0 + 5", "top0 + base0")
+    with tempfile.TemporaryDirectory() as folder:
+      path = os.path.join(folder, "main.vmeg.c")
+      with open(path, "w") as f:
+        f.write(source)
+      lines = {}
+      for compat in ([], ["--compat", "fat"]):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+          main(["--list", "--kernel", "run", *compat, path])
+        lines[len(compat)] = out.getvalue().splitlines()[1]
+    self.assertIn("0x010  a + b  ", lines[0])
+    self.assertIn("0x030  a + b + c  ", lines[2])
+    self.assertTrue(lines[2].endswith("a = top0, b = base0, c = 0"))
+
 
 if __name__ == "__main__":
   unittest.main()
