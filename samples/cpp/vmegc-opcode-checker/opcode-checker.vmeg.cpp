@@ -263,3 +263,40 @@ volatile Buffer andTop1[16] = {
 @kernel checkAnd config | exec
 void checkAndRun(void) {
 }
+
+volatile Buffer orTop0[16] = {
+  0, -1, 0x555555, -0x555556,
+  0x0f0f0f, -0xf0f10, 0x7fffff, -0x800000,
+  1, -2, 0x123456, -0x123457,
+  0xff00, -0x10000, 0xf, -0x100,
+};
+
+volatile Buffer orTop1[16] = {
+  0, 0, 0x2aaaaa, 0x555555,
+  0xf0f0, 0xf0f0, 0, 1,
+  2, 1, 0xff0000, 0xff,
+  0xff, 0xffff, -0x10, 0xff,
+};
+
+@emulate "or"
+.kernel checkOr direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: orTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: orTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 | top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 | top0; }
+  .pe2 { .write = write; .spad = (top0 | top1); }
+  .pe3 { .write = write; .spad = (top1 | top0); }
+}
+
+@kernel checkOr config | exec
+void checkOrRun(void) {
+}
