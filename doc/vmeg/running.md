@@ -97,6 +97,11 @@ python3 vmegc.py --compat fat main.vmeg.cpp
 - An expression that such an opcode covered is done by another opcode, as `a + b` is ([6.2.3](operations.md#623-how-the-opcode-is-chosen)).
 - Without `--compat`, every opcode can be chosen.
 
+**Rules:**
+
+- `fat` is the only model accepted. Currently not supported: another model.
+- `--compat` goes with the files to translate. `--ops` goes alone ([1.5](#15---ops)).
+
 ## 1.7 CMake
 
 `cmake/vmegc.cmake` runs `vmegc` as a step of the build.
