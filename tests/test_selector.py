@@ -23,7 +23,7 @@ OPERANDS = (("a", "operand"), ("b", "operand"))
 class CandidatesTest(unittest.TestCase):
   def test_an_expression_finds_the_opcodes_whose_pattern_covers_it(self):
     self.assertEqual(kinds("a + b"), ["add", "add_ofa"])
-    self.assertEqual(kinds("a + b + 5"), ["add_ofa"])
+    self.assertEqual(kinds("a + b + 5"), ["add_ofa", "add_cst"])
     self.assertEqual(kinds("a & b"), ["and"])
     self.assertEqual(kinds("x & 5"), ["and_cst"])
 
@@ -69,9 +69,9 @@ class SelectTest(unittest.TestCase):
     self.assertEqual(select(parse_pattern("clamp(a + b, 0, 255)"))[2], 5)
 
   def test_nothing_is_chosen_when_a_part_of_the_expression_has_no_opcode(self):
-    self.assertIsNone(chosen("~(a + 5)"))
+    self.assertIsNone(chosen("~(a * 5)"))
     self.assertIsNone(chosen("top0 + top1 + top2"))
-    self.assertIsNone(chosen("5 + a"))
+    self.assertIsNone(chosen("a * 5"))
 
   def test_with_the_same_cost_the_first_of_the_table_is_chosen(self):
     table = {"second": dict(entry("a + b", *OPERANDS), registers={}), "first": dict(entry("a + b", *OPERANDS), registers={})}
@@ -102,7 +102,7 @@ class ChooseOpcodeTest(unittest.TestCase):
       chosen_for("x + y", "fat", table)
 
   def test_an_expression_without_opcode_stays_without_opcode_on_the_fat(self):
-    self.assertIsNone(chosen_for("5 + a", "fat"))
+    self.assertIsNone(chosen_for("a * 5", "fat"))
 
 
 class AliasTest(unittest.TestCase):

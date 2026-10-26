@@ -22,6 +22,16 @@ OPERATIONS = {
     "units": "any",
     "note": "(a + b) + c, c is a number written in the register A, 0 when it is not written",
   },
+  "add_cst": {
+    "opcode": 0x024,
+    "pattern": "x + c",
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_ADD_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the sum of x and c, c is a number written in the register B",
+  },
   "sub": {
     "opcode": 0x018,
     "pattern": "a - b",

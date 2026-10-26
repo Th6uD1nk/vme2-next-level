@@ -44,7 +44,7 @@ class WrittenExpressionTest(unittest.TestCase):
     self.assertEqual(used(". 5 + (top0 + base0);"), ("fu_code(OP_ADD_OFA)", [("A", "5")]))
 
   def test_an_expression_that_no_opcode_covers_is_refused(self):
-    for body in [".top0 + 5;", ".top0 + base0 + top1;", ". 5 + top0 + base0;"]:
+    for body in [".top0 * 5;", ".top0 + base0 + top1;", ". 5 + top0 + base0;"]:
       with self.subTest(body=body):
         with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
           used(body)
@@ -85,7 +85,7 @@ class ComplementTest(unittest.TestCase):
 
   def test_a_complement_of_what_no_opcode_covers_is_refused(self):
     with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
-      codes(".~(top0 + 5);")
+      codes(".~(top0 * 5);")
     with self.assertRaisesRegex(ValueError, "sat must wrap an operation"):
       codes(".~sat(top0, 8);")
 
