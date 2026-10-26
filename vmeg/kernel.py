@@ -474,6 +474,7 @@ def place(state, lines, pe, operations, line):
     state["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
     specification = OPERATIONS[operation["kind"]]
+    state["operations"].append(dict(operation, pe=pe, line=line))
     if specification["units"] == "primary" and number != 0:
       raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     code = specification["code"]
@@ -614,7 +615,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat, "operations": []}
 
 
 def new_env(macros=None):
