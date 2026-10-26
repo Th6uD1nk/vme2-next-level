@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-from vmeg.blocks import find_blocks
+from vmeg.blocks import find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, build_only, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, line_indent, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, generate
 from vmeg.vmecalls import finish_calls
@@ -107,15 +107,18 @@ def main(argv=None):
   parser.add_argument("inputs", nargs="*")
   parser.add_argument("-o", "--output")
   parser.add_argument("--list", action="store_true")
+  parser.add_argument("--kernel")
   parser.add_argument("--ops", action="store_true")
   parser.add_argument("--compat", choices=["fat"])
   args = parser.parse_args(argv)
 
   if args.ops:
-    if args.inputs or args.output or args.list or args.compat:
+    if args.inputs or args.output or args.list or args.compat or args.kernel is not None:
       parser.error("--ops goes alone")
     sys.stdout.write(format_operations())
     return 0
+  if args.kernel is not None and not args.list:
+    parser.error("--kernel goes with --list")
   if not args.inputs:
     parser.error("the input files are required")
 
@@ -150,9 +153,15 @@ def main(argv=None):
     return 1
 
   if args.list:
+    if args.kernel is not None:
+      known = [kernel_name(text, block) for _, text, blocks in found for block in blocks if block[0] == "kernel"]
+      if args.kernel not in known:
+        parser.error(f"no kernel '{args.kernel}' ({', '.join(known) if known else 'there is no kernel in these files'})")
     for path, text, blocks in found:
       for kind, start, open_pos, end in blocks:
         if kind in ("kernel-block-end", "block-statement"):
+          continue
+        if args.kernel is not None and not (kind == "kernel" and kernel_name(text, (kind, start, open_pos, end)) == args.kernel):
           continue
         first = text.count("\n", 0, start) + 1
         last = text.count("\n", 0, end - 1) + 1
