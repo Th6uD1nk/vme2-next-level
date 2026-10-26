@@ -20,6 +20,7 @@ WRITTEN = [
   (".top1 + top2;", None, "fu_code(OP_ADD)", []),
   (".top0 + base0;", "fat", "fu_code(OP_ADD_OFA)", [("A", "0")]),
   (".top0 + base0 + 5;", None, "fu_code(OP_ADD_OFA)", [("A", "5")]),
+  (".top1 - base1 + 3;", None, "fu_code(OP_SUB_OFB)", [("B", "3")]),
   (".top1 + 1;", None, "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".top1 + 1;", "fat", "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".top0 + base0 + 5;", "fat", "fu_code(OP_ADD_OFA)", [("A", "5")]),
