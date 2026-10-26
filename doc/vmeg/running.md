@@ -197,6 +197,8 @@ The errors of the command line start with `vmegc: error:`, left out here. The er
 | [1.2](#12-several-files) | `-o goes with a single input file, every output is written in the current directory` | `-o` with several inputs |
 | [1.2](#12-several-files) | `b/x.vmeg.c: the output 'x.c' is already the output of a/x.vmeg.c` | two inputs that give the same output |
 | [1.2](#12-several-files) | `a.vmeg.h: a .vmeg.h is not a source, the buffers are declared in .vmeg.c or .vmeg.cpp files` | a `.vmeg.h` given as an input |
+| [1.4](#14---list) | `--kernel goes with --list` | `--kernel` without `--list` |
+| [1.4](#14---list) | `no kernel 'nope' (run, other)` | a name that is not a kernel of the files. The message names the kernels that exist, or says that there is none |
 | [1.5](#15---ops) | `--ops goes alone` | `--ops` with a file or another option |
 | [1.6](#16---compat) | `argument --compat: invalid choice: 'slim' (choose from 'fat')` | `--compat` with a model other than `fat` |
 | [1.7](#17-cmake) | `vmegc needs python3` | CMake does not find `python3` |
