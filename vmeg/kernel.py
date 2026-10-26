@@ -5,7 +5,8 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, FUSIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS, choose
+from vmeg.operations import FUNCTIONS, FUSIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS
+from vmeg.selector import choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -201,7 +202,11 @@ def flatten(expr, stagings, compat):
       return operations
     if expr[1] not in OPERATORS:
       raise ValueError(f"unsupported operator '{expr[1]}' ({', '.join([*OPERATORS, '>>', '<<'])})")
-    return table_operation(OPERATORS[expr[1]], expr[1], [expr[2], expr[3]], stagings, compat)
+    found = choose_opcode(expr, compat)
+    if found is None:
+      raise ValueError("an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable")
+    kind, bound, _ = found
+    return table_operation(kind, expr[1], [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
@@ -467,7 +472,7 @@ def place(state, lines, pe, operations, line):
     number = state["fus"].get(pe, 0)
     state["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
-    specification = OPERATIONS[choose(operation["kind"], state["compat"])]
+    specification = OPERATIONS[operation["kind"]]
     if specification["units"] == "primary" and number != 0:
       raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     code = specification["code"]
