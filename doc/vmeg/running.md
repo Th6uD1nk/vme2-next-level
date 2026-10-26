@@ -128,6 +128,18 @@ add_library(saturate-clamp OBJECT ${GENERATED_C})
 
 - `vmegc` needs `python3`: CMake stops if it does not find it.
 
+To translate with `--compat` ([1.6](#16---compat)), give the model to CMake:
+
+```
+cmake -DVMEGC_COMPAT=fat ..
+```
+
+**Explanation of the code above:**
+
+- `VMEGC_COMPAT=fat` runs `vmegc` with `--compat fat` on all the files of the build. Empty by default: every opcode can be chosen.
+- The files are generated again when `VMEGC_COMPAT` changes.
+- `VMEGC_COMPAT` is `fat` or empty: CMake stops with another value.
+
 The `samples` folder has a `CMakeLists.txt` for each sample.
 
 ## 1.8 Errors
