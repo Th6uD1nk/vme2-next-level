@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from vmeg.operations import OPERATIONS
 from vmeg.pattern import parse_pattern
-from vmeg.selector import candidates
+from vmeg.selector import candidates, select
 
 
 def kinds(text, operations=OPERATIONS):
@@ -43,6 +43,39 @@ class CandidatesTest(unittest.TestCase):
   def test_the_candidates_follow_the_order_of_the_table(self):
     table = {"second": entry("a + b", *OPERANDS), "first": entry("a + b", ("b", "operand"), ("a", "operand"))}
     self.assertEqual(kinds("x + y", table), ["second", "first"])
+
+
+def chosen(text, operations=OPERATIONS):
+  found = select(parse_pattern(text), operations)
+  return None if found is None else found[0]
+
+
+class SelectTest(unittest.TestCase):
+  def test_the_opcode_that_uses_the_fewest_slots_is_chosen(self):
+    self.assertEqual(chosen("a + b"), "add")
+    self.assertEqual(chosen("a + b + 5"), "add_ofa")
+    self.assertEqual(chosen("a - b"), "sub")
+    self.assertEqual(chosen("a - b + 3"), "subacst")
+
+  def test_an_opcode_that_covers_the_whole_need_wins_over_two_that_cover_it_together(self):
+    self.assertEqual(chosen("~(a & b)"), "nand")
+    self.assertEqual(chosen("~(x & 5)"), "nand_cst")
+    self.assertEqual(chosen("~(a ^ 5)"), "xnor_cst")
+    self.assertEqual(chosen("~(a + b)"), "not")
+
+  def test_the_cost_adds_the_operations_inside_a_source(self):
+    self.assertEqual(select(parse_pattern("~(a & b)"))[2], 2)
+    self.assertEqual(select(parse_pattern("~(a + b)"))[2], 3)
+    self.assertEqual(select(parse_pattern("clamp(a + b, 0, 255)"))[2], 5)
+
+  def test_nothing_is_chosen_when_a_part_of_the_expression_has_no_opcode(self):
+    self.assertIsNone(chosen("~(a + 5)"))
+    self.assertIsNone(chosen("top0 + top1 + top2"))
+    self.assertIsNone(chosen("5 + a"))
+
+  def test_with_the_same_cost_the_first_of_the_table_is_chosen(self):
+    table = {"second": dict(entry("a + b", *OPERANDS), registers={}), "first": dict(entry("a + b", *OPERANDS), registers={})}
+    self.assertEqual(chosen("x + y", table), "second")
 
 
 if __name__ == "__main__":
