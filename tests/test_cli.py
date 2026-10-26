@@ -1,0 +1,56 @@
+import contextlib
+import io
+import os
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+from vmegc import main
+
+SOURCE = (
+  ".kernel run direct {\n"
+  "  Agu t = { count: 15 };\n"
+  "  .pe0 { .top = t; .write = { count: 15 }; .top0 + base0 + 5; }\n"
+  "}\n"
+  ".kernel other direct {\n"
+  "  Agu t = { count: 3 };\n"
+  "  .pe1 { .top = t; .write = { count: 3 }; .top1 & 255; }\n"
+  "}\n"
+  "@kernel run config | exec\n"
+  "void f() { }\n"
+  "@kernel other config | exec\n"
+  "void g() { }\n"
+)
+
+
+def vmegc(*arguments):
+  with tempfile.TemporaryDirectory() as folder:
+    path = os.path.join(folder, "main.vmeg.c")
+    with open(path, "w") as f:
+      f.write(SOURCE)
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+      try:
+        code = main([*arguments, path])
+      except SystemExit as exit:
+        code = exit.code
+    return code, out.getvalue().replace(folder + os.sep, ""), err.getvalue().replace(folder + os.sep, "")
+
+
+class KernelOptionTest(unittest.TestCase):
+  def test_the_kernel_option_lists_only_the_header_of_that_kernel(self):
+    code, out, _ = vmegc("--list", "--kernel", "other")
+    self.assertEqual(code, 0)
+    headers = [line for line in out.splitlines() if not line.startswith("  ")]
+    self.assertEqual(len(headers), 1)
+    self.assertIn(".kernel other direct", headers[0])
+
+  def test_the_list_without_the_kernel_option_keeps_every_block(self):
+    _, out, _ = vmegc("--list")
+    self.assertEqual(len(out.splitlines()), 4)
+
+
+if __name__ == "__main__":
+  unittest.main()
