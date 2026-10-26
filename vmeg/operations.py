@@ -259,8 +259,6 @@ OPERATORS = first_by_name("operator", 2)
 
 UNARY_OPERATORS = first_by_name("operator", 1)
 
-FUSIONS = first_by_name("fused")
-
 FUNCTIONS = first_by_name("function")
 
 FIELDS = (
@@ -276,27 +274,6 @@ def reads(specification):
 
 def slots(specification):
   return len(reads(specification)) + len(specification["registers"])
-
-
-def shape(specification):
-  return specification["form"], tuple(kind for _, kind in specification["arguments"] if kind != "number")
-
-
-def candidates_by_kind():
-  groups = {}
-  for kind, specification in OPERATIONS.items():
-    groups.setdefault(shape(specification), []).append(kind)
-  return {kind: sorted(group, key=lambda candidate: slots(OPERATIONS[candidate])) for group in groups.values() for kind in group}
-
-
-CANDIDATES = candidates_by_kind()
-
-
-def choose(kind, compat):
-  for candidate in CANDIDATES[kind]:
-    if not (compat == "fat" and OPERATIONS[candidate].get("not_portable")):
-      return candidate
-  raise ValueError(f"{kind} does not work on the fat and nothing replaces it")
 
 
 def syntax(specification):
