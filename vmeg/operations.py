@@ -274,6 +274,19 @@ def slots(specification):
   return len(reads(specification)) + len(specification["registers"])
 
 
+def operation_block(specification):
+  indent = " " * 7
+  lines = [f"0x{specification['opcode']:03x}: {specification['pattern']}"]
+  if specification.get("aliases"):
+    lines.append(indent + "also written " + ", ".join(specification["aliases"]))
+  if specification["registers"]:
+    lines.append(indent + "registers " + ", ".join(f"{register} = {name}" for register, name in specification["registers"].items()))
+  lines.append(indent + ("position first operation of the pe only" if specification["units"] == "primary" else "position any"))
+  if specification.get("not_portable"):
+    lines.append(indent + "not portable")
+  return lines
+
+
 def operation_columns(specification):
   units = "first operation of the pe only" if specification["units"] == "primary" else "any position"
   return (specification["pattern"], f"0x{specification['opcode']:03x}", specification["code"], ", ".join(reads(specification)), units)
