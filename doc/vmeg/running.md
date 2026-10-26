@@ -135,8 +135,7 @@ Four of its blocks:
        not portable
 
 0x048: a - b + c
-       (a - b) + c, c is a number written in the register B of the
-       operation
+       a minus b, plus c
        also written subacst(a, b, c)
        registers c = B
        position any
@@ -148,7 +147,7 @@ Four of its blocks:
        position any
 
 0x200: a * b
-       (a * b) >> k, k is the `>> n` written after the operation
+       the product of a and b, shifted by the `>> n` after it
        position first operation of the pe only
 ```
 
