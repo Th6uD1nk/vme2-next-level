@@ -199,7 +199,7 @@ Staging s;
 
 ### 6.3.2 subacst
 
-`subacst(a, b, c)` computes `(a - b) + c`. `a` and `b` are buffers or `Staging` variables, `c` is a number.
+`subacst(a, b, c)` computes `(a - b) + c`. `a` and `b` are buffers or `Staging` variables, `c` is a number. It can also be written as an expression, `a - b + c` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
 .pe0 { .subacst(top0, base0, 16); }
@@ -207,7 +207,7 @@ Staging s;
 
 ### 6.3.3 subshr
 
-`subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number that cannot be negative.
+`subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number that cannot be negative. It can also be written as an expression, `b - (a >> n)` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
 .pe0 { .subshr(top0, base0, 2); }
