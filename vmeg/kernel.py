@@ -681,12 +681,8 @@ def kernel_transfers(statements, macros=None, owner=None):
   return state["loads"], state["stores"]
 
 
-def generate(text, block, warnings=None, compat=None):
-  kind, start, open_pos, _ = block
-  if kind in ("decorator", "emulate", "kernel-block", "block-statement"):
-    return ""
-  if kind == "kernel-block-end":
-    return DISABLE
+def build_kernel(text, block, compat):
+  _, start, open_pos, _ = block
   header = text[start:open_pos]
   words = [(value, start + s) for _, value, s, _ in tokens(header)]
   if words[0][0] == ".":
@@ -717,6 +713,16 @@ def generate(text, block, warnings=None, compat=None):
     lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
+  return name, options, lines, state
+
+
+def generate(text, block, warnings=None, compat=None):
+  kind = block[0]
+  if kind in ("decorator", "emulate", "kernel-block", "block-statement"):
+    return ""
+  if kind == "kernel-block-end":
+    return DISABLE
+  name, options, lines, state = build_kernel(text, block, compat)
   if warnings is not None:
     warnings.extend(state["warnings"])
   if "memory" in options:
