@@ -48,12 +48,22 @@ def candidates(tree, operations=OPERATIONS):
   return found
 
 
+def unwrap(tree):
+  while True:
+    if tree[0] == "call" and tree[1] == "sat" and len(tree[2]) == 2:
+      tree = tree[2][0]
+    elif tree[0] == "bin" and tree[1] in (">>", "<<"):
+      tree = tree[2]
+    else:
+      return tree
+
+
 def cost(kind, bound, operations):
   specification = operations[kind]
   total = slots(specification)
   for name, role in specification["arguments"]:
     if role == "source" and bound[name][0] in OPERATION_NODES:
-      inner = select(bound[name], operations)
+      inner = select(unwrap(bound[name]), operations)
       if inner is None:
         return None
       total += inner[2]
