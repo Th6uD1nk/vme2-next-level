@@ -297,7 +297,7 @@ The messages start with `line N:`, left out here.
 
 | Section | Message | Cause |
 |---|---|---|
-| [6.1](#61-operands-and-results) | `an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable` | an operand that is a number or another operation |
+| [6.1](#61-operands-and-results) | `an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable` | an expression that no opcode covers: an operand that is another operation, as in `top0 + base0 + top1`, or a number with a single operand, as in `top0 + 5` ([6.2.2](#622-operators-with-a-number)) |
 | [6.1](#61-operands-and-results) | `the Staging variable 's' is read before it is set` | a `Staging` variable read before the statement that sets it |
 | [6.1](#61-operands-and-results) | `clamp low must be a number` | a bound, a constant or a shift that is not a number known at compile time. The message names it: `clamp high`, `subacst c`, `subshr n`, `and c`, `or c`, `xor c`, `sat bits`, `the shift` |
 | [6.2](#62-operators) | `expected ';'` | an operator that is not supported, such as `/` |
