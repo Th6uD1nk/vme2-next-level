@@ -126,6 +126,32 @@ python3 vmegc.py --ops
 
 `--ops` shows the operations that a pe can run, sorted by opcode, and writes nothing. Each operation is a block: its opcode and how it is written (as an expression, or as a function for the operations that have no other writing), what it does, its other writings (`also written …`), the registers that receive its numbers, and where it can stand in a pe (any position, or the first operation of the pe only). A block ends with `not portable` when the opcode is not usable on every model of the PSP. Under the blocks, the options that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
 
+Four of its blocks:
+
+```
+0x010: a + b
+       the sum of a and b
+       position any
+       not portable
+
+0x048: a - b + c
+       (a - b) + c, c is a number written in the register B of the
+       operation
+       also written subacst(a, b, c)
+       registers c = B
+       position any
+
+0x07c: clamp(x, low, high)
+       x limited between low and high, x is a buffer, a Staging
+       variable or an operation
+       registers high = A, low = B
+       position any
+
+0x200: a * b
+       (a * b) >> k, k is the `>> n` written after the operation
+       position first operation of the pe only
+```
+
 `--ops` goes alone, without a file or another option.
 
 ## 1.6 --compat
