@@ -113,3 +113,40 @@ volatile Buffer addCstTop0[16] = {
 @kernel checkAddCst config | exec
 void checkAddCstRun(void) {
 }
+
+volatile Buffer subTop0[16] = {
+  0, 1, 0, 5,
+  0x100, 0x7fffff, 0x7fffff, -0x800000,
+  -0x800000, -1, 0x555555, 0x2aaaaa,
+  0x2aaaaa, 100, -100, -0x7fffff,
+};
+
+volatile Buffer subTop1[16] = {
+  0, 1, 1, -5,
+  0x1, -1, 0x7fffff, 1,
+  -1, -1, 0x2aaaaa, 0x555555,
+  -0x555555, -23, 23, 0x7fffff,
+};
+
+@emulate "sub"
+.kernel checkSub direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: subTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: subTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - top1; }
+  .pe1 { .top = top; .write = write; .spad = top0 - top1 + 0; }
+  .pe2 { .write = write; .spad = subacst(top0, top1, 0); }
+  .pe3 { .write = write; .spad = 0 + (top0 - top1); }
+}
+
+@kernel checkSub config | exec
+void checkSubRun(void) {
+}
