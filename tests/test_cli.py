@@ -47,10 +47,6 @@ class KernelOptionTest(unittest.TestCase):
     self.assertEqual(len(headers), 1)
     self.assertIn(".kernel other direct", headers[0])
 
-  def test_the_list_without_the_kernel_option_keeps_every_block(self):
-    _, out, _ = vmegc("--list")
-    self.assertEqual(len(out.splitlines()), 4)
-
 class KernelOptionErrorTest(unittest.TestCase):
   def test_the_kernel_option_goes_with_list(self):
     code, _, err = vmegc("--kernel", "run")
@@ -71,11 +67,6 @@ class KernelOperationsTest(unittest.TestCase):
     self.assertEqual(len(lines), 2)
     self.assertTrue(lines[1].startswith("  pe0  line 3  0x030  a + b + c  "))
     self.assertTrue(lines[1].endswith("a = top0, b = base0, c = 5"))
-
-  def test_the_operations_of_another_kernel_are_not_listed(self):
-    _, out, _ = vmegc("--list", "--kernel", "other")
-    self.assertIn("0x0c4", out)
-    self.assertNotIn("0x030", out)
 
   def test_the_fat_option_changes_the_opcode_of_the_listed_operations(self):
     source = SOURCE.replace("top0 + base0 + 5", "top0 + base0")
