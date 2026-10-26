@@ -205,7 +205,7 @@ def flatten(expr, stagings, compat):
       raise ValueError(f"unsupported operator '{expr[1]}' ({', '.join([*OPERATORS, '>>', '<<'])})")
     found = choose_opcode(expr, compat)
     if found is None:
-      raise ValueError("an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable")
+      raise ValueError("no opcode covers this expression")
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   raise ValueError("an operation is expected (an addition, sat or clamp)")

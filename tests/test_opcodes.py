@@ -49,7 +49,7 @@ class WrittenExpressionTest(unittest.TestCase):
   def test_an_expression_that_no_opcode_covers_is_refused(self):
     for body in [".top0 * 5;", ".top0 + base0 + top1;", ". 5 + top0 + base0;"]:
       with self.subTest(body=body):
-        with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
+        with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
           used(body)
 
 
@@ -88,7 +88,7 @@ class ComplementTest(unittest.TestCase):
     self.assertEqual(codes(".~and(top0 + base0, 255);"), ["OP_ADD", "OP_NAD_CST"])
 
   def test_a_complement_of_what_no_opcode_covers_is_refused(self):
-    with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
+    with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       codes(".~(top0 * 5);")
     with self.assertRaisesRegex(ValueError, "sat must wrap an operation"):
       codes(".~sat(top0, 8);")
@@ -138,7 +138,7 @@ class NestedTest(unittest.TestCase):
         self.assertEqual(codes(body), expected)
 
   def test_an_operand_that_is_an_operation_is_still_refused_inside_a_clamp(self):
-    with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
+    with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       codes(".clamp(top0 + top1 + top2, 0, 9);")
 
 
