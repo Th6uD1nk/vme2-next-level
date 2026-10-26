@@ -75,6 +75,17 @@ main.vmeg.cpp:95-95: @kernel add config | async, sub config | async, mul config 
 - A line is the file, the first and the last line of the block, and its header.
 - The kernels and their calls are checked before the list: an error of these is shown instead of it.
 
+To see the operations of a kernel, give its name:
+
+```
+python3 vmegc.py --list --kernel run main.vmeg.cpp
+```
+
+**Explanation of the code above:**
+
+- `--kernel run` keeps the line of the kernel `run` and shows, under it, one line for each operation that the kernel runs.
+- The operations are the ones `vmegc` chooses for the kernel, as the option `--compat` ([1.6](#16---compat)) leaves them.
+
 ## 1.5 --ops
 
 ```
