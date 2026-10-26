@@ -175,6 +175,11 @@ An expression can be covered by more than one opcode. `vmegc` reads what is writ
 | `a + b + 5` | `0x030` | the only opcode that takes a number with the sum |
 | `~(a & b)` | `0x0c8` | one operation, instead of the and and then the complement |
 
+**Rules:**
+
+- A number that is not written is 0. The opcode `0x030`, which takes a number with the sum, can do `a + b` with its number at 0.
+- With two opcodes at the same count, the first one in the list given by `--ops` ([1.5](running.md#15---ops)) is taken.
+
 ## 6.3 Functions
 
 A function is written like an operator, with its operands between parentheses. The numbers it takes are known at compile time.
