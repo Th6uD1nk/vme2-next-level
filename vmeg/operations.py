@@ -1,3 +1,5 @@
+import textwrap
+
 from vmeg.pattern import check_patterns, parse_pattern
 
 OPERATIONS = {
@@ -274,9 +276,13 @@ def slots(specification):
   return len(reads(specification)) + len(specification["registers"])
 
 
+DESCRIPTION_WIDTH = 40
+
+
 def operation_block(specification):
   indent = " " * 7
   lines = [f"0x{specification['opcode']:03x}: {specification['pattern']}"]
+  lines.extend(indent + line for line in textwrap.wrap(specification["note"], DESCRIPTION_WIDTH))
   if specification.get("aliases"):
     lines.append(indent + "also written " + ", ".join(specification["aliases"]))
   if specification["registers"]:
