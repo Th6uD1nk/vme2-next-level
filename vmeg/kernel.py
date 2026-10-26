@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, FUSIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS
+from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS
 from vmeg.selector import choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
@@ -184,10 +184,11 @@ def flatten(expr, stagings, compat):
       return table_operation(FUNCTIONS[name], name, args, stagings, compat)
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
   if kind == "not":
-    _, inner = split_source(expr[1], stagings, compat)
-    if len(inner) == 1 and inner[0]["sat"] is None and inner[0].get("shift") is None and inner[0]["kind"] in FUSIONS:
-      return [dict(inner[0], kind=FUSIONS[inner[0]["kind"]])]
-    return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings, compat)
+    found = choose_opcode(expr, compat)
+    if found is None:
+      return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings, compat)
+    kind, bound, _ = found
+    return table_operation(kind, "~", [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
     if expr[1] in (">>", "<<"):
       _, operations = split_source(expr[2], stagings, compat)
