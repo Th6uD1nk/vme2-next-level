@@ -183,6 +183,7 @@ An expression can be covered by more than one opcode. `vmegc` reads what is writ
 - A number that is not written is 0. The opcode `0x030`, which takes a number with the sum, can do `a + b` with its number at 0.
 - With two opcodes at the same count, the first one in the list given by `--ops` ([1.5](running.md#15---ops)) is taken.
 - The option `--compat fat` ([1.6](running.md#16---compat)) leaves out the opcodes that `--ops` marks `not portable`. `a + b` then uses `0x030`, with its number at 0.
+- The opcodes chosen for a kernel are listed by `--list --kernel` ([1.4](running.md#14---list)).
 
 ## 6.3 Functions
 
