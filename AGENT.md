@@ -11,6 +11,7 @@ Files named `*.vmeg.c` or `*.vmeg.cpp` are processed by the `vmegc` script and t
 - Never commit. Committing is always left to a human.
 - Never write comments in the code. Only the human comments the code. The agent removes an existing comment only with explicit authorization from the human.
 - No AI agent, LLM or other automated tool may modify this file (`AGENT.md`) without explicit authorization from the human.
+- All text and strings in the codebase must be written in English.
 
 ## Language
 - The `vmeg` syntax is a custom graph-like language that comes to extend the C and C++ languages.
