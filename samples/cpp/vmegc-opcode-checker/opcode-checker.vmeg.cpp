@@ -37,10 +37,10 @@ volatile Buffer addTop1[16] = {
   Agu top = { count };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .write = write; .top0 + top1; }
-  .pe1 { .top = top; .write = write; .top1 + top0; }
-  .pe2 { .write = write; .top0 + top1 + 0; }
-  .pe3 { .write = write; . 0 + (top1 + top0); }
+  .pe0 { .top = top; .write = write; .spad = top0 + top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 + top0; }
+  .pe2 { .write = write; .spad = top0 + top1 + 0; }
+  .pe3 { .write = write; .spad = 0 + (top1 + top0); }
 }
 
 @kernel checkAdd config | exec
