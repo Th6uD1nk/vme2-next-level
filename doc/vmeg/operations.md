@@ -29,9 +29,10 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 | Operation | Opcode | Reads | Result |
 |---|---|---|---|
 | `a + b` | `0x010` | two operands | `a + b` |
+| `a + b + c` | `0x030` | two operands and a number | `(a + b) + c` |
 | `a - b` | `0x018` | two operands | `a - b` |
-| `subacst(a, b, c)` | `0x048` | two operands and a number | `(a - b) + c` |
-| `subshr(a, b, n)` | `0x050` | two operands and a number | `b - (a >> n)` |
+| `a - b + c`, `subacst(a, b, c)` | `0x048` | two operands and a number | `(a - b) + c` |
+| `b - (a >> n)`, `subshr(a, b, n)` | `0x050` | two operands and a number | `b - (a >> n)` |
 | `a * b` | `0x200` | two operands | `(a * b) >> k`, where `k` is the shift written after it ([6.4](#64-sat-and-the-shifts)) |
 | `a & b` | `0x0c0` | two operands | the bitwise and |
 | `a \| b` | `0x0d0` | two operands | the bitwise or |
@@ -39,18 +40,19 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 | `~x` | `0x0fc` | one operand | the bitwise complement of `x` |
 | `~(a & b)` | `0x0c8` | two operands | the complement of the bitwise and, one operation |
 | `~(a \| b)` | `0x0d8` | two operands | the complement of the bitwise or, one operation |
-| `and(x, c)` | `0x0c4` | one operand and a number | `x & c` |
-| `or(x, c)` | `0x0d4` | one operand and a number | `x \| c` |
-| `xor(x, c)` | `0x0e4` | one operand and a number | `x ^ c` |
-| `~and(x, c)` | `0x0cc` | one operand and a number | `~(x & c)`, one operation |
-| `~or(x, c)` | `0x0dc` | one operand and a number | `~(x \| c)`, one operation |
-| `~xor(x, c)` | `0x0ec` | one operand and a number | `~(x ^ c)`, one operation |
+| `x & c`, `and(x, c)` | `0x0c4` | one operand and a number | `x & c` |
+| `x \| c`, `or(x, c)` | `0x0d4` | one operand and a number | `x \| c` |
+| `x ^ c`, `xor(x, c)` | `0x0e4` | one operand and a number | `x ^ c` |
+| `~(x & c)`, `~and(x, c)` | `0x0cc` | one operand and a number | the complement of the bitwise and, one operation |
+| `~(x \| c)`, `~or(x, c)` | `0x0dc` | one operand and a number | the complement of the bitwise or, one operation |
+| `~(x ^ c)`, `~xor(x, c)` | `0x0ec` | one operand and a number | the complement of the bitwise exclusive or, one operation |
 | `clamp(x, low, high)` | `0x07c` | one operand and two numbers | `x` limited between `low` and `high` |
 | `mac(a, b)` | `0x240` | two operands | a running inner product |
 | `acc(x)` | `0x250` | one operand | a running sum |
 
 - `mul`, `mac` and `acc` must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
-- `acc` reads a buffer or a `Staging` variable only. `clamp`, `~x` and the functions with a number (`and`, `or`, `xor`) also read an operation.
+- `acc` reads a buffer or a `Staging` variable only. `clamp`, `~x` and the operations with `x` also read an operation.
+- An operation with two writings gives the same result with either one.
 
 ## 6.2 Operators
 
