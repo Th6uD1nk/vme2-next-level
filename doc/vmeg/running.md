@@ -155,5 +155,7 @@ The errors of the command line start with `vmegc: error:`, left out here. The er
 | [1.2](#12-several-files) | `b/x.vmeg.c: the output 'x.c' is already the output of a/x.vmeg.c` | two inputs that give the same output |
 | [1.2](#12-several-files) | `a.vmeg.h: a .vmeg.h is not a source, the buffers are declared in .vmeg.c or .vmeg.cpp files` | a `.vmeg.h` given as an input |
 | [1.5](#15---ops) | `--ops goes alone` | `--ops` with a file or another option |
+| [1.6](#16---compat) | `argument --compat: invalid choice: 'slim' (choose from 'fat')` | `--compat` with a model other than `fat` |
 | [1.7](#17-cmake) | `vmegc needs python3` | CMake does not find `python3` |
 | [1.7](#17-cmake) | `vmegc_sources needs cmake 3.11 or newer` | `vmegc_sources` with an older CMake |
+| [1.7](#17-cmake) | `VMEGC_COMPAT must be fat or empty, not 'slim'` | `VMEGC_COMPAT` set to a model other than `fat` |
