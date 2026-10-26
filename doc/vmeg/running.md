@@ -105,6 +105,13 @@ main.vmeg.cpp:1-5: .kernel run direct
   pe1  line 4  0x07c  clamp(x, low, high)  x = staging1, low = 0, high = 9
 ```
 
+**Explanation of the code above:**
+
+- The first line is the line of the kernel, as in the list of the kernels.
+- A line under it is one operation: the pe, the line of the file, the opcode, how the opcode is written, then the value given to each of its names.
+- `pe1` runs two operations: `x & c`, then `clamp`, which reads the result of the first one (`staging1`).
+- A number that is written is shown as it is (`c = 5`). A number that is not written is shown at 0 ([6.2.3](operations.md#623-how-the-opcode-is-chosen)).
+
 ## 1.5 --ops
 
 ```
