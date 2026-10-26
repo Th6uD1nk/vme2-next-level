@@ -105,5 +105,24 @@ class ChooseOpcodeTest(unittest.TestCase):
     self.assertIsNone(chosen_for("5 + a", "fat"))
 
 
+class AliasTest(unittest.TestCase):
+  def test_a_function_writing_finds_the_opcode_of_its_alias(self):
+    self.assertEqual(chosen("and(x, 5)"), "and_cst")
+    self.assertEqual(chosen("subacst(a, b, 3)"), "subacst")
+    self.assertEqual(chosen("subshr(a, b, 2)"), "subshr")
+
+  def test_the_two_writings_of_an_opcode_find_the_same_one(self):
+    self.assertEqual(chosen("x & 5"), chosen("and(x, 5)"))
+    self.assertEqual(chosen("~(x | 5)"), chosen("~or(x, 5)"))
+    self.assertEqual(chosen("~(x ^ 5)"), chosen("~xor(x, 5)"))
+
+  def test_the_alias_written_exactly_wins_over_a_looser_reading_of_the_pattern(self):
+    self.assertEqual(chosen("~or(x, 5)"), "nor_cst")
+    self.assertEqual(chosen("~xor(top0, 1)"), "xnor_cst")
+
+  def test_a_function_writing_with_an_operand_instead_of_a_number_has_no_opcode(self):
+    self.assertIsNone(chosen("and(a, b)"))
+
+
 if __name__ == "__main__":
   unittest.main()
