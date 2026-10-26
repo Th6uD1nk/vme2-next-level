@@ -51,6 +51,17 @@ class KernelOptionTest(unittest.TestCase):
     _, out, _ = vmegc("--list")
     self.assertEqual(len(out.splitlines()), 4)
 
+class KernelOptionErrorTest(unittest.TestCase):
+  def test_the_kernel_option_goes_with_list(self):
+    code, _, err = vmegc("--kernel", "run")
+    self.assertEqual(code, 2)
+    self.assertIn("--kernel goes with --list", err)
+
+  def test_an_unknown_kernel_names_the_known_ones(self):
+    code, _, err = vmegc("--list", "--kernel", "nope")
+    self.assertEqual(code, 2)
+    self.assertIn("no kernel 'nope' (run, other)", err)
+
 
 if __name__ == "__main__":
   unittest.main()
