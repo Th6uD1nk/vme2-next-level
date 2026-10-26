@@ -75,7 +75,7 @@ OPERATIONS = {
     "code": "VME_FU_OPCODE_MUL_RSHIFT_0",
     "operands": ("front", "back"),
     "units": "primary",
-    "note": "the product of a and b, shifted by the `>> n` written after it",
+    "note": "the product of a and b, shifted by the `>> n` after it",
   },
   "and": {
     "opcode": 0x0c0,
