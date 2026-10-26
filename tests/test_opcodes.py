@@ -70,6 +70,16 @@ class ComplementTest(unittest.TestCase):
       with self.subTest(body=body):
         self.assertEqual(codes(body), expected)
 
+  def test_a_complement_of_an_operation_that_is_not_fused_is_two_operations(self):
+    self.assertEqual(codes(".~top0;"), ["OP_NOT"])
+    self.assertEqual(codes(".~(top0 + base0);"), ["OP_ADD", "OP_NOT"])
+    self.assertEqual(codes(".~(top0 + base0);", "fat"), ["OP_ADD_OFA", "OP_NOT"])
+    self.assertEqual(codes(".~(top0 - base0);"), ["OP_SUB", "OP_NOT"])
+
+  def test_a_sat_or_a_shift_in_the_complement_keeps_it_apart_from_the_operation(self):
+    self.assertEqual(codes(".~sat(top0 & base0, 8);"), ["OP_AND", "OP_NOT"])
+    self.assertEqual(codes(".~((top0 & base0) >> 2);"), ["OP_AND", "OP_NOT"])
+
 
 if __name__ == "__main__":
   unittest.main()
