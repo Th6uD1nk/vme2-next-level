@@ -174,7 +174,8 @@ An expression can be covered by more than one opcode. `vmegc` reads what is writ
 | Written | Opcode | Why |
 |---|---|---|
 | `a + b` | `0x010` | the sum of two operands, nothing else to give |
-| `a + b + 5` | `0x030` | the only opcode that takes a number with the sum |
+| `a + 1` | `0x024` | the opcode that takes one operand and a number |
+| `a + b + 5` | `0x030` | one operation, instead of the sum and then the number |
 | `~(a & b)` | `0x0c8` | one operation, instead of the and and then the complement |
 
 **Rules:**
