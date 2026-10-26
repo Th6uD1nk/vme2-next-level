@@ -24,19 +24,27 @@ def operands_ok(bound, roles):
   return True
 
 
-def candidates(tree, operations=OPERATIONS):
-  found = []
-  for kind, specification in operations.items():
-    roles = dict(specification["arguments"])
-    constants = tuple(name for name, role in roles.items() if role == "number")
-    for zeroed in zeroings(constants):
-      pattern = reduced(specification["pattern"], zeroed)
+def bind_entry(tree, specification):
+  roles = dict(specification["arguments"])
+  constants = tuple(name for name, role in roles.items() if role == "number")
+  texts = (specification["pattern"], *specification.get("aliases", ()))
+  for zeroed in zeroings(constants):
+    for text in texts:
+      pattern = reduced(text, zeroed)
       if pattern[0] in ("name", "num"):
         continue
       bound = match(pattern, tree, set(constants) - set(zeroed))
       if bound is not None and operands_ok(bound, roles):
-        found.append((kind, {**bound, **{name: ZERO for name in zeroed}}))
-        break
+        return {**bound, **{name: ZERO for name in zeroed}}
+  return None
+
+
+def candidates(tree, operations=OPERATIONS):
+  found = []
+  for kind, specification in operations.items():
+    bound = bind_entry(tree, specification)
+    if bound is not None:
+      found.append((kind, bound))
   return found
 
 
