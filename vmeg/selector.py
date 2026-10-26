@@ -59,3 +59,18 @@ def select(tree, operations=OPERATIONS):
     if total is not None and (best is None or total < best[2]):
       best = (kind, bound, total)
   return best
+
+
+def usable(operations, compat):
+  if compat != "fat":
+    return operations
+  return {kind: specification for kind, specification in operations.items() if not specification.get("not_portable")}
+
+
+def choose_opcode(tree, compat, operations=OPERATIONS):
+  found = select(tree, usable(operations, compat))
+  if found is None:
+    anywhere = select(tree, operations)
+    if anywhere is not None:
+      raise ValueError(f"{anywhere[0]} does not work on the fat and nothing replaces it")
+  return found
