@@ -357,6 +357,13 @@ def parse_staging_declaration(p):
   return parse_declarators(p, "Staging", "stagingdecl", False)
 
 
+def parse_output(p, index):
+  p.expect("=")
+  expr = parse_expr(p)
+  p.expect(";")
+  return ("operation", ("target", index, "operation"), expr)
+
+
 def parse_pe_block(p, index):
   body = []
   while not p.accept("}"):
@@ -382,7 +389,11 @@ def parse_pe_block(p, index):
     p.expect(".")
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "punct" and following[1] == "=":
-      body.append(parse_pe_assignment(p, ("target", index, p.ident())) + (line,))
+      if p.peek()[1] == "spad":
+        p.ident()
+        body.append(parse_output(p, index) + (line,))
+      else:
+        body.append(parse_pe_assignment(p, ("target", index, p.ident())) + (line,))
     else:
       expr = parse_expr(p)
       p.expect(";")
@@ -395,6 +406,9 @@ def parse_pe_statement(p):
   if p.accept("{"):
     return parse_pe_block(p, index)
   p.expect(".")
+  if p.peek() is not None and p.peek()[1] == "spad":
+    p.ident()
+    return parse_output(p, index)
   return parse_pe_assignment(p, ("target", index, p.ident()))
 
 
