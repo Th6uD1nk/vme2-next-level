@@ -445,3 +445,32 @@ volatile Buffer notTop0[16] = {
 @kernel checkNot config | exec
 void checkNotRun(void) {
 }
+
+volatile Buffer andCstTop0[16] = {
+  0, -1, 0xff, 0x100,
+  0x1ff, 0x123456, 0x7fffff, -0x800000,
+  -0x100, -0x101, 0x555555, -0x555556,
+  0x80, 0x7f, -0x80, -0x81,
+};
+
+@emulate "and_cst"
+.kernel checkAndCst direct {
+  Int count = 16 - 1;
+  Int mask = 255;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: andCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 & 0xff; }
+  .pe1 { .write = write; .spad = 0xff & top0; }
+  .pe2 { .write = write; .spad = and(top0, 0xff); }
+  .pe3 { .write = write; .spad = top0 & mask; }
+}
+
+@kernel checkAndCst config | exec
+void checkAndCstRun(void) {
+}
