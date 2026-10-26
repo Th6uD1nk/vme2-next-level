@@ -93,6 +93,14 @@ class KernelOperationsTest(unittest.TestCase):
     self.assertIn("0x030  a + b + c  ", lines[2])
     self.assertTrue(lines[2].endswith("a = top0, b = base0, c = 0"))
 
+class OperationsListTest(unittest.TestCase):
+  def test_the_ops_option_lists_the_operations_and_ends_without_error(self):
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+      code = main(["--ops"])
+    self.assertEqual(code, 0)
+    self.assertIn("0x030: a + b + c", out.getvalue().splitlines())
+
 
 if __name__ == "__main__":
   unittest.main()
