@@ -377,3 +377,43 @@ volatile Buffer nandTop1[16] = {
 @kernel checkNand config | exec
 void checkNandRun(void) {
 }
+
+volatile Buffer norTop0[16] = {
+  0, -1, 0x555555, -0x555556,
+  0x0f0f0f, -0xf0f10, 0x7fffff, -0x800000,
+  1, -2, 0x123456, -0x123457,
+  0xff00, -0x10000, 0xf, -0x100,
+};
+
+volatile Buffer norTop1[16] = {
+  0, 0, 0x2aaaaa, 0x555555,
+  0xf0f0, 0xf0f0, 0, 1,
+  2, 1, 0xff0000, 0xff,
+  0xff, 0xffff, -0x10, 0xff,
+};
+
+@emulate "nor"
+.kernel checkNor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: norTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: norTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Staging s2, s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top0 | top1); }
+  .pe1 { .top = top; .write = write; .spad = ~(top1 | top0); }
+  .pe2 { .write = writeTwo; s2 = top0 | top1; .spad = ~s2; }
+  .pe3 { .write = writeTwo; s3 = top1 | top0; .spad = ~s3; }
+}
+
+@kernel checkNor config | exec
+void checkNorRun(void) {
+}
