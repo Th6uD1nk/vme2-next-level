@@ -152,6 +152,14 @@ Four of its blocks:
        position first operation of the pe only
 ```
 
+**Explanation of the code above:**
+
+- The first line of a block is the opcode and how the operation is written. The lines under it say what it does.
+- `also written` gives another writing of the same opcode ([6.2.2](operations.md#622-operators-with-a-number)).
+- `registers c = B` says that the number `c` is written in the register B. `clamp` writes two numbers, in A and in B.
+- `position first operation of the pe only` is for the operations that must be the first one of their pe ([5.3](pe.md#53-operations-in-a-pe)). The other operations can stand anywhere: `position any`.
+- `not portable` marks an opcode that does not work on every model of the PSP. `--compat fat` leaves it out ([1.6](#16---compat)).
+
 `--ops` goes alone, without a file or another option.
 
 ## 1.6 --compat
