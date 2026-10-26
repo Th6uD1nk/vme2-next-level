@@ -28,10 +28,10 @@ An attribute is a named member of a kernel. It starts with a dot. Its content is
 | `.load { }`, `.store { }` | a DMAC transfer | [Transfers](transfers.md) |
 | `.offsets { }` | the scratchpad offsets of a transfer | [Transfers](transfers.md) |
 
-A member of an attribute has one of two forms: `.member = variable;` or `.member { … }`. The operation of a pe whose result leaves on the write starts with a dot too (`.top0 + base0;`); an operation kept in a `Staging` variable is written without it (`s = top0 + base0;`). A variable can be replaced by its fields written in place.
+A member of an attribute has one of two forms: `.member = variable;` or `.member { … }`. The operation of a pe whose result leaves on the write is the member `.spad` (`.spad = top0 + base0;`); an operation kept in a `Staging` variable is set by its name (`s = top0 + base0;`). A variable can be replaced by its fields written in place.
 
 ```c
-.pe0 { .top = t; .write = { count: 15 }; .top0 + base0; }
+.pe0 { .top = t; .write = { count: 15 }; .spad = top0 + base0; }
 .load { .transfer = in; .scope = global; }
 ```
 
@@ -85,7 +85,7 @@ An access by index starts with no dot: `pe[p]`, `top[t]`, `base[b]`. The index i
 
 ```c
 for p in 0..3 {
-  pe[p] { .top = t; .top0 + top0; }
+  pe[p] { .top = t; .spad = top0 + top0; }
 }
 ```
 
@@ -97,7 +97,7 @@ for p in 0..3 {
 Int last = 3;
 Agu x = { count: last };
 for p in 0..last {
-  pe[p] { .top = x; .top0 + top0; }
+  pe[p] { .top = x; .spad = top0 + top0; }
 }
 ```
 
@@ -182,11 +182,11 @@ A macro that is not trusted is an unknown name.
 
 ```c
 for p in 0..1 {
-  pe[p] { .top = t; .top0 + top0; }
+  pe[p] { .top = t; .spad = top0 + top0; }
 }
 ```
 
-writes the same as `pe[0] { .top = t; .top0 + top0; }` followed by `pe[1] { .top = t; .top0 + top0; }`.
+writes the same as `pe[0] { .top = t; .spad = top0 + top0; }` followed by `pe[1] { .top = t; .spad = top0 + top0; }`.
 
 This is not the C `for (…)`, which stays C code.
 
