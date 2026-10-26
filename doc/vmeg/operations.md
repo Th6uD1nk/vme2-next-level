@@ -149,6 +149,7 @@ Some operators take a number besides their operands. The operation holds the num
 | Written | Also written as a function |
 |---|---|
 | `a + b + c` | |
+| `x + c` | |
 | `a - b + c` | `subacst(a, b, c)` ([6.3.2](#632-subacst)) |
 | `b - (a >> n)` | `subshr(a, b, n)` ([6.3.3](#633-subshr)) |
 | `x & c` | `and(x, c)` ([6.3.6](#636-and-or-and-xor)) |
@@ -164,7 +165,7 @@ Some operators take a number besides their operands. The operation holds the num
 - `x` is a buffer, a `Staging` variable or an operation. `a` and `b` are buffers or `Staging` variables.
 - The number can be written on either side of `+`, `&`, `|` and `^`: `255 & top1` is the same as `top1 & 255`, and `5 + (top0 + base0)` the same as `(top0 + base0) + 5`.
 - The grouping is the one written: `5 + top0 + base0` is `(5 + top0) + base0` and is refused. Write `5 + (top0 + base0)`.
-- A number with a single operand is not an operation of this table: `top0 + 5` is refused.
+- A number with a single operand is covered for the sum only: `top0 + 1` is `x + c`. `top0 * 5` and `top0 - 1` are refused, no operation of the table takes a single operand and a number for them.
 
 ### 6.2.3 How the opcode is chosen
 
