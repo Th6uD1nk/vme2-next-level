@@ -160,6 +160,9 @@ Some operators take a number besides their operands. The operation holds the num
 
 - The number is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - `x` is a buffer, a `Staging` variable or an operation. `a` and `b` are buffers or `Staging` variables.
+- The number can be written on either side of `+`, `&`, `|` and `^`: `255 & top1` is the same as `top1 & 255`, and `5 + (top0 + base0)` the same as `(top0 + base0) + 5`.
+- The grouping is the one written: `5 + top0 + base0` is `(5 + top0) + base0` and is refused. Write `5 + (top0 + base0)`.
+- A number with a single operand is not an operation of this table: `top0 + 5` is refused.
 
 ## 6.3 Functions
 
