@@ -39,6 +39,10 @@ class WrittenExpressionTest(unittest.TestCase):
       with self.subTest(body=body, compat=compat):
         self.assertEqual(used(body, compat), (code, registers))
 
+  def test_the_constant_can_be_written_before_the_operand(self):
+    self.assertEqual(used(". 255 & top1;"), ("fu_code(OP_AND_CST)", [("B", "0xff")]))
+    self.assertEqual(used(". 5 + (top0 + base0);"), ("fu_code(OP_ADD_OFA)", [("A", "5")]))
+
 
 if __name__ == "__main__":
   unittest.main()
