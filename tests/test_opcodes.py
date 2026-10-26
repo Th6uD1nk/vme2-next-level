@@ -80,6 +80,15 @@ class ComplementTest(unittest.TestCase):
     self.assertEqual(codes(".~sat(top0 & base0, 8);"), ["OP_AND", "OP_NOT"])
     self.assertEqual(codes(".~((top0 & base0) >> 2);"), ["OP_AND", "OP_NOT"])
 
+  def test_a_fused_complement_can_read_an_operation(self):
+    self.assertEqual(codes(".~and(top0 + base0, 255);"), ["OP_ADD", "OP_NAD_CST"])
+
+  def test_a_complement_of_what_no_opcode_covers_is_refused(self):
+    with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
+      codes(".~(top0 + 5);")
+    with self.assertRaisesRegex(ValueError, "sat must wrap an operation"):
+      codes(".~sat(top0, 8);")
+
 
 if __name__ == "__main__":
   unittest.main()
