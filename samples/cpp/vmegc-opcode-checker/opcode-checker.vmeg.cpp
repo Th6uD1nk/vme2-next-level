@@ -474,3 +474,32 @@ volatile Buffer andCstTop0[16] = {
 @kernel checkAndCst config | exec
 void checkAndCstRun(void) {
 }
+
+volatile Buffer orCstTop0[16] = {
+  0, -1, 0x80, 0x7f,
+  0xff, 0x100, 0x180, 0x555555,
+  -0x555556, -0x81, -0x80, -0x100,
+  0x7fffff, -0x800000, 1, -2,
+};
+
+@emulate "or_cst"
+.kernel checkOrCst direct {
+  Int count = 16 - 1;
+  Int bit = 128;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: orCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 | 0x80; }
+  .pe1 { .write = write; .spad = 0x80 | top0; }
+  .pe2 { .write = write; .spad = or(top0, 0x80); }
+  .pe3 { .write = write; .spad = top0 | bit; }
+}
+
+@kernel checkOrCst config | exec
+void checkOrCstRun(void) {
+}
