@@ -625,3 +625,34 @@ volatile Buffer xnorCstTop0[16] = {
 @kernel checkXnorCst config | exec
 void checkXnorCstRun(void) {
 }
+
+volatile Buffer clampTop0[16] = {
+  -1000, -101, -100, -99,
+  -1, 0, 1, 99,
+  100, 101, 1000, 0x7fffff,
+  -0x800000, 0x7fff, -0x8000, 50,
+};
+
+@emulate "clamp"
+.kernel checkClamp direct {
+  Int count = 16 - 1;
+  Int low = -100;
+  Int high = 100;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: clampTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top0, -100, 100); }
+  .pe1 { .write = writeTwo; .spad = clamp(top0 + 0, low, high); }
+  .pe2 { .write = writeTwo; .spad = clamp(top0 | 0, -0x64, 0x64); }
+  .pe3 { .write = writeTwo; .spad = clamp(top0 ^ 0, -100, 100); }
+}
+
+@kernel checkClamp config | exec
+void checkClampRun(void) {
+}
