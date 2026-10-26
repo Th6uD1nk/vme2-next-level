@@ -4,7 +4,6 @@ OPERATIONS = {
   "add": {
     "opcode": 0x010,
     "not_portable": True,
-    "form": ("operator", "+"),
     "pattern": "a + b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -15,18 +14,16 @@ OPERATIONS = {
   },
   "add_ofa": {
     "opcode": 0x030,
-    "form": ("operator", "+"),
     "pattern": "a + b + c",
     "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
     "registers": {"A": "c"},
     "code": "fu_code(OP_ADD_OFA)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "another way to write a + b: (a + b) + A with the register A written at 0, taken when 0x010 is excluded (--compat fat)",
+    "note": "(a + b) + c, c is a number written in the register A, 0 when it is not written",
   },
   "sub": {
     "opcode": 0x018,
-    "form": ("operator", "-"),
     "pattern": "a - b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -37,7 +34,6 @@ OPERATIONS = {
   },
   "subacst": {
     "opcode": 0x048,
-    "form": ("function", "subacst"),
     "pattern": "a - b + c",
     "aliases": ("subacst(a, b, c)",),
     "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
@@ -49,7 +45,6 @@ OPERATIONS = {
   },
   "subshr": {
     "opcode": 0x050,
-    "form": ("function", "subshr"),
     "pattern": "b - (a >> n)",
     "aliases": ("subshr(a, b, n)",),
     "arguments": (("a", "operand"), ("b", "operand"), ("n", "number")),
@@ -62,7 +57,6 @@ OPERATIONS = {
   },
   "mul": {
     "opcode": 0x200,
-    "form": ("operator", "*"),
     "pattern": "a * b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -73,7 +67,6 @@ OPERATIONS = {
   },
   "and": {
     "opcode": 0x0c0,
-    "form": ("operator", "&"),
     "pattern": "a & b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -84,7 +77,6 @@ OPERATIONS = {
   },
   "and_cst": {
     "opcode": 0x0c4,
-    "form": ("function", "and"),
     "pattern": "x & c",
     "aliases": ("and(x, c)",),
     "arguments": (("x", "source"), ("c", "number")),
@@ -96,7 +88,6 @@ OPERATIONS = {
   },
   "nand": {
     "opcode": 0x0c8,
-    "form": ("fused", "and"),
     "pattern": "~(a & b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -107,7 +98,6 @@ OPERATIONS = {
   },
   "nand_cst": {
     "opcode": 0x0cc,
-    "form": ("fused", "and_cst"),
     "pattern": "~(x & c)",
     "aliases": ("~and(x, c)",),
     "arguments": (("x", "source"), ("c", "number")),
@@ -119,7 +109,6 @@ OPERATIONS = {
   },
   "or": {
     "opcode": 0x0d0,
-    "form": ("operator", "|"),
     "pattern": "a | b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -130,7 +119,6 @@ OPERATIONS = {
   },
   "nor": {
     "opcode": 0x0d8,
-    "form": ("fused", "or"),
     "pattern": "~(a | b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -141,7 +129,6 @@ OPERATIONS = {
   },
   "or_cst": {
     "opcode": 0x0d4,
-    "form": ("function", "or"),
     "pattern": "x | c",
     "aliases": ("or(x, c)",),
     "arguments": (("x", "source"), ("c", "number")),
@@ -153,7 +140,6 @@ OPERATIONS = {
   },
   "nor_cst": {
     "opcode": 0x0dc,
-    "form": ("fused", "or_cst"),
     "pattern": "~(x | c)",
     "aliases": ("~or(x, c)",),
     "arguments": (("x", "source"), ("c", "number")),
@@ -165,7 +151,6 @@ OPERATIONS = {
   },
   "xor": {
     "opcode": 0x0e0,
-    "form": ("operator", "^"),
     "pattern": "a ^ b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -176,7 +161,6 @@ OPERATIONS = {
   },
   "xor_cst": {
     "opcode": 0x0e4,
-    "form": ("function", "xor"),
     "pattern": "x ^ c",
     "aliases": ("xor(x, c)",),
     "arguments": (("x", "source"), ("c", "number")),
@@ -188,7 +172,6 @@ OPERATIONS = {
   },
   "xnor_cst": {
     "opcode": 0x0ec,
-    "form": ("fused", "xor_cst"),
     "pattern": "~(x ^ c)",
     "aliases": ("~xor(x, c)",),
     "arguments": (("x", "source"), ("c", "number")),
@@ -200,7 +183,6 @@ OPERATIONS = {
   },
   "not": {
     "opcode": 0x0fc,
-    "form": ("operator", "~"),
     "pattern": "~x",
     "arguments": (("x", "source"),),
     "registers": {},
@@ -211,7 +193,6 @@ OPERATIONS = {
   },
   "clamp": {
     "opcode": 0x07c,
-    "form": ("function", "clamp"),
     "pattern": "clamp(x, low, high)",
     "arguments": (("x", "source"), ("low", "number"), ("high", "number")),
     "registers": {"A": "high", "B": "low"},
@@ -222,7 +203,6 @@ OPERATIONS = {
   },
   "mac": {
     "opcode": 0x240,
-    "form": ("function", "mac"),
     "pattern": "mac(a, b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
@@ -233,7 +213,6 @@ OPERATIONS = {
   },
   "acc": {
     "opcode": 0x250,
-    "form": ("function", "acc"),
     "pattern": "acc(x)",
     "arguments": (("x", "operand"),),
     "registers": {},
@@ -285,20 +264,9 @@ def slots(specification):
   return len(reads(specification)) + len(specification["registers"])
 
 
-def syntax(specification):
-  names = [name for name, _ in specification["arguments"]]
-  form, name = specification["form"]
-  if form == "fused":
-    inner = OPERATIONS[name]
-    return f"~({syntax(inner)})" if inner["form"][0] == "operator" else f"~{syntax(inner)}"
-  if form == "operator":
-    return f"{name}{names[0]}" if len(names) == 1 else f"{names[0]} {name} {names[1]}"
-  return f"{name}({', '.join(names)})"
-
-
 def operation_columns(specification):
   units = "first operation of the pe only" if specification["units"] == "primary" else "any position"
-  return (syntax(specification), f"0x{specification['opcode']:03x}", specification["code"], ", ".join(reads(specification)), units)
+  return (specification["pattern"], f"0x{specification['opcode']:03x}", specification["code"], ", ".join(reads(specification)), units)
 
 
 def format_operations():
@@ -308,6 +276,10 @@ def format_operations():
   for specification, row in zip(OPERATIONS.values(), rows):
     lines.append("  " + "  ".join(column.ljust(width) for column, width in zip(row, widths)).rstrip())
     lines.append("      " + specification["note"])
+    if specification.get("aliases"):
+      lines.append("      also written " + ", ".join(specification["aliases"]))
+    if specification.get("not_portable"):
+      lines.append("      not portable")
   lines.append("")
   lines.append("options of the operation they wrap:")
   syntax_width = max(len(field[0]) for field in FIELDS)
