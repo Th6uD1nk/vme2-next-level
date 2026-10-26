@@ -62,6 +62,21 @@ class KernelOptionErrorTest(unittest.TestCase):
     self.assertEqual(code, 2)
     self.assertIn("no kernel 'nope' (run, other)", err)
 
+class KernelOperationsTest(unittest.TestCase):
+  def test_the_operations_of_the_kernel_follow_its_header(self):
+    code, out, _ = vmegc("--list", "--kernel", "run")
+    self.assertEqual(code, 0)
+    lines = out.splitlines()
+    self.assertIn(".kernel run direct", lines[0])
+    self.assertEqual(len(lines), 2)
+    self.assertTrue(lines[1].startswith("  pe0  line 3  0x030  a + b + c  "))
+    self.assertTrue(lines[1].endswith("a = top0, b = base0, c = 5"))
+
+  def test_the_operations_of_another_kernel_are_not_listed(self):
+    _, out, _ = vmegc("--list", "--kernel", "other")
+    self.assertIn("0x0c4", out)
+    self.assertNotIn("0x030", out)
+
 
 if __name__ == "__main__":
   unittest.main()
