@@ -123,11 +123,11 @@ def operand(expr, stagings):
   return ref
 
 
-def split_source(expr, stagings):
+def split_source(expr, stagings, compat):
   ref = source_ref(expr, stagings)
   if ref is not None:
     return ref, []
-  return None, flatten(expr, stagings)
+  return None, flatten(expr, stagings, compat)
 
 
 def check_arguments(name, args):
@@ -136,17 +136,17 @@ def check_arguments(name, args):
     raise ValueError(f"{name} takes {len(names)} argument{'' if len(names) == 1 else 's'} ({', '.join(names)})")
 
 
-def table_operands(label, specification, args, stagings):
+def table_operands(label, specification, args, stagings, compat):
   given = [(kind, expr) for (_, kind), expr in zip(specification["arguments"], args) if kind != "number"]
   if specification["operands"] == ("front", "back"):
     return {"front": operand(given[0][1], stagings), "back": operand(given[1][1], stagings)}, []
-  source, operations = split_source(given[0][1], stagings)
+  source, operations = split_source(given[0][1], stagings, compat)
   if operations and given[0][0] == "operand":
     raise ValueError(f"{label} takes a buffer or a Staging variable")
   return {"source": source}, operations
 
 
-def table_operation(kind, label, args, stagings):
+def table_operation(kind, label, args, stagings, compat):
   specification = OPERATIONS[kind]
   numbers = {}
   for (argument, argument_kind), expr_argument in zip(specification["arguments"], args):
@@ -155,11 +155,11 @@ def table_operation(kind, label, args, stagings):
       minimum = specification.get("minimums", {}).get(argument)
       if minimum is not None and numbers[argument] < minimum:
         raise ValueError(f"{label} {argument} cannot be less than {minimum}")
-  operands, operations = table_operands(label, specification, args, stagings)
+  operands, operations = table_operands(label, specification, args, stagings, compat)
   return operations + [{"kind": kind, **operands, "numbers": numbers, "sat": None}]
 
 
-def flatten(expr, stagings):
+def flatten(expr, stagings, compat):
   kind = expr[0]
   if kind == "call":
     name, args = expr[1], expr[2]
@@ -169,7 +169,7 @@ def flatten(expr, stagings):
       bits = constant(args[1], "sat bits")
       if not 0 <= bits <= 31:
         raise ValueError("sat bits out of range (0 to 31)")
-      _, operations = split_source(args[0], stagings)
+      _, operations = split_source(args[0], stagings, compat)
       if not operations:
         raise ValueError("sat must wrap an operation")
       if operations[-1]["sat"] is not None:
@@ -180,16 +180,16 @@ def flatten(expr, stagings):
       return operations
     if name in FUNCTIONS:
       check_arguments(name, args)
-      return table_operation(FUNCTIONS[name], name, args, stagings)
+      return table_operation(FUNCTIONS[name], name, args, stagings, compat)
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
   if kind == "not":
-    _, inner = split_source(expr[1], stagings)
+    _, inner = split_source(expr[1], stagings, compat)
     if len(inner) == 1 and inner[0]["sat"] is None and inner[0].get("shift") is None and inner[0]["kind"] in FUSIONS:
       return [dict(inner[0], kind=FUSIONS[inner[0]["kind"]])]
-    return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings)
+    return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings, compat)
   if kind == "bin":
     if expr[1] in (">>", "<<"):
-      _, operations = split_source(expr[2], stagings)
+      _, operations = split_source(expr[2], stagings, compat)
       if not operations:
         raise ValueError("a shift must wrap an operation")
       amount = constant(expr[3], "the shift")
@@ -201,7 +201,7 @@ def flatten(expr, stagings):
       return operations
     if expr[1] not in OPERATORS:
       raise ValueError(f"unsupported operator '{expr[1]}' ({', '.join([*OPERATORS, '>>', '<<'])})")
-    return table_operation(OPERATORS[expr[1]], expr[1], [expr[2], expr[3]], stagings)
+    return table_operation(OPERATORS[expr[1]], expr[1], [expr[2], expr[3]], stagings, compat)
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
@@ -581,7 +581,7 @@ def emit_statement(statement, env, lines, state):
     if (pe, "operation") in state["set"]:
       raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
-    last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state)), statement[-1])
+    last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state), state["compat"]), statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
     state["depths"][pe] = depth
     if last == 1:
@@ -596,7 +596,7 @@ def emit_statement(statement, env, lines, state):
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
     pe = target_pe(statement[1], env)
-    last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state)), statement[-1])
+    last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state), state["compat"]), statement[-1])
     variable.update({"pe": pe, "unit": last, "line": statement[-1], "depth": depth})
   elif kind == "peblock":
     for inner in statement[1]:
