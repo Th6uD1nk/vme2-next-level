@@ -9,6 +9,7 @@
 - [1.3 Messages](#13-messages)
 - [1.4 --list](#14---list)
 - [1.5 --ops](#15---ops)
+- [1.6 --compat](#16---compat)
 - [1.7 CMake](#17-cmake)
 - [1.8 Errors](#18-errors)
 
@@ -83,6 +84,18 @@ python3 vmegc.py --ops
 `--ops` shows the table of the operations that a pe can run, and writes nothing. For each operation: how it is written (as an expression, or as a function for the operations that have no other writing), its opcode, the operands it reads (`a, b`, or `x`), and where it can stand in a pe (any position, or the first operation of the pe only). Under each operation: what it does, its other writings (`also written …`), and `not portable` when the opcode is not usable on every model of the PSP. Under the table, the options that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
 
 `--ops` goes alone, without a file or another option.
+
+## 1.6 --compat
+
+```
+python3 vmegc.py --compat fat main.vmeg.cpp
+```
+
+**Explanation of the code above:**
+
+- `--compat fat` makes `vmegc` leave out the opcodes that do not work on the fat model of the PSP. `--ops` marks them `not portable` ([1.5](#15---ops)).
+- An expression that such an opcode covered is done by another opcode, as `a + b` is ([6.2.3](operations.md#623-how-the-opcode-is-chosen)).
+- Without `--compat`, every opcode can be chosen.
 
 ## 1.7 CMake
 
