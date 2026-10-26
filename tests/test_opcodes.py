@@ -50,5 +50,26 @@ class WrittenExpressionTest(unittest.TestCase):
           used(body)
 
 
+def codes(body, compat=None):
+  return re.findall(r"fu_code\((OP_\w+)\)", " ".join(kernel_lines(body, compat)))
+
+
+class ComplementTest(unittest.TestCase):
+  def test_a_complement_that_the_hardware_fuses_is_one_operation(self):
+    rows = [
+      (".~(top0 & base0);", ["OP_NAD"]),
+      (".~(top0 | base0);", ["OP_NOR"]),
+      (".~(top0 & 255);", ["OP_NAD_CST"]),
+      (".~(top0 | 15);", ["OP_NOR_CST"]),
+      (".~(top0 ^ 1);", ["OP_XOR_CST_NOT"]),
+      (".~and(top0, 255);", ["OP_NAD_CST"]),
+      (".~or(top0, 15);", ["OP_NOR_CST"]),
+      (".~xor(top0, 1);", ["OP_XOR_CST_NOT"]),
+    ]
+    for body, expected in rows:
+      with self.subTest(body=body):
+        self.assertEqual(codes(body), expected)
+
+
 if __name__ == "__main__":
   unittest.main()
