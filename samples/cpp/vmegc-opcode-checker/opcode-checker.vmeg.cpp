@@ -188,3 +188,41 @@ volatile Buffer subAcstTop1[16] = {
 @kernel checkSubAcst config | exec
 void checkSubAcstRun(void) {
 }
+
+volatile Buffer subShrTop0[16] = {
+  0, 4, 8, 3,
+  -4, -1, -3, 0x100,
+  0x7fffff, -0x800000, 0x555555, -0x555555,
+  0x2aaaaa, -0x2aaaab, 1, -2,
+};
+
+volatile Buffer subShrTop1[16] = {
+  0, 0, 10, 10,
+  10, 0, 0, -0x100,
+  0, 0, 0x555555, 0x555555,
+  -0x800000, 0x7fffff, 0, 0,
+};
+
+@emulate "subshr"
+.kernel checkSubShr direct {
+  Int count = 16 - 1;
+  Int two = 2;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: subShrTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: subShrTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 - (top0 >> 2); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top0, top1, 2); }
+  .pe2 { .write = write; .spad = top1 - (top0 >> two); }
+  .pe3 { .write = write; .spad = top1 - (top0 >> 0x2); }
+}
+
+@kernel checkSubShr config | exec
+void checkSubShrRun(void) {
+}
