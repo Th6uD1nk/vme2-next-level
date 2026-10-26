@@ -9,6 +9,7 @@ This page presents the operations currently supported. The list is not complete.
 - [6.1 Operands and results](#61-operands-and-results)
 - [6.2 Operators](#62-operators)
   - [6.2.1 The complement](#621-the-complement)
+  - [6.2.2 Operators with a number](#622-operators-with-a-number)
 - [6.3 Functions](#63-functions)
   - [6.3.1 clamp](#631-clamp)
   - [6.3.2 subacst](#632-subacst)
@@ -56,7 +57,7 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 
 ## 6.2 Operators
 
-The operators `+`, `-`, `*`, `&`, `|` and `^` take two operands, each one a buffer or a `Staging` variable. A number or another operation is refused: keep the first result in a `Staging` variable, or wrap it in a function such as `clamp`.
+The operators `+`, `-`, `*`, `&`, `|` and `^` take two operands, each one a buffer or a `Staging` variable. Another operation is refused: keep the first result in a `Staging` variable, or wrap it in a function such as `clamp`. A number is written in the forms of [6.2.2](#622-operators-with-a-number).
 
 ```c
 .pe0 { .top0 + base0; }
@@ -124,6 +125,24 @@ Staging s;
 | `~xor(x, c)` | `0x0ec` |
 
 A pe holds two operations at most ([5.3](pe.md#53-operations-in-a-pe)): `~and(top0 + top1, 255)` would need three and is refused.
+
+### 6.2.2 Operators with a number
+
+Some operators take a number besides their operands. The operation holds the number in a register of the pe.
+
+```c
+.pe0 { .top0 + base0 + 5; }
+.pe1 { .top1 - base1 + 3; }
+.pe2 { .base2 - (top2 >> 2); }
+.pe3 { .(top3 + base3) & 0xff; }
+```
+
+**Explanation of the code above:**
+
+- `top0 + base0 + 5` adds the number to the sum: `(top0 + base0) + 5`.
+- `top1 - base1 + 3` adds the number to the difference.
+- `base2 - (top2 >> 2)` subtracts `top2` shifted to the right by 2 from `base2`. The shift cannot be negative.
+- `(top3 + base3) & 0xff` keeps the low byte of the sum. `pe3` holds two operations: the sum, then the and.
 
 ## 6.3 Functions
 
