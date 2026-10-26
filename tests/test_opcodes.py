@@ -6,6 +6,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from test_values import kernel_lines
+from vmeg.blocks import find_blocks
+from vmeg.kernel import generate
 
 
 def used(body, compat=None):
@@ -151,6 +153,12 @@ class AfterAnOperationTest(unittest.TestCase):
       "vme_pe0(vme_fu(SECONDARY), vme_mux(NONE, STAGING_0), fu_code(OP_ADD_CST));",
       "vme_pe0(fu_reg(SECONDARY, B), 1);",
     ])
+
+class StagingInTheKernelTest(unittest.TestCase):
+  def test_a_staging_variable_declared_in_the_kernel_is_used_by_a_pe(self):
+    text = ".kernel k direct {\n  Staging s;\n  .pe0 { s = top0 + base0; .s & 255; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    code = generate(text, find_blocks(text)[0], [], None)
+    self.assertEqual(re.findall(r"fu_code\((OP_\w+)\)", code), ["OP_ADD", "OP_AND_CST"])
 
 
 if __name__ == "__main__":
