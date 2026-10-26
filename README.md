@@ -32,8 +32,6 @@ It needs `g++` with 32 bit support (`-m32`) and the `me-custom-core` submodule (
 
 `--run` is currently tested on Linux only.
 
-`--run` accepts `--compat fat` to play the kernel with the opcodes that `vmegc --compat fat` chooses. `--compat` goes with `--run`.
-
 More details in the documentation: [vmee](doc/VMEE.md) (work in progress)
 
 ## vmeh
