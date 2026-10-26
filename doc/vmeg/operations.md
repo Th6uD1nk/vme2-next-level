@@ -156,6 +156,11 @@ Some operators take a number besides their operands. The operation holds the num
 | `~(x \| c)` | `~or(x, c)` |
 | `~(x ^ c)` | `~xor(x, c)` |
 
+**Rules:**
+
+- The number is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- `x` is a buffer, a `Staging` variable or an operation. `a` and `b` are buffers or `Staging` variables.
+
 ## 6.3 Functions
 
 A function is written like an operator, with its operands between parentheses. The numbers it takes are known at compile time.
