@@ -109,5 +109,33 @@ class ShiftTest(unittest.TestCase):
           used(body)
 
 
+class NestedTest(unittest.TestCase):
+  def test_an_operation_inside_a_clamp_is_chosen_like_alone(self):
+    rows = [
+      (".clamp(top0 + base0 + 5, 0, 255);", ["OP_ADD_OFA", "OP_CLP"]),
+      (".clamp(top0 & 255, 0, 9);", ["OP_AND_CST", "OP_CLP"]),
+      (".clamp(top1 - (top0 >> 2), 0, 255);", ["OP_SUB_INV_SHF", "OP_CLP"]),
+      (".clamp(~(top0 & base0), 0, 9);", ["OP_NAD", "OP_CLP"]),
+    ]
+    for body, expected in rows:
+      for compat in (None, "fat"):
+        with self.subTest(body=body, compat=compat):
+          self.assertEqual(codes(body, compat), expected)
+
+  def test_an_operation_kept_in_a_staging_variable_is_chosen_like_alone(self):
+    rows = [
+      ("Staging s; s = top0 + base0 + 5; .s & 255;", ["OP_ADD_OFA", "OP_AND_CST"]),
+      ("Staging s; s = top1 - (top0 >> 2); .~s;", ["OP_SUB_INV_SHF", "OP_NOT"]),
+      ("Staging s; s = top0 & 255; .s + base0 + 3;", ["OP_AND_CST", "OP_ADD_OFA"]),
+    ]
+    for body, expected in rows:
+      with self.subTest(body=body):
+        self.assertEqual(codes(body), expected)
+
+  def test_an_operand_that_is_an_operation_is_still_refused_inside_a_clamp(self):
+    with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
+      codes(".clamp(top0 + top1 + top2, 0, 9);")
+
+
 if __name__ == "__main__":
   unittest.main()
