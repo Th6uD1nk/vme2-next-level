@@ -1,4 +1,4 @@
-from vmeg.pattern import check_patterns
+from vmeg.pattern import check_patterns, parse_pattern
 
 OPERATIONS = {
   "add": {
@@ -247,19 +247,28 @@ OPERATIONS = {
 check_patterns(OPERATIONS)
 
 
-def first_by_name(form, arity=None):
+def calls_of(operations):
   found = {}
-  for kind, specification in OPERATIONS.items():
-    if specification["form"][0] == form and (arity is None or len(specification["arguments"]) == arity):
-      found.setdefault(specification["form"][1], kind)
+  for kind, specification in operations.items():
+    for text in (specification["pattern"], *specification.get("aliases", ())):
+      tree = parse_pattern(text)
+      if tree[0] == "call":
+        found.setdefault(tree[1], kind)
   return found
 
 
-OPERATORS = first_by_name("operator", 2)
+def operators_of(operations):
+  found = []
+  for specification in operations.values():
+    tree = parse_pattern(specification["pattern"])
+    if tree[0] == "bin" and tree[1] not in found:
+      found.append(tree[1])
+  return found
 
-UNARY_OPERATORS = first_by_name("operator", 1)
 
-FUNCTIONS = first_by_name("function")
+FUNCTIONS = calls_of(OPERATIONS)
+
+OPERATORS = operators_of(OPERATIONS)
 
 FIELDS = (
   ("sat(op, bits)", "fu_sat(bits)", "the saturation of the operation it wraps, bits 0 to 31"),

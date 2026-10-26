@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS, UNARY_OPERATORS
+from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
 from vmeg.selector import choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
@@ -186,7 +186,7 @@ def flatten(expr, stagings, compat):
   if kind == "not":
     found = choose_opcode(expr, compat)
     if found is None:
-      return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings, compat)
+      return table_operation("not", "not", [expr[1]], stagings, compat)
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
