@@ -20,6 +20,8 @@ WRITTEN = [
   (".top1 + top2;", None, "fu_code(OP_ADD)", []),
   (".top0 + base0;", "fat", "fu_code(OP_ADD_OFA)", [("A", "0")]),
   (".top0 + base0 + 5;", None, "fu_code(OP_ADD_OFA)", [("A", "5")]),
+  (".top1 + 1;", None, "fu_code(OP_ADD_CST)", [("B", "1")]),
+  (".top1 + 1;", "fat", "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".top0 + base0 + 5;", "fat", "fu_code(OP_ADD_OFA)", [("A", "5")]),
   (".top0 - base0;", None, "fu_code(OP_SUB)", []),
   (".top1 - top0;", "fat", "fu_code(OP_SUB)", []),
@@ -41,6 +43,7 @@ class WrittenExpressionTest(unittest.TestCase):
 
   def test_the_constant_can_be_written_before_the_operand(self):
     self.assertEqual(used(". 255 & top1;"), ("fu_code(OP_AND_CST)", [("B", "0xff")]))
+    self.assertEqual(used(". 1 + top1;"), ("fu_code(OP_ADD_CST)", [("B", "1")]))
     self.assertEqual(used(". 5 + (top0 + base0);"), ("fu_code(OP_ADD_OFA)", [("A", "5")]))
 
   def test_an_expression_that_no_opcode_covers_is_refused(self):
@@ -75,6 +78,7 @@ class ComplementTest(unittest.TestCase):
     self.assertEqual(codes(".~(top0 + base0);"), ["OP_ADD", "OP_NOT"])
     self.assertEqual(codes(".~(top0 + base0);", "fat"), ["OP_ADD_OFA", "OP_NOT"])
     self.assertEqual(codes(".~(top0 - base0);"), ["OP_SUB", "OP_NOT"])
+    self.assertEqual(codes(".~(top0 + 1);"), ["OP_ADD_CST", "OP_NOT"])
 
   def test_a_sat_or_a_shift_in_the_complement_keeps_it_apart_from_the_operation(self):
     self.assertEqual(codes(".~sat(top0 & base0, 8);"), ["OP_AND", "OP_NOT"])
@@ -116,6 +120,7 @@ class NestedTest(unittest.TestCase):
       (".clamp(top0 & 255, 0, 9);", ["OP_AND_CST", "OP_CLP"]),
       (".clamp(top1 - (top0 >> 2), 0, 255);", ["OP_SUB_INV_SHF", "OP_CLP"]),
       (".clamp(~(top0 & base0), 0, 9);", ["OP_NAD", "OP_CLP"]),
+      (".clamp(top0 + 1, 0, 9);", ["OP_ADD_CST", "OP_CLP"]),
     ]
     for body, expected in rows:
       for compat in (None, "fat"):
@@ -135,6 +140,16 @@ class NestedTest(unittest.TestCase):
   def test_an_operand_that_is_an_operation_is_still_refused_inside_a_clamp(self):
     with self.assertRaisesRegex(ValueError, "an operand must be a buffer"):
       codes(".clamp(top0 + top1 + top2, 0, 9);")
+
+
+class AfterAnOperationTest(unittest.TestCase):
+  def test_a_number_added_to_a_product_is_a_second_operation(self):
+    lines = kernel_lines(".(top0 * base0) + 1;", None)
+    self.assertEqual(lines, [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), VME_FU_OPCODE_MUL_RSHIFT_0);",
+      "vme_pe0(vme_fu(SECONDARY), vme_mux(NONE, STAGING_0), fu_code(OP_ADD_CST));",
+      "vme_pe0(fu_reg(SECONDARY, B), 1);",
+    ])
 
 
 if __name__ == "__main__":
