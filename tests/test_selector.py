@@ -56,6 +56,7 @@ class SelectTest(unittest.TestCase):
     self.assertEqual(chosen("a + b + 5"), "add_ofa")
     self.assertEqual(chosen("a - b"), "sub")
     self.assertEqual(chosen("a - b + 3"), "subacst")
+    self.assertEqual(chosen("a + 1"), "add_cst")
 
   def test_an_opcode_that_covers_the_whole_need_wins_over_two_that_cover_it_together(self):
     self.assertEqual(chosen("~(a & b)"), "nand")
@@ -72,6 +73,12 @@ class SelectTest(unittest.TestCase):
     self.assertIsNone(chosen("~(a * 5)"))
     self.assertIsNone(chosen("top0 + top1 + top2"))
     self.assertIsNone(chosen("a * 5"))
+
+  def test_the_opcode_with_two_operands_and_a_number_wins_over_a_sum_then_a_number(self):
+    self.assertEqual(chosen("a + b + 5"), "add_ofa")
+    self.assertEqual(select(parse_pattern("a + b + 5"))[2], 3)
+    self.assertEqual(choose_opcode(parse_pattern("a + b + 5"), "fat")[0], "add_ofa")
+    self.assertEqual(select(parse_pattern("(a * b) + 5"))[2], 4)
 
   def test_with_the_same_cost_the_first_of_the_table_is_chosen(self):
     table = {"second": dict(entry("a + b", *OPERANDS), registers={}), "first": dict(entry("a + b", *OPERANDS), registers={})}
