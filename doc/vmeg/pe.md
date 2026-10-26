@@ -96,7 +96,8 @@ The messages start with `line N:`, left out here.
 |---|---|---|
 | [5.1](#51-the-pe-block) | `processing element out of range (pe0 to pe3)` | a pe above 3, written `.pe4`. With an index that is computed, the message starts with the pe (`pe6: …`) |
 | [5.1](#51-the-pe-block) | `pe[...] is an access by index, it takes no dot` | `.pe[1]` instead of `pe[1]` |
-| [5.2](#52-what-a-block-holds) | `expected '='` | in a pe block, an operation that leaves written without its dot (`top0 + top1;`), or an `Int` or a loop in the block (currently not supported) |
+| [5.2](#52-what-a-block-holds) | `expected '='` | in a pe block, an operation that leaves written without `.spad =` (`top0 + top1;`), or an `Int` or a loop in the block (currently not supported) |
+| [5.2](#52-what-a-block-holds) | `expected ';'` | an operation or an assignment of a pe without its `;` (`.spad = top0 + top1` or `s = top0 + 1`) |
 | [5.2](#52-what-a-block-holds) | `pe0.top is already set at line N` | the same member (`.top`, `.base`, `.write`) set twice in a pe |
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
 | [5.3](#53-operations-in-a-pe) | `a pe holds two operations at most, this pe needs 3` | more than two operations in a pe |
