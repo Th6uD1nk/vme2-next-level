@@ -90,5 +90,24 @@ class ComplementTest(unittest.TestCase):
       codes(".~sat(top0, 8);")
 
 
+class ShiftTest(unittest.TestCase):
+  def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
+    expected = ("fu_code(OP_SUB_INV_SHF)", [("B", "2")])
+    self.assertEqual(used(".top1 - (top0 >> 2);"), expected)
+    self.assertEqual(used(".subshr(top0, top1, 2);"), expected)
+
+  def test_a_shift_around_an_operation_is_written_in_the_shift_of_the_opcode(self):
+    self.assertEqual(kernel_lines(".(top1 - top0) >> 2;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_SUB), 2);"])
+    self.assertEqual(kernel_lines(".top1 - top0 >> 2;", None), kernel_lines(".(top1 - top0) >> 2;", None))
+    lines = kernel_lines(".(top1 - (top0 >> 2)) >> 1;", None)
+    self.assertEqual(lines[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_SUB_INV_SHF), 1);")
+
+  def test_the_error_of_a_shift_inside_a_pattern_names_the_opcode(self):
+    for body in [".top1 - (top0 >> -1);", ".subshr(top0, top1, -1);"]:
+      with self.subTest(body=body):
+        with self.assertRaisesRegex(ValueError, "subshr n cannot be less than 0"):
+          used(body)
+
+
 if __name__ == "__main__":
   unittest.main()
