@@ -196,9 +196,9 @@ A function is written like an operator, with its operands between parentheses. T
 ```c
 Staging s;
 
-.pe0 { .clamp(top0, 0, 255); }
-.pe1 { .clamp(top0 + base0, 0, 255); }
-.pe2 { s = top0 + base0; .clamp(s, -5, 5); }
+.pe0 { .spad = clamp(top0, 0, 255); }
+.pe1 { .spad = clamp(top0 + base0, 0, 255); }
+.pe2 { s = top0 + base0; .spad = clamp(s, -5, 5); }
 ```
 
 ### 6.3.2 subacst
@@ -206,7 +206,7 @@ Staging s;
 `subacst(a, b, c)` computes `(a - b) + c`. `a` and `b` are buffers or `Staging` variables, `c` is a number. It can also be written as an expression, `a - b + c` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
-.pe0 { .subacst(top0, base0, 16); }
+.pe0 { .spad = subacst(top0, base0, 16); }
 ```
 
 ### 6.3.3 subshr
@@ -214,7 +214,7 @@ Staging s;
 `subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number that cannot be negative. It can also be written as an expression, `b - (a >> n)` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
-.pe0 { .subshr(top0, base0, 2); }
+.pe0 { .spad = subshr(top0, base0, 2); }
 ```
 
 The sign of the result and the place of `n` are not yet verified on the hardware.
@@ -242,7 +242,7 @@ Staging s;
 Staging s;
 
 .pe0 { s = mac(top0, top1); }
-.pe1 { .acc(s); }
+.pe1 { .spad = acc(s); }
 ```
 
 **Rules:**
@@ -255,10 +255,10 @@ Staging s;
 `and(x, c)`, `or(x, c)` and `xor(x, c)` give the bitwise and, or and exclusive or of `x` and a number `c`. `x` is a buffer, a `Staging` variable or an operation, `c` is a number. They are also written as the operators with a number, `x & c`, `x | c` and `x ^ c` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
-.pe0 { .and(top0, 0xff); }
-.pe1 { .or(top1, 0x80); }
-.pe2 { .xor(top2, 0x55); }
-.pe3 { .and(top3 + base3, 0xff); }
+.pe0 { .spad = and(top0, 0xff); }
+.pe1 { .spad = or(top1, 0x80); }
+.pe2 { .spad = xor(top2, 0x55); }
+.pe3 { .spad = and(top3 + base3, 0xff); }
 ```
 
 **Explanation of the code above:**
@@ -278,10 +278,10 @@ Staging s;
 `sat` and the shifts are not operations of their own: they set the saturation and the shift of the operation they wrap.
 
 ```c
-.pe0 { .sat(top0 + base0, 7); }
-.pe1 { .top1 + base1 >> 2; }
-.pe2 { .sat(top2 + base2, 7) >> 2; }
-.pe3 { .top3 + base3 << 4; }
+.pe0 { .spad = sat(top0 + base0, 7); }
+.pe1 { .spad = top1 + base1 >> 2; }
+.pe2 { .spad = sat(top2 + base2, 7) >> 2; }
+.pe3 { .spad = top3 + base3 << 4; }
 ```
 
 | Form | Meaning |
