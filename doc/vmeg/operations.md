@@ -112,7 +112,7 @@ Staging s;
 
 **Rules:**
 
-- `~` is one operation when its content is a single operation that the hardware combines with a complement, with no `sat` and no shift. Otherwise it is a second operation, applied to the result of its content.
+- `~` is one operation when its content is written as one of the operations of the table below, with no `sat` and no shift. Otherwise it is a second operation, applied to the result of its content.
 - A `sat` or a shift belongs to the operation it wraps: `~sat(a & b, 7)` is two operations.
 - The operations that the hardware combines with a complement:
 
@@ -120,11 +120,11 @@ Staging s;
 |---|---|
 | `~(a & b)` | `0x0c8` |
 | `~(a \| b)` | `0x0d8` |
-| `~and(x, c)` | `0x0cc` |
-| `~or(x, c)` | `0x0dc` |
-| `~xor(x, c)` | `0x0ec` |
+| `~(x & c)`, `~and(x, c)` | `0x0cc` |
+| `~(x \| c)`, `~or(x, c)` | `0x0dc` |
+| `~(x ^ c)`, `~xor(x, c)` | `0x0ec` |
 
-A pe holds two operations at most ([5.3](pe.md#53-operations-in-a-pe)): `~and(top0 + top1, 255)` would need three and is refused.
+`x` can be an operation: `~and(top0 + top1, 255)` is two operations, the sum and then the complement combined with the and. A pe holds two operations at most ([5.3](pe.md#53-operations-in-a-pe)), so `~and(clamp(top0 + top1, 0, 9), 255)` needs three and is refused.
 
 ### 6.2.2 Operators with a number
 
