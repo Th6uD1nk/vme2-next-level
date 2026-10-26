@@ -387,17 +387,11 @@ def parse_pe_block(p, index):
       body.append(("stageset", ("target", index, "stage"), name, expr, line))
       continue
     p.expect(".")
-    following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
-    if following is not None and following[0] == "punct" and following[1] == "=":
-      if p.peek()[1] == "spad":
-        p.ident()
-        body.append(parse_output(p, index) + (line,))
-      else:
-        body.append(parse_pe_assignment(p, ("target", index, p.ident())) + (line,))
+    if p.peek()[1] == "spad":
+      p.ident()
+      body.append(parse_output(p, index) + (line,))
     else:
-      expr = parse_expr(p)
-      p.expect(";")
-      body.append(("operation", ("target", index, "operation"), expr, line))
+      body.append(parse_pe_assignment(p, ("target", index, p.ident())) + (line,))
   return ("peblock", body)
 
 
