@@ -300,3 +300,40 @@ volatile Buffer orTop1[16] = {
 @kernel checkOr config | exec
 void checkOrRun(void) {
 }
+
+volatile Buffer xorTop0[16] = {
+  0, -1, 0x555555, -0x555556,
+  0x0f0f0f, -0xf0f10, 0x7fffff, -0x800000,
+  1, -2, 0x123456, -0x123457,
+  0xffff, -0x10000, 0x555555, -0x1,
+};
+
+volatile Buffer xorTop1[16] = {
+  0, -1, 0x555555, 0x555555,
+  0x0f0f0f, 0x0f0f0f, 0x7fffff, 0x7fffff,
+  -1, 1, 0xffffff, -0x1000000,
+  0xffff, 0xffff, -0x555556, -0x555556,
+};
+
+@emulate "xor"
+.kernel checkXor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: xorTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: xorTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 ^ top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 ^ top0; }
+  .pe2 { .write = write; .spad = (top0 ^ top1); }
+  .pe3 { .write = write; .spad = (top1 ^ top0); }
+}
+
+@kernel checkXor config | exec
+void checkXorRun(void) {
+}
