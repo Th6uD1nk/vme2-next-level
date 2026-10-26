@@ -286,7 +286,7 @@ def operation_block(specification):
   if specification.get("aliases"):
     lines.append(indent + "also written " + ", ".join(specification["aliases"]))
   if specification["registers"]:
-    lines.append(indent + "registers " + ", ".join(f"{register} = {name}" for register, name in specification["registers"].items()))
+    lines.append(indent + "registers " + ", ".join(f"{name} = {register}" for register, name in specification["registers"].items()))
   lines.append(indent + ("position first operation of the pe only" if specification["units"] == "primary" else "position any"))
   if specification.get("not_portable"):
     lines.append(indent + "not portable")
