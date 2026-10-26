@@ -594,3 +594,34 @@ volatile Buffer norCstTop0[16] = {
 @kernel checkNorCst config | exec
 void checkNorCstRun(void) {
 }
+
+volatile Buffer xnorCstTop0[16] = {
+  0, -1, 0x55, 0xaa,
+  0xff, 0x100, 0x155, 0x555555,
+  -0x555556, 0x7fffff, -0x800000, 1,
+  -2, -0x56, 0x123456, -0x123457,
+};
+
+@emulate "xnor_cst"
+.kernel checkXnorCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: xnorCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Staging s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top0 ^ 0x55); }
+  .pe1 { .write = write; .spad = ~xor(top0, 0x55); }
+  .pe2 { .write = write; .spad = ~(0x55 ^ top0); }
+  .pe3 { .write = writeTwo; s3 = top0 ^ 0x55; .spad = ~s3; }
+}
+
+@kernel checkXnorCst config | exec
+void checkXnorCstRun(void) {
+}
