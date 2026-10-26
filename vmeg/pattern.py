@@ -126,14 +126,15 @@ def canonical(tree):
 def check_patterns(operations):
   seen = {}
   for kind, specification in operations.items():
-    try:
-      tree = parse_pattern(specification["pattern"])
-    except ValueError as error:
-      raise ValueError(f"the pattern of '{kind}' is not valid: {error}")
     names = [name for name, _ in specification["arguments"]]
-    if sorted(set(names_of(tree))) != sorted(names):
-      raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(names)})")
-    key = repr(canonical(tree))
-    if key in seen:
-      raise ValueError(f"'{kind}' and '{seen[key]}' have the same pattern")
-    seen[key] = kind
+    for text in (specification["pattern"], *specification.get("aliases", ())):
+      try:
+        tree = parse_pattern(text)
+      except ValueError as error:
+        raise ValueError(f"the pattern of '{kind}' is not valid: {error}")
+      if sorted(set(names_of(tree))) != sorted(names):
+        raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(names)})")
+      key = repr(canonical(tree))
+      if key in seen:
+        raise ValueError(f"'{kind}' and '{seen[key]}' have the same pattern")
+      seen[key] = kind
