@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from vmeg.operations import OPERATIONS
 from vmeg.pattern import parse_pattern
-from vmeg.selector import candidates, select
+from vmeg.selector import candidates, choose_opcode, select
 
 
 def kinds(text, operations=OPERATIONS):
@@ -76,6 +76,33 @@ class SelectTest(unittest.TestCase):
   def test_with_the_same_cost_the_first_of_the_table_is_chosen(self):
     table = {"second": dict(entry("a + b", *OPERANDS), registers={}), "first": dict(entry("a + b", *OPERANDS), registers={})}
     self.assertEqual(chosen("x + y", table), "second")
+
+
+def chosen_for(text, compat, operations=OPERATIONS):
+  found = choose_opcode(parse_pattern(text), compat, operations)
+  return None if found is None else found[0]
+
+
+class ChooseOpcodeTest(unittest.TestCase):
+  def test_the_default_keeps_every_opcode(self):
+    self.assertEqual(chosen_for("a + b", None), "add")
+
+  def test_the_fat_leaves_out_the_opcodes_that_do_not_work_on_it(self):
+    self.assertEqual(chosen_for("a + b", "fat"), "add_ofa")
+    self.assertEqual(chosen_for("a - b", "fat"), "sub")
+
+  def test_the_fat_applies_to_the_operations_inside_a_source_too(self):
+    self.assertEqual(select(parse_pattern("~(a + b)"), OPERATIONS)[2], 3)
+    self.assertEqual(choose_opcode(parse_pattern("~(a + b)"), "fat")[2], 4)
+
+  def test_an_opcode_with_no_replacement_on_the_fat_is_an_error(self):
+    table = {"only": dict(entry("a + b", *OPERANDS), registers={}, not_portable=True)}
+    self.assertEqual(chosen_for("x + y", None, table), "only")
+    with self.assertRaisesRegex(ValueError, "only does not work on the fat and nothing replaces it"):
+      chosen_for("x + y", "fat", table)
+
+  def test_an_expression_without_opcode_stays_without_opcode_on_the_fat(self):
+    self.assertIsNone(chosen_for("5 + a", "fat"))
 
 
 if __name__ == "__main__":
