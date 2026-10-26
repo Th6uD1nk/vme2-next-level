@@ -11,7 +11,7 @@ from emu.listing import defines, emulations, format_listing
 
 
 def agu_count(body, prefix="", suffix=""):
-  text = prefix + ".kernel k direct {\n" + body + "\n  Agu t = { count: n };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .top0 + top0; }\n}\n@kernel k config | exec\nvoid f() { }\n" + suffix
+  text = prefix + ".kernel k direct {\n" + body + "\n  Agu t = { count: n };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f() { }\n" + suffix
   out = render(text, find_blocks(text), "t.vmeg.c")
   line = next(line for line in out.splitlines() if "agu_top(COUNT)" in line)
   return line.strip()
@@ -32,7 +32,7 @@ def cyc_mode(value):
 
 
 def shared_warnings(second):
-  text = ".kernel k direct {\n  Agu t = { count: 3 }, w = { count: 3, cyc: auto };\n  .pe0 { .top = t; .write = w; .top0 + top0; }\n  .pe1 { .top = t; .write = w; " + second + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
+  text = ".kernel k direct {\n  Agu t = { count: 3 }, w = { count: 3, cyc: auto };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t; .write = w; " + second + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
   warnings = []
   generate(text, find_blocks(text)[0], warnings)
   return [message for _, message in warnings if "shares" in message]
@@ -40,13 +40,13 @@ def shared_warnings(second):
 
 class CycAutoTest(unittest.TestCase):
   def test_auto_is_three_cycles_plus_three_per_fu_of_the_chain_and_a_shift_follows_it(self):
-    self.assertEqual(cyc_line(".top0 + base0;"), cyc_mode("6"))
-    self.assertEqual(cyc_line(".clamp(top0 + base0, 0, 255);"), cyc_mode("9"))
-    self.assertEqual(cyc_line(".clamp(top0 + base0, 0, 255);", "auto - 1"), cyc_mode("8"))
+    self.assertEqual(cyc_line(".spad = top0 + base0;"), cyc_mode("6"))
+    self.assertEqual(cyc_line(".spad = clamp(top0 + base0, 0, 255);"), cyc_mode("9"))
+    self.assertEqual(cyc_line(".spad = clamp(top0 + base0, 0, 255);", "auto - 1"), cyc_mode("8"))
 
   def test_a_shared_write_agu_with_auto_warns_only_when_the_pes_need_different_delays(self):
-    self.assertEqual(shared_warnings(".clamp(top1 + top1, 0, 9);"), ["pe1 shares the write Agu 'w' with pe0 but its operations need another delay, cyc: auto follows pe0"])
-    self.assertEqual(shared_warnings(".top1 - top1;"), [])
+    self.assertEqual(shared_warnings(".spad = clamp(top1 + top1, 0, 9);"), ["pe1 shares the write Agu 'w' with pe0 but its operations need another delay, cyc: auto follows pe0"])
+    self.assertEqual(shared_warnings(".spad = top1 - top1;"), [])
 
 
 def kernel_lines(body, compat):
@@ -57,9 +57,9 @@ def kernel_lines(body, compat):
 
 class CompatTest(unittest.TestCase):
   def test_the_option_fat_replaces_the_opcode_that_is_not_portable_by_its_variant(self):
-    self.assertEqual(kernel_lines(".top0 + base0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));"])
-    self.assertEqual(kernel_lines(".top0 + base0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);"])
-    self.assertEqual(kernel_lines(".top0 - base0;", "fat"), kernel_lines(".top0 - base0;", None))
+    self.assertEqual(kernel_lines(".spad = top0 + base0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));"])
+    self.assertEqual(kernel_lines(".spad = top0 + base0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);"])
+    self.assertEqual(kernel_lines(".spad = top0 - base0;", "fat"), kernel_lines(".spad = top0 - base0;", None))
 
 
 class KnownMacrosInAKernelTest(unittest.TestCase):

@@ -12,11 +12,11 @@ from vmegc import main
 SOURCE = (
   ".kernel run direct {\n"
   "  Agu t = { count: 15 };\n"
-  "  .pe0 { .top = t; .write = { count: 15 }; .top0 + base0 + 5; }\n"
+  "  .pe0 { .top = t; .write = { count: 15 }; .spad = top0 + base0 + 5; }\n"
   "}\n"
   ".kernel other direct {\n"
   "  Agu t = { count: 3 };\n"
-  "  .pe1 { .top = t; .write = { count: 3 }; .top1 & 255; }\n"
+  "  .pe1 { .top = t; .write = { count: 3 }; .spad = top1 & 255; }\n"
   "}\n"
   "@kernel run config | exec\n"
   "void f() { }\n"
