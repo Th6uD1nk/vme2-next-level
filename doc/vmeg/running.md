@@ -9,8 +9,8 @@
 - [1.3 Messages](#13-messages)
 - [1.4 --list](#14---list)
 - [1.5 --ops](#15---ops)
-- [1.6 CMake](#16-cmake)
-- [1.7 Errors](#17-errors)
+- [1.7 CMake](#17-cmake)
+- [1.8 Errors](#18-errors)
 
 ## 1.1 Command line
 
@@ -84,7 +84,7 @@ python3 vmegc.py --ops
 
 `--ops` goes alone, without a file or another option.
 
-## 1.6 CMake
+## 1.7 CMake
 
 `cmake/vmegc.cmake` runs `vmegc` as a step of the build.
 
@@ -112,7 +112,7 @@ add_library(saturate-clamp OBJECT ${GENERATED_C})
 
 The `samples` folder has a `CMakeLists.txt` for each sample.
 
-## 1.7 Errors
+## 1.8 Errors
 
 The errors of the command line start with `vmegc: error:`, left out here. The errors inside a file are described with the part of the language they come from.
 
@@ -125,5 +125,5 @@ The errors of the command line start with `vmegc: error:`, left out here. The er
 | [1.2](#12-several-files) | `b/x.vmeg.c: the output 'x.c' is already the output of a/x.vmeg.c` | two inputs that give the same output |
 | [1.2](#12-several-files) | `a.vmeg.h: a .vmeg.h is not a source, the buffers are declared in .vmeg.c or .vmeg.cpp files` | a `.vmeg.h` given as an input |
 | [1.5](#15---ops) | `--ops goes alone` | `--ops` with a file or another option |
-| [1.6](#16-cmake) | `vmegc needs python3` | CMake does not find `python3` |
-| [1.6](#16-cmake) | `vmegc_sources needs cmake 3.11 or newer` | `vmegc_sources` with an older CMake |
+| [1.7](#17-cmake) | `vmegc needs python3` | CMake does not find `python3` |
+| [1.7](#17-cmake) | `vmegc_sources needs cmake 3.11 or newer` | `vmegc_sources` with an older CMake |
