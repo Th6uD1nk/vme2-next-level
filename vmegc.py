@@ -5,7 +5,8 @@ import sys
 
 from vmeg.blocks import find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, build_only, call_edits, check_buffers, check_decorators, check_local_sources, definition_edits, line_indent, on_process_edit, passthrough
-from vmeg.kernel import block_statement_records, generate
+from vmeg.kernel import block_statement_records, build_kernel, generate
+from vmeg.listing import kernel_operation_lines
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
 from vmeg.operations import format_operations
@@ -167,6 +168,14 @@ def main(argv=None):
         last = text.count("\n", 0, end - 1) + 1
         header = " ".join(text[start:open_pos].split())
         print(f"{path}:{first}-{last}: {header}")
+        if args.kernel is not None:
+          try:
+            _, _, _, state = build_kernel(text, (kind, start, open_pos, end), args.compat)
+          except ValueError as e:
+            print(f"{path}: {e}", file=sys.stderr)
+            return 1
+          for line in kernel_operation_lines(state):
+            print(line)
     return 0
 
   results = []
