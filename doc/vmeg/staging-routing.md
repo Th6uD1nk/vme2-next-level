@@ -19,15 +19,15 @@ A `Staging` variable keeps the result of an operation in a pe. Another operation
 Staging s;
 
 .pe0 { s = top0 + top1; }
-.pe1 { .top2 - s; }
-.pe2 { .s + top3; }
+.pe1 { .spad = top2 - s; }
+.pe2 { .spad = s + top3; }
 ```
 
 **Explanation of the code above:**
 
 - `Staging s;` declares the variable, in the kernel or in the block of a pe. Several can be declared at once: `Staging a, b;` ([2.2](language.md#22-variables)).
-- `s = top0 + top1;` sets it: the operation runs in `pe0` and its result stays there. An operation kept in a `Staging` variable is written without a dot.
-- `.top2 - s;` and `.s + top3;` read it: the result of `pe0` is an operand of the operations of `pe1` and `pe2`.
+- `s = top0 + top1;` sets it: the operation runs in `pe0` and its result stays there. An operation kept in a `Staging` variable is set by the name of the variable, not by `.spad`.
+- `.spad = top2 - s;` and `.spad = s + top3;` read it: the result of `pe0` is an operand of the operations of `pe1` and `pe2`.
 
 **Rules:**
 
@@ -42,7 +42,7 @@ Each pe has its own buffers, `topN` and `baseN`, and a result that leaves on its
 ```c
 Agu t = { count: 15 };
 
-.pe0 { .top = t; .write = { count: 15 }; .top0 + top1; }
+.pe0 { .top = t; .write = { count: 15 }; .spad = top0 + top1; }
 .pe1 { .top = t; }
 ```
 
@@ -66,7 +66,7 @@ Agu t = { count: 15 };
 ```c
 .kernel k direct {
   Agu t = { count: 15 };
-  .pe0 { .top = t; .top0 + top1; }
+  .pe0 { .top = t; .spad = top0 + top1; }
 }
 ```
 
