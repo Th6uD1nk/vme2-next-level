@@ -137,5 +137,23 @@ class CheckPatternsTest(unittest.TestCase):
     check_patterns({"sub": entry("a - b", *OPERANDS), "rsub": entry("b - a", *OPERANDS)})
 
 
+class CheckAliasesTest(unittest.TestCase):
+  def test_an_alias_that_uses_the_arguments_is_accepted(self):
+    check_patterns({"and_cst": dict(entry("x & c", ("x", "source"), ("c", "number")), aliases=("and(x, c)",))})
+
+  def test_an_alias_is_checked_like_a_pattern(self):
+    arguments = (("x", "source"), ("c", "number"))
+    with self.assertRaisesRegex(ValueError, "the pattern of 'and_cst' is not valid"):
+      check_patterns({"and_cst": dict(entry("x & c", *arguments), aliases=("and(x, ",))})
+    with self.assertRaisesRegex(ValueError, r"the pattern of 'and_cst' must use its arguments \(x, c\)"):
+      check_patterns({"and_cst": dict(entry("x & c", *arguments), aliases=("and(x, d)",))})
+
+  def test_an_alias_that_repeats_a_pattern_is_refused(self):
+    arguments = (("x", "source"), ("c", "number"))
+    table = {"and_cst": entry("x & c", *arguments), "or_cst": dict(entry("x | c", *arguments), aliases=("c & x",))}
+    with self.assertRaisesRegex(ValueError, "'or_cst' and 'and_cst' have the same pattern"):
+      check_patterns(table)
+
+
 if __name__ == "__main__":
   unittest.main()
