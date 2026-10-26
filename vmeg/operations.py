@@ -211,7 +211,7 @@ OPERATIONS = {
     "code": "fu_code(OP_CLP)",
     "operands": ("back",),
     "units": "any",
-    "note": "registers A = high and B = low, x is a buffer, a Staging variable or an operation",
+    "note": "x limited between low and high, x is a buffer, a Staging variable or an operation",
   },
   "mac": {
     "opcode": 0x240,
@@ -276,7 +276,7 @@ def slots(specification):
   return len(reads(specification)) + len(specification["registers"])
 
 
-DESCRIPTION_WIDTH = 40
+DESCRIPTION_WIDTH = 60
 
 
 def operation_block(specification):
