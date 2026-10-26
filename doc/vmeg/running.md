@@ -91,8 +91,8 @@ For this kernel, written in `main.vmeg.cpp`:
 ```c
 .kernel run direct {
   Agu t = { count: 15 };
-  .pe0 { .top = t; .write = { count: 15 }; .top0 + base0 + 5; }
-  .pe1 { .top = t; .write = { count: 15 }; .clamp(top1 & 255, 0, 9); }
+  .pe0 { .top = t; .write = { count: 15 }; .spad = top0 + base0 + 5; }
+  .pe1 { .top = t; .write = { count: 15 }; .spad = clamp(top1 & 255, 0, 9); }
 }
 ```
 
