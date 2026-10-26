@@ -33,20 +33,20 @@ meLibSetSharedUncached32(10);
 // (back[n] + front[n]) >> k
 .kernel add memory {
   Agu t = { count: 31 }, b = { count: 31 }, w = { count: 31, cyc: auto };
-  .pe0 { .top = t; .base = b; .write = w; .base0 + top0; }
+  .pe0 { .top = t; .base = b; .write = w; .spad = base0 + top0; }
 }
 
 // (front[n] - back[n]) >> k
 .kernel sub memory {
   Agu t = { count: 31 }, b = { count: 31 }, w = { count: 31, cyc: auto };
-  .pe1 { .top = t; .base = b; .write = w; .subshr(base1, top0, 0); }
+  .pe1 { .top = t; .base = b; .write = w; .spad = subshr(base1, top0, 0); }
   .pe0 { .top = t; }
 }
 
 // (back[n] * front[n]) >> k
 .kernel mul memory {
   Agu t = { count: 31 }, b = { count: 31 }, w = { count: 31, cyc: auto };
-  .pe2 { .top = t; .base = b; .write = w; .base2 * top0; }
+  .pe2 { .top = t; .base = b; .write = w; .spad = base2 * top0; }
   .pe0 { .top = t; }
 }
 

@@ -62,7 +62,7 @@ volatile Buffer sharedBase0[16] = {
     pe[p] {
       .top = top;
       .write = write;
-      .clamp(sat(top[p] + base0, 7), 0, 0x7fffff);
+      .spad = clamp(sat(top[p] + base0, 7), 0, 0x7fffff);
     }
   }
 
