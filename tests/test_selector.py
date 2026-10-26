@@ -124,5 +124,17 @@ class AliasTest(unittest.TestCase):
     self.assertIsNone(chosen("and(a, b)"))
 
 
+class WrapperTest(unittest.TestCase):
+  def test_a_sat_or_a_shift_around_a_source_does_not_change_the_cost(self):
+    plain = select(parse_pattern("~(a & b)"))
+    self.assertEqual(plain[0], "nand")
+    for text in ["~sat(a & b, 8)", "~((a & b) >> 2)", "~((a & b) << 3)"]:
+      self.assertEqual(chosen(text), "not", text)
+      self.assertEqual(select(parse_pattern(text))[2], 3, text)
+
+  def test_a_sat_that_wraps_no_operation_has_no_opcode(self):
+    self.assertIsNone(chosen("~sat(top0, 8)"))
+
+
 if __name__ == "__main__":
   unittest.main()
