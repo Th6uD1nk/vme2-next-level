@@ -188,7 +188,7 @@ def flatten(expr, stagings, compat):
     if found is None:
       return table_operation(UNARY_OPERATORS["~"], "~", [expr[1]], stagings, compat)
     kind, bound, _ = found
-    return table_operation(kind, "~", [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
     if expr[1] in (">>", "<<"):
       _, operations = split_source(expr[2], stagings, compat)
@@ -207,7 +207,7 @@ def flatten(expr, stagings, compat):
     if found is None:
       raise ValueError("an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable")
     kind, bound, _ = found
-    return table_operation(kind, expr[1], [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
