@@ -656,3 +656,40 @@ volatile Buffer clampTop0[16] = {
 @kernel checkClamp config | exec
 void checkClampRun(void) {
 }
+
+volatile Buffer mulTop0[16] = {
+  0, 1, -1, 2,
+  -3, 100, -100, 0x1000,
+  0x10000, 0x7fffff, -0x800000, 0x7fffff,
+  0x555555, -0x555556, 0xff, -0x100,
+};
+
+volatile Buffer mulTop1[16] = {
+  5, 1, -1, -2,
+  -3, 100, 100, 0x1000,
+  0x10000, 2, -1, 0x7fffff,
+  2, 3, 0xff, 0x100,
+};
+
+@emulate "mul"
+.kernel checkMul direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: mulTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: mulTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 * top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 * top0; }
+  .pe2 { .write = write; .spad = (top0 * top1); }
+  .pe3 { .write = write; .spad = (top1 * top0); }
+}
+
+@kernel checkMul config | exec
+void checkMulRun(void) {
+}
