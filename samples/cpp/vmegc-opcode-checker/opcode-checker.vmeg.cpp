@@ -503,3 +503,32 @@ volatile Buffer orCstTop0[16] = {
 @kernel checkOrCst config | exec
 void checkOrCstRun(void) {
 }
+
+volatile Buffer xorCstTop0[16] = {
+  0, -1, 0x55, 0xaa,
+  0xff, 0x555555, -0x555556, 0x7fffff,
+  -0x800000, 1, -2, 0x100,
+  0x155, -0x56, 0x123456, -0x123457,
+};
+
+@emulate "xor_cst"
+.kernel checkXorCst direct {
+  Int count = 16 - 1;
+  Int pattern = 0x55;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: xorCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 ^ 0x55; }
+  .pe1 { .write = write; .spad = 0x55 ^ top0; }
+  .pe2 { .write = write; .spad = xor(top0, 0x55); }
+  .pe3 { .write = write; .spad = top0 ^ pattern; }
+}
+
+@kernel checkXorCst config | exec
+void checkXorCstRun(void) {
+}
