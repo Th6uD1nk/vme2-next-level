@@ -62,10 +62,10 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 The operators `+`, `-`, `*`, `&`, `|` and `^` take two operands, each one a buffer or a `Staging` variable. Another operation is refused: keep the first result in a `Staging` variable, or wrap it in a function such as `clamp`. A number is written in the forms of [6.2.2](#622-operators-with-a-number).
 
 ```c
-.pe0 { .top0 + base0; }
-.pe1 { .top1 - base1; }
-.pe2 { .top2 * base2 >> 8; }
-.pe3 { .top3 & base3; }
+.pe0 { .spad = top0 + base0; }
+.pe1 { .spad = top1 - base1; }
+.pe2 { .spad = top2 * base2 >> 8; }
+.pe3 { .spad = top3 & base3; }
 ```
 
 **Explanation of the code above:**
@@ -78,8 +78,8 @@ The operators `+`, `-`, `*`, `&`, `|` and `^` take two operands, each one a buff
 The bitwise or and exclusive or are written `|` and `^`:
 
 ```c
-.pe0 { .top0 | base0; }
-.pe1 { .top1 ^ base1; }
+.pe0 { .spad = top0 | base0; }
+.pe1 { .spad = top1 ^ base1; }
 ```
 
 **Explanation of the code above:**
@@ -92,7 +92,7 @@ An operand can be the `Staging` variable of another operation:
 ```c
 Staging s;
 
-.pe0 { s = top0 + top1; .top2 - s; }
+.pe0 { s = top0 + top1; .spad = top2 - s; }
 ```
 
 ### 6.2.1 The complement
@@ -100,10 +100,10 @@ Staging s;
 `~` complements the bits of what follows it: a buffer, a `Staging` variable, or an operation between parentheses. Between numbers, `~` is the plain C complement ([2.5](language.md#25-expressions)).
 
 ```c
-.pe0 { .~top0; }
-.pe1 { .~(top1 & base1); }
-.pe2 { .~(top2 + base2); }
-.pe3 { .~(top3 ^ base3); }
+.pe0 { .spad = ~top0; }
+.pe1 { .spad = ~(top1 & base1); }
+.pe2 { .spad = ~(top2 + base2); }
+.pe3 { .spad = ~(top3 ^ base3); }
 ```
 
 **Explanation of the code above:**
@@ -133,10 +133,10 @@ Staging s;
 Some operators take a number besides their operands. The operation holds the number in a register of the pe.
 
 ```c
-.pe0 { .top0 + base0 + 5; }
-.pe1 { .top1 - base1 + 3; }
-.pe2 { .base2 - (top2 >> 2); }
-.pe3 { .(top3 + base3) & 0xff; }
+.pe0 { .spad = top0 + base0 + 5; }
+.pe1 { .spad = top1 - base1 + 3; }
+.pe2 { .spad = base2 - (top2 >> 2); }
+.pe3 { .spad = (top3 + base3) & 0xff; }
 ```
 
 **Explanation of the code above:**
