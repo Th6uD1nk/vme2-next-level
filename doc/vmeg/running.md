@@ -112,6 +112,12 @@ main.vmeg.cpp:1-5: .kernel run direct
 - `pe1` runs two operations: `x & c`, then `clamp`, which reads the result of the first one (`staging1`).
 - A number that is written is shown as it is (`c = 5`). A number that is not written is shown at 0 ([6.2.3](operations.md#623-how-the-opcode-is-chosen)).
 
+**Rules:**
+
+- `--kernel` goes with `--list`.
+- The name is the one of a kernel of the files given, which are one project ([1.2](#12-several-files)).
+- The `sat` and the shifts written on an operation ([6.4](operations.md#64-sat-and-the-shifts)) are not shown.
+
 ## 1.5 --ops
 
 ```
