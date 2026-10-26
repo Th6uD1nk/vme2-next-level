@@ -22,7 +22,7 @@ OPERATIONS = {
     "code": "fu_code(OP_ADD_OFA)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "(a + b) + c, c is a number written in the register A, 0 when it is not written",
+    "note": "the sum of a and b plus c, 0 when c is not written",
   },
   "add_cst": {
     "opcode": 0x024,
@@ -32,7 +32,7 @@ OPERATIONS = {
     "code": "fu_code(OP_ADD_CST)",
     "operands": ("back",),
     "units": "any",
-    "note": "the sum of x and c, c is a number written in the register B",
+    "note": "the sum of x and c",
   },
   "sub": {
     "opcode": 0x018,
@@ -53,7 +53,7 @@ OPERATIONS = {
     "code": "fu_code(OP_SUB_OFB)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "(a - b) + c, c is a number written in the register B of the operation",
+    "note": "a minus b, plus c",
   },
   "subshr": {
     "opcode": 0x050,
@@ -65,7 +65,7 @@ OPERATIONS = {
     "code": "fu_code(OP_SUB_INV_SHF)",
     "operands": ("front", "back"),
     "units": "any",
-    "note": "b - (a >> n), n is a number written in the register B of the operation",
+    "note": "b minus a shifted to the right by n",
   },
   "mul": {
     "opcode": 0x200,
@@ -75,7 +75,7 @@ OPERATIONS = {
     "code": "VME_FU_OPCODE_MUL_RSHIFT_0",
     "operands": ("front", "back"),
     "units": "primary",
-    "note": "(a * b) >> k, k is the `>> n` written after the operation",
+    "note": "the product of a and b, shifted by the `>> n` written after it",
   },
   "and": {
     "opcode": 0x0c0,
@@ -96,7 +96,7 @@ OPERATIONS = {
     "code": "fu_code(OP_AND_CST)",
     "operands": ("back",),
     "units": "any",
-    "note": "the bitwise and of x and c, c is a number written in the register B",
+    "note": "the bitwise and of x and c",
   },
   "nand": {
     "opcode": 0x0c8,
@@ -117,7 +117,7 @@ OPERATIONS = {
     "code": "fu_code(OP_NAD_CST)",
     "operands": ("back",),
     "units": "any",
-    "note": "the complement of the bitwise and of x and c, one operation, c is a number written in the register B",
+    "note": "the complement of the bitwise and of x and c, one operation",
   },
   "or": {
     "opcode": 0x0d0,
@@ -148,7 +148,7 @@ OPERATIONS = {
     "code": "fu_code(OP_OR_CST)",
     "operands": ("back",),
     "units": "any",
-    "note": "the bitwise or of x and c, c is a number written in the register B",
+    "note": "the bitwise or of x and c",
   },
   "nor_cst": {
     "opcode": 0x0dc,
@@ -159,7 +159,7 @@ OPERATIONS = {
     "code": "fu_code(OP_NOR_CST)",
     "operands": ("back",),
     "units": "any",
-    "note": "the complement of the bitwise or of x and c, one operation, c is a number written in the register B",
+    "note": "the complement of the bitwise or of x and c, one operation",
   },
   "xor": {
     "opcode": 0x0e0,
@@ -180,7 +180,7 @@ OPERATIONS = {
     "code": "fu_code(OP_XOR_CST)",
     "operands": ("back",),
     "units": "any",
-    "note": "the bitwise exclusive or of x and c, c is a number written in the register B",
+    "note": "the bitwise exclusive or of x and c",
   },
   "xnor_cst": {
     "opcode": 0x0ec,
@@ -191,7 +191,7 @@ OPERATIONS = {
     "code": "fu_code(OP_XOR_CST_NOT)",
     "operands": ("back",),
     "units": "any",
-    "note": "the complement of the bitwise exclusive or of x and c, one operation, c is a number written in the register B",
+    "note": "the complement of the bitwise exclusive or of x and c, one operation",
   },
   "not": {
     "opcode": 0x0fc,
