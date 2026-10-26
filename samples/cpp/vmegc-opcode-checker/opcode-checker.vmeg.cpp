@@ -417,3 +417,31 @@ volatile Buffer norTop1[16] = {
 @kernel checkNor config | exec
 void checkNorRun(void) {
 }
+
+volatile Buffer notTop0[16] = {
+  0, -1, 1, -2,
+  0x555555, -0x555556, 0x0f0f0f, -0xf0f10,
+  0x7fffff, -0x800000, 0x7ffffe, -0x7fffff,
+  0xff, -0x100, 0x123456, -0x123457,
+};
+
+@emulate "not"
+.kernel checkNot direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: notTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~top0; }
+  .pe1 { .write = write; .spad = ~(top0); }
+  .pe2 { .write = write; .spad = ~(top0 & top0); }
+  .pe3 { .write = write; .spad = ~(top0 | top0); }
+}
+
+@kernel checkNot config | exec
+void checkNotRun(void) {
+}
