@@ -86,6 +86,25 @@ python3 vmegc.py --list --kernel run main.vmeg.cpp
 - `--kernel run` keeps the line of the kernel `run` and shows, under it, one line for each operation that the kernel runs.
 - The operations are the ones `vmegc` chooses for the kernel, as the option `--compat` ([1.6](#16---compat)) leaves them.
 
+For this kernel, written in `main.vmeg.cpp`:
+
+```c
+.kernel run direct {
+  Agu t = { count: 15 };
+  .pe0 { .top = t; .write = { count: 15 }; .top0 + base0 + 5; }
+  .pe1 { .top = t; .write = { count: 15 }; .clamp(top1 & 255, 0, 9); }
+}
+```
+
+the command prints:
+
+```
+main.vmeg.cpp:1-5: .kernel run direct
+  pe0  line 3  0x030  a + b + c            a = top0, b = base0, c = 5
+  pe1  line 4  0x0c4  x & c                x = top1, c = 255
+  pe1  line 4  0x07c  clamp(x, low, high)  x = staging1, low = 0, high = 9
+```
+
 ## 1.5 --ops
 
 ```
