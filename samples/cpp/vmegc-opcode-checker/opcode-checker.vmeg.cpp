@@ -693,3 +693,41 @@ volatile Buffer mulTop1[16] = {
 @kernel checkMul config | exec
 void checkMulRun(void) {
 }
+
+volatile Buffer mulShrTop0[16] = {
+  16, 15, -16, -15,
+  100, -100, 3, -3,
+  0x1000, 0x10000, 0x7fffff, -0x800000,
+  0x555555, -0x555556, 0xffff, -1,
+};
+
+volatile Buffer mulShrTop1[16] = {
+  16, 1, 16, 1,
+  100, 100, 5, 5,
+  0x1000, 0x10000, 0x7fffff, 0x10,
+  0x10, 0x10, 0xffff, -1,
+};
+
+@emulate "mul_shr"
+.kernel checkMulShr direct {
+  Int count = 16 - 1;
+  Int four = 4;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: mulShrTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: mulShrTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 * top1 >> 4; }
+  .pe1 { .top = top; .write = write; .spad = top1 * top0 >> 4; }
+  .pe2 { .write = write; .spad = (top0 * top1) >> four; }
+  .pe3 { .write = write; .spad = (top1 * top0) >> 0x4; }
+}
+
+@kernel checkMulShr config | exec
+void checkMulShrRun(void) {
+}
