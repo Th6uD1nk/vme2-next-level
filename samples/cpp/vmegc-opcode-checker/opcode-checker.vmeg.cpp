@@ -84,3 +84,32 @@ volatile Buffer addOfaTop1[16] = {
 @kernel checkAddOfa config | exec
 void checkAddOfaRun(void) {
 }
+
+volatile Buffer addCstTop0[16] = {
+  0, 1, 2, -3,
+  -4, 0xff, 0x7fffff, 0x7ffffd,
+  0x7ffffc, -0x800000, -0x7ffffe, 0x555555,
+  0x2aaaaa, 100, -100, -1,
+};
+
+@emulate "add_cst"
+.kernel checkAddCst direct {
+  Int count = 16 - 1;
+  Int three = 3;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: addCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + 3; }
+  .pe1 { .write = write; .spad = 3 + top0; }
+  .pe2 { .write = write; .spad = top0 + 0x3; }
+  .pe3 { .write = write; .spad = top0 + three; }
+}
+
+@kernel checkAddCst config | exec
+void checkAddCstRun(void) {
+}
