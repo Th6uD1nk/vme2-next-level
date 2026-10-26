@@ -43,7 +43,7 @@ The body of a kernel is the same in both modes. The mode says where the register
 ```c
 .kernel add direct {
   Agu t = { count: 15 }, w = { count: 15, cyc: auto };
-  .pe0 { .top = t; .write = w; .top0 + top0; }
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
 }
 ```
 
@@ -83,12 +83,12 @@ A variable declared in a kernel can only be used inside that kernel. Two kernels
 ```c
 .kernel add direct {
   Agu t = { count: 15 };
-  .pe0 { .top = t; .top0 + top0; }
+  .pe0 { .top = t; .spad = top0 + top0; }
 }
 
 .kernel sub direct {
   Agu t = { count: 7 };
-  .pe0 { .top = t; .top0 + top0; }
+  .pe0 { .top = t; .spad = top0 + top0; }
 }
 ```
 

@@ -155,7 +155,7 @@ Agu t = { count: 15 };
 Agu w = { count: 15 };
 
 for p in 0..3 {
-  pe[p] { .top = t; .write = w; .top0 + top0; }
+  pe[p] { .top = t; .write = w; .spad = top0 + top0; }
 }
 ```
 

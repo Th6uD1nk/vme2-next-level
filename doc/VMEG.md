@@ -10,7 +10,7 @@ A quick example, a kernel that adds two buffers and the function that runs it:
 // main.vmeg.cpp
 .kernel add direct {
   Agu t = { count: 15 }, b = { count: 15 }, w = { count: 15, cyc: auto };
-  .pe0 { .top = t; .base = b; .write = w; .top0 + base0; }
+  .pe0 { .top = t; .base = b; .write = w; .spad = top0 + base0; }
 }
 
 @kernel add config | exec
