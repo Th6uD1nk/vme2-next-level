@@ -10,6 +10,7 @@ This page presents the operations currently supported. The list is not complete.
 - [6.2 Operators](#62-operators)
   - [6.2.1 The complement](#621-the-complement)
   - [6.2.2 Operators with a number](#622-operators-with-a-number)
+  - [6.2.3 How the opcode is chosen](#623-how-the-opcode-is-chosen)
 - [6.3 Functions](#63-functions)
   - [6.3.1 clamp](#631-clamp)
   - [6.3.2 subacst](#632-subacst)
@@ -163,6 +164,16 @@ Some operators take a number besides their operands. The operation holds the num
 - The number can be written on either side of `+`, `&`, `|` and `^`: `255 & top1` is the same as `top1 & 255`, and `5 + (top0 + base0)` the same as `(top0 + base0) + 5`.
 - The grouping is the one written: `5 + top0 + base0` is `(5 + top0) + base0` and is refused. Write `5 + (top0 + base0)`.
 - A number with a single operand is not an operation of this table: `top0 + 5` is refused.
+
+### 6.2.3 How the opcode is chosen
+
+An expression can be covered by more than one opcode. `vmegc` reads what is written and takes the opcode that covers all of it with the fewest operands and numbers. The operations inside it count too.
+
+| Written | Opcode | Why |
+|---|---|---|
+| `a + b` | `0x010` | the sum of two operands, nothing else to give |
+| `a + b + 5` | `0x030` | the only opcode that takes a number with the sum |
+| `~(a & b)` | `0x0c8` | one operation, instead of the and and then the complement |
 
 ## 6.3 Functions
 
