@@ -532,3 +532,34 @@ volatile Buffer xorCstTop0[16] = {
 @kernel checkXorCst config | exec
 void checkXorCstRun(void) {
 }
+
+volatile Buffer nandCstTop0[16] = {
+  0, -1, 0xff, 0x100,
+  0x1ff, 0x80, 0x7f, 0x7fffff,
+  -0x800000, -0x100, -0x101, 0x555555,
+  -0x555556, 0x0f0f0f, -0xf0f10, 1,
+};
+
+@emulate "nand_cst"
+.kernel checkNandCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: nandCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Staging s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top0 & 0xff); }
+  .pe1 { .write = write; .spad = ~and(top0, 0xff); }
+  .pe2 { .write = write; .spad = ~(0xff & top0); }
+  .pe3 { .write = writeTwo; s3 = top0 & 0xff; .spad = ~s3; }
+}
+
+@kernel checkNandCst config | exec
+void checkNandCstRun(void) {
+}
