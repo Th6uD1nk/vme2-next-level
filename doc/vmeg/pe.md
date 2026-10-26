@@ -14,7 +14,7 @@
 A kernel has four processing elements, `pe0` to `pe3`. Each one is described in a block:
 
 ```c
-.pe0 { .top = t; .write = w; .top0 + top0; }
+.pe0 { .top = t; .write = w; .spad = top0 + top0; }
 ```
 
 **Rules:**
@@ -25,7 +25,7 @@ A kernel has four processing elements, `pe0` to `pe3`. Each one is described in 
 - A pe can have several blocks, each one sets other members of the pe.
 
 ```c
-.pe0 { .top = t; .top0 + top0; }
+.pe0 { .top = t; .spad = top0 + top0; }
 .pe0 { .write = w; }
 ```
 
@@ -39,14 +39,14 @@ Staging s;
   .top = t;
   .write = { count: 15 };
   s = top1 + top2;
-  .clamp(s, 0, 255);
+  .spad = clamp(s, 0, 255);
 }
 ```
 
 **Explanation of the code above:**
 
 - The bindings of the AGUs: `.top`, `.base` and `.write` ([4.3](agu.md#43-binding-an-agu-to-a-pe)).
-- The operation of the pe, which starts with a dot: its result leaves on the write AGU (`.clamp(s, 0, 255);`). A pe has one.
+- The operation of the pe, which is the member `.spad`: its result leaves on the write AGU (`.spad = clamp(s, 0, 255);`). A pe has one.
 - An operation kept in a `Staging` variable, which starts with the name of the variable (`s = top1 + top2;`): the result stays in the pe and another operation can read it.
 - The declaration of an `Agu` or of a `Staging` variable for this block.
 - Currently not supported: `Int` and loops inside a pe block, write them around the block.
@@ -58,9 +58,9 @@ A pe holds at most two operations. An operation written inside another one count
 ```c
 Staging s;
 
-.pe0 { .top0 + top1; }
-.pe1 { .clamp(top0 + top1, 0, 255); }
-.pe2 { s = top0 + top1; .clamp(top2, 0, 255); }
+.pe0 { .spad = top0 + top1; }
+.pe1 { .spad = clamp(top0 + top1, 0, 255); }
+.pe2 { s = top0 + top1; .spad = clamp(top2, 0, 255); }
 ```
 
 **Explanation of the code above:**
@@ -79,9 +79,9 @@ Staging s;
 ```c
 Staging s, t;
 
-.pe0 { .clamp(mac(top0, top1), 0, 9); }
-.pe1 { s = mac(top0, top1); .clamp(s, 0, 9); }
-.pe2 { t = top0 + top1; .mac(top2, top3); }
+.pe0 { .spad = clamp(mac(top0, top1), 0, 9); }
+.pe1 { s = mac(top0, top1); .spad = clamp(s, 0, 9); }
+.pe2 { t = top0 + top1; .spad = mac(top2, top3); }
 ```
 
 `pe0` and `pe1` are accepted, `pe2` is refused.
