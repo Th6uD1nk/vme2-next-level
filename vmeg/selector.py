@@ -1,7 +1,7 @@
 from functools import lru_cache
 from itertools import combinations
 
-from vmeg.operations import OPERATIONS
+from vmeg.operations import OPERATIONS, slots
 from vmeg.pattern import ZERO, match, parse_pattern, without
 
 OPERATION_NODES = ("bin", "not", "neg", "call")
@@ -38,3 +38,24 @@ def candidates(tree, operations=OPERATIONS):
         found.append((kind, {**bound, **{name: ZERO for name in zeroed}}))
         break
   return found
+
+
+def cost(kind, bound, operations):
+  specification = operations[kind]
+  total = slots(specification)
+  for name, role in specification["arguments"]:
+    if role == "source" and bound[name][0] in OPERATION_NODES:
+      inner = select(bound[name], operations)
+      if inner is None:
+        return None
+      total += inner[2]
+  return total
+
+
+def select(tree, operations=OPERATIONS):
+  best = None
+  for kind, bound in candidates(tree, operations):
+    total = cost(kind, bound, operations)
+    if total is not None and (best is None or total < best[2]):
+      best = (kind, bound, total)
+  return best
