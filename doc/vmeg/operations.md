@@ -248,7 +248,7 @@ Staging s;
 
 ### 6.3.6 and, or and xor
 
-`and(x, c)`, `or(x, c)` and `xor(x, c)` give the bitwise and, or and exclusive or of `x` and a number `c`. `x` is a buffer, a `Staging` variable or an operation, `c` is a number. They are the forms with a number of the operators `&`, `|` and `^` ([6.2](#62-operators)), which take two operands.
+`and(x, c)`, `or(x, c)` and `xor(x, c)` give the bitwise and, or and exclusive or of `x` and a number `c`. `x` is a buffer, a `Staging` variable or an operation, `c` is a number. They are also written as the operators with a number, `x & c`, `x | c` and `x ^ c` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
 .pe0 { .and(top0, 0xff); }
@@ -267,7 +267,7 @@ Staging s;
 **Rules:**
 
 - The number is known at compile time, like the numbers of the other functions.
-- The complement of these functions is one operation: `~and(x, c)`, `~or(x, c)` and `~xor(x, c)` ([6.2.1](#621-the-complement)).
+- The complement of these functions is one operation: `~and(x, c)`, `~or(x, c)` and `~xor(x, c)`, or `~(x & c)`, `~(x | c)` and `~(x ^ c)` ([6.2.1](#621-the-complement)).
 
 ## 6.4 sat and the shifts
 
