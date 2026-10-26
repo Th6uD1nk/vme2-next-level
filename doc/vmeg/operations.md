@@ -144,6 +144,18 @@ Some operators take a number besides their operands. The operation holds the num
 - `base2 - (top2 >> 2)` subtracts `top2` shifted to the right by 2 from `base2`. The shift cannot be negative.
 - `(top3 + base3) & 0xff` keeps the low byte of the sum. `pe3` holds two operations: the sum, then the and.
 
+| Written | Also written as a function |
+|---|---|
+| `a + b + c` | |
+| `a - b + c` | `subacst(a, b, c)` ([6.3.2](#632-subacst)) |
+| `b - (a >> n)` | `subshr(a, b, n)` ([6.3.3](#633-subshr)) |
+| `x & c` | `and(x, c)` ([6.3.6](#636-and-or-and-xor)) |
+| `x \| c` | `or(x, c)` |
+| `x ^ c` | `xor(x, c)` |
+| `~(x & c)` | `~and(x, c)` ([6.2.1](#621-the-complement)) |
+| `~(x \| c)` | `~or(x, c)` |
+| `~(x ^ c)` | `~xor(x, c)` |
+
 ## 6.3 Functions
 
 A function is written like an operator, with its operands between parentheses. The numbers it takes are known at compile time.
