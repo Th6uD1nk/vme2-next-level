@@ -46,3 +46,41 @@ volatile Buffer addTop1[16] = {
 @kernel checkAdd config | exec
 void checkAddRun(void) {
 }
+
+volatile Buffer addOfaTop0[16] = {
+  0, 1, 2, 0xf,
+  0xff, 0x7fff, 0x8000, 0x7fffff,
+  -1, -2, -0x8000, -0x800000,
+  0x555555, 0x2aaaaa, 100, -100,
+};
+
+volatile Buffer addOfaTop1[16] = {
+  0, 1, -1, 0x10,
+  0x100, 0x7ffffa, -0x8000, 1,
+  1, 2, 0x8000, -6,
+  0x2aaaaa, 0x555555, 23, -5,
+};
+
+@emulate "add_ofa"
+.kernel checkAddOfa direct {
+  Int count = 16 - 1;
+  Int five = 5;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: addOfaTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: addOfaTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + top1 + 5; }
+  .pe1 { .top = top; .write = write; .spad = 5 + (top0 + top1); }
+  .pe2 { .write = write; .spad = (top1 + top0) + 5; }
+  .pe3 { .write = write; .spad = five + (top0 + top1); }
+}
+
+@kernel checkAddOfa config | exec
+void checkAddOfaRun(void) {
+}
