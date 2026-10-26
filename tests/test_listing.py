@@ -52,5 +52,21 @@ class BoundValuesTest(unittest.TestCase):
     ])
 
 
+class CompatAndShapeTest(unittest.TestCase):
+  def test_a_number_that_is_not_written_is_shown_at_zero_with_the_fat_option(self):
+    self.assertEqual(listing("  .pe0 { .top0 + base0; }")[0].split()[3], "0x010")
+    line = listing("  .pe0 { .top0 + base0; }", "fat")[0]
+    self.assertEqual(line.split()[3], "0x030")
+    self.assertEqual(values(line), "a = top0, b = base0, c = 0")
+
+  def test_a_kernel_without_operation_gives_no_line(self):
+    self.assertEqual(listing("  Agu t = { count: 3 };"), [])
+
+  def test_the_columns_are_aligned(self):
+    lines = listing("  .pe0 { .top0 + base0 + 5; }\n  .pe1 { .clamp(top1, 0, 9); }")
+    self.assertEqual(len(set(line.index("0x") for line in lines)), 1)
+    self.assertEqual(len(set(re.search(r"\w+ = ", line).start() for line in lines)), 1)
+
+
 if __name__ == "__main__":
   unittest.main()
