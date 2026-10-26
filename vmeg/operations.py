@@ -287,22 +287,10 @@ def operation_block(specification):
   return lines
 
 
-def operation_columns(specification):
-  units = "first operation of the pe only" if specification["units"] == "primary" else "any position"
-  return (specification["pattern"], f"0x{specification['opcode']:03x}", specification["code"], ", ".join(reads(specification)), units)
-
-
 def format_operations():
-  rows = [operation_columns(specification) for specification in OPERATIONS.values()]
-  widths = [max(len(row[i]) for row in rows) for i in range(5)]
-  lines = ["operations:"]
-  for specification, row in zip(OPERATIONS.values(), rows):
-    lines.append("  " + "  ".join(column.ljust(width) for column, width in zip(row, widths)).rstrip())
-    lines.append("      " + specification["note"])
-    if specification.get("aliases"):
-      lines.append("      also written " + ", ".join(specification["aliases"]))
-    if specification.get("not_portable"):
-      lines.append("      not portable")
+  lines = ["operations:", ""]
+  blocks = ["\n".join(operation_block(specification)) for specification in sorted(OPERATIONS.values(), key=lambda specification: specification["opcode"])]
+  lines.append("\n\n".join(blocks))
   lines.append("")
   lines.append("options of the operation they wrap:")
   syntax_width = max(len(field[0]) for field in FIELDS)
