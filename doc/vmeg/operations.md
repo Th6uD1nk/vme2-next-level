@@ -32,6 +32,7 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 |---|---|---|---|
 | `a + b` | `0x010` | two operands | `a + b` |
 | `a + b + c` | `0x030` | two operands and a number | `(a + b) + c` |
+| `x + c` | `0x024` | one operand and a number | `x + c` |
 | `a - b` | `0x018` | two operands | `a - b` |
 | `a - b + c`, `subacst(a, b, c)` | `0x048` | two operands and a number | `(a - b) + c` |
 | `b - (a >> n)`, `subshr(a, b, n)` | `0x050` | two operands and a number | `b - (a >> n)` |
