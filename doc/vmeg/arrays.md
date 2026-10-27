@@ -62,3 +62,32 @@ void run(void) {
 - The same global array serves every kernel and every function that names it. Nothing is declared in the function.
 - The array can be declared in another file of the project ([8.4](#84-arrays-in-several-files)).
 - An array that is named by a global `.load` or `.store` and declared with `Buffer` in no file is an error ([8.5](#85-errors)).
+
+## 8.3 Local arrays
+
+A local array is declared inside the function that calls the kernel. A kernel uses it in a `.load` or a `.store` with `.scope = local`, or with no `.scope`.
+
+```c
+.kernel k direct {
+  Transfer t = { type: words, mode: basic, memory: x, count: 15 };
+  .load { .transfer = t; .scope = local; .offsets { .top0 = 0; } }
+}
+
+@kernel k config | exec
+void run(void) {
+  volatile Buffer x[16];
+}
+```
+
+**Explanation of the code above:**
+
+- `volatile Buffer x[16];` is inside `run`, the function that calls the kernel: it is a local array.
+- `memory: x` names the array in the `Transfer`.
+- `.scope = local` says that `x` is declared in the function. It is the scope of a `.load` or a `.store` that has no `.scope`.
+
+**Rules:**
+
+- The array is declared in the body of the function, not in a block `{ }` inside it.
+- Each function that calls the kernel declares its own array. Two functions that call the same kernel declare an array each.
+- With `@kernel` above the function, the call of the kernel is written right after the declarations of the arrays, before the other statements of the function. To run statements first, for example to fill the array, write the call as a block, `@kernel k config | exec { … }`, at the place you want ([11](blocks.md)).
+- An array that is named by a local `.load` or `.store` and not declared in the function is an error ([8.5](#85-errors)).
