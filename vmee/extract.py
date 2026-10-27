@@ -2,7 +2,7 @@ import re
 
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_actions, kernel_arguments
+from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_actions, kernel_arguments, memory_edits
 from vmeg.kernel import generate
 from vmeg.registry import declarations, project_registry
 from vmeg.scanner import tokens
@@ -58,6 +58,30 @@ def array_declarations(text, identifier, others=()):
   return result
 
 
+def memory_declarations(text, identifier):
+  emulation = chosen_emulation(text, identifier)
+  available = declarations(text, list(tokens(text)), 0, "Memory")
+  if emulation["form"] == "block":
+    available += declarations(text, enclosing_function_tokens(text, emulation["at"]), 1, "Memory")
+  found = []
+  for value in dict.fromkeys(memory for memory in emulation["memories"] if memory):
+    name = re.search(r"[A-Za-z_]\w*", value).group()
+    declaration = next((declaration for declaration in available if name in declaration["names"]), None)
+    if declaration is None:
+      raise ValueError(f"the Memory {name} of the @emulate \"{identifier}\" is defined in no file")
+    if declaration not in found:
+      found.append(declaration)
+  return found
+
+
+def memory_text(declaration):
+  text = declaration["text"]
+  edits = sorted(memory_edits(text, list(tokens(text))), reverse=True)
+  for start, length, replacement in edits:
+    text = text[:start] + replacement + text[start + length:]
+  return text
+
+
 def upload_calls(text, identifier):
   emulation = chosen_emulation(text, identifier)
   return emulation["calls"]
@@ -90,6 +114,7 @@ def host_source(text, identifier, others=(), compat=None):
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in arrays]
+  parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
   if declared:
     entries = ", ".join(f"{{(u32){name}, sizeof({name}) / 4}}" for name in sorted(declared))
     parts.append(

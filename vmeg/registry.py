@@ -24,7 +24,7 @@ def statement_span(toks, i):
   return first, len(toks) - 1
 
 
-def declarations(text, toks, depth_wanted):
+def declarations(text, toks, depth_wanted, word="Buffer"):
   found = []
   depth = 0
   for i, (kind, value, _, _) in enumerate(toks):
@@ -32,7 +32,7 @@ def declarations(text, toks, depth_wanted):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == "Buffer" and depth == depth_wanted:
+    elif kind == "ident" and value == word and depth == depth_wanted:
       first, last = statement_span(toks, i)
       statement = toks[first:last + 1]
       found.append({
