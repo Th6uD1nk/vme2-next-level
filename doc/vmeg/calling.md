@@ -94,3 +94,24 @@ void run(void) {
 - `exec` and `async` cannot be given together: they are two different executions ([10.6](#106-errors)).
 - `build` is for a `memory` kernel, in a call with other actions as well.
 - In a series of `config | async`, each kernel is configured while the previous one runs, and the end of the last run is awaited once.
+
+## 10.4 Several kernels in one call
+
+A call can name several kernels, separated by commas. Each kernel has its own actions.
+
+```c
+@kernel a config | exec, b config | exec
+void run(void) {
+}
+```
+
+**Explanation of the code above:**
+
+- `run` configures and runs `a`, then configures and runs `b`, in the order written.
+- The VME is enabled once for the whole call, not once for each kernel.
+
+**Rules:**
+
+- Every name of the list is a kernel of the project. An unknown name is an error ([10.6](#106-errors)).
+- A kernel can appear several times in a call, or in several calls, with different actions: `@kernel a build, b build` builds two contexts, and a later call configures and runs them.
+- `exec` and `async` do not choose a kernel: they run the one that the VME holds, which is the last one configured. After `a config, b config`, an `exec` runs `b`.
