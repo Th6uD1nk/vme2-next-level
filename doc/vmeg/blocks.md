@@ -70,3 +70,45 @@ void run(int n) {
 | `config \| exec`, `exec`, `config \| async` | after the end of the run |
 | `async` | while the VME runs: nothing waits for its end |
 | `config` | after the kernel is configured: it has not run |
+
+## 11.3 The vmeg statements of a block
+
+A block can hold the statements of a transfer: `Transfer`, `Int`, `.load`, `.store` and the vmeg `for` ([9](transfers.md), [2.7](language.md#27-loops)). They copy arrays at the place where they are written.
+
+```c
+volatile Buffer vectors[8];
+volatile Buffer result[8];
+
+.kernel k direct {
+}
+
+void run(void) {
+  @kernel k config | exec {
+    Int words = 4;
+    Transfer in = { type: words, mode: basic, memory: vectors, count: words - 1 };
+    Transfer out = { type: words, mode: basic, memory: result, count: words - 1 };
+    before();
+    for i in 0..1 {
+      .load { .transfer = in; .scope = global; .offsets { top[i] = 0; } }
+    }
+    middle();
+    .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }
+    after();
+  }
+}
+```
+
+**Explanation of the code above:**
+
+- `Int` and the two `Transfer` variables only describe the copies. They write nothing by themselves.
+- `before();` runs after the actions of the call, as for any C code ([11.2](#112-the-c-code-of-a-block)).
+- The `for` is unrolled: `vectors` is copied into `top0`, then into `top1`. Then `middle();` runs.
+- `.store` copies the buffer `base0` into `result`, and `after();` runs once the copy is finished.
+
+**Rules:**
+
+- The statements are the ones of a kernel ([9.3](transfers.md#93-load-and-store)). Each one copies at the place where it is written, after the actions of the call, and the C code around it keeps its order.
+- The `.load` and the `.store` of the kernel itself are not part of the block: the call does its `.load` before the actions and its `.store` after them ([10.5](calling.md#105-uploads-and-downloads-around-the-run)).
+- A `.load` or a `.store` in a C `if` or `for` stays conditional: the copy is done when the C code reaches it.
+- A `Transfer` or an `Int` declared inside a C `if` or `for` is C code: it is not a vmeg declaration.
+- A local array named by a `.load` or a `.store` is declared in the function that holds the block ([8.3](arrays.md#83-local-arrays)).
