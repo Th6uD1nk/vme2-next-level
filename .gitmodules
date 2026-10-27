@@ -1,6 +1,6 @@
-[submodule "vme-ext"]
-	path = vme-ext
-	url = https://github.com/mcidclan/psp-virtual-mobile-engine-ext
 [submodule "external-me-core"]
 	path = external-me-core
 	url = https://github.com/mcidclan/psp-media-engine-custom-core.git
+[submodule "external-vme-samples"]
+	path = external-vme-samples
+	url = https://github.com/mcidclan/psp-virtual-mobile-engine-ext
