@@ -1,6 +1,6 @@
-from emu.fu import signed32
-from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from emu.registers import END_TOKEN, RING_TOKEN, SYNC_MINIMUM, agu_view, routing_view
+from vmee.fu import signed32
+from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
+from vmee.registers import END_TOKEN, RING_TOKEN, SYNC_MINIMUM, agu_view, routing_view
 
 
 def mode4_offsets(view):

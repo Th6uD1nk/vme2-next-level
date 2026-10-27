@@ -1,4 +1,4 @@
-from emu.registers import FU_OPERAND_REGISTERS
+from vmee.registers import FU_OPERAND_REGISTERS
 from vmeg.operations import OPERATIONS
 
 

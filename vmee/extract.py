@@ -1,6 +1,6 @@
 import re
 
-from emu.listing import defines, emulations
+from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, function_tokens, kernel_actions
 from vmeg.kernel import generate

@@ -4,14 +4,14 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from emu.agu import stream_at
-from emu.extract import array_declarations
-from emu.fu import execute
-from emu.listing import defines, emulations, format_listing
-from emu.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from emu.registers import CONTEXT_WORDS, agu_register, fu_register
-from emu.trace import replay
-from emu.machine import Emulator
+from vmee.agu import stream_at
+from vmee.extract import array_declarations
+from vmee.fu import execute
+from vmee.listing import defines, emulations, format_listing
+from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
+from vmee.registers import CONTEXT_WORDS, agu_register, fu_register
+from vmee.trace import replay
+from vmee.machine import Emulator
 from vmeg.vmecalls import wait_marker
 
 

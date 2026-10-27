@@ -1,5 +1,5 @@
-from emu.extract import chosen_emulation, declared_parts
-from emu.memory import check_window
+from vmee.extract import chosen_emulation, declared_parts
+from vmee.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
 
 

@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from vmeg.blocks import find_blocks
 from vmeg.kernel import generate, parameter_names, replace_names, transfer_names
 from vmegc import render
-from emu.listing import defines, emulations, format_listing
+from vmee.listing import defines, emulations, format_listing
 
 
 def agu_count(body, prefix="", suffix=""):

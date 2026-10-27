@@ -1,6 +1,6 @@
 import re
 
-from emu.memory import BUFFER_WORDS
+from vmee.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
 from vmeg.host import file_buffer_names, function_buffer_names
 from vmeg.kernel import kernel_transfers

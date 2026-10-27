@@ -4,7 +4,7 @@ import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIBRARY = os.path.join(ROOT, "me-custom-core")
-NATIVE = os.path.join(ROOT, "emu", "native")
+NATIVE = os.path.join(ROOT, "vmee", "native")
 SUBSTITUTES = (("emu-me-lib.h", "me-lib.h"), ("emu-me-core-mapper.h", "me-core-mapper.h"))
 RUN_TIMEOUT = 60
 COMPILER_FLAGS = ("-m32", "-no-pie", "-std=c++11", "-fpermissive", "-w", "-x", "c++")

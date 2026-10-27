@@ -1,10 +1,10 @@
 import tempfile
 
-from emu.extract import chosen_emulation, host_program
-from emu.listing import emulations
-from emu.host import build_program, run_program
-from emu.machine import Emulator
-from emu.trace import replay
+from vmee.extract import chosen_emulation, host_program
+from vmee.listing import emulations
+from vmee.host import build_program, run_program
+from vmee.machine import Emulator
+from vmee.trace import replay
 
 
 def choose_source(sources, identifier):

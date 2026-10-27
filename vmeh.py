@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-from emu.run import choose_source
+from vmee.run import choose_source
 from vmeh.extract import extract_source
 
 

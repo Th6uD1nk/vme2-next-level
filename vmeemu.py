@@ -1,11 +1,11 @@
 import argparse
 import sys
 
-from emu.listing import defines, emulations, format_listing
-from emu.machine import Emulator
-from emu.memory import dump_base_buffers
-from emu.run import choose_source, run_emulation
-from emu.trace import replay
+from vmee.listing import defines, emulations, format_listing
+from vmee.machine import Emulator
+from vmee.memory import dump_base_buffers
+from vmee.run import choose_source, run_emulation
+from vmee.trace import replay
 
 
 def list_emulations(text, kernel, full):
