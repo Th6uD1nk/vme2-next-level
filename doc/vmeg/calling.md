@@ -150,3 +150,17 @@ void run(void) {
 - A call with `config` alone does the `.store` too: it copies what the buffers hold, the kernel has not run.
 - A call made of `build` alone does neither: it does not touch the VME.
 - A kernel that has a `.store` cannot be called with `async` alone ([10.2](#102-the-actions)).
+
+## 10.6 Errors
+
+The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [10.1](#101-the-call-of-a-kernel) | `kernel 'k' is never called, add a function marked with @kernel k config \| exec or a block @kernel k config \| exec { ... }` | a kernel that no function and no block calls |
+| [10.1](#101-the-call-of-a-kernel) | `@kernel refers to an unknown kernel 'zz' (kernels: k)` | a name in the call that is not a kernel of the project. The message lists the kernels, or says that there is none |
+| [10.2](#102-the-actions) | `expected build, config, exec or async after the kernel name` | a kernel name with no action after it |
+| [10.2](#102-the-actions) | `expected an action after \|` | a word after `\|` that is not an action |
+| [10.2](#102-the-actions) | `build is for a memory kernel, kernel 'k' is direct` | `build` on a `direct` kernel |
+| [10.2](#102-the-actions) | `async does not wait for the end of the run, the .store of kernel 'k' would read unfinished data` | `async` alone on a kernel that has a `.store` |
+| [10.3](#103-several-actions-in-one-call) | `exec and async are two different executions, they cannot be combined` | `exec` and `async` in the same call of a kernel |
