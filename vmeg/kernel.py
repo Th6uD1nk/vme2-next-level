@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
+from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS
 from vmeg.selector import choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
@@ -593,6 +593,26 @@ def emit_statement(statement, env, lines, state):
     state["depths"][pe] = depth
     if last == 1:
       state["secondary"].add(pe)
+  elif kind == "remap":
+    pe = target_pe(statement[1], env)
+    operator = statement[2]
+    if not any(operator in operators for operators in PATTERN_OPERATORS.values()):
+      raise ValueError(f"unknown operator '{operator}' in .remap")
+    remaps = state["remaps"].setdefault(pe, {})
+    if operator in remaps:
+      raise ValueError(f"the operator '{operator}' is remapped twice in pe{pe}")
+    units = {}
+    for unit, value in (("primary", statement[3]), ("secondary", statement[4])):
+      if value is None:
+        continue
+      number = fold(value, env)
+      if number[0] != "num":
+        raise ValueError(f".remap {unit} takes a number")
+      target = OPCODE_KINDS.get(number[1])
+      if target is None:
+        raise ValueError(f"the opcode 0x{number[1]:03x} of .remap {unit} is not in the table (vmegc --ops)")
+      units[unit] = target
+    remaps[operator] = units
   elif kind == "stageset":
     name = statement[2]
     variable = state["stagings"].get(name)
@@ -615,7 +635,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat, "operations": []}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat, "operations": [], "remaps": {}}
 
 
 def new_env(macros=None):

@@ -1,6 +1,6 @@
 import textwrap
 
-from vmeg.pattern import check_patterns, parse_pattern
+from vmeg.pattern import check_patterns, children, parse_pattern
 
 OPERATIONS = {
   "add": {
@@ -268,7 +268,25 @@ def operators_of(operations):
   return found
 
 
+def pattern_operators(specification):
+  found = set()
+
+  def walk(tree):
+    if tree[0] == "bin":
+      found.add(tree[1])
+    for child in children(tree):
+      walk(child)
+
+  for text in (specification["pattern"], *specification.get("aliases", ())):
+    walk(parse_pattern(text))
+  return found
+
+
 FUNCTIONS = calls_of(OPERATIONS)
+
+PATTERN_OPERATORS = {kind: pattern_operators(specification) for kind, specification in OPERATIONS.items()}
+
+OPCODE_KINDS = {specification["opcode"]: kind for kind, specification in OPERATIONS.items()}
 
 OPERATORS = operators_of(OPERATIONS)
 
