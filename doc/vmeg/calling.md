@@ -69,3 +69,28 @@ void go(void) {
 - `exec` and `async` run what the VME holds: the kernel must have been configured before, by a `config` of this call or of an earlier one.
 - With `async` the results are not ready when the call returns. A kernel that has a `.store` cannot be called with `async` alone ([10.6](#106-errors)).
 - The actions can be given together, as `config | exec` ([10.3](#103-several-actions-in-one-call)).
+
+## 10.3 Several actions in one call
+
+The actions are written together with `|`.
+
+```c
+@kernel add config | exec
+void run(void) {
+}
+```
+
+| Call | What it does |
+|---|---|
+| `config \| exec` | configures the kernel, runs it and waits for its end |
+| `config \| async` | configures the kernel and starts the run without waiting for its end. Calls of this kind that follow each other are one series: the end is awaited once, after the last one |
+| `build \| config` | builds the context of a `memory` kernel, then loads it |
+| `build \| config \| exec` | builds the context, loads it, runs the kernel and waits for its end |
+| `build \| config \| async` | builds the context, loads it and starts the run without waiting |
+
+**Rules:**
+
+- The order of the actions does not matter: `exec | config` is the same as `config | exec`.
+- `exec` and `async` cannot be given together: they are two different executions ([10.6](#106-errors)).
+- `build` is for a `memory` kernel, in a call with other actions as well.
+- In a series of `config | async`, each kernel is configured while the previous one runs, and the end of the last run is awaited once.
