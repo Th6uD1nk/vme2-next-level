@@ -535,18 +535,27 @@ def parse_params_use(p):
       p.error(f"the parameter '{name}' is given twice", token)
     pairs.append((name, value))
 
-  p.expect("=")
-  p.expect("{")
-  if not p.accept("}"):
-    while True:
+  if p.accept("="):
+    p.expect("{")
+    if not p.accept("}"):
+      while True:
+        token = p.peek()
+        name = p.ident()
+        p.expect(":")
+        add(name, read_value(p, (",", "}")), token)
+        if not p.accept(","):
+          break
+      p.expect("}")
+    p.expect(";")
+  else:
+    p.expect("{")
+    while not p.accept("}"):
+      p.expect(".")
       token = p.peek()
       name = p.ident()
-      p.expect(":")
-      add(name, read_value(p, (",", "}")), token)
-      if not p.accept(","):
-        break
-    p.expect("}")
-  p.expect(";")
+      p.expect("=")
+      add(name, read_value(p, (";",)), token)
+      p.expect(";")
   return ("paramsuse", pairs)
 
 
