@@ -2,7 +2,7 @@ import re
 
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, function_tokens, kernel_actions, kernel_arguments
+from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_actions, kernel_arguments
 from vmeg.kernel import generate
 from vmeg.registry import declarations, project_registry
 from vmeg.scanner import tokens
@@ -40,6 +40,8 @@ def array_declarations(text, identifier, others=()):
     for block in (blocks if file is text else find_blocks(file)):
       if block[0] == "decorator" and any(name in decorator_names(file, block) for name in emulation["kernels"]):
         available["local"] += [dict(declaration, origin=file) for declaration in declarations(file, function_tokens(file, block), 1)]
+  if emulation["form"] == "block":
+    available["local"] += [dict(declaration, origin=text) for declaration in declarations(text, enclosing_function_tokens(text, emulation["at"]), 1)]
   result = []
   seen = set()
   for qualifier in ("global", "local"):

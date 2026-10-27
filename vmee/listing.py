@@ -80,7 +80,7 @@ def emulations(text):
       pairs = [given[other[1]][i] if i < len(given[other[1]]) else [] for other in inside for i in range(len(decorator_calls(text, other)))]
       local = declared_buffer_names(enclosing_function_tokens(text, block[1]))
       entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], steps, text.count("\n", 0, block[1]) + 1, text.count("\n", 0, close[3] - 1) + 1, local, pairs)
-      found.append(dict(entry, form="block"))
+      found.append(dict(entry, form="block", at=block[1]))
   return found
 
 
