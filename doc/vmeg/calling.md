@@ -37,3 +37,35 @@ void run(void) {
 - Every kernel of the project is called at least once, by a function or by a block. A kernel that nothing calls is an error ([10.6](#106-errors)).
 - The kernel can be defined in another file of the project ([1.2](running.md#12-several-files)).
 - `@context` is a synonym of `@kernel` ([2.8](language.md#28-synonyms)).
+
+## 10.2 The actions
+
+After the name of the kernel, the call gives what to do with it. An action is one of these words:
+
+| Action | What it does |
+|---|---|
+| `build` | builds the context of a `memory` kernel in RAM. It does not touch the VME. |
+| `config` | writes the kernel to the VME: a `direct` kernel writes its registers, a `memory` kernel loads its context (built first if no `build` was done). It does not run it. |
+| `exec` | starts the run of the kernel that is configured and waits for its end. |
+| `async` | starts the run and does not wait for its end. |
+
+```c
+@kernel add config
+void setup(void) {
+}
+
+@kernel add exec
+void go(void) {
+}
+```
+
+**Explanation of the code above:**
+
+- `setup` configures the kernel `add` and `go` runs it. Two functions can each call the same kernel with their own actions.
+
+**Rules:**
+
+- `build` is for a `memory` kernel. For a `direct` kernel it is an error ([10.6](#106-errors)).
+- `exec` and `async` run what the VME holds: the kernel must have been configured before, by a `config` of this call or of an earlier one.
+- With `async` the results are not ready when the call returns. A kernel that has a `.store` cannot be called with `async` alone ([10.6](#106-errors)).
+- The actions can be given together, as `config | exec` ([10.3](#103-several-actions-in-one-call)).
