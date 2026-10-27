@@ -7,7 +7,8 @@
 - [5.1 The pe block](#51-the-pe-block)
 - [5.2 What a block holds](#52-what-a-block-holds)
 - [5.3 Operations in a pe](#53-operations-in-a-pe)
-- [5.4 Errors](#54-errors)
+- [5.4 Remapping an opcode](#54-remapping-an-opcode)
+- [5.5 Errors](#55-errors)
 
 ## 5.1 The pe block
 
@@ -88,7 +89,46 @@ Staging s, t;
 
 The operations are described in [Operations](operations.md).
 
-## 5.4 Errors
+## 5.4 Remapping an opcode
+
+The opcode of an operation is chosen from the way it is written ([6.2.3](operations.md#623-how-the-opcode-is-chosen)). `.remap` gives another opcode to the operations of a pe, by operator.
+
+```c
+Staging s;
+
+.pe0 {
+  .top = t;
+  .write = w;
+  .remap = { operator: "*", primary: 0x220 };
+  .spad = top0 * top1;
+}
+
+.pe1 {
+  .top = t;
+  .write = w;
+  .remap = { operator: "+", primary: 0x030, secondary: 0x010 };
+  s = top0 + top1;
+  .spad = s + top2;
+}
+```
+
+**Explanation of the code above:**
+
+- In `pe0`, the `*` that the first unit of the pe computes takes the opcode `0x220`. Without the `.remap`, it takes the opcode that the selector chooses for `*`.
+- In `pe1`, a `+` takes `0x030` in the first unit (`primary`) and `0x010` in the second one (`secondary`). The first `+` of `pe1` (`s = top0 + top1;`) is in the first unit, the second one (`.spad = s + top2;`) in the second unit.
+- `primary` and `secondary` are both optional, but at least one is needed. A unit that is not given keeps the opcode that the selector chooses.
+
+**Rules:**
+
+- `.remap` is written in a pe block. It applies to this pe only, wherever it stands in the block.
+- A pe has one `.remap` per operator. Several `.remap` can be written, one for each operator.
+- The operator is written between double quotes. The opcodes are numbers, or `Int` variables.
+- The opcode must be in the table of `vmegc`, and it must have the operator of the `.remap`. `vmegc --ops` lists, under each opcode, the opcodes it can be remapped with ([1.5](running.md#15---ops)).
+- The selector is not changed: it chooses the opcode from the way the operation is written, then the `.remap` replaces it. The registers (`A`, `B`) are those of the new opcode: a register that the new opcode has and the expression does not give is 0.
+- A warning is given when the expression gives a value that the new opcode has no register for. It is not given in the other direction.
+- A `.remap` lifts the rule of 5.3 that makes `mul`, `mac` and `acc` the first operation of the pe, for the unit it names.
+
+## 5.5 Errors
 
 The messages start with `line N:`, left out here.
 
