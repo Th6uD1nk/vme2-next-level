@@ -156,6 +156,8 @@ def read_emulate_block(text, items, index, ids):
     raise ValueError(f"line {line}: the id \"{name}\" of @emulate is already used at line {ids[name]}")
   ids[name] = line
   close = block_end(text, items, index + 3, start, "@emulate block") - 1
+  if not any(items[j][1] == "@" and items[j + 1][1] == "kernel" for j in range(index + 4, len(items) - 1) if items[j][2] < close):
+    raise ValueError(f"line {line}: the @emulate \"{name}\" block calls no kernel, write at least one @kernel call in it")
   return [("emulate-block", start, items[index + 3][3], items[index + 3][3]), ("emulate-block-end", close, close, close + 1)]
 
 
