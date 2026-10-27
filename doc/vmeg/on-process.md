@@ -33,3 +33,25 @@ void meLibOnProcess(void) {
 
 - The function is written once per file, outside any other function ([12.4](#124-errors)).
 - A function with another name is a plain function: `vmegc` adds nothing to it.
+
+## 12.2 What vmegc writes at its start
+
+`vmegc` prepares the VME at the start of the body of `meLibOnProcess`, before your code. The function starts with the VME in a known state.
+
+```c
+void meLibOnProcess(void) {
+  work();
+}
+```
+
+**Explanation of the code above:**
+
+- `vmegc` writes the preparation before `work();`.
+- `work();` runs once the preparation is done, with the VME disabled, as it was written.
+
+**Rules:**
+
+- The preparation is written once per file, at the start of the function, whatever the function holds.
+- It is done before any kernel is called.
+- When a kernel is called on the function, the VME stays enabled after the preparation ([12.3](#123-a-call-on-melibonprocess)).
+- Nothing is added to the other functions.
