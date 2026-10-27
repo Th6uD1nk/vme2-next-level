@@ -445,5 +445,30 @@ class WaitOfTheCallsTest(unittest.TestCase):
     self.assertEqual(text, "fTLoad(a);\nmeCoreDMACPrimWaitTransferFinish();\nfTStore(a);\nmeCoreDMACPrimWaitTransferFinish();\n")
 
 
+def run_body(text):
+  out = render(text, find_blocks(text), "t.vmeg.c")
+  return out[out.index("void run"):]
+
+
+def squashed(code):
+  return " ".join(line.strip() for line in code.splitlines() if line.strip() and not line.startswith("#line"))
+
+
+class ParamsTest(unittest.TestCase):
+  def test_the_params_of_a_call_are_passed_in_the_order_of_the_declaration(self):
+    text = ".kernel k direct {\n  .params { int stage; int* table; }\n}\n.kernel z direct {\n}\nvoid run(int i, int* d) {\n  @kernel k config | exec, z config | exec {\n    .params = { table: d, stage: i + 1 };\n  }\n  @kernel k config {\n    .params { .stage = 3; .table = d; }\n  }\n  @kernel k exec {\n  }\n}\n"
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("void k(int stage, int* table) {", out)
+    self.assertIn("void z() {", out)
+    body = squashed(run_body(text))
+    self.assertIn("k(i + 1, d);", body)
+    self.assertIn("z();", body)
+    self.assertIn("k(3, d);", body)
+    self.assertEqual(body.count("k("), 2)
+    bad = text.replace("table: d, stage: i + 1", "stage: i")
+    with self.assertRaisesRegex(ValueError, "the kernel 'k' needs the parameter table, give it in the .params of the block"):
+      render(bad, find_blocks(bad), "t.vmeg.c")
+
+
 if __name__ == "__main__":
   unittest.main()
