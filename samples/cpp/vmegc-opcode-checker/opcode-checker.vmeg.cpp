@@ -768,3 +768,31 @@ volatile Buffer macTop1[16] = {
 @kernel checkMac config | exec
 void checkMacRun(void) {
 }
+
+volatile Buffer accTop0[16] = {
+  1, 2, 3, 4,
+  -1, -2, -3, -4,
+  100, -100, 0x1000, -0x1000,
+  0x7ffff0, 0x20, -0x7ffff0, 0x800,
+};
+
+@emulate "acc"
+.kernel checkAcc direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: accTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = acc(top0); }
+  .pe1 { .write = write; .spad = (acc(top0)); }
+  .pe2 { .write = write; .spad = acc(top0) >> 0; }
+  .pe3 { .write = write; .spad = (acc(top0)) >> 0x0; }
+}
+
+@kernel checkAcc config | exec
+void checkAccRun(void) {
+}
