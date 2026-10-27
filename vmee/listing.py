@@ -27,29 +27,50 @@ def load_links(loads, scope):
   return [(*link[:4], load["line"], link[4]) for load in loads if load["scope"] == scope for link in load["links"]]
 
 
+def kernel_pieces(text, blocks, name):
+  kernel = next(block for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
+  loads, stores = kernel_transfers(kernel_statements(text, kernel, {}), known_macros(text, kernel[1]), name)
+  return kernel, loads, stores
+
+
+def mark_steps(mode):
+  return ("build", "config", "exec") if mode == "memory" else ("config", "exec")
+
+
+def emulation_entry(text, blocks, id_, steps, first, last, local):
+  names = list(dict.fromkeys(name for name, _ in steps))
+  pieces = {name: kernel_pieces(text, blocks, name) for name in names}
+  modes = {name: next((word for word in header_words(text, pieces[name][0])[2:] if word in ("direct", "memory")), None) for name in names}
+  loads = [load for name in names for load in pieces[name][1]]
+  stores = [store for name in names for store in pieces[name][2]]
+  return {
+    "id": id_,
+    "kernel": names[0],
+    "kernels": names,
+    "steps": [(name, actions or mark_steps(modes[name])) for name, actions in steps],
+    "modes": modes,
+    "mode": modes[names[0]],
+    "first": first,
+    "last": last,
+    "global": load_links(loads, "global"),
+    "local": load_links(loads, "local"),
+    "definitions": list(dict.fromkeys(record["definition"] for record in loads + stores)),
+    "calls": [call for load in loads for call in load["calls"]],
+    "stores": {"global": load_links(stores, "global"), "local": load_links(stores, "local")},
+    "downloads": [call for store in stores for call in store["calls"]],
+    "declared": {"global": file_buffer_names(list(tokens(text))), "local": local},
+  }
+
+
 def emulations(text):
   blocks = find_blocks(text)
   found = []
   for k, block in enumerate(blocks):
-    if block[0] != "emulate":
-      continue
-    kernel = blocks[k + 1]
-    statements = kernel_statements(text, kernel, {})
-    loads, stores = kernel_transfers(statements, known_macros(text, kernel[1]), kernel_name(text, kernel))
-    found.append({
-      "id": list(tokens(text[block[1]:block[2]]))[2][1][1:-1],
-      "kernel": kernel_name(text, kernel),
-      "mode": next((word for word in header_words(text, kernel)[2:] if word in ("direct", "memory")), None),
-      "first": text.count("\n", 0, kernel[1]) + 1,
-      "last": text.count("\n", 0, kernel[3] - 1) + 1,
-      "global": load_links(loads, "global"),
-      "local": load_links(loads, "local"),
-      "definitions": list(dict.fromkeys(record["definition"] for record in loads + stores)),
-      "calls": [call for load in loads for call in load["calls"]],
-      "stores": {"global": load_links(stores, "global"), "local": load_links(stores, "local")},
-      "downloads": [call for store in stores for call in store["calls"]],
-      "declared": declared_names(text, blocks, kernel_name(text, kernel)),
-    })
+    if block[0] == "emulate":
+      kernel = blocks[k + 1]
+      name = kernel_name(text, kernel)
+      entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], [(name, ())], text.count("\n", 0, kernel[1]) + 1, text.count("\n", 0, kernel[3] - 1) + 1, declared_names(text, blocks, name)["local"])
+      found.append(dict(entry, form="mark"))
   return found
 
 
