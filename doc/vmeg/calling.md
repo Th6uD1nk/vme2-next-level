@@ -115,3 +115,38 @@ void run(void) {
 - Every name of the list is a kernel of the project. An unknown name is an error ([10.6](#106-errors)).
 - A kernel can appear several times in a call, or in several calls, with different actions: `@kernel a build, b build` builds two contexts, and a later call configures and runs them.
 - `exec` and `async` do not choose a kernel: they run the one that the VME holds, which is the last one configured. After `a config, b config`, an `exec` runs `b`.
+
+## 10.5 Uploads and downloads around the run
+
+A kernel can copy arrays to the VME before it runs, with `.load`, and copy buffers back after, with `.store` ([9.3](transfers.md#93-load-and-store)). The call does these copies around the actions.
+
+```c
+volatile Buffer input[16];
+volatile Buffer result[16];
+
+.kernel k direct {
+  Agu t = { count: 15 }, w = { count: 15, cyc: auto };
+  Transfer in = { type: words, mode: basic, memory: input, count: 15 };
+  Transfer out = { type: words, mode: basic, memory: result, count: 15 };
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+  .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }
+}
+
+@kernel k config | exec
+void run(void) {
+}
+```
+
+**Explanation of the code above:**
+
+- `run` copies `input` into the buffer `top0` first, and waits for the copy to finish.
+- `config | exec` configures the kernel, runs it and waits for its end.
+- `run` then copies the buffer `base0` into `result`, and waits for the copy to finish.
+
+**Rules:**
+
+- Every call does the `.load` of the kernel first and its `.store` last, whatever the actions are.
+- A call with `config` alone does the `.store` too: it copies what the buffers hold, the kernel has not run.
+- A call made of `build` alone does neither: it does not touch the VME.
+- A kernel that has a `.store` cannot be called with `async` alone ([10.2](#102-the-actions)).
