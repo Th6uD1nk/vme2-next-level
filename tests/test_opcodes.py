@@ -178,6 +178,21 @@ class RemapTest(unittest.TestCase):
       "vme_pe0(vme_fu(SECONDARY), vme_mux(STAGING_0, TOP_1), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
     ])
 
+  def test_a_remap_warns_for_a_value_without_register_and_refuses_an_opcode_without_the_operator(self):
+    def warnings_of(body):
+      text = ".kernel k direct {\n  .pe0 { " + body + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
+      found = []
+      generate(text, find_blocks(text)[0], found, None)
+      return [message for _, message in found if "remap" in message]
+    self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x010 }; .spad = top0 + base0 + 5;"), [
+      "the value of 'c' is not written, the opcode 0x010 of .remap primary has no register for it",
+    ])
+    self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x030 }; .spad = top0 + base0;"), [])
+    with self.assertRaisesRegex(ValueError, "the opcode 0x220 of .remap primary has no operator '\\+'"):
+      kernel_lines(".remap = { operator: \"+\", primary: 0x220 }; .spad = top0 + base0;", None)
+    with self.assertRaisesRegex(ValueError, "the opcode 0x999 of .remap primary is not in the table"):
+      kernel_lines(".remap = { operator: \"+\", primary: 0x999 }; .spad = top0 + base0;", None)
+
 
 if __name__ == "__main__":
   unittest.main()
