@@ -478,7 +478,8 @@ def place(state, lines, pe, operations, line):
     if specification["units"] == "primary" and number != 0:
       raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     remap = state["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
-    code = OPERATIONS[remap[unit.lower()]]["code"] if unit.lower() in remap else specification["code"]
+    encoding = OPERATIONS[remap[unit.lower()]] if unit.lower() in remap else specification
+    code = encoding["code"]
     if specification["operands"] == ("front", "back"):
       mux = f"vme_mux({operation['front']}, {operation['back']})"
       reads = (operation["front"], operation["back"])
@@ -494,7 +495,7 @@ def place(state, lines, pe, operations, line):
     if operation.get("shift"):
       sat += f", {operation['shift']}"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
-    for register, argument in specification["registers"].items():
+    for register, argument in encoding["registers"].items():
       lines.append(f"vme_pe{pe}(fu_reg({unit}, {register}), {to_c(('num', operation['numbers'].get(argument, 0)))});")
   return number, depth
 
