@@ -296,13 +296,13 @@ def kernel_sources(kernel, qualifier):
   return [(transfer["memory"], transfer["line"], transfer["kind"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
-def kernel_actions(name, actions, mode="direct", built=False, args=""):
+def kernel_actions(name, actions, mode="direct", built=False, args="", memory=None):
   if "build" in actions:
-    made = [f"{name}Context = {name}({args or 0});"]
+    made = [f"{name}Context = {name}({args or 0});"] if memory is None else [f"{name}Build({memory}{', ' + args if args else ''});"]
     rest = tuple(action for action in actions if action != "build")
-    return made + kernel_actions(name, rest, mode, True, args) if rest else made
+    return made + kernel_actions(name, rest, mode, True, args, memory) if rest else made
   if mode == "memory":
-    load = [f"vmeLibLoadCustomContext({name}Context);"]
+    load = [f"vmeLibLoadCustomContext({memory or name + 'Context'});"]
   else:
     load = [f"{name}({args});"]
   if "async" in actions:
@@ -325,11 +325,11 @@ def kernel_arguments(registry, name, pairs):
   return ", ".join(given[parameter] for parameter in registry["kernels"][name][0]["params"] if parameter in given)
 
 
-def kernel_lines(registry, name, actions, pairs=()):
+def kernel_lines(registry, name, actions, pairs=(), memory=None):
   args = kernel_arguments(registry, name, pairs)
   if actions == ("build",):
-    return kernel_actions(name, actions, kernel_mode(registry, name), False, args)
-  return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name), False, args) + kernel_downloads(registry, name)
+    return kernel_actions(name, actions, kernel_mode(registry, name), False, args, memory)
+  return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name), False, args, memory) + kernel_downloads(registry, name)
 
 
 def kernel_uploads(registry, name):
@@ -494,14 +494,14 @@ def check_params(text, blocks, assigned, registry):
         raise ValueError(f"line {line}: the kernel '{name}' needs the parameter{'s' if len(missing) > 1 else ''} {', '.join(missing)}, {way}")
 
 
-def call_edits(text, blocks, quoted, on_process_starts, registry, assigned):
+def call_edits(text, blocks, quoted, on_process_starts, registry, assigned, memories):
   edits = []
   started = set()
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
       indent = line_indent(text, block[1])
-      lines = ([] if build_only(text, block) else [ENABLE]) + [call for (name, actions), (_, pairs) in zip(decorator_calls(text, block), assigned[block[1]]) for call in kernel_lines(registry, name, actions, pairs)]
+      lines = ([] if build_only(text, block) else [ENABLE]) + [call for (name, actions), (_, pairs), (_, memory) in zip(decorator_calls(text, block), assigned[block[1]], memories[block[1]]) for call in kernel_lines(registry, name, actions, pairs, memory)]
       edits.append((block[3], brace - block[3], indent + "{" + "".join(f"\n{indent}  {line}" for line in lines)))
       continue
     if block[0] != "decorator":

@@ -75,7 +75,7 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   check_params(text, blocks, assigned, registry)
   memories = memories_by_kernel(text, blocks, call_memories, registry)
   check_local_sources(text, blocks, registry, path, per_block)
-  calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry, assigned)
+  calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry, assigned, memories)
   edits = []
   declarations = needed_externs(registry, path) + needed_prototypes(registry, path)
   if declarations:
