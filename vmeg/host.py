@@ -268,15 +268,15 @@ def kernel_sources(kernel, qualifier):
   return [(transfer["memory"], transfer["line"], transfer["kind"]) for transfer in kernel["loads"] + kernel["stores"] if transfer["scope"] == qualifier]
 
 
-def kernel_actions(name, actions, mode="direct", built=False):
+def kernel_actions(name, actions, mode="direct", built=False, args=""):
   if "build" in actions:
     made = [f"{name}Context = {name}(0);"]
     rest = tuple(action for action in actions if action != "build")
-    return made + kernel_actions(name, rest, mode, True) if rest else made
+    return made + kernel_actions(name, rest, mode, True, args) if rest else made
   if mode == "memory":
     load = ([] if built else [f"if (!{name}Context) {{ {name}Context = {name}(0); }}"]) + [f"vmeLibLoadCustomContext({name}Context);"]
   else:
-    load = [f"{name}();"]
+    load = [f"{name}({args});"]
   if "async" in actions:
     if "config" not in actions:
       return ["vmeLibTrigger();"]
@@ -292,10 +292,16 @@ def kernel_mode(registry, name):
   return registry["kernels"][name][0]["mode"]
 
 
-def kernel_lines(registry, name, actions):
+def kernel_arguments(registry, name, pairs):
+  given = dict(pairs)
+  return ", ".join(given[parameter] for parameter in registry["kernels"][name][0]["params"])
+
+
+def kernel_lines(registry, name, actions, pairs=()):
   if actions == ("build",):
     return kernel_actions(name, actions, kernel_mode(registry, name))
-  return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name)) + kernel_downloads(registry, name)
+  args = kernel_arguments(registry, name, pairs)
+  return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name), False, args) + kernel_downloads(registry, name)
 
 
 def kernel_uploads(registry, name):
@@ -437,14 +443,14 @@ def check_params(text, blocks, assigned, registry):
         raise ValueError(f"line {line}: the kernel '{name}' needs the parameter{'s' if len(missing) > 1 else ''} {', '.join(missing)}, {way}")
 
 
-def call_edits(text, blocks, quoted, on_process_starts, registry):
+def call_edits(text, blocks, quoted, on_process_starts, registry, assigned):
   edits = []
   started = set()
   for block in blocks:
     if block[0] == "kernel-block":
       brace = block[3] + next(tokens(text[block[3]:]))[2] + 1
       indent = line_indent(text, block[1])
-      lines = ([] if build_only(text, block) else [ENABLE]) + [call for name, actions in decorator_calls(text, block) for call in kernel_lines(registry, name, actions)]
+      lines = ([] if build_only(text, block) else [ENABLE]) + [call for (name, actions), (_, pairs) in zip(decorator_calls(text, block), assigned[block[1]]) for call in kernel_lines(registry, name, actions, pairs)]
       edits.append((block[3], brace - block[3], indent + "{" + "".join(f"\n{indent}  {line}" for line in lines)))
       continue
     if block[0] != "decorator":
