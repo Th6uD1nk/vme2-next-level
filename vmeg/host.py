@@ -144,6 +144,8 @@ def check_decorators(text, blocks, registry):
         raise ValueError(f"line {line}: kernel '{name}' needs the option direct or memory")
       if "build" in actions and known[name][0]["mode"] != "memory":
         raise ValueError(f"line {line}: build is for a memory kernel, kernel '{name}' is direct")
+      if "config" in actions and known[name][0]["mode"] == "memory" and not any(name == call["name"] and "build" in call["actions"] for call in registry["calls"]):
+        raise ValueError(f"line {line}: kernel '{name}' is configured but never built, add a build")
       if "async" in actions and "config" not in actions and known[name][0]["stores"]:
         raise ValueError(f"line {line}: async does not wait for the end of the run, the .store of kernel '{name}' would read unfinished data")
 
@@ -274,7 +276,7 @@ def kernel_actions(name, actions, mode="direct", built=False, args=""):
     rest = tuple(action for action in actions if action != "build")
     return made + kernel_actions(name, rest, mode, True, args) if rest else made
   if mode == "memory":
-    load = ([] if built else [f"if (!{name}Context) {{ {name}Context = {name}({args or 0}); }}"]) + [f"vmeLibLoadCustomContext({name}Context);"]
+    load = [f"vmeLibLoadCustomContext({name}Context);"]
   else:
     load = [f"{name}({args});"]
   if "async" in actions:
@@ -433,7 +435,7 @@ def check_params(text, blocks, assigned, registry):
       if not definitions:
         continue
       declared = definitions[0]["params"]
-      runs = "config" in actions or (definitions[0]["mode"] == "memory" and "build" in actions)
+      runs = "build" in actions if definitions[0]["mode"] == "memory" else "config" in actions
       for given, _ in pairs:
         if not declared:
           raise ValueError(f"line {line}: the kernel '{name}' declares no parameters, it takes no .params")

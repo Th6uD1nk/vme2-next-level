@@ -1,4 +1,4 @@
-from vmeg.blocks import decorator_names, find_blocks, header_words, kernel_name
+from vmeg.blocks import decorator_calls, find_blocks, header_words, kernel_name
 from vmeg.host import declarator_names, kernel_sources
 from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.macros import known_macros
@@ -87,9 +87,9 @@ def block_definitions(path, text):
 
 def call_definitions(path, text):
   return [
-    {"name": name, "path": path, "line": text.count("\n", 0, block[1]) + 1, "block": block[0] == "kernel-block"}
+    {"name": name, "path": path, "line": text.count("\n", 0, block[1]) + 1, "block": block[0] == "kernel-block", "actions": actions}
     for block in find_blocks(text) if block[0] in ("decorator", "kernel-block")
-    for name in decorator_names(text, block)
+    for name, actions in decorator_calls(text, block)
   ]
 
 
