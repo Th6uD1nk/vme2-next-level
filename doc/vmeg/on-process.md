@@ -55,3 +55,27 @@ void meLibOnProcess(void) {
 - It is done before any kernel is called.
 - When a kernel is called on the function, the VME stays enabled after the preparation ([12.3](#123-a-call-on-melibonprocess)).
 - Nothing is added to the other functions.
+
+## 12.3 A call on meLibOnProcess
+
+A kernel can be called on `meLibOnProcess` like on any function ([10.1](calling.md#101-the-call-of-a-kernel)), above it or with a block inside it ([11](blocks.md)).
+
+```c
+.kernel k direct {
+}
+
+@kernel k config | exec
+void meLibOnProcess(void) {
+  work();
+}
+```
+
+**Explanation of the code above:**
+
+- The kernel `k` is configured and run right after the preparation of the VME ([12.2](#122-what-vmegc-writes-at-its-start)), before `work();`.
+- The VME is enabled once for the preparation and the call together, and disabled after the call.
+
+**Rules:**
+
+- With a block, the preparation comes first, then the actions, then the C code of the block, and the VME is disabled after it ([11.2](blocks.md#112-the-c-code-of-a-block)).
+- A call written above another function does not share the preparation: that function enables and disables the VME on its own ([10.4](calling.md#104-several-kernels-in-one-call)).
