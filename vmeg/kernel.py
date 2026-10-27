@@ -599,6 +599,10 @@ def emit_statement(statement, env, lines, state):
     state["depths"][pe] = depth
     if last == 1:
       state["secondary"].add(pe)
+  elif kind == "paramsdef":
+    if state["params"] is not None:
+      raise ValueError("the parameters of the kernel are declared twice")
+    state["params"] = statement[1]
   elif kind == "remap":
     pe = target_pe(statement[1], env)
     operator = statement[2]
@@ -643,7 +647,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat, "operations": [], "remaps": {}}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None}
 
 
 def new_env(macros=None):

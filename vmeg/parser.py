@@ -477,6 +477,30 @@ def parse_for(p):
   return ("for", var, low, high, body)
 
 
+def parse_params_definition(p):
+  p.expect("{")
+  items = []
+  while not p.accept("}"):
+    if p.peek() is None:
+      p.error("expected '}'")
+    parts = []
+    while True:
+      tok = p.peek()
+      if tok is None or (tok[0] != "str" and tok[1] == "}"):
+        p.error("expected ';'")
+      p.i += 1
+      if tok[0] != "str" and tok[1] == ";":
+        break
+      parts.append(tok)
+    if len(parts) < 2 or parts[-1][0] != "ident":
+      p.error("a parameter is a C type and a name, for example 'int stage;'", parts[0] if parts else tok)
+    name = parts[-1][1]
+    if any(name == existing for _, existing in items):
+      p.error(f"the parameter '{name}' is declared twice", parts[-1])
+    items.append((p.text[parts[0][2]:parts[-1][2]].strip(), name))
+  return ("paramsdef", items)
+
+
 def parse_statement(p):
   tok = p.peek()
   line = p.text.count("\n", 0, tok[2]) + 1
@@ -503,6 +527,9 @@ def parse_statement(p):
     if following is not None and following[0] == "ident" and following[1] in ("load", "store"):
       p.i += 1
       return parse_transfer_use(p) + (line,)
+    if following is not None and following[0] == "ident" and following[1] == "params":
+      p.i += 2
+      return parse_params_definition(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "pe":
       p.error("pe[...] is an access by index, it takes no dot", following)
   p.error(f"unknown statement '{tok[1]}'")
