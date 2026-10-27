@@ -79,3 +79,11 @@ void meLibOnProcess(void) {
 
 - With a block, the preparation comes first, then the actions, then the C code of the block, and the VME is disabled after it ([11.2](blocks.md#112-the-c-code-of-a-block)).
 - A call written above another function does not share the preparation: that function enables and disables the VME on its own ([10.4](calling.md#104-several-kernels-in-one-call)).
+
+## 12.4 Errors
+
+The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [12.1](#121-the-function-of-the-media-engine) | `meLibOnProcess is defined twice in this file` | a second body of `meLibOnProcess` in the same file (the line is the one of the second body) |
