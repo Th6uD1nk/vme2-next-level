@@ -104,6 +104,9 @@ def declared_buffer_names(toks):
   return names
 
 
+MEMORY_WORDS = "VME_CONTEXT_WORD_COUNT"
+
+
 def check_buffers(text, toks, blocks):
   depth = 0
   for i, (kind, value, start, _) in enumerate(toks):
@@ -113,13 +116,13 @@ def check_buffers(text, toks, blocks):
       depth += 1
     elif kind == "punct" and value == ")":
       depth = max(0, depth - 1)
-    if kind != "ident" or value != "Buffer":
+    if kind != "ident" or value not in ("Buffer", "Memory"):
       continue
     line = text.count("\n", 0, start) + 1
     if depth > 0:
-      raise ValueError(f"line {line}: Buffer only declares a variable, it cannot be used in a parameter or a cast")
+      raise ValueError(f"line {line}: {value} only declares a variable, it cannot be used in a parameter or a cast")
     if i + 1 >= len(toks) or toks[i + 1][0] != "ident":
-      raise ValueError(f"line {line}: Buffer must be followed by a variable name (volatile Buffer name[...])")
+      raise ValueError(f"line {line}: {value} must be followed by a variable name (volatile {value} name[...])")
     found = False
     j = i - 1
     while j >= 0 and toks[j][0] == "ident" and toks[j][1] in DECLARATION_QUALIFIERS:
@@ -127,7 +130,30 @@ def check_buffers(text, toks, blocks):
         found = True
       j -= 1
     if not found:
-      raise ValueError(f"line {line}: Buffer must be volatile (volatile Buffer name[...])")
+      raise ValueError(f"line {line}: {value} must be volatile (volatile {value} name[...])")
+
+
+def memory_edits(text, toks):
+  edits = []
+  for i, (kind, value, start, end) in enumerate(toks):
+    if kind != "ident" or value != "Memory":
+      continue
+    edits.append((start, len("Memory"), BUFFER_TYPE))
+    nest = 0
+    for later_kind, later, later_start, _ in toks[i + 1:]:
+      if later_kind == "punct" and later in "([{":
+        nest += 1
+      elif later_kind == "punct" and later in ")]}":
+        nest -= 1
+        if nest < 0:
+          break
+      elif nest == 0 and later_kind == "punct" and later == "=":
+        raise ValueError(f"line {text.count(chr(10), 0, later_start) + 1}: a Memory cannot have an initializer")
+      elif nest == 0 and later_kind == "punct" and later in (",", ";"):
+        edits.append((later_start, 0, f"[{MEMORY_WORDS}]"))
+        if later == ";":
+          break
+  return edits
 
 
 def check_decorators(text, blocks, registry):
