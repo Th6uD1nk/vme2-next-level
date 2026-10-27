@@ -398,6 +398,20 @@ def build_only(text, block):
   return all(actions == ("build",) for _, actions in decorator_calls(text, block))
 
 
+def params_by_kernel(text, blocks, call_params):
+  found = {}
+  for block in blocks:
+    if block[0] != "kernel-block":
+      continue
+    calls = decorator_calls(text, block)
+    given = call_params.get(block[1], [])
+    if len(given) > len(calls):
+      line = text.count("\n", 0, block[1]) + 1
+      raise ValueError(f"line {line}: the block gives {len(given)} .params but names {len(calls)} kernel{'s' if len(calls) > 1 else ''}")
+    found[block[1]] = [(name, given[i] if i < len(given) else []) for i, (name, _) in enumerate(calls)]
+  return found
+
+
 def call_edits(text, blocks, quoted, on_process_starts, registry):
   edits = []
   started = set()

@@ -689,6 +689,7 @@ def run_statements(statements, macros=None, owner=None, compat=None):
 def block_statement_records(text, blocks):
   found = {}
   per_block = {}
+  call_params = {}
   state = None
   env = None
   owners = block_owners(text, blocks)
@@ -698,6 +699,8 @@ def block_statement_records(text, blocks):
       state = new_state(macros, owners[block[1]])
       env = new_env(macros)
       per_block[block[1]] = state["sequence"]
+      call_params[block[1]] = []
+      owner_start = block[1]
     elif block[0] == "block-statement":
       _, start, _, end = block
       toks = [(kind, value, s + start, e + start) for kind, value, s, e in tokens(text[start:end])]
@@ -705,10 +708,12 @@ def block_statement_records(text, blocks):
       parser = Parser(text, toks, end)
       parser.in_call = True
       for statement in parse_body(parser):
-        if statement[0] != "paramsuse":
+        if statement[0] == "paramsuse":
+          call_params[owner_start].append(statement[1])
+        else:
           emit(statement, env, [], state)
       found[start] = state["sequence"][before:]
-  return found, per_block
+  return found, per_block, call_params
 
 
 def kernel_transfers(statements, macros=None, owner=None):
