@@ -364,6 +364,37 @@ def parse_output(p, index):
   return ("operation", ("target", index, "operation"), expr)
 
 
+def parse_remap(p, index):
+  p.expect("=")
+  p.expect("{")
+  found = {}
+  while True:
+    start = p.peek()
+    name = p.ident()
+    if name not in ("operator", "primary", "secondary"):
+      p.error(f"unknown field '{name}' of .remap (operator, primary, secondary)", start)
+    if name in found:
+      p.error(f"duplicate field '{name}' in .remap", start)
+    p.expect(":")
+    if name == "operator":
+      tok = p.peek()
+      if tok is None or tok[0] != "str":
+        p.error("operator takes an operator between double quotes, for example \"*\"")
+      p.i += 1
+      found[name] = tok[1][1:-1]
+    else:
+      found[name] = parse_expr(p)
+    if not p.accept(","):
+      break
+  p.expect("}")
+  p.expect(";")
+  if "operator" not in found:
+    p.error("the field 'operator' is needed in .remap")
+  if "primary" not in found and "secondary" not in found:
+    p.error("a .remap needs primary, secondary or both")
+  return ("remap", ("target", index, "remap"), found["operator"], found.get("primary"), found.get("secondary"))
+
+
 def parse_pe_block(p, index):
   body = []
   while not p.accept("}"):
@@ -390,6 +421,9 @@ def parse_pe_block(p, index):
     if p.peek()[1] == "spad":
       p.ident()
       body.append(parse_output(p, index) + (line,))
+    elif p.peek()[1] == "remap":
+      p.ident()
+      body.append(parse_remap(p, index) + (line,))
     else:
       body.append(parse_pe_assignment(p, ("target", index, p.ident())) + (line,))
   return ("peblock", body)
