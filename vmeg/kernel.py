@@ -767,7 +767,9 @@ def generate(text, block, warnings=None, compat=None):
     warnings.extend(state["warnings"])
   signature = ", ".join(f"{kind} {parameter}" for kind, parameter in state["params"] or [])
   if "memory" in options and signature:
-    raise ValueError(f"kernel '{name}': the parameters of a memory kernel are not generated yet")
+    head = [f"static u32 context[VME_CONTEXT_WORD_COUNT] __attribute__((aligned(64))) = {{0}};", "volatile u32 VME_BASE_ADDR = (u32)context;"]
+    tail = ["meCoreDcacheWritebackRange((void*)context, VME_CONTEXT_WORD_COUNT*4);", "return context;"]
+    return f"void* {name}({signature}) {{\n" + "".join(f"  {line}\n" for line in head + lines + tail) + f"}}\nvoid* {name}Context;"
   if "memory" in options:
     return f"VME_LIB_CONTEXT_BUILDER({name}, param, {{\n" + "".join(f"  {line}\n" for line in lines) + f"}});\nvoid* {name}Context;"
   body = "".join(f"  {line}\n" for line in ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"] + lines)

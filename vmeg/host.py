@@ -270,11 +270,11 @@ def kernel_sources(kernel, qualifier):
 
 def kernel_actions(name, actions, mode="direct", built=False, args=""):
   if "build" in actions:
-    made = [f"{name}Context = {name}(0);"]
+    made = [f"{name}Context = {name}({args or 0});"]
     rest = tuple(action for action in actions if action != "build")
     return made + kernel_actions(name, rest, mode, True, args) if rest else made
   if mode == "memory":
-    load = ([] if built else [f"if (!{name}Context) {{ {name}Context = {name}(0); }}"]) + [f"vmeLibLoadCustomContext({name}Context);"]
+    load = ([] if built else [f"if (!{name}Context) {{ {name}Context = {name}({args or 0}); }}"]) + [f"vmeLibLoadCustomContext({name}Context);"]
   else:
     load = [f"{name}({args});"]
   if "async" in actions:
@@ -298,9 +298,9 @@ def kernel_arguments(registry, name, pairs):
 
 
 def kernel_lines(registry, name, actions, pairs=()):
-  if actions == ("build",):
-    return kernel_actions(name, actions, kernel_mode(registry, name))
   args = kernel_arguments(registry, name, pairs)
+  if actions == ("build",):
+    return kernel_actions(name, actions, kernel_mode(registry, name), False, args)
   return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name), False, args) + kernel_downloads(registry, name)
 
 
