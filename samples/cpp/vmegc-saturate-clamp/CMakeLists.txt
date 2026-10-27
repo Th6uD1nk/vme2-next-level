@@ -7,7 +7,7 @@ include(../../../cmake/vmegc.cmake)
 add_executable(vme)
 vmegc_sources(vme SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/saturate-clamp.vmeg.cpp)
 
-target_include_directories(vme PRIVATE ../../../vme-ext)
+target_include_directories(vme PRIVATE ../../../external-vme-samples)
 
 target_compile_options(vme PRIVATE -Os -G0 -Wall -fno-pic)
 

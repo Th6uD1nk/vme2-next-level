@@ -3,7 +3,7 @@ import shutil
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LIBRARY = os.path.join(ROOT, "me-custom-core")
+LIBRARY = os.path.join(ROOT, "external-me-core")
 NATIVE = os.path.join(ROOT, "vmee", "native")
 SUBSTITUTES = (("emu-me-lib.h", "me-lib.h"), ("emu-me-core-mapper.h", "me-core-mapper.h"))
 RUN_TIMEOUT = 60
@@ -14,7 +14,7 @@ LIBRARY_FILES = ("vme-lib.c", "vme-lib.h", "vme-fu-opcodes.h", "me-lib.h", "me-c
 def library_folder():
   missing = [name for name in LIBRARY_FILES if not os.path.isfile(os.path.join(LIBRARY, name))]
   if missing:
-    raise ValueError(f"the library folder {LIBRARY} lacks {', '.join(missing)}, the submodule is probably empty (git submodule update --init me-custom-core)")
+    raise ValueError(f"the library folder {LIBRARY} lacks {', '.join(missing)}, the submodule is probably empty (git submodule update --init external-me-core)")
   return LIBRARY
 
 
