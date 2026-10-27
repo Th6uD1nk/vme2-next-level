@@ -161,5 +161,23 @@ class StagingInTheKernelTest(unittest.TestCase):
     self.assertEqual(re.findall(r"fu_code\((OP_\w+)\)", code), ["OP_ADD", "OP_AND_CST"])
 
 
+class RemapTest(unittest.TestCase):
+  def test_a_remap_gives_the_opcode_and_the_registers_of_its_unit(self):
+    self.assertEqual(kernel_lines(".remap = { operator: \"*\", primary: 0x220 }; .spad = top0 * base0;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
+    ])
+    self.assertEqual(kernel_lines(".spad = top0 * base0; .remap = { operator: \"*\", primary: 0x220 };", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
+    ])
+    self.assertEqual(kernel_lines(".remap = { operator: \"+\", primary: 0x030 }; .spad = top0 + base0;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));",
+      "vme_pe0(fu_reg(PRIMARY, A), 0);",
+    ])
+    self.assertEqual(kernel_lines("Staging s; s = top0 + base0; .remap = { operator: \"*\", secondary: 0x220 }; .spad = s * top1;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));",
+      "vme_pe0(vme_fu(SECONDARY), vme_mux(STAGING_0, TOP_1), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
+    ])
+
+
 if __name__ == "__main__":
   unittest.main()
