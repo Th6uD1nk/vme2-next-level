@@ -146,7 +146,7 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 def host_main(text, identifier):
   emulation = chosen_emulation(text, identifier)
   registry = project_registry([("", text)])
-  actions = "".join(f"  {call}\n" for (name, steps), pairs in zip(emulation["steps"], emulation["pairs"]) for call in kernel_actions(name, steps, emulation["modes"][name], False, kernel_arguments(registry, name, pairs)))
+  actions = "".join(f"  {call}\n" for (name, steps), pairs, memory in zip(emulation["steps"], emulation["pairs"], emulation["memories"]) for call in kernel_actions(name, steps, emulation["modes"][name], False, kernel_arguments(registry, name, pairs), memory))
   return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
