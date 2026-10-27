@@ -559,6 +559,13 @@ def parse_params_use(p):
   return ("paramsuse", pairs)
 
 
+def parse_memory_use(p):
+  p.expect("=")
+  value = read_value(p, (";",))
+  p.expect(";")
+  return ("memoryuse", value)
+
+
 def parse_statement(p):
   tok = p.peek()
   line = p.text.count("\n", 0, tok[2]) + 1
@@ -585,6 +592,9 @@ def parse_statement(p):
     if following is not None and following[0] == "ident" and following[1] in ("load", "store"):
       p.i += 1
       return parse_transfer_use(p) + (line,)
+    if following is not None and following[0] == "ident" and following[1] == "memory" and p.in_call:
+      p.i += 2
+      return parse_memory_use(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "params":
       p.i += 2
       return (parse_params_use(p) if p.in_call else parse_params_definition(p)) + (line,)

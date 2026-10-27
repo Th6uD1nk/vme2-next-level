@@ -99,6 +99,13 @@ def read_block_statements(text, items, open_index, close):
           raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: expected ';' after .params = {{ ... }}")
         k += 1
       stop = k
+    elif kind == "punct" and value == "." and j + 2 < len(items) and items[j + 1][1] == "memory" and items[j + 2][1] == "=":
+      k = j + 3
+      while k < len(items) and (items[k][1] != ";" or items[k][4] != depth):
+        k += 1
+      if k >= len(items):
+        raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: expected ';' after .memory = ...")
+      stop = k
     elif kind == "ident" and value == "for" and contexts.get(depth) and j + 3 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "in":
       k = j + 3
       while items[k][1] != "{":

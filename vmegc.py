@@ -68,7 +68,7 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   check_buffers(text, toks, blocks)
   found = []
   codes = [generate(text, block, found, compat) for block in blocks]
-  records, per_block, call_params = block_statement_records(text, blocks)
+  records, per_block, call_params, call_memories = block_statement_records(text, blocks)
   codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
   check_decorators(text, blocks, registry)
   assigned = params_by_kernel(text, blocks, call_params)
