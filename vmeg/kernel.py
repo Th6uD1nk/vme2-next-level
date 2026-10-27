@@ -495,6 +495,10 @@ def place(state, lines, pe, operations, line):
     if operation.get("shift"):
       sat += f", {operation['shift']}"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
+    if encoding is not specification:
+      for argument in specification["registers"].values():
+        if argument in operation["numbers"] and argument not in encoding["registers"].values():
+          warn(state, line, f"the value of '{argument}' is not written, the opcode 0x{encoding['opcode']:03x} of .remap {unit.lower()} has no register for it")
     for register, argument in encoding["registers"].items():
       lines.append(f"vme_pe{pe}(fu_reg({unit}, {register}), {to_c(('num', operation['numbers'].get(argument, 0)))});")
   return number, depth
