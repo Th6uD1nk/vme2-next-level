@@ -120,7 +120,7 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 def host_main(text, identifier):
   kernel = chosen_emulation(text, identifier)["kernel"]
   mode = next(found["mode"] for found in kernel_definitions("", text) if found["name"] == kernel)
-  actions = "".join(f"  {call}\n" for call in kernel_actions(kernel, ("config", "exec"), mode))
+  actions = "".join(f"  {call}\n" for call in kernel_actions(kernel, ("build", "config", "exec") if mode == "memory" else ("config", "exec"), mode))
   return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
