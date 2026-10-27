@@ -39,32 +39,51 @@ def word(value):
   return value & 0xffffffff
 
 
-def buffers(identifier):
+def parse(text):
+  found = {}
+  for block in text.split("\n\n"):
+    match = re.match(r"Buffer: BASE ([0-3])\n", block)
+    if match:
+      found[int(match.group(1))] = [int(w, 16) for w in re.findall(r"0x[0-9a-f]{8}", block)][:16]
+  return found
+
+
+def emulate(identifier):
   run = subprocess.run([sys.executable, os.path.join(ROOT, "vmeemu.py"), "--run", identifier, SOURCE], capture_output=True, text=True)
-  if run.returncode:
-    return None, run.stderr.strip()
-  blocks = [block for block in run.stdout.split("\n\n") if block.startswith("Buffer: BASE")]
-  return [[int(w, 16) for w in re.findall(r"0x[0-9a-f]{8}", block)][:16] for block in blocks], None
+  return None if run.returncode else run.stdout, run.stderr.strip()
 
 
-def check(kernel):
+def check(kernel, log=None):
   identifier, expected = kernel
-  found, error = buffers(identifier)
-  if error:
+  text, error = emulate(identifier)
+  if text is None:
     return f"{identifier}: {error}"
-  if len(found) < 4:
-    return f"{identifier}: {len(found)} buffers BASE found, expected 4"
-  for pe, words in enumerate(found[:4]):
-    for index, (got, want) in enumerate(zip(words, expected)):
-      if got != word(want):
-        return f"{identifier}: BASE_{pe} word {index}: got 0x{got:08x}, expected 0x{word(want):08x}"
+  emulated = parse(text)
+  if log is None:
+    found, reference, names = emulated, {pe: [word(v) for v in expected] for pe in range(4)}, ("got", "expected")
+  else:
+    found, reference, names = parse(log), emulated, ("PSP", "emulator")
+  if len(found) < 4 or len(reference) < 4:
+    return f"{identifier}: 4 buffers BASE are needed ({len(found)} in the log, {len(reference)} in the reference)"
+  for pe in range(4):
+    for index, (got, want) in enumerate(zip(found[pe], reference[pe])):
+      if got != want:
+        return f"{identifier}: BASE_{pe} word {index}: {names[0]} 0x{got:08x}, {names[1]} 0x{want:08x}"
   return None
 
 
-def main(names):
-  chosen = [kernel for kernel in KERNELS if not names or kernel[0] in names]
+def main(arguments):
+  log = None
+  if arguments[:1] == ["--log"]:
+    with open(arguments[1], encoding="utf-8") as f:
+      log = f.read()
+    arguments = arguments[2:]
+    if len(arguments) != 1:
+      print("--log goes with one kernel id")
+      return 2
+  chosen = [kernel for kernel in KERNELS if not arguments or kernel[0] in arguments]
   with ThreadPoolExecutor(os.cpu_count()) as pool:
-    problems = list(pool.map(check, chosen))
+    problems = list(pool.map(lambda kernel: check(kernel, log), chosen))
   for (identifier, _), problem in zip(chosen, problems):
     print(problem or f"{identifier}: ok")
   return 1 if any(problems) else 0
