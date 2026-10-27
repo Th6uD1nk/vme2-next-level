@@ -323,6 +323,13 @@ def operation_block(specification):
     lines.append(indent + "also written " + ", ".join(specification["aliases"]))
   if specification["registers"]:
     lines.append(indent + "registers " + ", ".join(f"{name} = {register}" for register, name in specification["registers"].items()))
+  kind = OPCODE_KINDS[specification["opcode"]]
+  root = ROOT_OPERATORS[kind]
+  others = sorted(OPERATIONS[other]["opcode"] for other, operators in PATTERN_OPERATORS.items() if other != kind and root in operators) if root else []
+  if others:
+    lines.append(indent + "can be remapped with " + ", ".join(f"0x{opcode:03x}" for opcode in others))
+  if specification.get("auxiliary"):
+    lines.append(indent + "only reached by a remap")
   lines.append(indent + ("position first operation of the pe only" if specification["units"] == "primary" else "position any"))
   if specification.get("not_portable"):
     lines.append(indent + "not portable")
