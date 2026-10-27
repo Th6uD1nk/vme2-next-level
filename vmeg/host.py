@@ -412,6 +412,31 @@ def params_by_kernel(text, blocks, call_params):
   return found
 
 
+def check_params(text, blocks, assigned, registry):
+  for block in blocks:
+    if block[0] not in ("decorator", "kernel-block"):
+      continue
+    line = text.count("\n", 0, block[1]) + 1
+    if block[0] == "decorator":
+      calls = [(name, []) for name in decorator_names(text, block)]
+    else:
+      calls = assigned[block[1]]
+    for name, pairs in calls:
+      definitions = registry["kernels"].get(name)
+      if not definitions:
+        continue
+      declared = definitions[0]["params"]
+      for given, _ in pairs:
+        if not declared:
+          raise ValueError(f"line {line}: the kernel '{name}' declares no parameters, it takes no .params")
+        if given not in declared:
+          raise ValueError(f"line {line}: the kernel '{name}' has no parameter '{given}' ({', '.join(declared)})")
+      missing = [parameter for parameter in declared if parameter not in [given for given, _ in pairs]]
+      if missing:
+        way = "write the call as a block with a .params" if block[0] == "decorator" else "give it in the .params of the block"
+        raise ValueError(f"line {line}: the kernel '{name}' needs the parameter{'s' if len(missing) > 1 else ''} {', '.join(missing)}, {way}")
+
+
 def call_edits(text, blocks, quoted, on_process_starts, registry):
   edits = []
   started = set()

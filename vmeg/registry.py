@@ -71,6 +71,7 @@ def kernel_definitions(path, text):
       "direct": direct,
       "loads": loads,
       "stores": stores,
+      "params": [name for statement in statements if statement[0] == "paramsdef" for _, name in statement[1]],
     })
   return found
 

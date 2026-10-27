@@ -4,7 +4,7 @@ import re
 import sys
 
 from vmeg.blocks import find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, build_only, call_edits, check_buffers, check_decorators, check_local_sources, params_by_kernel, definition_edits, line_indent, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, build_only, call_edits, check_buffers, check_decorators, check_local_sources, check_params, params_by_kernel, definition_edits, line_indent, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, build_kernel, generate
 from vmeg.listing import kernel_operation_lines
 from vmeg.vmecalls import finish_calls
@@ -71,7 +71,7 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   records, per_block, call_params = block_statement_records(text, blocks)
   codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
   check_decorators(text, blocks, registry)
-  params_by_kernel(text, blocks, call_params)
+  check_params(text, blocks, params_by_kernel(text, blocks, call_params), registry)
   check_local_sources(text, blocks, registry, path, per_block)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry)
   edits = []
