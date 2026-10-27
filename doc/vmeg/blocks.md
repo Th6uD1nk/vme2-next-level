@@ -112,3 +112,37 @@ void run(void) {
 - A `.load` or a `.store` in a C `if` or `for` stays conditional: the copy is done when the C code reaches it.
 - A `Transfer` or an `Int` declared inside a C `if` or `for` is C code: it is not a vmeg declaration.
 - A local array named by a `.load` or a `.store` is declared in the function that holds the block ([8.3](arrays.md#83-local-arrays)).
+
+## 11.4 Blocks in a row
+
+Blocks written one after the other, with nothing between them, form a row. The VME is enabled once at the start of the row and disabled once at its end.
+
+```c
+.kernel a direct {
+}
+
+.kernel b direct {
+}
+
+void run(void) {
+  @kernel a config | exec {
+    one();
+  }
+  @kernel b config | exec {
+    two();
+  }
+  end();
+}
+```
+
+**Explanation of the code above:**
+
+- `a` is configured and run, and `one();` runs.
+- `b` is configured and run right after, and `two();` runs. The VME stays enabled between the two blocks.
+- `end();` is C code outside the blocks: it runs once the VME is disabled.
+
+**Rules:**
+
+- A statement of C code written between two blocks ends the row: the VME is disabled after the first block and enabled again before the second.
+- The blocks of a row run in the order written, as the kernels of one call do ([10.4](calling.md#104-several-kernels-in-one-call)).
+- A block and a call written above a function are not in a row: the call is at the start of its function ([10.1](calling.md#101-the-call-of-a-kernel)).
