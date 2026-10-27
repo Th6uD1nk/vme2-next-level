@@ -40,3 +40,33 @@ void run(void) {
 - The block is written inside a function, as a statement. Above a function, the call is written without a block ([10.1](calling.md#101-the-call-of-a-kernel)).
 - The actions are the same as for a call above a function, with the same `|`, and a block can name several kernels ([10.2](calling.md#102-the-actions), [10.3](calling.md#103-several-actions-in-one-call), [10.4](calling.md#104-several-kernels-in-one-call)).
 - A local array of the kernel is declared in the function that holds the block ([8.3](arrays.md#83-local-arrays)).
+
+## 11.2 The C code of a block
+
+What a block holds, besides the vmeg statements of [11.3](#113-the-vmeg-statements-of-a-block), is C code. It stays as you wrote it.
+
+```c
+void run(int n) {
+  @kernel k config | exec {
+    for (int i = 0; i < n; i++) {
+      check(i);
+    }
+  }
+}
+```
+
+**Explanation of the code above:**
+
+- The `for` is a C loop: it is not a vmeg loop ([2.7](language.md#27-loops)). It can use the variables and the parameters of the function.
+- It runs after the actions of the call, while the VME is still enabled.
+
+**Rules:**
+
+- The C code runs after the actions of the call, and `vmegc` disables the VME after it.
+- When the C code starts, depending on the actions:
+
+| Actions of the block | When the C code runs |
+|---|---|
+| `config \| exec`, `exec`, `config \| async` | after the end of the run |
+| `async` | while the VME runs: nothing waits for its end |
+| `config` | after the kernel is configured: it has not run |
