@@ -611,6 +611,8 @@ def emit_statement(statement, env, lines, state):
       target = OPCODE_KINDS.get(number[1])
       if target is None:
         raise ValueError(f"the opcode 0x{number[1]:03x} of .remap {unit} is not in the table (vmegc --ops)")
+      if operator not in PATTERN_OPERATORS[target]:
+        raise ValueError(f"the opcode 0x{number[1]:03x} of .remap {unit} has no operator '{operator}'")
       units[unit] = target
     remaps[operator] = units
   elif kind == "stageset":
