@@ -91,3 +91,42 @@ void run(void) {
 - Each function that calls the kernel declares its own array. Two functions that call the same kernel declare an array each.
 - With `@kernel` above the function, the call of the kernel is written right after the declarations of the arrays, before the other statements of the function. To run statements first, for example to fill the array, write the call as a block, `@kernel k config | exec { … }`, at the place you want ([11](blocks.md)).
 - An array that is named by a local `.load` or `.store` and not declared in the function is an error ([8.5](#85-errors)).
+
+## 8.4 Arrays in several files
+
+The files given to `vmegc` in the same command are one project ([1.2](running.md#12-several-files)). A global array is defined in one file and named by the kernels of the others.
+
+`data.vmeg.c` defines the array:
+
+```c
+volatile Buffer input[16] = { 1, 2, 3 };
+```
+
+`main.vmeg.c` has the kernel that loads it:
+
+```c
+.kernel k direct {
+  Transfer t = { type: words, mode: basic, memory: input, count: 15 };
+  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }
+}
+
+@kernel k config | exec
+void run(void) {
+}
+```
+
+```
+python3 vmegc.py data.vmeg.c main.vmeg.c
+```
+
+**Explanation of the code above:**
+
+- `input` is defined in `data.vmeg.c`, and the kernel of `main.vmeg.c` names it with `.scope = global`.
+- `vmegc` writes the declaration of `input` in the output of `main.vmeg.c` by itself. Nothing is written for it.
+
+**Rules:**
+
+- A global array is defined in one file only. A second definition is an error ([8.5](#85-errors)).
+- A file can declare an array that another file defines, with `extern`: `extern volatile Buffer input[16];`. The array must then be defined in a file of the project.
+- A `static` array can only be named by the kernels of its own file.
+- A local array stays in the function that calls the kernel: it is never shared between files.
