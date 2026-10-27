@@ -762,7 +762,7 @@ def build_kernel(text, block, compat):
 
 def generate(text, block, warnings=None, compat=None):
   kind = block[0]
-  if kind in ("decorator", "emulate", "kernel-block", "block-statement"):
+  if kind in ("decorator", "emulate", "emulate-block", "emulate-block-end", "kernel-block", "block-statement"):
     return ""
   if kind == "kernel-block-end":
     return DISABLE

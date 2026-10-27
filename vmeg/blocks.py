@@ -144,6 +144,21 @@ def read_emulate(text, items, index):
   return ("emulate", start, end, end), items[index + 2][1][1:-1], line, items[index + 3][2]
 
 
+def read_emulate_block(text, items, index, ids):
+  start = items[index][2]
+  line = text.count("\n", 0, start) + 1
+  if index + 2 >= len(items) or items[index + 2][0] != "str" or not EMULATE_ID.fullmatch(items[index + 2][1]):
+    raise ValueError(f"line {line}: expected @emulate \"id\", the id is made of letters, digits, - and _ between double quotes")
+  if index + 3 >= len(items) or items[index + 3][0] != "punct" or items[index + 3][1] != "{":
+    raise ValueError(f"line {line}: inside a function @emulate \"id\" is followed by a block {{ ... }}")
+  name = items[index + 2][1][1:-1]
+  if name in ids:
+    raise ValueError(f"line {line}: the id \"{name}\" of @emulate is already used at line {ids[name]}")
+  ids[name] = line
+  close = block_end(text, items, index + 3, start, "@emulate block") - 1
+  return [("emulate-block", start, items[index + 3][3], items[index + 3][3]), ("emulate-block-end", close, close, close + 1)]
+
+
 def check_emulate(blocks, ids, kernels):
   for k, block in enumerate(blocks):
     if block[0] != "emulate":
@@ -179,6 +194,10 @@ def find_blocks(text):
     if kind == "punct" and value == "@" and depth > 0:
       if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "kernel":
         blocks.extend(read_kernel_block(text, items, i))
+        nested = True
+        continue
+      if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "emulate":
+        blocks.extend(read_emulate_block(text, items, i, ids))
         nested = True
         continue
       line = text.count("\n", 0, start) + 1
