@@ -766,11 +766,12 @@ def generate(text, block, warnings=None, compat=None):
   if warnings is not None:
     warnings.extend(state["warnings"])
   signature = ", ".join(f"{kind} {parameter}" for kind, parameter in state["params"] or [])
-  if "memory" in options and signature:
-    head = [f"static u32 context[VME_CONTEXT_WORD_COUNT] __attribute__((aligned(64))) = {{0}};", "volatile u32 VME_BASE_ADDR = (u32)context;"]
-    tail = ["meCoreDcacheWritebackRange((void*)context, VME_CONTEXT_WORD_COUNT*4);", "return context;"]
-    return f"void* {name}({signature}) {{\n" + "".join(f"  {line}\n" for line in head + lines + tail) + f"}}\nvoid* {name}Context;"
   if "memory" in options:
-    return f"VME_LIB_CONTEXT_BUILDER({name}, param, {{\n" + "".join(f"  {line}\n" for line in lines) + f"}});\nvoid* {name}Context;"
+    names = ", ".join(parameter for _, parameter in state["params"] or [])
+    head = ["meCoreMemset(vmegMemory, 0, VME_CONTEXT_WORD_COUNT*4);", "volatile u32 VME_BASE_ADDR = (u32)vmegMemory;"]
+    tail = ["meCoreDcacheWritebackRange(vmegMemory, VME_CONTEXT_WORD_COUNT*4);"]
+    build = f"void {name}Build(void* vmegMemory{', ' + signature if signature else ''}) {{\n" + "".join(f"  {line}\n" for line in head + lines + tail) + "}\n"
+    keep = f"void* {name}({signature or 'void* param'}) {{\n  static u32 vmegContext[VME_CONTEXT_WORD_COUNT] __attribute__((aligned(64)));\n  {name}Build(vmegContext{', ' + names if names else ''});\n  return vmegContext;\n}}\n"
+    return build + keep + f"void* {name}Context;"
   body = "".join(f"  {line}\n" for line in ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"] + lines)
   return f"void {name}({signature}) {{\n{body}}}"
