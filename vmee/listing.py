@@ -158,7 +158,12 @@ def format_listing(found, definitions, full=False):
     store_notes = link_notes(stored, definitions, overlaps=False)
     has_stores = bool(stored["global"] or stored["local"])
     mode = f"{emulation['mode']}, " if emulation.get("mode") else ""
-    lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} ({mode}lines {emulation['first']}-{emulation['last']})")
+    if emulation.get("form") == "block":
+      lines.append(f"emulate \"{emulation['id']}\": kernels {', '.join(emulation['kernels'])} (lines {emulation['first']}-{emulation['last']})")
+      lines.append("  calls:")
+      lines += [f"    {name}  {' | '.join(actions)}" for name, actions in emulation["steps"]]
+    else:
+      lines.append(f"emulate \"{emulation['id']}\": kernel {emulation['kernel']} ({mode}lines {emulation['first']}-{emulation['last']})")
     if full:
       lines += full_lines(emulation, notes)
       if has_stores:
