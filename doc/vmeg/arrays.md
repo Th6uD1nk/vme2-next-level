@@ -130,3 +130,19 @@ python3 vmegc.py data.vmeg.c main.vmeg.c
 - A file can declare an array that another file defines, with `extern`: `extern volatile Buffer input[16];`. The array must then be defined in a file of the project.
 - A `static` array can only be named by the kernels of its own file.
 - A local array stays in the function that calls the kernel: it is never shared between files.
+
+## 8.5 Errors
+
+The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [8.1](#81-the-buffer-keyword) | `Buffer must be volatile (volatile Buffer name[...])` | `Buffer` written without `volatile` |
+| [8.1](#81-the-buffer-keyword) | `Buffer must be followed by a variable name (volatile Buffer name[...])` | `Buffer` with no name after it |
+| [8.1](#81-the-buffer-keyword) | `Buffer only declares a variable, it cannot be used in a parameter or a cast` | `Buffer` in a parameter or in a cast |
+| [8.2](#82-global-arrays) | `the array 'input' of a global load is not declared with Buffer in any file` | a global `.load` or `.store` (the message says `load` or `store`) that names an array declared with `Buffer` in no file |
+| [8.3](#83-local-arrays) | `'x' is not declared with Buffer in the function marked with @kernel k at line N (local load)` | a local `.load` or `.store` whose array is not declared in the function marked with `@kernel` (the message says `load` or `store`) |
+| [8.3](#83-local-arrays) | `'x' is not declared with Buffer in the function that contains the @kernel k block at line N (local load)` | the same, for a function that holds a block `@kernel k config \| exec { … }` |
+| [8.4](#84-arrays-in-several-files) | `the array 'input' is already defined at data.vmeg.c line N` | an array defined in two files (the message starts with the second file) |
+| [8.4](#84-arrays-in-several-files) | `the array 'input' of a global load is declared extern but defined in no file` | an `extern` array that no file of the project defines |
+| [8.4](#84-arrays-in-several-files) | `the array 'input' of a global load is static in stat.vmeg.c line N, it cannot be used from another file` | a `static` array named by a kernel of another file |
