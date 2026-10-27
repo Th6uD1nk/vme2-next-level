@@ -1,4 +1,4 @@
-# opcode-checker
+# opcode-checker (WIP)
 
 One kernel per opcode of the table (`python3 vmegc.py --ops`). In each kernel the four PEs read the same data and write the same operation in four different ways: `BASE_0` to `BASE_3` must be equal (the first 16 words). The `@emulate` id is the name of the opcode.
 
