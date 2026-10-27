@@ -446,6 +446,27 @@ def params_by_kernel(text, blocks, call_params):
   return found
 
 
+def memories_by_kernel(text, blocks, call_memories, registry):
+  found = {}
+  for block in blocks:
+    if block[0] != "kernel-block":
+      continue
+    calls = decorator_calls(text, block)
+    given = call_memories.get(block[1], [])
+    line = text.count("\n", 0, block[1]) + 1
+    if len(given) > len(calls):
+      raise ValueError(f"line {line}: the block gives {len(given)} .memory but names {len(calls)} kernel{'s' if len(calls) > 1 else ''}")
+    entries = []
+    for i, (name, _) in enumerate(calls):
+      value = given[i] if i < len(given) else "auto"
+      definitions = registry["kernels"].get(name)
+      if value != "auto" and definitions and definitions[0]["mode"] != "memory":
+        raise ValueError(f"line {line}: the kernel '{name}' is direct, it has no memory config, its .memory is auto")
+      entries.append((name, None if value == "auto" else value))
+    found[block[1]] = entries
+  return found
+
+
 def check_params(text, blocks, assigned, registry):
   for block in blocks:
     if block[0] not in ("decorator", "kernel-block"):
