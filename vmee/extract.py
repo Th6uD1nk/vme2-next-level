@@ -2,9 +2,9 @@ import re
 
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, function_tokens, kernel_actions
+from vmeg.host import BUFFER_TYPE, function_tokens, kernel_actions, kernel_arguments
 from vmeg.kernel import generate
-from vmeg.registry import declarations
+from vmeg.registry import declarations, project_registry
 from vmeg.scanner import tokens
 from vmeg.vmecalls import finish_calls
 
@@ -118,7 +118,8 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 
 def host_main(text, identifier):
   emulation = chosen_emulation(text, identifier)
-  actions = "".join(f"  {call}\n" for name, steps in emulation["steps"] for call in kernel_actions(name, steps, emulation["modes"][name]))
+  registry = project_registry([("", text)])
+  actions = "".join(f"  {call}\n" for (name, steps), pairs in zip(emulation["steps"], emulation["pairs"]) for call in kernel_actions(name, steps, emulation["modes"][name], False, kernel_arguments(registry, name, pairs)))
   return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
