@@ -30,6 +30,7 @@ class Parser:
     self.toks = toks
     self.limit = limit
     self.i = 0
+    self.in_call = False
 
   def error(self, message, token=None):
     if token is not None:
@@ -501,6 +502,54 @@ def parse_params_definition(p):
   return ("paramsdef", items)
 
 
+def read_value(p, stops):
+  depth = 0
+  first = last = None
+  while True:
+    tok = p.peek()
+    if tok is None:
+      p.error("expected '}'")
+    if tok[0] != "str":
+      if depth == 0 and tok[1] in stops:
+        break
+      if tok[1] in ("(", "[", "{"):
+        depth += 1
+      elif tok[1] in (")", "]", "}"):
+        depth -= 1
+        if depth < 0:
+          p.error(f"expected {' or '.join(repr(stop) for stop in stops)}")
+    if first is None:
+      first = tok
+    last = tok
+    p.i += 1
+  if first is None:
+    p.error("expected a value")
+  return p.text[first[2]:last[3]]
+
+
+def parse_params_use(p):
+  pairs = []
+
+  def add(name, value, token):
+    if any(name == existing for existing, _ in pairs):
+      p.error(f"the parameter '{name}' is given twice", token)
+    pairs.append((name, value))
+
+  p.expect("=")
+  p.expect("{")
+  if not p.accept("}"):
+    while True:
+      token = p.peek()
+      name = p.ident()
+      p.expect(":")
+      add(name, read_value(p, (",", "}")), token)
+      if not p.accept(","):
+        break
+    p.expect("}")
+  p.expect(";")
+  return ("paramsuse", pairs)
+
+
 def parse_statement(p):
   tok = p.peek()
   line = p.text.count("\n", 0, tok[2]) + 1
@@ -529,7 +578,7 @@ def parse_statement(p):
       return parse_transfer_use(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "params":
       p.i += 2
-      return parse_params_definition(p) + (line,)
+      return (parse_params_use(p) if p.in_call else parse_params_definition(p)) + (line,)
     if following is not None and following[0] == "ident" and following[1] == "pe":
       p.error("pe[...] is an access by index, it takes no dot", following)
   p.error(f"unknown statement '{tok[1]}'")
