@@ -4,7 +4,7 @@ from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, function_tokens, kernel_actions
 from vmeg.kernel import generate
-from vmeg.registry import declarations, kernel_definitions
+from vmeg.registry import declarations
 from vmeg.scanner import tokens
 from vmeg.vmecalls import finish_calls
 
@@ -20,9 +20,8 @@ def chosen_emulation(text, identifier):
 
 def kernel_code(text, identifier, compat=None):
   emulation = chosen_emulation(text, identifier)
-  for block in find_blocks(text):
-    if block[0] == "kernel" and kernel_name(text, block) == emulation["kernel"]:
-      return generate(text, block, None, compat)
+  blocks = find_blocks(text)
+  return "\n\n".join(generate(text, block, None, compat) for name in emulation["kernels"] for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
 
 
 def other_declaration(others, source):
@@ -39,7 +38,7 @@ def array_declarations(text, identifier, others=()):
   available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
   for file in (text, *others):
     for block in (blocks if file is text else find_blocks(file)):
-      if block[0] == "decorator" and emulation["kernel"] in decorator_names(file, block):
+      if block[0] == "decorator" and any(name in decorator_names(file, block) for name in emulation["kernels"]):
         available["local"] += [dict(declaration, origin=file) for declaration in declarations(file, function_tokens(file, block), 1)]
   result = []
   seen = set()
@@ -118,9 +117,8 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 
 
 def host_main(text, identifier):
-  kernel = chosen_emulation(text, identifier)["kernel"]
-  mode = next(found["mode"] for found in kernel_definitions("", text) if found["name"] == kernel)
-  actions = "".join(f"  {call}\n" for call in kernel_actions(kernel, ("build", "config", "exec") if mode == "memory" else ("config", "exec"), mode))
+  emulation = chosen_emulation(text, identifier)
+  actions = "".join(f"  {call}\n" for name, steps in emulation["steps"] for call in kernel_actions(name, steps, emulation["modes"][name]))
   return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
 
 
