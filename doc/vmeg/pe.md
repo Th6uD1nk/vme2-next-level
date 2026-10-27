@@ -142,3 +142,12 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
 | [5.3](#53-operations-in-a-pe) | `a pe holds two operations at most, this pe needs 3` | more than two operations in a pe |
 | [5.3](#53-operations-in-a-pe) | `mac must be the first operation of the pe` | `mul`, `mac` or `acc` (the message names the one used) after another operation of the same pe |
+| [5.4](#54-remapping-an-opcode) | `unknown field 'x' of .remap (operator, primary, secondary)` | a field other than `operator`, `primary` and `secondary` |
+| [5.4](#54-remapping-an-opcode) | `duplicate field 'primary' in .remap` | the same field twice (the message names it) |
+| [5.4](#54-remapping-an-opcode) | `the field 'operator' is needed in .remap` | a `.remap` with no `operator` |
+| [5.4](#54-remapping-an-opcode) | `a .remap needs primary, secondary or both` | a `.remap` with no opcode |
+| [5.4](#54-remapping-an-opcode) | `operator takes an operator between double quotes, for example "*"` | the operator written without double quotes |
+| [5.4](#54-remapping-an-opcode) | `unknown operator '%' in .remap` | an operator that no opcode of the table has (the message names it) |
+| [5.4](#54-remapping-an-opcode) | `the operator '*' is remapped twice in pe0` | two `.remap` of the same operator in a pe |
+| [5.4](#54-remapping-an-opcode) | `the opcode 0x999 of .remap primary is not in the table (vmegc --ops)` | an opcode that is not in the table (the message names the unit) |
+| [5.4](#54-remapping-an-opcode) | `the opcode 0x220 of .remap primary has no operator '+'` | an opcode that has not the operator of the `.remap` |
