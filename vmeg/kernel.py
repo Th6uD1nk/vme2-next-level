@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS
+from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS, ROOT_OPERATORS
 from vmeg.selector import choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
@@ -477,7 +477,8 @@ def place(state, lines, pe, operations, line):
     state["operations"].append(dict(operation, pe=pe, line=line))
     if specification["units"] == "primary" and number != 0:
       raise ValueError(f"{operation['kind']} must be the first operation of the pe")
-    code = specification["code"]
+    remap = state["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
+    code = OPERATIONS[remap[unit.lower()]]["code"] if unit.lower() in remap else specification["code"]
     if specification["operands"] == ("front", "back"):
       mux = f"vme_mux({operation['front']}, {operation['back']})"
       reads = (operation["front"], operation["back"])

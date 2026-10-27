@@ -282,7 +282,14 @@ def pattern_operators(specification):
   return found
 
 
+def root_operator(specification):
+  tree = parse_pattern(specification["pattern"])
+  return tree[1] if tree[0] == "bin" else None
+
+
 FUNCTIONS = calls_of(OPERATIONS)
+
+ROOT_OPERATORS = {kind: root_operator(specification) for kind, specification in OPERATIONS.items()}
 
 PATTERN_OPERATORS = {kind: pattern_operators(specification) for kind, specification in OPERATIONS.items()}
 
