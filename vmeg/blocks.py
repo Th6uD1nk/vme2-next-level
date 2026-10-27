@@ -87,6 +87,18 @@ def read_block_statements(text, items, open_index, close):
       while items[k][3] < block_end(text, items, j + 2, start, f".{items[j + 1][1]}"):
         k += 1
       stop = k
+    elif kind == "punct" and value == "." and j + 2 < len(items) and items[j + 1][1] == "params" and items[j + 2][1] in ("{", "="):
+      k = j + 2 if items[j + 2][1] == "{" else j + 3
+      if items[k][1] != "{":
+        raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: expected '{{' after .params =")
+      end_pos = block_end(text, items, k, start, ".params")
+      while items[k][3] < end_pos:
+        k += 1
+      if items[j + 2][1] == "=":
+        if k + 1 >= len(items) or items[k + 1][1] != ";":
+          raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: expected ';' after .params = {{ ... }}")
+        k += 1
+      stop = k
     elif kind == "ident" and value == "for" and contexts.get(depth) and j + 3 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "in":
       k = j + 3
       while items[k][1] != "{":

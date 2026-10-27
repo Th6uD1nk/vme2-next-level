@@ -702,8 +702,11 @@ def block_statement_records(text, blocks):
       _, start, _, end = block
       toks = [(kind, value, s + start, e + start) for kind, value, s, e in tokens(text[start:end])]
       before = len(state["sequence"])
-      for statement in parse_body(Parser(text, toks, end)):
-        emit(statement, env, [], state)
+      parser = Parser(text, toks, end)
+      parser.in_call = True
+      for statement in parse_body(parser):
+        if statement[0] != "paramsuse":
+          emit(statement, env, [], state)
       found[start] = state["sequence"][before:]
   return found, per_block
 
