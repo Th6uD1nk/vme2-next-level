@@ -484,5 +484,18 @@ class MemoryConfigTest(unittest.TestCase):
       render(never, find_blocks(never), "t.vmeg.c")
 
 
+class MemoryDeclarationTest(unittest.TestCase):
+  def test_a_memory_is_an_aligned_array_of_the_words_of_a_memory_config(self):
+    text = "volatile Memory stage[4];\nstatic volatile Memory a[2], b;\nvoid f(void) {\n  volatile Memory local[3];\n}\n"
+    out = squashed(render(text, find_blocks(text), "t.vmeg.c"))
+    aligned = "u32 __attribute__((aligned(64)))"
+    self.assertIn(f"volatile {aligned} stage[4][VME_CONTEXT_WORD_COUNT];", out)
+    self.assertIn(f"static volatile {aligned} a[2][VME_CONTEXT_WORD_COUNT], b[VME_CONTEXT_WORD_COUNT];", out)
+    self.assertIn(f"volatile {aligned} local[3][VME_CONTEXT_WORD_COUNT];", out)
+    for bad, message in (("Memory m[2];\n", "Memory must be volatile"), ("void f(Memory m) { }\n", "Memory only declares a variable"), ("volatile Memory m[2] = {0};\n", "a Memory cannot have an initializer")):
+      with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, message):
+        render(bad, find_blocks(bad), "t.vmeg.c")
+
+
 if __name__ == "__main__":
   unittest.main()
