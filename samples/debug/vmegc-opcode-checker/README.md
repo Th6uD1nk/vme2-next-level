@@ -4,29 +4,29 @@ One kernel per opcode of the table (`python3 vmegc.py --ops`). In each kernel th
 
 Emulator:
 ```
-python3 vmeemu.py --run add samples/cpp/vmegc-opcode-checker/opcode-checker.vmeg.cpp
+python3 vmeemu.py --run add samples/debug/vmegc-opcode-checker/opcode-checker.vmeg.cpp
 ```
 
 PSP, with vmeh:
 ```
 cd samples/vmeh && mkdir build && cd build
-cmake -DVMEH_SOURCE=samples/cpp/vmegc-opcode-checker/opcode-checker.vmeg.cpp -DVMEH_ID=add ..
+cmake -DVMEH_SOURCE=samples/debug/vmegc-opcode-checker/opcode-checker.vmeg.cpp -DVMEH_ID=add ..
 make
 ```
 
 Check every kernel in the emulator against its expected values (`check.py`, the table is in the script):
 ```
-python3 samples/cpp/vmegc-opcode-checker/check.py
+python3 samples/debug/vmegc-opcode-checker/check.py
 ```
 
 Compare the `log.txt` written by vmeh with the emulator:
 ```
-python3 samples/cpp/vmegc-opcode-checker/check.py --log log.txt add
+python3 samples/debug/vmegc-opcode-checker/check.py --log log.txt add
 ```
 
 Opcodes used by a kernel:
 ```
-python3 vmegc.py --list --kernel checkAdd samples/cpp/vmegc-opcode-checker/opcode-checker.vmeg.cpp
+python3 vmegc.py --list --kernel checkAdd samples/debug/vmegc-opcode-checker/opcode-checker.vmeg.cpp
 ```
 
 A new opcode in the table gets its kernel here and a line in the table of `check.py`.
