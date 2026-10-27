@@ -475,9 +475,9 @@ def place(state, lines, pe, operations, line):
     unit = "PRIMARY" if number == 0 else "SECONDARY"
     specification = OPERATIONS[operation["kind"]]
     state["operations"].append(dict(operation, pe=pe, line=line))
-    if specification["units"] == "primary" and number != 0:
-      raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     remap = state["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
+    if specification["units"] == "primary" and number != 0 and unit.lower() not in remap:
+      raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     encoding = OPERATIONS[remap[unit.lower()]] if unit.lower() in remap else specification
     code = encoding["code"]
     if specification["operands"] == ("front", "back"):
@@ -630,7 +630,7 @@ def emit_statement(statement, env, lines, state):
     last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state), state["compat"]), statement[-1])
     variable.update({"pe": pe, "unit": last, "line": statement[-1], "depth": depth})
   elif kind == "peblock":
-    for inner in statement[1]:
+    for inner in sorted(statement[1], key=lambda item: item[0] != "remap"):
       emit(inner, env, lines, state)
   elif kind == "for":
     loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
