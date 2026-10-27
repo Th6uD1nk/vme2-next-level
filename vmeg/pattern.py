@@ -134,6 +134,8 @@ def check_patterns(operations):
         raise ValueError(f"the pattern of '{kind}' is not valid: {error}")
       if sorted(set(names_of(tree))) != sorted(names):
         raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(names)})")
+      if specification.get("auxiliary"):
+        continue
       key = repr(canonical(tree))
       if key in seen:
         raise ValueError(f"'{kind}' and '{seen[key]}' have the same pattern")

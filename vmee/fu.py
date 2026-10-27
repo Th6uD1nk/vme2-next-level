@@ -122,6 +122,7 @@ HANDLERS = {
   "subacst": op_sub_ofb,
   "subshr": op_sub_inv_shf,
   "mul": op_mul_rshift,
+  "mul_vec": op_mul_rshift,
   "and": op_and,
   "and_cst": op_and_cst,
   "nand": op_nand,

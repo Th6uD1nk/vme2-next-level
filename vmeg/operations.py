@@ -77,6 +77,17 @@ OPERATIONS = {
     "units": "primary",
     "note": "the product of a and b, shifted by the `>> n` after it",
   },
+  "mul_vec": {
+    "opcode": 0x220,
+    "auxiliary": True,
+    "pattern": "a * b",
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "code": "VME_FU_OPCODE_MUL_VEC_RSHIFT",
+    "operands": ("front", "back"),
+    "units": "primary",
+    "note": "the product of a and b, shifted by the `>> n` after it",
+  },
   "and": {
     "opcode": 0x0c0,
     "pattern": "a & b",
