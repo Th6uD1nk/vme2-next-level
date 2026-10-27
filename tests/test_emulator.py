@@ -232,7 +232,7 @@ class ListingTest(unittest.TestCase):
       ".kernel k direct {\n" + loads(("global", "top0", 4, 0, "a"), ("global", "base2", 2, "OFFSET", "a")) + "}\n"
     )
     self.assertEqual(emulations(text), [{
-      "id": "first", "kernel": "k", "kernels": ["k"], "steps": [("k", ("config", "exec"))], "pairs": [[]], "modes": {"k": "direct"}, "form": "mark", "mode": "direct", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
+      "id": "first", "kernel": "k", "kernels": ["k"], "steps": [("k", ("config", "exec"))], "pairs": [[]], "memories": [None], "modes": {"k": "direct"}, "form": "mark", "mode": "direct", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10, False), ("BASE_2", 2, "OFFSET", "a", 11, False)],
       "calls": ["kT0Load(a, VME_TOP_BUFF0_WOFF);", wait_marker("kT0Load"), "kT1Load(a, VME_BASE_BUFF2_WOFF + OFFSET);", wait_marker("kT1Load")],
       "definitions": [function("kT0Load", 3), function("kT1Load", 1)],
