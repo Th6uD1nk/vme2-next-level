@@ -294,7 +294,7 @@ def kernel_mode(registry, name):
 
 def kernel_arguments(registry, name, pairs):
   given = dict(pairs)
-  return ", ".join(given[parameter] for parameter in registry["kernels"][name][0]["params"])
+  return ", ".join(given[parameter] for parameter in registry["kernels"][name][0]["params"] if parameter in given)
 
 
 def kernel_lines(registry, name, actions, pairs=()):
@@ -423,22 +423,24 @@ def check_params(text, blocks, assigned, registry):
     if block[0] not in ("decorator", "kernel-block"):
       continue
     line = text.count("\n", 0, block[1]) + 1
+    actions_of = decorator_calls(text, block)
     if block[0] == "decorator":
-      calls = [(name, []) for name in decorator_names(text, block)]
+      calls = [(name, []) for name, _ in actions_of]
     else:
       calls = assigned[block[1]]
-    for name, pairs in calls:
+    for (name, pairs), (_, actions) in zip(calls, actions_of):
       definitions = registry["kernels"].get(name)
       if not definitions:
         continue
       declared = definitions[0]["params"]
+      runs = "config" in actions or (definitions[0]["mode"] == "memory" and "build" in actions)
       for given, _ in pairs:
         if not declared:
           raise ValueError(f"line {line}: the kernel '{name}' declares no parameters, it takes no .params")
         if given not in declared:
           raise ValueError(f"line {line}: the kernel '{name}' has no parameter '{given}' ({', '.join(declared)})")
       missing = [parameter for parameter in declared if parameter not in [given for given, _ in pairs]]
-      if missing:
+      if missing and runs:
         way = "write the call as a block with a .params" if block[0] == "decorator" else "give it in the .params of the block"
         raise ValueError(f"line {line}: the kernel '{name}' needs the parameter{'s' if len(missing) > 1 else ''} {', '.join(missing)}, {way}")
 
