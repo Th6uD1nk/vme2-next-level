@@ -146,3 +146,13 @@ void run(void) {
 - A statement of C code written between two blocks ends the row: the VME is disabled after the first block and enabled again before the second.
 - The blocks of a row run in the order written, as the kernels of one call do ([10.4](calling.md#104-several-kernels-in-one-call)).
 - A block and a call written above a function are not in a row: the call is at the start of its function ([10.1](calling.md#101-the-call-of-a-kernel)).
+
+## 11.5 Errors
+
+The messages start with `line N:`, left out here. A block gives the errors of a call too ([10.6](calling.md#106-errors)) and those of its local arrays ([8.5](arrays.md#85-errors)).
+
+| Section | Message | Cause |
+|---|---|---|
+| [11.1](#111-the-block-form) | `expected a kernel name` | `@kernel` with no kernel name after it |
+| [11.1](#111-the-block-form) | `@kernel inside a function must be followed by the kernel names and a block { ... }` | a call written in a function with no block after the actions |
+| [11.1](#111-the-block-form) | `@kernel refers to an unknown kernel 'nope' (kernels: k)` | a name in the block that is not a kernel of the project |
