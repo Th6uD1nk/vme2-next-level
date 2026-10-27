@@ -731,3 +731,40 @@ volatile Buffer mulShrTop1[16] = {
 @kernel checkMulShr config | exec
 void checkMulShrRun(void) {
 }
+
+volatile Buffer macTop0[16] = {
+  1, 2, 3, 4,
+  -1, -2, -3, -4,
+  100, 200, 300, 400,
+  0x1000, 0x1000, -0x1000, 0x7fffff,
+};
+
+volatile Buffer macTop1[16] = {
+  1, 1, 1, 1,
+  1, 1, 1, 1,
+  3, -3, 3, -3,
+  0x1000, -0x1000, 0x1000, 2,
+};
+
+@emulate "mac"
+.kernel checkMac direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { type: words, mode: basic, memory: macTop0, count };
+  Transfer top1Transfer = { type: words, mode: basic, memory: macTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = mac(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = mac(top1, top0); }
+  .pe2 { .write = write; .spad = (mac(top0, top1)); }
+  .pe3 { .write = write; .spad = mac(top0, top1) >> 0; }
+}
+
+@kernel checkMac config | exec
+void checkMacRun(void) {
+}
