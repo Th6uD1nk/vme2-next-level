@@ -28,8 +28,8 @@ volatile Buffer addTop1[16] = {
 .kernel checkAdd direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: addTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: addTop1, count };
+  Transfer top0Transfer = { memory: addTop0, count };
+  Transfer top1Transfer = { memory: addTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -66,8 +66,8 @@ volatile Buffer addOfaTop1[16] = {
   Int count = 16 - 1;
   Int five = 5;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: addOfaTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: addOfaTop1, count };
+  Transfer top0Transfer = { memory: addOfaTop0, count };
+  Transfer top1Transfer = { memory: addOfaTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -97,7 +97,7 @@ volatile Buffer addCstTop0[16] = {
   Int count = 16 - 1;
   Int three = 3;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: addCstTop0, count };
+  Transfer top0Transfer = { memory: addCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -132,8 +132,8 @@ volatile Buffer subTop1[16] = {
 .kernel checkSub direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: subTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: subTop1, count };
+  Transfer top0Transfer = { memory: subTop0, count };
+  Transfer top1Transfer = { memory: subTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -170,8 +170,8 @@ volatile Buffer subAcstTop1[16] = {
   Int count = 16 - 1;
   Int seven = 7;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: subAcstTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: subAcstTop1, count };
+  Transfer top0Transfer = { memory: subAcstTop0, count };
+  Transfer top1Transfer = { memory: subAcstTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -208,8 +208,8 @@ volatile Buffer subShrTop1[16] = {
   Int count = 16 - 1;
   Int two = 2;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: subShrTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: subShrTop1, count };
+  Transfer top0Transfer = { memory: subShrTop0, count };
+  Transfer top1Transfer = { memory: subShrTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -245,8 +245,8 @@ volatile Buffer andTop1[16] = {
 .kernel checkAnd direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: andTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: andTop1, count };
+  Transfer top0Transfer = { memory: andTop0, count };
+  Transfer top1Transfer = { memory: andTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -282,8 +282,8 @@ volatile Buffer orTop1[16] = {
 .kernel checkOr direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: orTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: orTop1, count };
+  Transfer top0Transfer = { memory: orTop0, count };
+  Transfer top1Transfer = { memory: orTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -319,8 +319,8 @@ volatile Buffer xorTop1[16] = {
 .kernel checkXor direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: xorTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: xorTop1, count };
+  Transfer top0Transfer = { memory: xorTop0, count };
+  Transfer top1Transfer = { memory: xorTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -356,8 +356,8 @@ volatile Buffer nandTop1[16] = {
 .kernel checkNand direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: nandTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: nandTop1, count };
+  Transfer top0Transfer = { memory: nandTop0, count };
+  Transfer top1Transfer = { memory: nandTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -396,8 +396,8 @@ volatile Buffer norTop1[16] = {
 .kernel checkNor direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: norTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: norTop1, count };
+  Transfer top0Transfer = { memory: norTop0, count };
+  Transfer top1Transfer = { memory: norTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -429,7 +429,7 @@ volatile Buffer notTop0[16] = {
 .kernel checkNot direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: notTop0, count };
+  Transfer top0Transfer = { memory: notTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -458,7 +458,7 @@ volatile Buffer andCstTop0[16] = {
   Int count = 16 - 1;
   Int mask = 255;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: andCstTop0, count };
+  Transfer top0Transfer = { memory: andCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -487,7 +487,7 @@ volatile Buffer orCstTop0[16] = {
   Int count = 16 - 1;
   Int bit = 128;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: orCstTop0, count };
+  Transfer top0Transfer = { memory: orCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -516,7 +516,7 @@ volatile Buffer xorCstTop0[16] = {
   Int count = 16 - 1;
   Int pattern = 0x55;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: xorCstTop0, count };
+  Transfer top0Transfer = { memory: xorCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -544,7 +544,7 @@ volatile Buffer nandCstTop0[16] = {
 .kernel checkNandCst direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: nandCstTop0, count };
+  Transfer top0Transfer = { memory: nandCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -575,7 +575,7 @@ volatile Buffer norCstTop0[16] = {
 .kernel checkNorCst direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: norCstTop0, count };
+  Transfer top0Transfer = { memory: norCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -606,7 +606,7 @@ volatile Buffer xnorCstTop0[16] = {
 .kernel checkXnorCst direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: xnorCstTop0, count };
+  Transfer top0Transfer = { memory: xnorCstTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -639,7 +639,7 @@ volatile Buffer clampTop0[16] = {
   Int low = -100;
   Int high = 100;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: clampTop0, count };
+  Transfer top0Transfer = { memory: clampTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
@@ -675,8 +675,8 @@ volatile Buffer mulTop1[16] = {
 .kernel checkMul direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: mulTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: mulTop1, count };
+  Transfer top0Transfer = { memory: mulTop0, count };
+  Transfer top1Transfer = { memory: mulTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -713,8 +713,8 @@ volatile Buffer mulShrTop1[16] = {
   Int count = 16 - 1;
   Int four = 4;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: mulShrTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: mulShrTop1, count };
+  Transfer top0Transfer = { memory: mulShrTop0, count };
+  Transfer top1Transfer = { memory: mulShrTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -750,8 +750,8 @@ volatile Buffer macTop1[16] = {
 .kernel checkMac direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: macTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: macTop1, count };
+  Transfer top0Transfer = { memory: macTop0, count };
+  Transfer top1Transfer = { memory: macTop1, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
@@ -780,7 +780,7 @@ volatile Buffer accTop0[16] = {
 .kernel checkAcc direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: accTop0, count };
+  Transfer top0Transfer = { memory: accTop0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
 
