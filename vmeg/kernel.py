@@ -301,6 +301,8 @@ def generate_agu(target, params, env, state, at, line, mode=4):
       values[key] = to_c(folded)
   if "count" not in values:
     raise ValueError(f"pe{pe}.{agu}: 'count' is required")
+  if mode == 2:
+    return agu2_lines(pe, agu, values)
   if values.get("repeat"):
     if "inner0" not in values:
       raise ValueError(f"pe{pe}.{agu}: repeat needs inner0, the range to repeat")
@@ -327,6 +329,24 @@ def generate_agu(target, params, env, state, at, line, mode=4):
     lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
   if values.get("sync"):
     lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_1), VME_END_TOKEN);")
+  return lines
+
+
+def agu2_lines(pe, agu, values):
+  mode = "agu_mode(2)" + (f", {values['offset']}" if "offset" in values else "")
+  step = values.get("step", "1")
+  lines = [
+    f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
+    f"vme_pe{pe}(agu_{agu}(COUNT), 0);",
+    f"vme_pe{pe}(agu_{agu}(INNER_0), agu_step({step}), {values['count']});",
+  ]
+  format0 = []
+  if values.get("reverse"):
+    format0.append("0x10000000")
+  if values.get("repeat"):
+    format0.append("VME_RING_TOKEN")
+  if format0:
+    lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
   return lines
 
 
@@ -530,8 +550,6 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
     if statement[1] in state["transfers"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Transfer variable")
-    if statement[3] != 4:
-      raise ValueError(f"the Agu({statement[3]}) is not generated yet")
     state["agus"][statement[1]] = {"params": statement[2], "owners": {}, "mode": statement[3]}
   elif kind == "stagingdecl":
     if statement[1] in state["stagings"]:
@@ -581,6 +599,8 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"unknown Agu variable '{statement[2][1]}'")
     pe = target_pe(statement[1], env)
     slot = statement[1][2]
+    if slot not in AGU_PARAMS[variable["mode"]]:
+      raise ValueError(f"an Agu({variable['mode']}) cannot be bound to .{slot}")
     for bound in variable["owners"]:
       if bound != slot:
         raise ValueError(f"the Agu variable '{statement[2][1]}' is already bound to .{bound}, it cannot be bound to .{slot}")
