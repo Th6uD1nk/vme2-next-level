@@ -13,6 +13,7 @@ from vmee.registers import CONTEXT_WORDS, agu_register, fu_register
 from vmee.trace import replay
 from vmee.machine import Emulator
 from vmeg.vmecalls import wait_marker
+from vmeh.extract import extract_source
 
 
 def loads(*rows):
@@ -342,6 +343,19 @@ class EmulationBlockTest(unittest.TestCase):
     main = [line.strip() for line in host_main(BLOCK, "blk").splitlines()]
     self.assertEqual(main[main.index("vmegEmulateUpload();") + 1:main.index("vmegEmulateDownload();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "vmeLibLoadCustomContext(stage[1]);"])
     self.assertIn("volatile u32 __attribute__((aligned(64))) stage[2][VME_CONTEXT_WORD_COUNT];", host_program(BLOCK, "blk"))
+
+  def test_vmeh_writes_the_calls_of_the_block_and_the_fill_in_the_last_one(self):
+    source = extract_source(BLOCK, "blk")
+    expected = (
+      "void meLibOnProcess(void) {\n"
+      "  @kernel m build {\n    .params = { n: 5 };\n    .memory = stage[1];\n  }\n"
+      "  @kernel d config | exec {\n  }\n"
+      "  @kernel m config {\n    .memory = stage[1];\n    vmeDebugFillWith(VME_BASE_BUFFERS);\n  }\n"
+    )
+    self.assertIn(expected, source)
+    self.assertIn("volatile Memory stage[2];", source)
+    marked = "@emulate \"mk\"\n.kernel m memory {\n}\n"
+    self.assertIn("@kernel m build | config | exec {", extract_source(marked, "mk"))
 
 
 if __name__ == "__main__":
