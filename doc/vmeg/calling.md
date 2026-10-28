@@ -45,8 +45,8 @@ After the name of the kernel, the call gives what to do with it. An action is on
 
 | Action | What it does |
 |---|---|
-| `build` | builds the context of a `memory` kernel in RAM. It does not touch the VME. |
-| `config` | writes the kernel to the VME: a `direct` kernel writes its registers, a `memory` kernel loads its context (built first if no `build` was done). It does not run it. |
+| `build` | builds the memory config of a `memory` kernel in RAM: its registers, ready to be loaded. It does not touch the VME. |
+| `config` | writes the kernel to the VME: a `direct` kernel writes its registers, a `memory` kernel loads its memory config, which a `build` made before. It does not run it. |
 | `exec` | starts the run of the kernel that is configured and waits for its end. |
 | `async` | starts the run and does not wait for its end. |
 
@@ -67,6 +67,7 @@ void go(void) {
 **Rules:**
 
 - `build` is for a `memory` kernel. For a `direct` kernel it is an error ([10.6](#106-errors)).
+- The `config` of a `memory` kernel loads the memory config that a `build` made earlier. It never builds one: the kernel must be built by a `build` somewhere in the project, otherwise it is an error ([10.6](#106-errors)). `build | config` does both in one call. The order is yours: the `build` has to run before the `config`.
 - `exec` and `async` run what the VME holds: the kernel must have been configured before, by a `config` of this call or of an earlier one.
 - With `async` the results are not ready when the call returns. A kernel that has a `.store` cannot be called with `async` alone ([10.6](#106-errors)).
 - The actions can be given together, as `config | exec` ([10.3](#103-several-actions-in-one-call)).
@@ -166,3 +167,4 @@ The messages start with `line N:`, left out here.
 | [10.2](#102-the-actions) | `async does not wait for the end of the run, the .store of kernel 'k' would read unfinished data` | `async` alone on a kernel that has a `.store` |
 | [10.3](#103-several-actions-in-one-call) | `exec and async are two different executions, they cannot be combined` | `exec` and `async` in the same call of a kernel |
 | [10.1](#101-the-call-of-a-kernel) | `the kernel 'k' needs the parameter n, write the call as a block with a .params` | a kernel that declares parameters, called above a function (the message lists all the ones that are missing) |
+| [10.2](#102-the-actions) | `kernel 'k' is configured but never built, add a build` | a `memory` kernel called with `config` when no call of the project builds it |
