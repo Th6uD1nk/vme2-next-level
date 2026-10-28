@@ -28,7 +28,7 @@ Mark a kernel with `@emulate "my-kernel"` right above its `.kernel`, then run:
 python3 vmeemu.py --run my-kernel file.vmeg.cpp
 ```
 
-It needs `g++` with 32 bit support (`-m32`) and the `external-me-core` submodule (`git submodule update --init external-me-core`).
+It needs `g++` with 32 bit support (`-m32`) and the `me-core-mapper` submodule (`git submodule update --init me-core-mapper`).
 
 `--run` is currently tested on Linux only.
 
