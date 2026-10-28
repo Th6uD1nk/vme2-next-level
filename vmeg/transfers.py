@@ -78,3 +78,23 @@ class BasicTransfer(TransferKind):
 
   def iteration(self, transfer, text):
     return [f"vme_dma(ITERATION, DIMS, {text(transfer['count'])});"]
+
+
+class ExtendedTransfer(TransferKind):
+  fields = ("memory", "count", "gap", "step", "group")
+  required = ("memory", "count")
+  numbers = ("count", "gap", "step")
+  nested = {"group": (("size",), ("outer", "inner"))}
+  base = 0x50
+
+  def iteration(self, transfer, text):
+    dims = [transfer["count"]] + ([transfer["gap"]] if "gap" in transfer else [])
+    lines = [f"vme_dma(ITERATION, DIMS, {', '.join(str(text(value)) for value in dims)});"]
+    if "step" in transfer:
+      lines.append(f"vme_dma(ITERATION, STEP, {text(transfer['step'])});")
+    group = transfer.get("group", {})
+    if "size" in group:
+      lines.append(f"vme_dma(GROUP, SIZE, {text(group['size'])});")
+    if "outer" in group:
+      lines.append(f"vme_dma(GROUP, STEPS, {text(group['outer'])}, {text(group['inner'])});")
+    return lines
