@@ -68,11 +68,11 @@ volatile Buffer sharedBase0[16] = {
 .kernel runContext direct {
   Int count = 16 - 1;
 
-  Transfer top0Transfer = { type: words, mode: basic, memory: sharedTop0, count };
-  Transfer top1Transfer = { type: words, mode: basic, memory: sharedTop1, count };
-  Transfer top2Transfer = { type: words, mode: basic, memory: sharedTop2, count };
-  Transfer top3Transfer = { type: words, mode: basic, memory: sharedTop3, count };
-  Transfer base0Transfer = { type: words, mode: basic, memory: sharedBase0, count };
+  Transfer top0Transfer = { memory: sharedTop0, count };
+  Transfer top1Transfer = { memory: sharedTop1, count };
+  Transfer top2Transfer = { memory: sharedTop2, count };
+  Transfer top3Transfer = { memory: sharedTop3, count };
+  Transfer base0Transfer = { memory: sharedBase0, count };
 
   .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
   .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
