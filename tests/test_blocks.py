@@ -492,5 +492,16 @@ class MemoryDeclarationTest(unittest.TestCase):
     self.assertIn(f"volatile {aligned} local[3][VME_CONTEXT_WORD_COUNT];", out)
 
 
+class EmulateBlockTest(unittest.TestCase):
+  def test_the_wrapper_of_an_emulate_block_is_left_out_and_its_content_is_kept(self):
+    text = ".kernel a direct {\n}\n.kernel b direct {\n}\nvoid run(void) {\n  @kernel a config | exec {\n    one();\n  }\n  @emulate \"x\" {\n    @kernel b config | exec {\n      two();\n    }\n  }\n  after();\n}\n"
+    body = squashed(run_body(text))
+    self.assertNotIn("emulate", body)
+    self.assertEqual(body.count("vmeLibEnable();"), 1)
+    self.assertEqual(body.count("vmeLibDisable();"), 1)
+    self.assertLess(body.index("one();"), body.index("b();"))
+    self.assertLess(body.index("two();"), body.index("after();"))
+
+
 if __name__ == "__main__":
   unittest.main()
