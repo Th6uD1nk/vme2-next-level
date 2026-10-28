@@ -261,6 +261,8 @@ def generate_agu(target, params, env, state, at, line):
   agu = target[2]
   values = {}
   for key, value in params[1]:
+    if key == "mode":
+      raise ValueError(f"pe{pe}.{agu}: the mode of an Agu is its type, write Agu(4) or Agu(2)")
     if key not in AGU_PARAMS[agu]:
       raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[agu])})")
     if key in values:
@@ -302,9 +304,7 @@ def generate_agu(target, params, env, state, at, line):
   if values.get("repeat"):
     if "inner0" not in values:
       raise ValueError(f"pe{pe}.{agu}: repeat needs inner0, the range to repeat")
-    if "mode" in values and values["mode"] != "4":
-      raise ValueError(f"pe{pe}.{agu}: repeat works in the AGU mode 4")
-  mode = f"agu_mode({values['mode']})" if "mode" in values else "VME_DEF_MODE"
+  mode = "VME_DEF_MODE"
   if "offset" in values:
     mode += f", {values['offset']}"
   if "cyc" in values:

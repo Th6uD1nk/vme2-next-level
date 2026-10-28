@@ -7,7 +7,7 @@ ICN_NAMES = {
   "skew": "SKEW",
 }
 
-AGU_COMMON = ("count", "offset", "mode", "step", "inner0", "reverse")
+AGU_COMMON = ("count", "offset", "step", "inner0", "reverse")
 
 AGU_PARAMS = {
   "top": AGU_COMMON + ("repeat",),
