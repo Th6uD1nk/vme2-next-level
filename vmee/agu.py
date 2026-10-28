@@ -7,7 +7,7 @@ def mode4_offsets(view):
   return [view["offset"] + i * view["step"] for i in range(view["elements"])]
 
 
-AGU_MODES = {4: mode4_offsets}
+AGU_MODES = {4: mode4_offsets, 2: mode4_offsets}
 
 
 def write_agu(registers, pe):
