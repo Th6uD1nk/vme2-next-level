@@ -9,6 +9,7 @@ from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATT
 from vmeg.selector import choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
 from vmeg.scanner import tokens
+from vmeg.transfers import TRANSFER_KINDS
 from vmeg.vmecalls import DISABLE, wait_marker
 
 AUTO = "@auto@"
@@ -16,15 +17,6 @@ AUTO = "@auto@"
 KERNEL_OPTIONS = ("direct", "memory")
 
 ROUTING_NAMES = {"top": "AGU_TOP", "base": "AGU_BASE", "write": "AGU_WRITE"}
-
-TRANSFER_FIELDS = ("type", "mode", "memory", "count", "dims", "step", "group")
-
-TRANSFER_NESTED = {"dims": (("count", "gap"),), "group": (("size",), ("outer", "inner"))}
-
-TRANSFER_EXTENDED = ("dims", "step", "group")
-
-TRANSFER_WORDS = {"type": ("words", "halves", "bytes"), "mode": ("basic", "extended")}
-
 
 def target_pe(target, env):
   index = fold(target[1], env)
@@ -42,71 +34,8 @@ def constant(expr, what):
   return expr[1]
 
 
-def transfer_number(name, what, value, env):
-  folded = full_value(value, env)
-  if folded[0] == "num" and folded[1] < 0:
-    raise ValueError(f"Transfer {name}: {what} cannot be negative")
-  return folded[1]
-
-
 def plus_one(number):
   return number + 1 if isinstance(number, int) else f"({number} + 1)"
-
-
-def check_transfer_nested(name, key, value, env):
-  if value[0] != "params":
-    raise ValueError(f"Transfer {name}: '{key}' takes a list of fields")
-  names = [field for register in TRANSFER_NESTED[key] for field in register]
-  inner = {}
-  for field, item in value[1]:
-    if field not in names:
-      raise ValueError(f"Transfer {name}: unknown field '{field}' of {key} ({', '.join(names)})")
-    if field in inner:
-      raise ValueError(f"Transfer {name}: duplicate field '{field}' of {key}")
-    if item[0] == "params":
-      raise ValueError(f"Transfer {name}: '{field}' of {key} takes a value, not a list of fields")
-    inner[field] = transfer_number(name, f"{key}.{field}", item, env)
-  if not inner:
-    raise ValueError(f"Transfer {name}: {key} needs at least one field ({', '.join(names)})")
-  for register in TRANSFER_NESTED[key]:
-    missing = [field for field in register if field not in inner]
-    if 0 < len(missing) < len(register):
-      raise ValueError(f"Transfer {name}: the field '{missing[0]}' of {key} is needed, {' and '.join(register)} are one register")
-  return inner
-
-
-def check_transfer(name, params, env):
-  values = {}
-  for key, value in params[1]:
-    if key not in TRANSFER_FIELDS:
-      raise ValueError(f"Transfer {name}: unknown field '{key}' ({', '.join(TRANSFER_FIELDS)})")
-    if key in values:
-      raise ValueError(f"Transfer {name}: duplicate field '{key}'")
-    if key in TRANSFER_NESTED:
-      values[key] = check_transfer_nested(name, key, value, env)
-      continue
-    if value[0] == "params":
-      raise ValueError(f"Transfer {name}: '{key}' takes a value, not a list of fields")
-    if key in ("count", "step"):
-      values[key] = transfer_number(name, key, value, env)
-      continue
-    if value[0] != "name":
-      raise ValueError(f"Transfer {name}: '{key}' takes a name")
-    if key in TRANSFER_WORDS and value[1] not in TRANSFER_WORDS[key]:
-      raise ValueError(f"Transfer {name}: {key} must be {', '.join(TRANSFER_WORDS[key][:-1])} or {TRANSFER_WORDS[key][-1]}")
-    values[key] = value[1]
-  for key in ("type", "mode", "memory"):
-    if key not in values:
-      raise ValueError(f"Transfer {name}: the field '{key}' is needed")
-  if values["mode"] == "basic":
-    if "count" not in values:
-      raise ValueError(f"Transfer {name}: the field 'count' is needed")
-    for key in TRANSFER_EXTENDED:
-      if key in values:
-        raise ValueError(f"Transfer {name}: '{key}' is for the extended mode, this Transfer is basic")
-  elif "count" in values:
-    raise ValueError(f"Transfer {name}: in the extended mode the count is written dims: {{ count, gap }}")
-  return values
 
 
 def source_ref(expr, stagings):
@@ -596,7 +525,7 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
     if statement[1] in state["stagings"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
-    state["transfers"][statement[1]] = check_transfer(statement[1], statement[2], env)
+    state["transfers"][statement[1]] = TRANSFER_KINDS[statement[3]].check(statement[1], statement[2], env)
   elif kind == "aguref":
     variable = state["agus"].get(statement[2][1])
     if variable is None:
