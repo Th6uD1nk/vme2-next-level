@@ -43,10 +43,9 @@ MAIN = """int main() {
 
 
 def kernel_text(text, identifier):
-  name = chosen_emulation(text, identifier)["kernel"]
-  for block in find_blocks(text):
-    if block[0] == "kernel" and kernel_name(text, block) == name:
-      return text[block[1]:block[3]]
+  names = chosen_emulation(text, identifier)["kernels"]
+  blocks = find_blocks(text)
+  return "\n\n".join(text[block[1]:block[3]] for name in names for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
 
 
 def process_function(text, identifier, locals_, start):
