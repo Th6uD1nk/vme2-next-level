@@ -44,7 +44,7 @@ target_compile_options(vme PRIVATE
 )
 
 target_link_libraries(vme
-  me-core me-core-lib vme-lib
+  nl-me-core nl-me-core-lib nl-vme-lib
   psppower pspge pspdisplay pspctrl pspdebug
 )
 

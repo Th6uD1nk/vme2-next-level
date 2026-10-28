@@ -7,4 +7,5 @@ include(../../cmake/vmegc.cmake)
 vmegc_translate(GENERATED_C ${CMAKE_CURRENT_SOURCE_DIR}/saturate-clamp.vmeg.c)
 
 add_library(saturate-clamp OBJECT ${GENERATED_C})
+target_include_directories(saturate-clamp PRIVATE ${VMEGC_ROOT})
 target_compile_options(saturate-clamp PRIVATE -Os -G0 -Wall -fno-pic)
