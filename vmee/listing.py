@@ -27,8 +27,10 @@ def load_links(loads, scope):
   return [(*link[:4], load["line"], link[4]) for load in loads if load["scope"] == scope for link in load["links"]]
 
 
-def kernel_pieces(text, blocks, name):
-  kernel = next(block for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
+def kernel_pieces(text, blocks, name, id_):
+  kernel = next((block for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name), None)
+  if kernel is None:
+    raise ValueError(f"the kernel {name} of the @emulate \"{id_}\" is not defined in this file")
   loads, stores = kernel_transfers(kernel_statements(text, kernel, {}), known_macros(text, kernel[1]), name)
   return kernel, loads, stores
 
@@ -39,7 +41,7 @@ def mark_steps(mode):
 
 def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, memories=None):
   names = list(dict.fromkeys(name for name, _ in steps))
-  pieces = {name: kernel_pieces(text, blocks, name) for name in names}
+  pieces = {name: kernel_pieces(text, blocks, name, id_) for name in names}
   modes = {name: next((word for word in header_words(text, pieces[name][0])[2:] if word in ("direct", "memory")), None) for name in names}
   loads = [load for name in names for load in pieces[name][1]]
   stores = [store for name in names for store in pieces[name][2]]
