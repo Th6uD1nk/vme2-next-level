@@ -3,7 +3,26 @@ if(NOT VMEGC_PYTHON)
   message(FATAL_ERROR "vmegc needs python3")
 endif()
 
-get_filename_component(VMEGC_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/../vmegc.py" ABSOLUTE)
+get_filename_component(VMEGC_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+set(VMEGC_SCRIPT "${VMEGC_ROOT}/vmegc.py")
+
+execute_process(
+  COMMAND "${VMEGC_ROOT}/prepare.sh"
+  RESULT_VARIABLE VMEGC_PREPARE_RESULT
+  OUTPUT_VARIABLE VMEGC_PREPARE_OUTPUT
+  ERROR_VARIABLE VMEGC_PREPARE_ERROR)
+if(VMEGC_PREPARE_RESULT)
+  message(FATAL_ERROR "prepare.sh failed:\n${VMEGC_PREPARE_ERROR}\n${VMEGC_PREPARE_OUTPUT}")
+endif()
+
+foreach(VMEGC_LIBRARY me-core me-core-lib vme-lib)
+  if(NOT TARGET nl-${VMEGC_LIBRARY})
+    add_library(nl-${VMEGC_LIBRARY} STATIC IMPORTED GLOBAL)
+    set_target_properties(nl-${VMEGC_LIBRARY} PROPERTIES
+      IMPORTED_LOCATION "${VMEGC_ROOT}/me-core-mapper/build/lib${VMEGC_LIBRARY}.a"
+      INTERFACE_INCLUDE_DIRECTORIES "${VMEGC_ROOT}")
+  endif()
+endforeach()
 
 set(VMEGC_COMPAT "" CACHE STRING "keep only the opcodes compatible with this model (fat)")
 set(VMEGC_OPTIONS "")
