@@ -8,6 +8,7 @@
 - [11.2 The C code of a block](#112-the-c-code-of-a-block)
 - [11.3 The vmeg statements of a block](#113-the-vmeg-statements-of-a-block)
   - [11.3.1 The params of a call](#1131-the-params-of-a-call)
+  - [11.3.2 The memory config of a call](#1132-the-memory-config-of-a-call)
 - [11.4 Blocks in a row](#114-blocks-in-a-row)
 - [11.5 Errors](#115-errors)
 
@@ -155,6 +156,40 @@ void run(int i, int* d) {
 - The values are needed by a call that runs the function of the kernel: `config` for a `direct` kernel, `build` for a `memory` kernel. An `exec` alone, or the `config` of a `memory` kernel that was built before, needs none ([10.2](calling.md#102-the-actions)).
 - `vmegc` does not read the values: it writes them as they are.
 - A kernel that declares parameters cannot be called above a function, since there is no block to give the values ([10.1](calling.md#101-the-call-of-a-kernel)).
+
+### 11.3.2 The memory config of a call
+
+A `memory` kernel has a memory config of its own, which its `build` fills and its `config` loads ([10.2](calling.md#102-the-actions)). `.memory` makes a call use another one, a `Memory` ([8.5](arrays.md#85-memory-configs)).
+
+```c
+volatile Memory stage[2];
+
+.kernel butterfly memory {
+  .params { int stride; }
+  Agu t = { count: 15, step: stride }, w = { count: 15, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+void run(void) {
+  for (int s = 0; s < 2; s++) {
+    @kernel butterfly build {
+      .params = { stride: 1 + s };
+      .memory = stage[s];
+    }
+  }
+  for (int s = 0; s < 2; s++) {
+    @kernel butterfly config | exec {
+      .memory = stage[s];
+    }
+  }
+}
+```
+
+**Explanation of the code above:**
+
+- The first loop builds `butterfly` twice, with another `stride` each time. `.memory = stage[s];` makes the `build` write in `stage[s]` and not in the memory config of the kernel, so the two builds do not overwrite each other.
+- The second loop loads `stage[s]` and runs the kernel with it. The memory configs are built once, before, and only loaded here.
+- Without `.memory`, nothing changes: the kernel keeps its own memory config.
 
 ## 11.4 Blocks in a row
 
