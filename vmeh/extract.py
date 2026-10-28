@@ -48,12 +48,27 @@ def kernel_text(text, identifier):
   return "\n\n".join(text[block[1]:block[3]] for name in names for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
 
 
+def call_block(name, actions, pairs, memory, body):
+  lines = [f"  @kernel {name} {' | '.join(actions)} {{"]
+  if pairs:
+    lines.append("    .params = { " + ", ".join(f"{key}: {value}" for key, value in pairs) + " };")
+  if memory:
+    lines.append(f"    .memory = {memory};")
+  lines += [f"    {line}" for line in body]
+  lines.append("  }")
+  return lines
+
+
 def process_function(text, identifier, locals_, start):
-  kernel = chosen_emulation(text, identifier)["kernel"]
+  emulation = chosen_emulation(text, identifier)
   lines = ["void meLibOnProcess(void) {"]
   for declaration in locals_:
     lines += [f"  {declaration['text']}", ""]
-  lines += [f"  @kernel {kernel} config | exec {{", f"    vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});", "  }", "", "  meFinish = 1;", "", "  while (1) {", "  }", "}"]
+  last = len(emulation["steps"]) - 1
+  for index, ((name, actions), pairs, memory) in enumerate(zip(emulation["steps"], emulation["pairs"], emulation["memories"])):
+    body = [f"vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});"] if index == last else []
+    lines += call_block(name, actions, pairs, memory, body)
+  lines += ["", "  meFinish = 1;", "", "  while (1) {", "  }", "}"]
   return "\n".join(lines)
 
 
