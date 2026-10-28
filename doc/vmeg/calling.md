@@ -34,6 +34,7 @@ void run(void) {
 **Rules:**
 
 - `@kernel` is written above a function, not inside it. Inside a function the call is a block, `@kernel add config | exec { … }` ([11](blocks.md)).
+- A kernel that declares parameters ([3.3.4](kernel.md#334-parameters)) is called in a block, which gives the values ([11.3.1](blocks.md#1131-the-params-of-a-call)).
 - Every kernel of the project is called at least once, by a function or by a block. A kernel that nothing calls is an error ([10.6](#106-errors)).
 - The kernel can be defined in another file of the project ([1.2](running.md#12-several-files)).
 - `@context` is a synonym of `@kernel` ([2.8](language.md#28-synonyms)).
@@ -164,3 +165,4 @@ The messages start with `line N:`, left out here.
 | [10.2](#102-the-actions) | `build is for a memory kernel, kernel 'k' is direct` | `build` on a `direct` kernel |
 | [10.2](#102-the-actions) | `async does not wait for the end of the run, the .store of kernel 'k' would read unfinished data` | `async` alone on a kernel that has a `.store` |
 | [10.3](#103-several-actions-in-one-call) | `exec and async are two different executions, they cannot be combined` | `exec` and `async` in the same call of a kernel |
+| [10.1](#101-the-call-of-a-kernel) | `the kernel 'k' needs the parameter n, write the call as a block with a .params` | a kernel that declares parameters, called above a function (the message lists all the ones that are missing) |

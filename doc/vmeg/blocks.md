@@ -147,6 +147,15 @@ void run(int i, int* d) {
 - In the second block, `.params { .table = d; .stage = 3; }` is the other way to write it: an assignment `.name = value;` for each parameter.
 - The values are C expressions, like `i + 1` and `d`. They are written as they are in the call of the kernel, in the order of its declaration, whatever the order in the `.params`.
 
+**Rules:**
+
+- The two ways of writing are the same, and they can be mixed in one block.
+- The first `.params` goes to the first kernel of the list, the second to the second kernel, and so on ([10.4](calling.md#104-several-kernels-in-one-call)). A kernel without parameters that comes before another one needs a `.params {}` to keep the order. The last kernels may have no `.params` when they declare no parameters.
+- A `.params` can be written anywhere in the block. Unlike `.load` and `.store`, it copies nothing and leaves nothing in the C code of the block: it only gives values.
+- The values are needed by a call that runs the function of the kernel: `config` for a `direct` kernel, `build` for a `memory` kernel. An `exec` alone, or the `config` of a `memory` kernel that was built before, needs none ([10.2](calling.md#102-the-actions)).
+- `vmegc` does not read the values: it writes them as they are.
+- A kernel that declares parameters cannot be called above a function, since there is no block to give the values ([10.1](calling.md#101-the-call-of-a-kernel)).
+
 ## 11.4 Blocks in a row
 
 Blocks written one after the other, with nothing between them, form a row. The VME is enabled once at the start of the row and disabled once at its end.
@@ -190,3 +199,10 @@ The messages start with `line N:`, left out here. A block gives the errors of a 
 | [11.1](#111-the-block-form) | `expected a kernel name` | `@kernel` with no kernel name after it |
 | [11.1](#111-the-block-form) | `@kernel inside a function must be followed by the kernel names and a block { ... }` | a call written in a function with no block after the actions |
 | [11.1](#111-the-block-form) | `@kernel refers to an unknown kernel 'nope' (kernels: k)` | a name in the block that is not a kernel of the project |
+| [11.3.1](#1131-the-params-of-a-call) | `the kernel 'k' needs the parameter n, give it in the .params of the block` | a call that runs the kernel without a value for a parameter (the message lists all the ones that are missing) |
+| [11.3.1](#1131-the-params-of-a-call) | `the kernel 'k' has no parameter 'extra' (n)` | a name that the kernel does not declare (the message lists the ones it declares) |
+| [11.3.1](#1131-the-params-of-a-call) | `the kernel 'z' declares no parameters, it takes no .params` | values given to a kernel that declares no parameters |
+| [11.3.1](#1131-the-params-of-a-call) | `the block gives 2 .params but names 1 kernel` | more `.params` than kernels in the list |
+| [11.3.1](#1131-the-params-of-a-call) | `the parameter 'n' is given twice` | the same name twice in one `.params` |
+| [11.3.1](#1131-the-params-of-a-call) | `expected ';' after .params = { ... }` | the writing with `=` without its `;` |
+| [11.3.1](#1131-the-params-of-a-call) | `expected ':'` | a pair without `:` in the writing with `=` |

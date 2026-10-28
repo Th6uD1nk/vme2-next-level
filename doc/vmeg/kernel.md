@@ -115,7 +115,7 @@ A kernel can take parameters: values that the call gives to it, instead of value
 
 - `.params { int stage; int* table; }` declares two parameters. Each one is written like a C declaration: a C type, then a name, then `;`.
 - `stage` is used as a value of the kernel, here the offset of the AGU `t`. The call gives the value, so the same kernel can be called with several values.
-- The kernel is called in a block that gives the values, see [Blocks](blocks.md).
+- The kernel is called in a block that gives the values, see [11.3.1](blocks.md#1131-the-params-of-a-call).
 
 **Rules:**
 
