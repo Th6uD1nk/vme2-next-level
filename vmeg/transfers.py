@@ -13,6 +13,7 @@ class TransferKind:
   required = ()
   numbers = ()
   nested = {}
+  base = 0x40
 
   def check(self, name, params, env):
     values = {"kind": self}
@@ -42,6 +43,12 @@ class TransferKind:
       texts += list(transfer.get(key, {}).values())
     return [text for text in texts if isinstance(text, str)]
 
+  def control(self, direction):
+    return hex(self.base + (0x08 if direction == "store" else 0))
+
+  def registers(self, transfer, memory, text):
+    return [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory}));"] + self.iteration(transfer, text)
+
   def check_nested(self, name, key, value, env):
     if value[0] != "params":
       raise ValueError(f"Transfer {name}: '{key}' takes a list of fields")
@@ -62,3 +69,12 @@ class TransferKind:
       if 0 < len(missing) < len(register):
         raise ValueError(f"Transfer {name}: the field '{missing[0]}' of {key} is needed, {' and '.join(register)} are one register")
     return inner
+
+
+class BasicTransfer(TransferKind):
+  fields = ("memory", "count")
+  required = ("memory", "count")
+  numbers = ("count",)
+
+  def iteration(self, transfer, text):
+    return [f"vme_dma(ITERATION, DIMS, {text(transfer['count'])});"]
