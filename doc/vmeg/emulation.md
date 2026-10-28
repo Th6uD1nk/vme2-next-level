@@ -2,13 +2,14 @@
 
 # Emulation
 
-The emulator plays a kernel marked here. How it plays it and how to run it are in [VMEE](../VMEE.md).
+The emulator plays a kernel marked here, or the calls of kernels written in a block. How it plays them and how to run it are in [VMEE](../VMEE.md).
 
 ## Contents
 
 - [13.1 The @emulate mark](#131-the-emulate-mark)
 - [13.2 The rules of the mark](#132-the-rules-of-the-mark)
-- [13.3 Errors](#133-errors)
+- [13.3 The block form](#133-the-block-form)
+- [13.4 Errors](#134-errors)
 
 ## 13.1 The @emulate mark
 
@@ -64,7 +65,40 @@ void run(void) {
 - An id is used once in a file. The same id in two files of the same command is not an error of `vmegc`.
 - The mark has no effect on the output of `vmegc`, only on what the emulator can play ([VMEE](../VMEE.md)).
 
-## 13.3 Errors
+## 13.3 The block form
+
+`@emulate "id" { … }` is a second way to mark. It surrounds calls of kernels written in a function, and the emulator plays these calls, with their values.
+
+```c
+volatile Memory stage[2];
+
+.kernel butterfly memory {
+  .params { int stride; }
+  Agu t = { count: 7, step: stride }, w = { count: 7, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+.kernel total direct {
+  Agu t = { count: 7 }, w = { count: 7, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "two-steps" {
+    @kernel butterfly build {
+      .params = { stride: 2 };
+      .memory = stage[1];
+    }
+    @kernel butterfly config | exec {
+      .memory = stage[1];
+    }
+    @kernel total config | exec {
+    }
+  }
+}
+```
+
+## 13.4 Errors
 
 The messages start with `line N:`, left out here.
 
