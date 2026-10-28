@@ -98,6 +98,21 @@ void meLibOnProcess(void) {
 }
 ```
 
+**Explanation of the code above:**
+
+- `@emulate "two-steps" { … }` surrounds three calls of `meLibOnProcess`. They are real calls of the program: `vmegc` leaves out `@emulate "two-steps" {` and the brace that closes it, and writes the calls where they are, as if the mark was not there.
+- The emulator plays the three calls in their order, with their `.params` and their `.memory` ([11.3.1](blocks.md#1131-the-params-of-a-call), [11.3.2](blocks.md#1132-the-memory-config-of-a-call)): `butterfly` is built in `stage[1]`, loaded from it and run, then `total` is run.
+- The emulator is asked for this emulation by its id, `two-steps` ([VMEE](../VMEE.md)).
+
+**Rules:**
+
+- The block is written in a function, as a statement, and holds at least one `@kernel` call. The C code that it holds stays in the program: the emulator plays the calls only.
+- The id has the same characters as in the first form, and it is unique in the file for the two forms together ([13.2](#132-the-rules-of-the-mark)).
+- The two forms can be in the same file. Each one is an emulation: they are listed as different emulations ([VMEE](../VMEE.md)).
+- The arrays that the calls name, `Buffer` and `Memory`, are the ones declared in the file or in the function that holds the block.
+- Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like `stage[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `stage[1]`.
+- Currently not supported: a kernel called in the block that is defined in another file than the block.
+
 ## 13.4 Errors
 
 The messages start with `line N:`, left out here.
@@ -106,5 +121,9 @@ The messages start with `line N:`, left out here.
 |---|---|---|
 | [13.1](#131-the-emulate-mark) | `expected @emulate "id", the id is made of letters, digits, - and _ between double quotes` | an id that is not between double quotes, or with another character |
 | [13.2](#132-the-rules-of-the-mark) | `@emulate "id" must be followed by '.kernel name'` | a mark followed by something else than `.kernel` and a name, or by a second mark |
-| [13.2](#132-the-rules-of-the-mark) | `the id "a" of @emulate is already used at line N` | a second mark with the same id in the file |
+| [13.2](#132-the-rules-of-the-mark) | `the id "a" of @emulate is already used at line N` | a second mark, in either form, with the same id in the file |
 | [13.2](#132-the-rules-of-the-mark) | `@emulate must be followed by a kernel definition with its body` | a mark on a `.kernel` that has no body `{ … }` (the line is the one of the mark) |
+| [13.3](#133-the-block-form) | `inside a function @emulate "id" is followed by a block { ... }` | `@emulate "id"` written in a function with no block after it |
+| [13.3](#133-the-block-form) | `the @emulate "x" block calls no kernel, write at least one @kernel call in it` | a block with no `@kernel` call |
+| [13.3](#133-the-block-form) | `unterminated @emulate block` | a block that is never closed |
+| [13.3](#133-the-block-form) | `the kernel q of the @emulate "far" is not defined in this file` | a kernel of the block defined in another file |
