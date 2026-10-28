@@ -45,18 +45,18 @@ Transfer(Words) spread = { memory: input, count: 15, step: 4 };
 
 ## 9.2 The extended mode
 
-The extended mode turns on the AGUs of the DMAC. The fields `dims`, `step` and `group` set them, and replace the `count` of the basic mode, which is one run of consecutive words.
+The extended mode is the type `Transfer(Words)` (and `Transfer(Halves)`, `Transfer(Bytes)`, [9.1](#91-the-transfer-variable)). It turns on the AGUs of the DMAC, and the fields `gap`, `step` and `group` set them.
 
 ### 9.2.1 The fields
 
 ```c
-Transfer in = { type: words, mode: extended, memory: input, dims: { count: 15, gap: 0 }, step: 4, group: { size: 3, outer: 16, inner: 1 } };
+Transfer(Words) in = { memory: input, count: 15, gap: 0, step: 4, group: { size: 3, outer: 16, inner: 1 } };
 ```
 
 | Field | Meaning | Unit |
 |---|---|---|
-| `dims.count` | the number of words, minus one | words |
-| `dims.gap` | the words left between two words, in the scratchpad | words |
+| `count` | the number of words, minus one | words |
+| `gap` | the words left between two words, in the scratchpad | words |
 | `step` | the distance between two words, in the memory | bytes |
 | `group.size` | the number of words of a group, minus one | words |
 | `group.outer` | the distance between two groups, in the scratchpad | words |
@@ -64,15 +64,14 @@ Transfer in = { type: words, mode: extended, memory: input, dims: { count: 15, g
 
 **Explanation of the code above:**
 
-- `mode: extended` replaces the `count` of the basic mode by the fields of the table.
-- `dims: { count: 15, gap: 0 }` is 16 words, with no word left between two.
+- `count: 15` is 16 words, as in the basic type.
+- `gap: 0` leaves no word between two words.
 - `step: 4` goes from one word of the memory to the next one: 4 bytes.
 - `group: { size: 3, outer: 16, inner: 1 }` is groups of 4 words.
 
 **Rules:**
 
 - The values are the **real values of the registers**: nothing is added or removed, `count: 15` is 16 words.
-- `count` is not a field of the extended mode: the number of words is `dims.count`.
-- `dims` takes `count` and `gap` together. `group` takes `size`, and `outer` with `inner` together.
-- A field that is left out is not written by `vmegc`.
+- `memory` and `count` are needed. `gap`, `step` and `group` can be left out, and `vmegc` does not write what is left out.
+- `group` takes `size`, and `outer` with `inner` together.
 - The same `Transfer` is used by a `.load` and by a `.store` ([9.3](#93-load-and-store)).
