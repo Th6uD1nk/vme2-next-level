@@ -15,11 +15,13 @@ Compile a file:
 python3 vmegc.py samples/c/saturate-clamp.vmeg.c -o saturate-clamp.c
 ```
 
-Or add it to a CMake build, the samples folder shows how:
+Or add it to a CMake build:
 ```
-include(cmake/vmegc.cmake)
+include($ENV{VMEGC_HOME}/cmake/vmegc.cmake)
 vmegc_sources(app SOURCES main.vmeg.cpp)
+target_link_libraries(app nl-me-core nl-me-core-lib nl-vme-lib)
 ```
+`nl-me-core`, `nl-me-core-lib` and `nl-vme-lib` are the libraries, with their headers, of the me-core-mapper submodule. The samples include `cmake/vmegc.cmake` by a relative path and do not need the install.
 
 More details in the documentation: [vmeg](doc/VMEG.md)
 
