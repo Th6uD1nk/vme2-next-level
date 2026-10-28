@@ -10,6 +10,7 @@
   - [4.2.2 inner0](#422-inner0)
   - [4.2.3 Read AGUs](#423-read-agus)
   - [4.2.4 Write AGUs](#424-write-agus)
+  - [4.2.5 The mode 2](#425-the-mode-2)
 - [4.3 Binding an AGU to a pe](#43-binding-an-agu-to-a-pe)
   - [4.3.1 Sharing an AGU](#431-sharing-an-agu)
 - [4.4 Errors](#44-errors)
@@ -24,7 +25,7 @@ Agu(4) other = { count: 15 };
 **Rules:**
 
 - An `Agu` is declared in a kernel, or in the block of a pe.
-- The mode of an AGU is its type: `Agu` and `Agu(4)` are the mode 4, `Agu(2)` is the mode 2. Each mode has its own parameters. Another mode is an error.
+- The mode of an AGU is its type: `Agu` and `Agu(4)` are the mode 4, `Agu(2)` is the mode 2. Each mode has its own parameters: [4.2](#42-parameters) for the mode 4, [4.2.5](#425-the-mode-2) for the mode 2. Another mode is an error.
 - An AGU written directly in the braces of `.top`, `.base` or `.write` has no type: it is in the mode 4.
 - The parameters are written in braces, each one with `:` between its name and its value ([2.2](language.md#22-variables)).
 - A value is a number, an `Int`, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)).
@@ -129,6 +130,34 @@ Agu d = { count: 15, cyc: auto + shift };
 - `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it. `vmegc` warns when another pe that shares it needs a different delay ([7.3](staging-routing.md#73-warnings)).
 - The rule is checked for one and two operations. Three chained operations (12) and a Staging variable read by another pe are not yet verified on the hardware.
 
+### 4.2.5 The mode 2
+
+```c
+Agu(2) t = { offset: 128, count: 7, step: 1, repeat: true };
+Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };
+```
+
+| Parameter | Read AGU | Write AGU | Value |
+|---|---|---|---|
+| `count` | required | required | the number of words minus 1, as in [4.2.1](#421-common-parameters) |
+| `offset` | yes | yes | as in [4.2.1](#421-common-parameters) |
+| `step` | yes | yes | the distance between two successive words, in words. Default 1 |
+| `reverse` | yes | yes | as in [4.2.1](#421-common-parameters) |
+| `repeat` | yes | no | the range is read again and again for as long as the run lasts |
+| `cyc`, `bubbles`, `sync` | no | yes | as in [4.2.4](#424-write-agus) |
+
+**Explanation of the code above:**
+
+- `t` reads 8 words from the word 128, one after the other, and starts again at the first one until the run ends.
+- `w` writes 16 words from the word 4, one word out of two, with the same delay, bubbles and sync as a mode 4 write AGU.
+
+**Rules:**
+
+- In the mode 2, `count` and `step` describe the range itself: there is no `inner0`.
+- `repeat` needs nothing else: it repeats the `count + 1` words of the AGU.
+- Currently not verified on the hardware in the mode 2: `reverse`, and `cyc`, `bubbles` and `sync` of a write AGU.
+- An AGU written directly in the braces of a pe is in the mode 4: for the mode 2, declare an `Agu(2)` variable and bind it.
+
 ## 4.3 Binding an AGU to a pe
 
 An AGU is bound to a pe in the block of the pe, with `.top`, `.base` or `.write`:
@@ -187,11 +216,12 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 | [4.2.2](#422-inner0) | `pe0.top.inner0: duplicate parameter 'count'` | the same parameter of `inner0` written twice |
 | [4.2.2](#422-inner0) | `pe0.top.inner0: 'step' is required` | `inner0` without `count` or without `step` |
 | [4.2.2](#422-inner0) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `inner0` |
-| [4.2.3](#423-read-agus) | `pe0.top: repeat needs inner0, the range to repeat` | `repeat` without `inner0` |
+| [4.2.3](#423-read-agus) | `pe0.top: repeat needs inner0, the range to repeat` | `repeat` without `inner0` in the mode 4 |
 | [4.2.4](#424-write-agus) | `pe0.write: the bubbles 5000 are outside 0 to 4095` | `bubbles` out of range |
 | [4.2.4](#424-write-agus) | `pe0.write: auto is only for cyc` | `auto` in a parameter other than `cyc` |
 | [4.2.4](#424-write-agus) | `auto is reserved for the cyc of a write AGU` | an `Int` named `auto` |
 | [4.2.4](#424-write-agus) | `pe0.write: cyc auto needs an operation in pe0` | `cyc: auto` on a pe without an operation that leaves it |
+| [4.2.5](#425-the-mode-2) | `pe0.top: unknown parameter 'inner0' (count, offset, step, reverse, repeat)` | `inner0` in an `Agu(2)` (the message lists the parameters of the mode) |
 | [4.3](#43-binding-an-agu-to-a-pe) | `unknown Agu variable 'zzz'` | `.top = zzz;` with a name that is not an `Agu` |
 | [4.3](#43-binding-an-agu-to-a-pe) | `pe0.top is already set at line N` | the same AGU kind set twice in a pe |
 | [4.3](#43-binding-an-agu-to-a-pe) | `the Agu variable 'a' is already bound to .top, it cannot be bound to .base` | one variable given to two kinds |
