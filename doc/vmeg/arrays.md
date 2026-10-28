@@ -149,7 +149,7 @@ void run(void) {
 
 - `volatile Memory stage[4];` declares 4 memory configs. Each one has the size and the alignment that the VME needs to load it: 112 words, aligned on 64 bytes. `stage[2]` is the third one.
 - `volatile Memory one;` declares a single memory config.
-- A `Memory` is declared where you need it, outside any function or inside one, as any variable of your program. A call of a kernel names it with `.memory` in the code that sees it, see [Blocks](blocks.md).
+- A `Memory` is declared where you need it, outside any function or inside one, as any variable of your program. A call of a kernel names it with `.memory` in the code that sees it, see [11.3.2](blocks.md#1132-the-memory-config-of-a-call).
 
 **Rules:**
 

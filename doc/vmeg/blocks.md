@@ -191,6 +191,15 @@ void run(void) {
 - The second loop loads `stage[s]` and runs the kernel with it. The memory configs are built once, before, and only loaded here.
 - Without `.memory`, nothing changes: the kernel keeps its own memory config.
 
+**Rules:**
+
+- The value is a C expression that names a `Memory`: `stage[1]`, `stage`, a pointer. It is written as it is and `vmegc` does not read it.
+- `.memory` is for a `memory` kernel. In a `build` it says where to build, in a `config` it says what to load: write the same value in both to load what was built.
+- The first `.memory` goes to the first kernel of the list, the second to the second kernel, and so on, like the `.params` ([11.3.1](#1131-the-params-of-a-call)). `.memory = auto;` is the place of a kernel that keeps its own memory config: it is the default, the same as no `.memory`. The last kernels may have no `.memory`.
+- A `direct` kernel has no memory config: its `.memory` can only be `auto`.
+- A `.memory` can be written anywhere in the block. Like the `.params`, it copies nothing and leaves nothing in the C code of the block.
+- The check that a `memory` kernel is built ([10.2](calling.md#102-the-actions)) looks at the kernel: a `build` anywhere in the project is enough, whatever memory config it uses.
+
 ## 11.4 Blocks in a row
 
 Blocks written one after the other, with nothing between them, form a row. The VME is enabled once at the start of the row and disabled once at its end.
@@ -241,3 +250,7 @@ The messages start with `line N:`, left out here. A block gives the errors of a 
 | [11.3.1](#1131-the-params-of-a-call) | `the parameter 'n' is given twice` | the same name twice in one `.params` |
 | [11.3.1](#1131-the-params-of-a-call) | `expected ';' after .params = { ... }` | the writing with `=` without its `;` |
 | [11.3.1](#1131-the-params-of-a-call) | `expected ':'` | a pair without `:` in the writing with `=` |
+| [11.3.2](#1132-the-memory-config-of-a-call) | `the block gives 2 .memory but names 1 kernel` | more `.memory` than kernels in the list |
+| [11.3.2](#1132-the-memory-config-of-a-call) | `the kernel 'd' is direct, it has no memory config, its .memory is auto` | a `.memory` other than `auto` for a `direct` kernel |
+| [11.3.2](#1132-the-memory-config-of-a-call) | `expected a value` | a `.memory =` with nothing after it |
+| [11.3.2](#1132-the-memory-config-of-a-call) | `expected ';' after .memory = ...` | a `.memory` without its `;` |
