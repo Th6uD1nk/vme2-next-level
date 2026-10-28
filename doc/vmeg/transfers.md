@@ -7,6 +7,7 @@
 - [9.1 The Transfer variable](#91-the-transfer-variable)
 - [9.2 The extended mode](#92-the-extended-mode)
   - [9.2.1 The fields](#921-the-fields)
+  - [9.2.2 Where each field applies](#922-where-each-field-applies)
 - [9.3 .load and .store](#93-load-and-store)
 - [9.4 The offsets](#94-the-offsets)
 - [9.5 Unknown names in a Transfer](#95-unknown-names-in-a-transfer)
@@ -75,3 +76,28 @@ Transfer(Words) in = { memory: input, count: 15, gap: 0, step: 4, group: { size:
 - `memory` and `count` are needed. `gap`, `step` and `group` can be left out, and `vmegc` does not write what is left out.
 - `group` takes `size`, and `outer` with `inner` together.
 - The same `Transfer` is used by a `.load` and by a `.store` ([9.3](#93-load-and-store)).
+
+### 9.2.2 Where each field applies
+
+The memory is the array of the `Transfer`, the scratchpad is the buffers of the VME. `step` is on the memory side, in bytes. `gap` and `group` are on the scratchpad side, in words.
+
+```c
+Transfer(Words) vectors = { memory: sharedVec, count: 63, gap: 0, step: 4, group: { size: 3, outer: 16, inner: 1 } };
+Transfer(Words) results = { memory: sharedRes, count: 63, gap: 3, step: 4 };
+```
+
+| Field | Side | Unit | Seen with |
+|---|---|---|---|
+| `step` | memory | bytes | a load and a store |
+| `gap` | scratchpad | words | a store (a load has `gap: 0` in the samples) |
+| `group` | scratchpad | words | a load (a store has no group in the samples) |
+
+**Explanation of the code above:**
+
+- `vectors` is a load of 64 words. The memory is read one word after the other (`step: 4`). The scratchpad receives them in groups of 4 words, one after the other, and a group starts 16 words after the previous one.
+- `results` is a store of 64 words. The scratchpad is read one word out of 4 (`gap: 3` leaves 3 words between two), and the memory is written one word after the other (`step: 4`).
+
+**Rules:**
+
+- `step` is the same on a load and on a store: it moves in the memory, whatever the direction.
+- Currently not verified on the hardware: a `gap` other than 0 with a load, and a `group` with a store.
