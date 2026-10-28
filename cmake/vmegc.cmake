@@ -15,7 +15,7 @@ if(VMEGC_PREPARE_RESULT)
   message(FATAL_ERROR "prepare.sh failed:\n${VMEGC_PREPARE_ERROR}\n${VMEGC_PREPARE_OUTPUT}")
 endif()
 
-foreach(VMEGC_LIBRARY me-core me-core-lib vme-lib)
+foreach(VMEGC_LIBRARY me-core me-core-lib me-core-mapper vme-lib)
   if(NOT TARGET nl-${VMEGC_LIBRARY})
     add_library(nl-${VMEGC_LIBRARY} STATIC IMPORTED GLOBAL)
     set_target_properties(nl-${VMEGC_LIBRARY} PROPERTIES
