@@ -8,7 +8,8 @@
 - [8.2 Global arrays](#82-global-arrays)
 - [8.3 Local arrays](#83-local-arrays)
 - [8.4 Arrays in several files](#84-arrays-in-several-files)
-- [8.5 Errors](#85-errors)
+- [8.5 Memory configs](#85-memory-configs)
+- [8.6 Errors](#86-errors)
 
 ## 8.1 The Buffer keyword
 
@@ -61,7 +62,7 @@ void run(void) {
 
 - The same global array serves every kernel and every function that names it. Nothing is declared in the function.
 - The array can be declared in another file of the project ([8.4](#84-arrays-in-several-files)).
-- An array that is named by a global `.load` or `.store` and declared with `Buffer` in no file is an error ([8.5](#85-errors)).
+- An array that is named by a global `.load` or `.store` and declared with `Buffer` in no file is an error ([8.6](#86-errors)).
 
 ## 8.3 Local arrays
 
@@ -90,7 +91,7 @@ void run(void) {
 - The array is declared in the body of the function, not in a block `{ }` inside it.
 - Each function that calls the kernel declares its own array. Two functions that call the same kernel declare an array each.
 - With `@kernel` above the function, the call of the kernel is written right after the declarations of the arrays, before the other statements of the function. To run statements first, for example to fill the array, write the call as a block, `@kernel k config | exec { … }`, at the place you want ([11](blocks.md)).
-- An array that is named by a local `.load` or `.store` and not declared in the function is an error ([8.5](#85-errors)).
+- An array that is named by a local `.load` or `.store` and not declared in the function is an error ([8.6](#86-errors)).
 
 ## 8.4 Arrays in several files
 
@@ -126,12 +127,31 @@ python3 vmegc.py data.vmeg.c main.vmeg.c
 
 **Rules:**
 
-- A global array is defined in one file only. A second definition is an error ([8.5](#85-errors)).
+- A global array is defined in one file only. A second definition is an error ([8.6](#86-errors)).
 - A file can declare an array that another file defines, with `extern`: `extern volatile Buffer input[16];`. The array must then be defined in a file of the project.
 - A `static` array can only be named by the kernels of its own file.
 - A local array stays in the function that calls the kernel: it is never shared between files.
 
-## 8.5 Errors
+## 8.5 Memory configs
+
+A `memory` kernel is built in RAM before it is sent to the VME ([3.2.2](kernel.md#322-memory)). `Memory` declares the places in RAM where it is built, when a kernel has to keep several of them at the same time.
+
+```c
+volatile Memory stage[4];
+
+void run(void) {
+  volatile Memory local[2];
+  volatile Memory one;
+}
+```
+
+**Explanation of the code above:**
+
+- `volatile Memory stage[4];` declares 4 memory configs. Each one has the size and the alignment that the VME needs to load it: 112 words, aligned on 64 bytes. `stage[2]` is the third one.
+- `volatile Memory one;` declares a single memory config.
+- A `Memory` is declared where you need it, outside any function or inside one, as any variable of your program. A call of a kernel names it with `.memory` in the code that sees it, see [Blocks](blocks.md).
+
+## 8.6 Errors
 
 The messages start with `line N:`, left out here.
 

@@ -192,7 +192,7 @@ void run(void) {
 
 ## 11.5 Errors
 
-The messages start with `line N:`, left out here. A block gives the errors of a call too ([10.6](calling.md#106-errors)) and those of its local arrays ([8.5](arrays.md#85-errors)).
+The messages start with `line N:`, left out here. A block gives the errors of a call too ([10.6](calling.md#106-errors)) and those of its local arrays ([8.6](arrays.md#86-errors)).
 
 | Section | Message | Cause |
 |---|---|---|
