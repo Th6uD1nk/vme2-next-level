@@ -46,6 +46,9 @@ class TransferKind:
   def control(self, direction):
     return hex(self.base + (0x08 if direction == "store" else 0))
 
+  def ensure_generated(self, direction):
+    pass
+
   def registers(self, transfer, memory, text):
     return [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory}));"] + self.iteration(transfer, text)
 
@@ -98,3 +101,24 @@ class ExtendedTransfer(TransferKind):
     if "outer" in group:
       lines.append(f"vme_dma(GROUP, STEPS, {text(group['outer'])}, {text(group['inner'])});")
     return lines
+
+
+class NotGenerated:
+  def ensure_generated(self, direction):
+    raise ValueError(f"this .{direction} is not generated yet (only Transfer and Transfer(Words))")
+
+
+class HalvesTransfer(NotGenerated, ExtendedTransfer):
+  pass
+
+
+class BytesTransfer(NotGenerated, ExtendedTransfer):
+  pass
+
+
+TRANSFER_KINDS = {
+  "basic": BasicTransfer(),
+  "Words": ExtendedTransfer(),
+  "Halves": HalvesTransfer(),
+  "Bytes": BytesTransfer(),
+}
