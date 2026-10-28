@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from vmeg.blocks import find_blocks
 from vmeg.kernel import generate, parameter_names, replace_names, transfer_names
+from vmeg.transfers import TRANSFER_KINDS
 from vmegc import render
 from vmee.listing import defines, emulations, format_listing
 
@@ -99,7 +100,7 @@ class KnownMacrosInAKernelTest(unittest.TestCase):
     text = (
       "#define BATCH 64\nvolatile Buffer arr[64];\n.kernel k direct {\n}\n"
       "void f() {\n  @kernel k config | exec {\n    Int last = BATCH - 1;\n"
-      "    Transfer t = { type: words, mode: extended, memory: arr, dims: { count: last, gap: 0 } };\n"
+      "    Transfer(Words) t = { memory: arr, count: last, gap: 0 };\n"
       "    .load { .transfer = t; .scope = global; }\n  }\n}\n"
     )
     out = render(text, find_blocks(text), "t.vmeg.c")
@@ -126,16 +127,16 @@ class UnknownMacrosInAKernelTest(unittest.TestCase):
     self.assertEqual(agu_count("  Int n = M + 1;", "", "#define M 1\n"), count_line("(M + 1)"))
 
 
-def dma_lines(transfer, prefix=""):
-  text = prefix + "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = " + transfer + ";\n  .load { .transfer = t; .scope = global; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+def dma_lines(transfer, prefix="", kind=""):
+  text = prefix + "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer" + kind + " t = " + transfer + ";\n  .load { .transfer = t; .scope = global; }\n}\n@kernel k config | exec\nvoid f() { }\n"
   out = render(text, find_blocks(text), "t.vmeg.c")
   return [line.strip() for line in out.splitlines() if line.strip().startswith("vme_dma(ITERATION") or line.strip().startswith("vme_dma(GROUP")]
 
 
 class TransferValuesTest(unittest.TestCase):
   def test_a_macro_that_is_not_in_the_file_is_copied_in_the_fields_of_a_transfer(self):
-    transfer = "{ type: words, mode: extended, memory: arr, dims: { count: HEADER_N - 1, gap: 0 }, step: HEADER_STEP, group: { size: 3, outer: HEADER_OUT, inner: 1 } }"
-    self.assertEqual(dma_lines(transfer), [
+    transfer = "{ memory: arr, count: HEADER_N - 1, gap: 0, step: HEADER_STEP, group: { size: 3, outer: HEADER_OUT, inner: 1 } }"
+    self.assertEqual(dma_lines(transfer, kind="(Words)"), [
       "vme_dma(ITERATION, DIMS, (headerN - 1), 0);",
       "vme_dma(ITERATION, STEP, headerStep);",
       "vme_dma(GROUP, SIZE, 3);",
@@ -144,12 +145,12 @@ class TransferValuesTest(unittest.TestCase):
 
   def test_a_known_part_is_replaced_by_its_number_in_the_copy_and_a_known_value_is_a_number(self):
     prefix = "#define KNOWN 64\n"
-    self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN + HEADER }", prefix), ["vme_dma(ITERATION, DIMS, (64 + header));"])
-    self.assertEqual(dma_lines("{ type: words, mode: basic, memory: arr, count: KNOWN - 1 }", prefix), ["vme_dma(ITERATION, DIMS, 63);"])
+    self.assertEqual(dma_lines("{ memory: arr, count: KNOWN + HEADER }", prefix), ["vme_dma(ITERATION, DIMS, (64 + header));"])
+    self.assertEqual(dma_lines("{ memory: arr, count: KNOWN - 1 }", prefix), ["vme_dma(ITERATION, DIMS, 63);"])
 
   def test_a_negative_number_is_still_refused(self):
     with self.assertRaises(ValueError) as caught:
-      dma_lines("{ type: words, mode: basic, memory: arr, count: 0 - 1 }")
+      dma_lines("{ memory: arr, count: 0 - 1 }")
     self.assertIn("cannot be negative", str(caught.exception))
 
 
@@ -157,8 +158,8 @@ class TransferListingTest(unittest.TestCase):
   def test_the_listing_shows_the_words_of_a_transfer_with_an_unknown_macro_as_a_text(self):
     text = (
       "#define KNOWN 64\nvolatile Buffer a[64];\nvolatile Buffer b[64];\n@emulate \"e\"\n.kernel k direct {\n"
-      "  Transfer t = { type: words, mode: basic, memory: a, count: HEADER_COUNT };\n"
-      "  Transfer u = { type: words, mode: basic, memory: b, count: KNOWN - 1 };\n"
+      "  Transfer t = { memory: a, count: HEADER_COUNT };\n"
+      "  Transfer u = { memory: b, count: KNOWN - 1 };\n"
       "  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n"
       "  .load { .transfer = u; .scope = global; .offsets { .top1 = 0; } }\n}\n"
     )
@@ -172,12 +173,12 @@ if __name__ == "__main__":
 
 class NamesOfATransferTest(unittest.TestCase):
   def test_the_names_are_found_once_in_the_order_of_the_fields(self):
-    transfer = {"mode": "extended", "dims": {"count": "((HEADER_N * 2) - n)", "gap": "n"}, "step": "HEADER_STEP", "group": {"size": 3}}
-    self.assertEqual(transfer_names(transfer), ["HEADER_STEP", "HEADER_N", "n"])
+    transfer = {"kind": TRANSFER_KINDS["Words"], "count": "((HEADER_N * 2) - n)", "gap": "n", "step": "HEADER_STEP", "group": {"size": 3}}
+    self.assertEqual(transfer_names(transfer), ["HEADER_N", "n", "HEADER_STEP"])
 
   def test_a_number_a_member_and_a_value_that_is_not_a_text_have_no_name(self):
-    self.assertEqual(transfer_names({"mode": "basic", "count": "0x1F + obj.size + p->len"}), ["obj", "p"])
-    self.assertEqual(transfer_names({"mode": "basic", "count": 15}), [])
+    self.assertEqual(transfer_names({"kind": TRANSFER_KINDS["basic"], "count": "0x1F + obj.size + p->len"}), ["obj", "p"])
+    self.assertEqual(transfer_names({"kind": TRANSFER_KINDS["basic"], "count": 15}), [])
 
   def test_the_parameters_are_camel_case_and_never_collide(self):
     self.assertEqual(parameter_names(["HEADER_N", "n", "memory", "HEADER", "headerN", "N_"]), {"HEADER_N": "headerN", "n": "n", "memory": "memory2", "HEADER": "header", "headerN": "headerN2", "N_": "n2"})
@@ -190,7 +191,7 @@ class NamesOfATransferTest(unittest.TestCase):
 
 class FunctionOfATransferTest(unittest.TestCase):
   def test_the_prototype_takes_the_names_of_the_fields_and_the_call_gives_them(self):
-    text = "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: arr, count: HEADER_M + 1 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    text = "volatile Buffer arr[64];\n.kernel k direct {\n  Transfer t = { memory: arr, count: HEADER_M + 1 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid f() { }\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertIn("static inline void kTLoad(volatile u32* memory, u32 spadOffset, u32 headerM) {", out)
     self.assertIn("vme_dma(ITERATION, DIMS, (headerM + 1));", out)
@@ -201,8 +202,8 @@ class FunctionOfATransferTest(unittest.TestCase):
     text = (
       "volatile Buffer arr[64];\n.kernel k direct {\n}\n"
       "void f(int n) {\n"
-      "  @kernel k config {\n    Transfer t = { type: words, mode: basic, memory: arr, count: n };\n    .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n  }\n"
-      "  @kernel k exec {\n    Transfer t = { type: words, mode: basic, memory: arr, count: 3 };\n    .store { .transfer = t; .scope = global; .offsets { .base1 = 8; } }\n  }\n}\n"
+      "  @kernel k config {\n    Transfer t = { memory: arr, count: n };\n    .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n  }\n"
+      "  @kernel k exec {\n    Transfer t = { memory: arr, count: 3 };\n    .store { .transfer = t; .scope = global; .offsets { .base1 = 8; } }\n  }\n}\n"
     )
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertIn("static inline void fTLoad(volatile u32* memory, u32 spadOffset, u32 n) {", out)
