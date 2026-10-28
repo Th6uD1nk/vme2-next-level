@@ -37,7 +37,7 @@ vmegc_sources(app SOURCES main.vmeg.cpp)
 | 5 | [Processing elements](#5-processing-elements) | `.pe0` to `.pe3`, `pe[i]` |
 | 6 | [Operations](#6-operations) | the operators and the functions of a pe, `sat`, the shifts |
 | 7 | [Staging, routing and warnings](#7-staging-routing-and-warnings) | `Staging`, the derived routing, the warnings |
-| 8 | [Arrays](#8-arrays) | the `Buffer` keyword, global and local arrays |
+| 8 | [Arrays](#8-arrays) | the `Buffer` keyword, global and local arrays, the `Memory` keyword |
 | 9 | [Transfers](#9-transfers) | `Transfer`, `.load`, `.store`, the generated functions |
 | 10 | [Calling a kernel](#10-calling-a-kernel) | `@kernel` and the actions `build`, `config`, `exec`, `async` |
 | 11 | [Blocks](#11-blocks) | the vmeg statements inside a `@kernel` block |

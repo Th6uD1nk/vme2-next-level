@@ -151,6 +151,13 @@ void run(void) {
 - `volatile Memory one;` declares a single memory config.
 - A `Memory` is declared where you need it, outside any function or inside one, as any variable of your program. A call of a kernel names it with `.memory` in the code that sees it, see [Blocks](blocks.md).
 
+**Rules:**
+
+- `Memory` is always written with `volatile`, followed by a name. It declares a variable: it cannot be used in a parameter or in a cast.
+- A `Memory` has no initializer: a `build` fills it.
+- `static` and `extern` can be written in front of it, as in C. `vmegc` does not declare it in the other files: a file that uses a `Memory` defined in another file declares it with `extern`.
+- Without `Memory`, a kernel has one memory config of its own, which a `build` fills and a `config` loads ([10.2](calling.md#102-the-actions)).
+
 ## 8.6 Errors
 
 The messages start with `line N:`, left out here.
@@ -166,3 +173,7 @@ The messages start with `line N:`, left out here.
 | [8.4](#84-arrays-in-several-files) | `the array 'input' is already defined at data.vmeg.c line N` | an array defined in two files (the message starts with the second file) |
 | [8.4](#84-arrays-in-several-files) | `the array 'input' of a global load is declared extern but defined in no file` | an `extern` array that no file of the project defines |
 | [8.4](#84-arrays-in-several-files) | `the array 'input' of a global load is static in stat.vmeg.c line N, it cannot be used from another file` | a `static` array named by a kernel of another file |
+| [8.5](#85-memory-configs) | `Memory must be volatile (volatile Memory name[...])` | `Memory` written without `volatile` |
+| [8.5](#85-memory-configs) | `Memory must be followed by a variable name (volatile Memory name[...])` | `Memory` with no name after it |
+| [8.5](#85-memory-configs) | `Memory only declares a variable, it cannot be used in a parameter or a cast` | `Memory` in a parameter or in a cast |
+| [8.5](#85-memory-configs) | `a Memory cannot have an initializer` | a `Memory` declared with `= …` |
