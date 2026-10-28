@@ -13,6 +13,7 @@ class TransferKind:
   required = ()
   numbers = ()
   nested = {}
+  extended = False
   base = 0x40
 
   def check(self, name, params, env):
@@ -88,6 +89,7 @@ class ExtendedTransfer(TransferKind):
   required = ("memory", "count")
   numbers = ("count", "gap", "step")
   nested = {"group": (("size",), ("outer", "inner"))}
+  extended = True
   base = 0x50
 
   def iteration(self, transfer, text):

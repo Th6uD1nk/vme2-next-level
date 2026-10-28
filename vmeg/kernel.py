@@ -292,28 +292,11 @@ def offset_text(offset):
 
 
 def transfer_registers(transfer, memory=None, names=None):
-  def text(value):
-    return replace_names(value, names or {})
-  lines = [f"vme_dma(MEMORY, ADDR, useg_mem((u32){memory or transfer['memory']}));"]
-  if transfer["mode"] == "basic":
-    return lines + [f"vme_dma(ITERATION, DIMS, {text(transfer['count'])});"]
-  if "dims" in transfer:
-    lines.append(f"vme_dma(ITERATION, DIMS, {text(transfer['dims']['count'])}, {text(transfer['dims']['gap'])});")
-  if "step" in transfer:
-    lines.append(f"vme_dma(ITERATION, STEP, {text(transfer['step'])});")
-  group = transfer.get("group", {})
-  if "size" in group:
-    lines.append(f"vme_dma(GROUP, SIZE, {text(group['size'])});")
-  if "outer" in group:
-    lines.append(f"vme_dma(GROUP, STEPS, {text(group['outer'])}, {text(group['inner'])});")
-  return lines
+  return transfer["kind"].registers(transfer, memory or transfer["memory"], lambda value: replace_names(value, names or {}))
 
 
 def transfer_texts(transfer):
-  texts = [transfer.get("count"), transfer.get("step")]
-  for key in ("dims", "group"):
-    texts += list(transfer.get(key, {}).values())
-  return [text for text in texts if isinstance(text, str)]
+  return transfer["kind"].texts(transfer)
 
 
 NAME_IN_TEXT = re.compile(r"(?<![\w.])(?<!->)[A-Za-z_]\w*")
@@ -349,7 +332,7 @@ def replace_names(text, names):
 
 
 def transfer_control(transfer, direction):
-  return hex((0x40 if transfer["mode"] == "basic" else 0x50) + (0x08 if direction == "store" else 0))
+  return transfer["kind"].control(direction)
 
 
 def transfer_destinations(targets):
@@ -384,8 +367,8 @@ def transfer_calls(name, transfer, targets):
 
 
 def transfer_links(transfer, targets):
-  words = plus_one(transfer["count"] if transfer["mode"] == "basic" else transfer.get("dims", {"count": 0})["count"])
-  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"], transfer["mode"] == "extended") for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
+  words = plus_one(transfer["count"])
+  return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"], transfer["kind"].extended) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
 
 
 def emit(statement, env, lines, state):
@@ -512,8 +495,7 @@ def emit_statement(statement, env, lines, state):
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
-    if transfer["type"] != "words":
-      raise ValueError(f"this .{kind} is not generated yet (only the Transfer of words)")
+    transfer["kind"].ensure_generated(kind)
     function = camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
     record = {"function": function, "definition": transfer_function(function, transfer, kind) if function else None, "calls": transfer_calls(function, transfer, targets) if function else None, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
     state[kind + "s"].append(record)
