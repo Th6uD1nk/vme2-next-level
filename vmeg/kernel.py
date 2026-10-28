@@ -530,7 +530,9 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
     if statement[1] in state["transfers"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Transfer variable")
-    state["agus"][statement[1]] = {"params": statement[2], "owners": {}}
+    if statement[3] != 4:
+      raise ValueError(f"the Agu({statement[3]}) is not generated yet")
+    state["agus"][statement[1]] = {"params": statement[2], "owners": {}, "mode": statement[3]}
   elif kind == "stagingdecl":
     if statement[1] in state["stagings"]:
       raise ValueError(f"the Staging variable '{statement[1]}' is declared twice")

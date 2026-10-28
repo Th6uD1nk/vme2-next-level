@@ -294,8 +294,27 @@ def parse_int_declaration(p):
   return ("declarations", members)
 
 
+AGU_MODES = (2, 4)
+
+
 def parse_agu_declaration(p):
-  return parse_declarators(p, "Agu", "agudecl", True)
+  p.expect("Agu")
+  mode = 4
+  if p.accept("("):
+    token = p.peek()
+    mode = p.number()
+    p.expect(")")
+    if mode not in AGU_MODES:
+      p.error(f"the Agu mode {mode} is not described ({', '.join(str(known) for known in AGU_MODES)})", token)
+  members = []
+  while True:
+    name = p.ident()
+    p.expect("=")
+    members.append(("agudecl", name, parse_params(p), mode))
+    if not p.accept(","):
+      break
+  p.expect(";")
+  return ("declarations", members)
 
 
 def parse_transfer_declaration(p):

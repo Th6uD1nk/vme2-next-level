@@ -57,7 +57,7 @@ def substitute(statement, env):
   if kind in ("load", "store"):
     return (kind, [(name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]]) if name == "offsets" else item) for name, item in statement[1]], line)
   if kind == "agudecl":
-    return ("agudecl", statement[1], ("params", fold_params(statement[2][1], env)), line)
+    return ("agudecl", statement[1], ("params", fold_params(statement[2][1], env)), statement[3], line)
   if kind == "aguref":
     return ("aguref", substitute_target(statement[1], env), statement[2], line)
   if kind == "peblock":
