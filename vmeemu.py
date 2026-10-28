@@ -11,7 +11,7 @@ from vmee.trace import replay
 def list_emulations(text, kernel, full):
   found = emulations(text)
   if kernel is not None:
-    known = [name for emulation in found for name in emulation["kernels"]]
+    known = list(dict.fromkeys(name for emulation in found for name in emulation["kernels"]))
     if kernel not in known:
       raise ValueError(f"no @emulate on the kernel '{kernel}' ({', '.join(known) if known else 'there is no @emulate in this file'})")
     found = [emulation for emulation in found if kernel in emulation["kernels"]]
