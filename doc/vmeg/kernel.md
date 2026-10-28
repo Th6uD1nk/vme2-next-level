@@ -12,6 +12,7 @@
   - [3.3.1 Statements](#331-statements)
   - [3.3.2 Scope of the variables](#332-scope-of-the-variables)
   - [3.3.3 Order of the writes](#333-order-of-the-writes)
+  - [3.3.4 Parameters](#334-parameters)
 - [3.4 Interconnect registers](#34-interconnect-registers)
 - [3.5 Errors](#35-errors)
 
@@ -74,6 +75,7 @@ The body of a kernel (.kernel) describes what the VME computes and moves. It hol
 | `.pe0 { … }` to `.pe3 { … }`, `pe[i] { … }` | describes a processing element | [Processing elements](pe.md) |
 | `.load { … }`, `.store { … }` | moves data between the RAM and the scratchpad | [Transfers](transfers.md) |
 | `icn xpcr = …, skew = …;` | writes the interconnect registers | [3.4](#34-interconnect-registers) |
+| `.params { … }` | declares the parameters of the kernel | [3.3.4](#334-parameters) |
 | `for p in a..b { … }` | repeats statements | [2.7](language.md#27-loops) |
 
 ### 3.3.2 Scope of the variables
@@ -95,6 +97,32 @@ A variable declared in a kernel can only be used inside that kernel. Two kernels
 ### 3.3.3 Order of the writes
 
 The registers are written in the order of the statements. The routing of the buffers and the enabling of the outputs of the pes that hold two operations, which `vmegc` works out from the kernel, are written last.
+
+
+### 3.3.4 Parameters
+
+A kernel can take parameters: values that the call gives to it, instead of values written in the kernel.
+
+```c
+.kernel lowerLeg memory {
+  .params { int stage; int* table; }
+  Agu t = { count: 15, offset: stage }, w = { count: 15, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+```
+
+**Explanation of the code above:**
+
+- `.params { int stage; int* table; }` declares two parameters. Each one is written like a C declaration: a C type, then a name, then `;`.
+- `stage` is used as a value of the kernel, here the offset of the AGU `t`. The call gives the value, so the same kernel can be called with several values.
+- The kernel is called in a block that gives the values, see [Blocks](blocks.md).
+
+**Rules:**
+
+- A kernel has one `.params`. It can be written anywhere in the body.
+- The type is any C type, for example `int`, `int*` or a type of your program. An array is not a parameter: use a pointer.
+- A name is declared once in a `.params`.
+- A parameter can stand wherever a name that `vmegc` does not know can stand ([2.6](language.md#26-numbers-macros-and-unknown-names)): the numbers of an `Agu` (`count`, `offset`, `step`, `inner0`, `cyc`, `bubbles`) and of a `Transfer`. It is written as it is and not checked. The parameters that are `true` or `false` of an `Agu` (`reverse`, `repeat`, `sync`) cannot be a parameter of the kernel.
 
 
 ## 3.4 Interconnect registers
@@ -130,3 +158,7 @@ icn xpcr = 5, skew = 0x10;
 | [3.4](#34-interconnect-registers) | `unknown interconnect 'foo' (xpcr, skew)` | a register other than `xpcr` and `skew` |
 | [3.1](#31-header) | `a kernel is written at the top level of a file, not inside a function` | a `.kernel` or a `.context` written inside a function |
 | [3.1](#31-header) | `unterminated block` | a `{` of a kernel that is never closed |
+| [3.3.4](#334-parameters) | `the parameters of the kernel are declared twice` | two `.params` in the same kernel |
+| [3.3.4](#334-parameters) | `the parameter 'stage' is declared twice` | the same name twice in a `.params` |
+| [3.3.4](#334-parameters) | `a parameter is a C type and a name, for example 'int stage;'` | an entry with no type, or an array |
+| [3.3.4](#334-parameters) | `expected ';'` | an entry of a `.params` without its `;` |
