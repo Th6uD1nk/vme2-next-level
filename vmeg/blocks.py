@@ -63,6 +63,15 @@ def read_decorator(text, items, index):
   raise ValueError(f"line {line}: @kernel must be followed by a function definition")
 
 
+def declared_name_at(items, index):
+  at = index + 1
+  if items[index][1] == "Transfer" and at < len(items) and items[at][1] == "(":
+    while at < len(items) and items[at][1] != ")":
+      at += 1
+    at += 1
+  return at if at < len(items) else None
+
+
 def read_block_statements(text, items, open_index, close):
   statements = []
   contexts = {items[open_index][4] + 1: True}
@@ -77,7 +86,8 @@ def read_block_statements(text, items, open_index, close):
       j += 1
       continue
     stop = None
-    if kind == "ident" and value in ("Transfer", "Int") and contexts.get(depth) and j + 2 < len(items) and items[j + 1][0] == "ident" and items[j + 2][1] == "=":
+    name_at = declared_name_at(items, j) if kind == "ident" and value in ("Transfer", "Int") else None
+    if name_at is not None and contexts.get(depth) and name_at + 1 < len(items) and items[name_at][0] == "ident" and items[name_at + 1][1] == "=":
       k = j
       while items[k][1] != ";" or items[k][4] != depth:
         k += 1

@@ -272,16 +272,11 @@ def add_statement(statements, statement):
     statements.append(statement)
 
 
-def parse_declarators(p, keyword, kind, initialized):
+def parse_declarators(p, keyword, kind):
   p.expect(keyword)
   members = []
   while True:
-    name = p.ident()
-    if initialized:
-      p.expect("=")
-      members.append((kind, name, parse_params(p)))
-    else:
-      members.append((kind, name))
+    members.append((kind, p.ident()))
     if not p.accept(","):
       break
   p.expect(";")
@@ -324,8 +319,27 @@ def parse_agu_declaration(p):
   return ("declarations", members)
 
 
+TRANSFER_TYPES = ("Words", "Halves", "Bytes")
+
+
 def parse_transfer_declaration(p):
-  return parse_declarators(p, "Transfer", "transferdecl", True)
+  p.expect("Transfer")
+  kind = "basic"
+  if p.accept("("):
+    token = p.peek()
+    kind = p.ident()
+    p.expect(")")
+    if kind not in TRANSFER_TYPES:
+      p.error(f"the Transfer type {kind} is not described ({', '.join(TRANSFER_TYPES)})", token)
+  members = []
+  while True:
+    name = p.ident()
+    p.expect("=")
+    members.append(("transferdecl", name, parse_params(p), kind))
+    if not p.accept(","):
+      break
+  p.expect(";")
+  return ("declarations", members)
 
 
 def parse_offsets(p):
@@ -381,7 +395,7 @@ def parse_transfer_use(p):
 
 
 def parse_staging_declaration(p):
-  return parse_declarators(p, "Staging", "stagingdecl", False)
+  return parse_declarators(p, "Staging", "stagingdecl")
 
 
 def parse_output(p, index):
