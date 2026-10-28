@@ -60,9 +60,9 @@ def array_declarations(text, identifier, others=()):
 
 def memory_declarations(text, identifier):
   emulation = chosen_emulation(text, identifier)
-  available = declarations(text, list(tokens(text)), 0, "Memory")
+  available = [dict(declaration, where="global") for declaration in declarations(text, list(tokens(text)), 0, "Memory")]
   if emulation["form"] == "block":
-    available += declarations(text, enclosing_function_tokens(text, emulation["at"]), 1, "Memory")
+    available += [dict(declaration, where="local") for declaration in declarations(text, enclosing_function_tokens(text, emulation["at"]), 1, "Memory")]
   found = []
   for value in dict.fromkeys(memory for memory in emulation["memories"] if memory):
     name = re.search(r"[A-Za-z_]\w*", value).group()

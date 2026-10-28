@@ -1,4 +1,4 @@
-from vmee.extract import chosen_emulation, declared_parts
+from vmee.extract import chosen_emulation, declared_parts, memory_declarations
 from vmee.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
 
@@ -82,10 +82,11 @@ def extract_source(text, identifier, others=(), start=0, words=32):
   sections = [prologue(words)]
   if macros:
     sections.append("\n".join(macros))
-  globals_ = [declaration["text"] for declaration in arrays if declaration["where"] == "global"]
+  memories = memory_declarations(text, identifier)
+  globals_ = [declaration["text"] for declaration in arrays + memories if declaration["where"] == "global"]
   if globals_:
     sections.append("\n\n".join(globals_))
   sections.append(kernel_text(text, identifier))
-  sections.append(process_function(text, identifier, [declaration for declaration in arrays if declaration["where"] == "local"], start))
+  sections.append(process_function(text, identifier, [declaration for declaration in arrays + memories if declaration["where"] == "local"], start))
   sections.append(MAIN)
   return "\n\n".join(sections) + "\n"
