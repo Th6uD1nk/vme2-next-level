@@ -7,12 +7,14 @@ ICN_NAMES = {
   "skew": "SKEW",
 }
 
-AGU_COMMON = ("count", "offset", "step", "inner0", "reverse")
+AGU_KINDS = ("top", "base", "write")
 
 AGU_PARAMS = {
-  "top": AGU_COMMON + ("repeat",),
-  "base": AGU_COMMON + ("repeat",),
-  "write": AGU_COMMON + ("cyc", "bubbles", "sync"),
+  4: {
+    "top": ("count", "offset", "step", "inner0", "reverse", "repeat"),
+    "base": ("count", "offset", "step", "inner0", "reverse", "repeat"),
+    "write": ("count", "offset", "step", "inner0", "reverse", "cyc", "bubbles", "sync"),
+  },
 }
 
 TRANSFER_USE = ("transfer", "scope", "offsets")
@@ -243,17 +245,17 @@ def parse_pe_assignment(p, target):
   p.expect("=")
   tok = p.peek()
   if tok is not None and tok[0] == "punct" and tok[1] == "{":
-    if target[2] not in AGU_PARAMS:
-      p.error(f"unknown agu '{target[2]}' ({', '.join(AGU_PARAMS)})", name_token)
+    if target[2] not in AGU_KINDS:
+      p.error(f"unknown agu '{target[2]}' ({', '.join(AGU_KINDS)})", name_token)
     kind = "agu"
     value = parse_params(p)
-  elif target[2] in AGU_PARAMS:
+  elif target[2] in AGU_KINDS:
     if tok is None or tok[0] != "ident":
       p.error("expected parameters { ... } or the name of an Agu variable")
     kind = "aguref"
     value = ("name", p.ident())
   else:
-    p.error(f"unknown element '{target[2]}' of a pe ({', '.join(AGU_PARAMS)})", name_token)
+    p.error(f"unknown element '{target[2]}' of a pe ({', '.join(AGU_KINDS)})", name_token)
   p.expect(";")
   return (kind, target, value)
 

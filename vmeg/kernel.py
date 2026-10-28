@@ -256,15 +256,15 @@ def has_auto(expr):
   return any(has_auto(part) for part in expr[1:] if isinstance(part, tuple))
 
 
-def generate_agu(target, params, env, state, at, line):
+def generate_agu(target, params, env, state, at, line, mode=4):
   pe = target_pe(target, env)
   agu = target[2]
   values = {}
   for key, value in params[1]:
     if key == "mode":
       raise ValueError(f"pe{pe}.{agu}: the mode of an Agu is its type, write Agu(4) or Agu(2)")
-    if key not in AGU_PARAMS[agu]:
-      raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[agu])})")
+    if key not in AGU_PARAMS[mode][agu]:
+      raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[mode][agu])})")
     if key in values:
       raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
     if key == "inner0":
@@ -587,7 +587,7 @@ def emit_statement(statement, env, lines, state):
     claim(state, pe, slot, statement[-1])
     if slot not in variable["owners"]:
       variable["owners"][slot] = pe
-      lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1]))
+      lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1], variable["mode"]))
     if any(key == "cyc" and has_auto(value) for key, value in variable["params"][1]):
       state["sharers"].setdefault(statement[2][1], []).append((pe, statement[-1]))
     state["routing"][slot][pe] = variable["owners"][slot]
