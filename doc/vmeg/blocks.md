@@ -7,6 +7,7 @@
 - [11.1 The block form](#111-the-block-form)
 - [11.2 The C code of a block](#112-the-c-code-of-a-block)
 - [11.3 The vmeg statements of a block](#113-the-vmeg-statements-of-a-block)
+  - [11.3.1 The params of a call](#1131-the-params-of-a-call)
 - [11.4 Blocks in a row](#114-blocks-in-a-row)
 - [11.5 Errors](#115-errors)
 
@@ -112,6 +113,39 @@ void run(void) {
 - A `.load` or a `.store` in a C `if` or `for` stays conditional: the copy is done when the C code reaches it.
 - A `Transfer` or an `Int` declared inside a C `if` or `for` is C code: it is not a vmeg declaration.
 - A local array named by a `.load` or a `.store` is declared in the function that holds the block ([8.3](arrays.md#83-local-arrays)).
+
+### 11.3.1 The params of a call
+
+A kernel that declares parameters ([3.3.4](kernel.md#334-parameters)) takes its values from the block of the call, with `.params`.
+
+```c
+.kernel lowerLeg direct {
+  .params { int stage; int* table; }
+  Agu t = { count: 15, offset: stage }, w = { count: 15, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+.kernel plain direct {
+}
+
+void run(int i, int* d) {
+  @kernel lowerLeg config | exec, plain config | exec {
+    .params = { stage: i + 1, table: d };
+    .params {}
+    done();
+  }
+  @kernel lowerLeg config {
+    .params { .table = d; .stage = 3; }
+  }
+}
+```
+
+**Explanation of the code above:**
+
+- `.params = { stage: i + 1, table: d };` gives the values of the first kernel of the list, `lowerLeg`: a pair `name: value` for each parameter, separated by commas.
+- `.params {}` is empty: it is the place of the second kernel, `plain`, which has no parameter.
+- In the second block, `.params { .table = d; .stage = 3; }` is the other way to write it: an assignment `.name = value;` for each parameter.
+- The values are C expressions, like `i + 1` and `d`. They are written as they are in the call of the kernel, in the order of its declaration, whatever the order in the `.params`.
 
 ## 11.4 Blocks in a row
 
