@@ -9,7 +9,32 @@ def transfer_number(name, what, value, env):
 
 
 class TransferKind:
+  fields = ()
+  required = ()
+  numbers = ()
   nested = {}
+
+  def check(self, name, params, env):
+    values = {"kind": self}
+    for key, value in params[1]:
+      if key not in self.fields:
+        raise ValueError(f"Transfer {name}: unknown field '{key}' ({', '.join(self.fields)})")
+      if key in values:
+        raise ValueError(f"Transfer {name}: duplicate field '{key}'")
+      if key in self.nested:
+        values[key] = self.check_nested(name, key, value, env)
+      elif value[0] == "params":
+        raise ValueError(f"Transfer {name}: '{key}' takes a value, not a list of fields")
+      elif key in self.numbers:
+        values[key] = transfer_number(name, key, value, env)
+      elif value[0] != "name":
+        raise ValueError(f"Transfer {name}: '{key}' takes a name")
+      else:
+        values[key] = value[1]
+    for key in self.required:
+      if key not in values:
+        raise ValueError(f"Transfer {name}: the field '{key}' is needed")
+    return values
 
   def check_nested(self, name, key, value, env):
     if value[0] != "params":
