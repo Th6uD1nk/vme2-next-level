@@ -53,7 +53,7 @@ class FindBlocksTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
   def test_blocks_removed_and_lines_kept(self):
-    text = "volatile Buffer x[1];\n.kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid f(void) { }\nint b;\n"
+    text = "volatile Buffer x[1];\n.kernel k direct {\n  Transfer t = { memory: x, count: 0 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid f(void) { }\nint b;\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertTrue(out.startswith('#line 1 "t.vmeg.c"\nvolatile u32 __attribute__((aligned(64))) x[1];\n'))
     self.assertIn('#line 5 "t.vmeg.c"', out)
@@ -96,7 +96,7 @@ class RenderTest(unittest.TestCase):
 
   def test_global_sources_must_be_declared_with_buffer(self):
     def build(declarations):
-      return declarations + ".kernel k direct {\n  Transfer tx = { type: words, mode: basic, memory: x, count: 0 };\n  Transfer ty = { type: words, mode: basic, memory: y, count: 0 };\n  .load { .transfer = tx; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = ty; .scope = global; .offsets { .top1 = 0; } }\n}\n@kernel k config | exec\nvoid f() { }\n"
+      return declarations + ".kernel k direct {\n  Transfer tx = { memory: x, count: 0 };\n  Transfer ty = { memory: y, count: 0 };\n  .load { .transfer = tx; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = ty; .scope = global; .offsets { .top1 = 0; } }\n}\n@kernel k config | exec\nvoid f() { }\n"
     ok = build("volatile Buffer x[1], y[1];\n")
     check_uses(project_registry([("t.vmeg.c", ok)]))
     for declarations in ["", "volatile Buffer x[1];\n", "volatile Buffer x[1], z[1];\n", "volatile u32 x[1], y[1];\n"]:
@@ -107,7 +107,7 @@ class RenderTest(unittest.TestCase):
         self.assertIn("is not declared with Buffer in any file", str(ctx.exception))
 
   def test_local_sources_must_be_declared_in_every_decorated_function(self):
-    kernel = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: x, count: 0 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n"
+    kernel = ".kernel k direct {\n  Transfer t = { memory: x, count: 0 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n"
     declared = "void f() {\n  volatile Buffer x[1];\n}\n"
     ok = kernel + "@kernel k config | exec\n" + declared
     render(ok, find_blocks(ok), "t.vmeg.c")
@@ -126,7 +126,7 @@ class RenderTest(unittest.TestCase):
     render(both, find_blocks(both), "t.vmeg.c")
 
   def test_local_buffers_are_uploaded_in_the_decorated_function(self):
-    text = ".kernel k direct {\n  Transfer ta = { type: words, mode: basic, memory: a, count: 3 };\n  Transfer tb = { type: words, mode: basic, memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k config | exec\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
+    text = ".kernel k direct {\n  Transfer ta = { memory: a, count: 3 };\n  Transfer tb = { memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k config | exec\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     body = out[out.index("void f() {"):]
     expected = ["void f() {", "volatile u32 __attribute__((aligned(64))) a[4], b[2];", "vmeLibEnable();",
@@ -153,7 +153,7 @@ class RenderTest(unittest.TestCase):
     self.assertIn("line 2", str(ctx.exception))
 
   def test_one_block_when_on_process_carries_the_kernel(self):
-    text = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: a, count: 3 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
+    text = ".kernel k direct {\n  Transfer t = { memory: a, count: 3 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n@kernel k config | exec\nvoid meLibOnProcess(void)\n{\n  volatile Buffer a[4];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
     self.assertEqual(out.count("vmeLibEnable();"), 1)
     self.assertEqual(out.count("vmeLibDisable();"), 1)
@@ -271,7 +271,7 @@ class KernelBlockTest(unittest.TestCase):
     text = (
       "volatile Buffer g[4];\n.kernel k direct {\n}\n"
       "void f() {\n  while (1) {\n    @kernel k exec {\n"
-      "      Transfer u = { type: words, mode: basic, memory: g, count: 1 };\n"
+      "      Transfer u = { memory: g, count: 1 };\n"
       "      if (a()) {\n        .store { .transfer = u; .scope = global; .offsets { .base1 = 8; } }\n      }\n"
       "    }\n  }\n}\n"
     )
@@ -294,7 +294,7 @@ class KernelBlockTest(unittest.TestCase):
       "void f() {\n"
       "  volatile Buffer m[4];\n"
       "  @kernel a config | exec {\n"
-      "    Transfer t = { type: words, mode: basic, memory: m, count: 3 };\n"
+      "    Transfer t = { memory: m, count: 3 };\n"
       "    .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n"
       "    for p in 0..3 {\n      .load { .transfer = t; .offsets { top[1] = p * 4; } }\n    }\n"
       "    for (int i = 0; i < 2; i++) { go(i); }\n"
@@ -306,7 +306,7 @@ class KernelBlockTest(unittest.TestCase):
     blocks = find_blocks(text)
     taken = [text[block[1]:block[3]] for block in blocks if block[0] == "block-statement"]
     self.assertEqual(taken, [
-      "Transfer t = { type: words, mode: basic, memory: m, count: 3 };",
+      "Transfer t = { memory: m, count: 3 };",
       ".load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }",
       "for p in 0..3 {\n      .load { .transfer = t; .offsets { top[1] = p * 4; } }\n    }",
       ".load { .transfer = t; }",
@@ -323,27 +323,27 @@ class KernelBlockTest(unittest.TestCase):
       ".kernel a direct {\n}\n"
       "void f() {\n"
       "  @kernel a config | exec {\n"
-      "    Transfer t = { type: words, mode: basic, memory: m, count: 3 };\n"
-      "    if (x) {\n      Transfer bad = { type: words, mode: basic, memory: m, count: 1 };\n    }\n"
-      "    {\n      Transfer inner = { type: words, mode: basic, memory: m, count: 1 };\n    }\n"
+      "    Transfer t = { memory: m, count: 3 };\n"
+      "    if (x) {\n      Transfer bad = { memory: m, count: 1 };\n    }\n"
+      "    {\n      Transfer inner = { memory: m, count: 1 };\n    }\n"
       "  }\n}\n"
     )
     blocks = find_blocks(text)
     taken = [text[block[1]:block[3]] for block in blocks if block[0] == "block-statement"]
     self.assertEqual(taken, [
-      "Transfer t = { type: words, mode: basic, memory: m, count: 3 };",
-      "Transfer inner = { type: words, mode: basic, memory: m, count: 1 };",
+      "Transfer t = { memory: m, count: 3 };",
+      "Transfer inner = { memory: m, count: 1 };",
     ])
     out = render(text, blocks, "x.vmeg.c")
-    self.assertIn("Transfer bad = { type: words, mode: basic, memory: m, count: 1 };", out)
+    self.assertIn("Transfer bad = { memory: m, count: 1 };", out)
     for gone in ["Transfer t", "Transfer inner"]:
       self.assertNotIn(gone, out)
 
   def test_block_sends_globals_then_locals(self):
     text = (
       "volatile Buffer g[4] = { 1 };\n"
-      ".kernel a direct {\n  Transfer tg = { type: words, mode: basic, memory: g, count: 3 };\n  Transfer tx = { type: words, mode: basic, memory: x, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = tx; .scope = local; .offsets { .top1 = 0; } }\n}\n"
-      ".kernel o direct {\n  Transfer tg = { type: words, mode: basic, memory: g, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top2 = 0; } }\n}\n"
+      ".kernel a direct {\n  Transfer tg = { memory: g, count: 3 };\n  Transfer tx = { memory: x, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = tx; .scope = local; .offsets { .top1 = 0; } }\n}\n"
+      ".kernel o direct {\n  Transfer tg = { memory: g, count: 3 };\n  .load { .transfer = tg; .scope = global; .offsets { .top2 = 0; } }\n}\n"
       "@kernel o config | exec\nvoid other() {\n}\n"
       "void f() {\n  volatile Buffer x[4];\n  @kernel a config | exec {\n  }\n}\n"
     )
@@ -367,7 +367,7 @@ class KernelBlockTest(unittest.TestCase):
         self.assertIn(message, str(caught.exception))
 
 
-KERNEL = ".kernel k direct {\n  Transfer t = { type: words, mode: basic, memory: g, count: 3 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n"
+KERNEL = ".kernel k direct {\n  Transfer t = { memory: g, count: 3 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n"
 
 
 class RegistryTest(unittest.TestCase):
