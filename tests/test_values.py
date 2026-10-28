@@ -55,6 +55,29 @@ def kernel_lines(body, compat):
   return [line.strip() for line in code.splitlines() if "vme_fu" in line or "fu_reg" in line]
 
 
+def agu_lines(body, kind):
+  text = ".kernel k direct {\n" + body + "\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+  code = generate(text, find_blocks(text)[0], [], None)
+  return [line.strip() for line in code.splitlines() if f"agu_{kind}(" in line]
+
+
+class AguModeTest(unittest.TestCase):
+  def test_an_agu_of_the_mode_2_takes_its_step_and_its_count_in_inner0(self):
+    self.assertEqual(agu_lines("  Agu(2) t = { offset: 128, count: 7, step: 1, repeat: true };\n  Agu w = { count: 15, cyc: 6 };", "top"), [
+      "vme_pe0(agu_top(MODE), agu_mode(2), 0x80);",
+      "vme_pe0(agu_top(COUNT), 0);",
+      "vme_pe0(agu_top(INNER_0), agu_step(1), 7);",
+      "vme_pe0(agu_top(FORMAT_0), VME_RING_TOKEN);",
+    ])
+    self.assertEqual(agu_lines("  Agu t = { count: 15 };\n  Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };", "write"), [
+      "vme_pe0(agu_write(MODE), agu_mode(2), 4, vme_cyc(6));",
+      "vme_pe0(agu_write(COUNT), 0);",
+      "vme_pe0(agu_write(INNER_0), agu_step(2), 0xf);",
+      "vme_pe0(agu_write(FORMAT_0), 2);",
+      "vme_pe0(agu_write(FORMAT_1), VME_END_TOKEN);",
+    ])
+
+
 class CompatTest(unittest.TestCase):
   def test_the_option_fat_replaces_the_opcode_that_is_not_portable_by_its_variant(self):
     self.assertEqual(kernel_lines(".spad = top0 + base0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));"])
