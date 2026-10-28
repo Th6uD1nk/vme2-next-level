@@ -17,7 +17,7 @@ from vmeh.extract import extract_source
 
 
 def loads(*rows):
-  declarations = "".join(f"  Transfer t{n} = {{ type: words, mode: basic, memory: {memory}, count: {words - 1} }};\n" for n, (scope, buffer, words, offset, memory) in enumerate(rows))
+  declarations = "".join(f"  Transfer t{n} = {{ memory: {memory}, count: {words - 1} }};\n" for n, (scope, buffer, words, offset, memory) in enumerate(rows))
   statements = "".join(f"  .load {{ .transfer = t{n}; .scope = {scope}; .offsets {{ .{buffer} = {offset}; }} }}\n" for n, (scope, buffer, words, offset, memory) in enumerate(rows))
   return declarations + statements
 
