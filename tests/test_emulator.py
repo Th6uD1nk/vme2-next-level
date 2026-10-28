@@ -187,6 +187,19 @@ class RingTest(unittest.TestCase):
     self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(10)], [0x100, 0x101, 0x102, 0x103] * 2 + [0x100, 0x101])
 
 
+class Mode2Test(unittest.TestCase):
+  def test_an_agu_of_the_mode_2_reads_with_the_step_and_the_count_of_inner0(self):
+    emulator = Emulator()
+    emulator.active[:] = [0] * 106
+    emulator.scratchpad.transfer(TOP_OFFSET, [0x100 + i for i in range(8)])
+    emulator.active[28] = 0x4440
+    emulator.active[agu_register(0, "top", "mode")] = 0x82000000
+    emulator.active[agu_register(0, "top", "inner0")] = (2 << 16) | 3
+    self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(6)], [0x100, 0x102, 0x104, 0x106, 0x106, 0x106])
+    emulator.active[agu_register(0, "top", "format0")] = 0x20000
+    self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(6)], [0x100, 0x102, 0x104, 0x106, 0x100, 0x102])
+
+
 class SyncTest(unittest.TestCase):
   def run_kernel(self, sync):
     emulator = Emulator()
