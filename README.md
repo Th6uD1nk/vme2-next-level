@@ -2,6 +2,10 @@
 
 VME2 Next Level is a toolkit for the PSP Virtual Mobile Engine (VME2), including a transpiler, an emulator and a debugger. Write kernels in vmeg, a graph-like language embedded in C/C++, compile them to plain C/C++ for vme-lib, play them in an emulator, and check them on a real PSP.
 
+## Install
+
+Clone with `--recursive`, then run `./install.sh` in the folder of the project. It builds the me-core libraries for the vmeg environment and adds `bin` to your `PATH` and `VMEGC_HOME` to your `~/.bashrc` (`./install.sh --uninstall` removes them). In a new terminal, `vmegc`, `vmee` and `vmeh` are available from any folder.
+
 ## vmeg
 
 **vmeg** is a language to describe VME kernels inside C and C++ files. `vmegc.py` turns a `.vmeg.c` or `.vmeg.cpp` file into plain C or C++ built on vme-lib.
