@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmee.agu import stream_at
-from vmee.extract import array_declarations
+from vmee.extract import array_declarations, host_main, host_program
 from vmee.fu import execute
 from vmee.listing import defines, emulations, format_listing
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
@@ -320,6 +320,28 @@ class ExtractTest(unittest.TestCase):
       ("local", ["x"], False, "Buffer x[4] = { 5, 6, 7, 8 };"),
     ])
     self.assertEqual([d["origin"] for d in found], [arrays, arrays, function])
+
+
+BLOCK = (
+  "volatile Buffer src[16];\n"
+  "volatile Memory stage[2];\n"
+  ".kernel m memory {\n  .params { int n; }\n" + loads(("global", "top0", 16, 0, "src")) + "}\n"
+  ".kernel d direct {\n}\n"
+  "void meLibOnProcess(void) {\n"
+  "  @emulate \"blk\" {\n"
+  "    @kernel m build {\n      .params = { n: 5 };\n      .memory = stage[1];\n    }\n"
+  "    @kernel d config | exec {\n    }\n"
+  "    @kernel m config {\n      .memory = stage[1];\n    }\n"
+  "  }\n"
+  "}\n"
+)
+
+
+class EmulationBlockTest(unittest.TestCase):
+  def test_the_emulator_plays_the_calls_of_the_block_with_their_values_and_their_memory(self):
+    main = [line.strip() for line in host_main(BLOCK, "blk").splitlines()]
+    self.assertEqual(main[main.index("vmegEmulateUpload();") + 1:main.index("vmegEmulateDownload();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "vmeLibLoadCustomContext(stage[1]);"])
+    self.assertIn("volatile u32 __attribute__((aligned(64))) stage[2][VME_CONTEXT_WORD_COUNT];", host_program(BLOCK, "blk"))
 
 
 if __name__ == "__main__":
