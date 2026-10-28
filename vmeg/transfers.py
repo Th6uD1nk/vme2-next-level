@@ -36,6 +36,12 @@ class TransferKind:
         raise ValueError(f"Transfer {name}: the field '{key}' is needed")
     return values
 
+  def texts(self, transfer):
+    texts = [transfer.get(key) for key in self.numbers]
+    for key in self.nested:
+      texts += list(transfer.get(key, {}).values())
+    return [text for text in texts if isinstance(text, str)]
+
   def check_nested(self, name, key, value, env):
     if value[0] != "params":
       raise ValueError(f"Transfer {name}: '{key}' takes a list of fields")
