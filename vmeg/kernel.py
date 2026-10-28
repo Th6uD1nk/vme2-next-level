@@ -333,7 +333,7 @@ def generate_agu(target, params, env, state, at, line, mode=4):
 
 
 def agu2_lines(pe, agu, values):
-  mode = "agu_mode(2)" + (f", {values['offset']}" if "offset" in values else "")
+  mode = "agu_mode(2)" + (f", {values['offset']}" if "offset" in values else "") + (f", vme_cyc({values['cyc']})" if "cyc" in values else "")
   step = values.get("step", "1")
   lines = [
     f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
@@ -341,12 +341,16 @@ def agu2_lines(pe, agu, values):
     f"vme_pe{pe}(agu_{agu}(INNER_0), agu_step({step}), {values['count']});",
   ]
   format0 = []
+  if values.get("bubbles", "0") != "0":
+    format0.append(values["bubbles"])
   if values.get("reverse"):
     format0.append("0x10000000")
   if values.get("repeat"):
     format0.append("VME_RING_TOKEN")
   if format0:
     lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
+  if values.get("sync"):
+    lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_1), VME_END_TOKEN);")
   return lines
 
 
@@ -599,8 +603,6 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"unknown Agu variable '{statement[2][1]}'")
     pe = target_pe(statement[1], env)
     slot = statement[1][2]
-    if slot not in AGU_PARAMS[variable["mode"]]:
-      raise ValueError(f"an Agu({variable['mode']}) cannot be bound to .{slot}")
     for bound in variable["owners"]:
       if bound != slot:
         raise ValueError(f"the Agu variable '{statement[2][1]}' is already bound to .{bound}, it cannot be bound to .{slot}")
