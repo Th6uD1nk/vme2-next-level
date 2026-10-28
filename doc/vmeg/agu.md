@@ -18,11 +18,14 @@
 
 ```c
 Agu name = { count: 15 };
+Agu(4) other = { count: 15 };
 ```
 
 **Rules:**
 
 - An `Agu` is declared in a kernel, or in the block of a pe.
+- The mode of an AGU is its type: `Agu` and `Agu(4)` are the mode 4, `Agu(2)` is the mode 2. Each mode has its own parameters. Another mode is an error.
+- An AGU written directly in the braces of `.top`, `.base` or `.write` has no type: it is in the mode 4.
 - The parameters are written in braces, each one with `:` between its name and its value ([2.2](language.md#22-variables)).
 - A value is a number, an `Int`, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - The values are the **real values of the registers**: nothing is added or removed. `count: 15` is 16 words.
@@ -30,11 +33,12 @@ Agu name = { count: 15 };
 
 ## 4.2 Parameters
 
+The parameters of the mode 4, the default mode.
+
 | Parameter | Read AGU (`.top`, `.base`) | Write AGU (`.write`) | Meaning |
 |---|---|---|---|
 | `count` | required | required | the number of words, minus 1 |
 | `offset` | yes | yes | where the AGU starts in the buffer |
-| `mode` | yes | yes | the mode of the AGU |
 | `step` | yes | yes | the distance between two words |
 | `inner0` | yes | yes | an inner range ([4.2.2](#422-inner0)) |
 | `reverse` | yes | yes | the order of the words is inverted |
@@ -52,7 +56,6 @@ The other bits of the format registers are currently not supported.
 | `count` | the number of words minus 1: `count: 15` is 16 words | required |
 | `offset` | the position in the buffer, in words, where the AGU starts. A signed number from -32768 to 32767 | 0 |
 | `step` | the distance between two successive words, in words | 1 |
-| `mode` | the mode of the AGU, a number. Currently only the mode 4 is described: the address of the word `i` is `offset + i * step` | 4 |
 | `reverse` | `true` inverts the order of the words: a read of 16 words gives 15, 14, …, 0, and a write puts the word 0 on the position 15, the word 1 on the 14, and so on | `false` |
 
 ```c
@@ -89,7 +92,6 @@ Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
 **Rules:**
 
 - `repeat` needs `inner0`.
-- It works in the mode 4, the default mode.
 - Currently not supported: `repeat` together with `reverse`.
 
 ### 4.2.4 Write AGUs
@@ -172,6 +174,8 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 |---|---|---|
 | [4.1](#41-declaring-an-agu) | `the Agu variable 'a' is declared twice` | two `Agu` with the same name |
 | [4.1](#41-declaring-an-agu) | `'a' is already declared as a Staging variable` | the name belongs to a Staging variable (or `a Transfer variable`) |
+| [4.1](#41-declaring-an-agu) | `the Agu mode 3 is not described (2, 4)` | `Agu(n)` with a mode other than 2 and 4 |
+| [4.1](#41-declaring-an-agu) | `pe0.top: the mode of an Agu is its type, write Agu(4) or Agu(2)` | `mode` written as a parameter |
 | [4.2](#42-parameters) | `pe0.top: 'count' is required` | an AGU without `count` |
 | [4.2](#42-parameters) | `pe0.top: unknown parameter 'foo' (count, offset, …)` | a name that is not a parameter of this kind of AGU, the message lists the ones that are |
 | [4.2](#42-parameters) | `pe0.top: duplicate parameter 'count'` | the same parameter written twice |
@@ -184,7 +188,6 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 | [4.2.2](#422-inner0) | `pe0.top.inner0: 'step' is required` | `inner0` without `count` or without `step` |
 | [4.2.2](#422-inner0) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `inner0` |
 | [4.2.3](#423-read-agus) | `pe0.top: repeat needs inner0, the range to repeat` | `repeat` without `inner0` |
-| [4.2.3](#423-read-agus) | `pe0.top: repeat works in the AGU mode 4` | `repeat` with a `mode` other than 4 |
 | [4.2.4](#424-write-agus) | `pe0.write: the bubbles 5000 are outside 0 to 4095` | `bubbles` out of range |
 | [4.2.4](#424-write-agus) | `pe0.write: auto is only for cyc` | `auto` in a parameter other than `cyc` |
 | [4.2.4](#424-write-agus) | `auto is reserved for the cyc of a write AGU` | an `Int` named `auto` |
