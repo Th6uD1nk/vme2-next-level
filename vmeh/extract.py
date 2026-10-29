@@ -7,7 +7,8 @@ from vmeg.blocks import find_blocks, kernel_name
 def prologue(words, commands=False):
   shared = "meLibSetSharedUncached32(2);" if commands else "meLibSetSharedUncached32(1);"
   command = "\n#define meCommand (meLibSharedMemory[1])" if commands else ""
-  return f"""#include <pspctrl.h>
+  debug = "\n#include <pspdebug.h>" if commands else ""
+  return f"""#include <pspctrl.h>{debug}
 #include <pspdisplay.h>
 #include <pspkernel.h>
 #include <psppower.h>
@@ -45,24 +46,52 @@ MAIN = """int main() {
 }"""
 
 
-MAIN_FIRST = """int main() {
-  scePowerSetClockFrequency(333, 333, 166);
-  vmeDebugSetupBuffers();
+NAVIGATION = """static const char* const vmehNames[] = {NAMES};
 
-  meLibDefaultInit();
+#define vmehCount ((int)(sizeof(vmehNames) / sizeof(vmehNames[0])))
 
-  meCommand = 1;
+static void vmehPlay(const int index) {
+  pspDebugScreenClear();
+  pspDebugScreenSetXY(0, 0);
+  pspDebugScreenPrintf("%03d - %s", index + 1, vmehNames[index]);
+
+  meFinish = 0;
+  meCommand = index + 1;
   while (!meFinish) {
     sceKernelDelayThread(100);
   }
 
   vmeDebugTouch();
   vmeDebugDumpWindow();
-  vmeDebugFreeBuffers();
 
-  sceKernelExitGame();
-  return 0;
+  sceKernelDelayThread(500000);
+}
+
+int main() {
+  scePowerSetClockFrequency(333, 333, 166);
+  pspDebugScreenInit();
+  vmeDebugSetupBuffers();
+
+  meLibDefaultInit();
+
+  int index = 0;
+  vmehPlay(index);
+
+  SceCtrlData pad;
+  while (1) {
+    sceCtrlPeekBufferPositive(&pad, 1);
+    if ((pad.Buttons & PSP_CTRL_LEFT) && index > 0) {
+      vmehPlay(--index);
+    } else if ((pad.Buttons & PSP_CTRL_RIGHT) && index < vmehCount - 1) {
+      vmehPlay(++index);
+    }
+    sceKernelDelayThread(10000);
+  }
 }"""
+
+
+def navigation_main(identifiers):
+  return NAVIGATION.replace("NAMES", ", ".join(f'"{identifier}"' for identifier in identifiers))
 
 
 def kernel_texts(text, identifier):
@@ -178,5 +207,5 @@ def extract_program(sources, start=0, words=32):
   for index, ((text, identifier, _), part) in enumerate(zip(entries, parts), 1):
     sections.append(process_function(text, identifier, part["locals"], start, f"vmehRun{index}", False))
   sections.append(on_process_loop(len(entries)))
-  sections.append(MAIN_FIRST)
+  sections.append(navigation_main([identifier for _, identifier, _ in entries]))
   return "\n\n".join(sections) + "\n"
