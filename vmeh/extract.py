@@ -54,6 +54,26 @@ def single_identifier(sources):
   return found[0]
 
 
+MAIN_FIRST = """int main() {
+  scePowerSetClockFrequency(333, 333, 166);
+  vmeDebugSetupBuffers();
+
+  meLibDefaultInit();
+
+  meCommand = 1;
+  while (!meFinish) {
+    sceKernelDelayThread(100);
+  }
+
+  vmeDebugTouch();
+  vmeDebugDumpWindow();
+  vmeDebugFreeBuffers();
+
+  sceKernelExitGame();
+  return 0;
+}"""
+
+
 def kernel_texts(text, identifier):
   names = chosen_emulation(text, identifier)["kernels"]
   blocks = find_blocks(text)
@@ -86,6 +106,28 @@ def process_function(text, identifier, locals_, start, name="meLibOnProcess", lo
 
 def fill_offset(start):
   return f" + {start} * 4" if start else ""
+
+
+def on_process_loop(count):
+  cases = "".join(f"      case {index}:\n        vmehRun{index}();\n        break;\n" for index in range(1, count + 1))
+  return f"""void meLibOnProcess(void) {{
+  while (1) {{
+    while (!meCommand) {{
+    }}
+
+    const int command = meCommand;
+    meCommand = 0;
+
+    vmeLibEnable();
+    vmeLibWipe();
+    vmeLibDisable();
+
+    switch (command) {{
+{cases}    }}
+
+    meFinish = 1;
+  }}
+}}"""
 
 
 def emulation_parts(text, identifier, others):
