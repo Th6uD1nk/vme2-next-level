@@ -34,6 +34,16 @@ class ProgramTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       extract_program([("t.vmeg.cpp", "volatile Buffer a[4];\n")])
 
+  def test_the_window_of_the_dump_is_read_from_a_file_with_the_values_of_the_build_as_defaults_but_not_with_one_emulation(self):
+    out = extract_program([("t.vmeg.cpp", KERNELS + BLOCK)], 8, 16)
+    self.assertIn('fopen("./config.txt", "r")', out)
+    self.assertIn("static int vmehWords = 16;", out)
+    self.assertIn("int start = 8;", out)
+    self.assertIn("vmeDebugFillWithCount(VME_BASE_BUFFERS + meStart * 4, meCount);", out)
+    one = extract_program([("t.vmeg.cpp", KERNELS.split("@emulate \"second\"")[0])], 8, 16)
+    self.assertNotIn("config.txt", one)
+    self.assertIn("vmeDebugFillWith(VME_BASE_BUFFERS + 8 * 4);", one)
+
 
 if __name__ == "__main__":
   unittest.main()
