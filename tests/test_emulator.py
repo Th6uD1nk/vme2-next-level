@@ -236,6 +236,19 @@ class IterationTest(unittest.TestCase):
       emulator.write(0x440ff000 + offset, value)
     self.assertEqual(emulator.get_memory(0x2000, 2), [1, 5])
 
+  def test_the_memory_is_stepped_by_the_iteration_step_and_a_step_that_is_not_a_word_multiple_is_refused(self):
+    emulator = Emulator()
+    emulator.put_memory(0x1000, list(range(10, 18)))
+    for offset, value in ((0x10, 0x1000), (0x14, 0x30000), (0x18, 0x8000), (0x20, 8), (0x24, 0), (0x28, 0), (0x08, 0x50)):
+      emulator.write(0x440ff000 + offset, value)
+    self.assertEqual([emulator.scratchpad.read(0x8000 + i) for i in range(4)], [10, 12, 14, 16])
+    for offset, value in ((0x10, 0x2000), (0x14, 0x30000), (0x18, 0x8000), (0x08, 0x58)):
+      emulator.write(0x440ff000 + offset, value)
+    self.assertEqual(emulator.get_memory(0x2000, 4, 8), [10, 12, 14, 16])
+    emulator.write(0x440ff000 + 0x20, 6)
+    with self.assertRaises(ValueError):
+      emulator.write(0x440ff000 + 0x08, 0x50)
+
 
 class ListingTest(unittest.TestCase):
   def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
