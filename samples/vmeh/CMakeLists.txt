@@ -10,7 +10,7 @@ set(VMEH_BUFFERS_START 0 CACHE STRING "first word of the window of the buffers")
 set(VMEH_BUFFERS_WORDS 32 CACHE STRING "number of words of the window of the buffers")
 
 if(NOT VMEH_SOURCE OR NOT VMEH_ID)
-  message(FATAL_ERROR "give the vmeg file and the id of its @emulate, for example: cmake -DVMEH_SOURCE=samples/c/saturate-clamp.vmeg.c -DVMEH_ID=saturate-clamp ..")
+  message(FATAL_ERROR "give the vmeg file and the id of its @emulate, for example: cmake -DVMEH_SOURCE=path/to/file.vmeg.cpp -DVMEH_ID=id ..")
 endif()
 
 get_filename_component(VMEH_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
