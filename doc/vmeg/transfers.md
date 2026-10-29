@@ -222,3 +222,33 @@ volatile Buffer result[16];
 - The value is a number, an `Int`, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - Currently not supported: a negative offset.
 - `.offsets` is the same in a `.load` and in a `.store`: in a `.store` it says where the copy starts in the buffer.
+
+## 9.5 Unknown names in a Transfer
+
+The numbers of a `Transfer` (`count`, `gap`, `step` and the fields of `group`) can use a name that `vmegc` does not know: a macro of a header, a variable of the function that calls the kernel ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+
+```c
+volatile Buffer input[64];
+
+.kernel k direct {
+  Transfer(Words) in = { memory: input, count: HEADER_COUNT - 1, gap: skipped, step: 4 };
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
+}
+
+@kernel k config | exec
+void run(int skipped) {
+}
+```
+
+**Explanation of the code above:**
+
+- `HEADER_COUNT` is a macro of a header and `skipped` is a variable of `run`: `vmegc` knows neither value.
+- The copy is a function that `vmegc` writes. It takes one parameter for each unknown name, and computes `HEADER_COUNT - 1` itself.
+- The call of that function in `run` gives the names as they are written, `HEADER_COUNT` and `skipped`.
+
+**Rules:**
+
+- A name is one parameter, however many times it is used in the fields. The parameters follow the order of the fields: `count`, `gap`, `step`, then `group`.
+- A name has to be known where the kernel is called: a macro that the file includes, or a variable of the function.
+- The part of an expression that `vmegc` knows is replaced by its value ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- `memory` is not a number: it names an array ([8](arrays.md)).
