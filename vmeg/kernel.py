@@ -34,10 +34,6 @@ def constant(expr, what):
   return expr[1]
 
 
-def plus_one(number):
-  return number + 1 if isinstance(number, int) else f"({number} + 1)"
-
-
 def source_ref(expr, stagings):
   if expr[0] == "name" and expr[1] in stagings:
     if stagings[expr[1]] is None:
@@ -367,7 +363,7 @@ def transfer_calls(name, transfer, targets):
 
 
 def transfer_links(transfer, targets):
-  words = plus_one(transfer["count"])
+  words = transfer["kind"].words(transfer)
   return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"], transfer["kind"].extended) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
 
 

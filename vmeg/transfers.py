@@ -8,6 +8,14 @@ def transfer_number(name, what, value, env):
   return folded[1]
 
 
+def plus_one(number):
+  return number + 1 if isinstance(number, int) else f"({number} + 1)"
+
+
+def times(left, right):
+  return left * right if isinstance(left, int) and isinstance(right, int) else f"({left} * {right})"
+
+
 class TransferKind:
   fields = ()
   required = ()
@@ -43,6 +51,9 @@ class TransferKind:
     for key in self.nested:
       texts += list(transfer.get(key, {}).values())
     return [text for text in texts if isinstance(text, str)]
+
+  def words(self, transfer):
+    return plus_one(transfer["count"])
 
   def control(self, direction):
     return hex(self.base + (0x08 if direction == "store" else 0))
@@ -91,6 +102,11 @@ class ExtendedTransfer(TransferKind):
   nested = {"group": (("size",), ("outer", "inner"))}
   extended = True
   base = 0x50
+
+  def words(self, transfer):
+    if transfer.get("step") != 0:
+      return plus_one(transfer["count"])
+    return times(plus_one(transfer["count"]), plus_one(transfer.get("gap", 0)))
 
   def iteration(self, transfer, text):
     lines = [f"vme_dma(ITERATION, DIMS, {text(transfer['count'])}, {text(transfer.get('gap', 0))});"]
