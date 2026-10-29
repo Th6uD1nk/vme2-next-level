@@ -252,3 +252,36 @@ void run(int skipped) {
 - A name has to be known where the kernel is called: a macro that the file includes, or a variable of the function.
 - The part of an expression that `vmegc` knows is replaced by its value ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - `memory` is not a number: it names an array ([8](arrays.md)).
+
+## 9.6 Errors
+
+The messages start with `line N:`, left out here.
+
+| Section | Message | Cause |
+|---|---|---|
+| [9.1](#91-the-transfer-variable) | `the Transfer type Foo is not described (Words, Halves, Bytes)` | `Transfer(Foo)` with a type that does not exist |
+| [9.1](#91-the-transfer-variable) | `the Transfer variable 'in' is declared twice` | two `Transfer` with the same name |
+| [9.1](#91-the-transfer-variable) | `'in' is already declared as an Agu variable` | the name belongs to an `Agu` variable (or to a `Staging` variable) |
+| [9.1](#91-the-transfer-variable) | `Transfer in: unknown field 'foo' (memory, count)` | a field that is not in the type, the message lists the ones that are |
+| [9.1](#91-the-transfer-variable) | `Transfer in: duplicate field 'count'` | the same field written twice |
+| [9.1](#91-the-transfer-variable) | `Transfer in: the field 'count' is needed` | a `Transfer` without `memory` or without `count` |
+| [9.1](#91-the-transfer-variable) | `Transfer in: 'memory' takes a name` | `memory` with something else than the name of an array |
+| [9.1](#91-the-transfer-variable) | `Transfer in: 'count' takes a value, not a list of fields` | braces given to a field that takes a value |
+| [9.1](#91-the-transfer-variable) | `Transfer in: count cannot be negative` | a negative number in a field |
+| [9.2.3](#923-the-group) | `Transfer in: 'group' takes a list of fields` | `group` with a value |
+| [9.2.3](#923-the-group) | `Transfer in: unknown field 'foo' of group (size, outer, inner)` | a field of `group` other than `size`, `outer` and `inner` |
+| [9.2.3](#923-the-group) | `Transfer in: duplicate field 'size' of group` | the same field of `group` written twice |
+| [9.2.3](#923-the-group) | `Transfer in: group needs at least one field (size, outer, inner)` | `group: {}` |
+| [9.2.3](#923-the-group) | `Transfer in: the field 'inner' of group is needed, outer and inner are one register` | `outer` without `inner`, or `inner` without `outer` |
+| [9.2.3](#923-the-group) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `group` |
+| [9.3](#93-load-and-store) | `.load needs a .transfer = name;` | a `.load` or a `.store` without `.transfer` |
+| [9.3](#93-load-and-store) | `unknown Transfer variable 'zzz'` | `.transfer = zzz;` with a name that is not a `Transfer` |
+| [9.3](#93-load-and-store) | `unknown attribute '.foo' of .load (.transfer, .scope, .offsets)` | an attribute that does not exist |
+| [9.3](#93-load-and-store) | `.transfer is already written in this .load` | the same attribute written twice |
+| [9.3](#93-load-and-store) | `.scope must be local or global` | `.scope` with another value |
+| [9.3](#93-load-and-store) | `this .load is not generated yet (only Transfer and Transfer(Words))` | a `.load` or a `.store` that uses a `Transfer(Halves)` or a `Transfer(Bytes)` |
+| [9.4](#94-the-offsets) | `top0 is already set in this .load` | the same buffer twice in `.offsets` |
+| [9.4](#94-the-offsets) | `the offset of top0 cannot be negative` | a negative offset |
+| [9.4](#94-the-offsets) | `top[...]: buffer index must be a number from 0 to 3` | `top[i]` or `base[i]` with an index out of range |
+| [9.4](#94-the-offsets) | `unknown offset '.top4' (.top0 to .top3, .base0 to .base3)` | a buffer that does not exist |
+| [9.4](#94-the-offsets) | `expected .top0 to .top3, .base0 to .base3, top[...] or base[...]` | an entry of `.offsets` that is none of the forms |
