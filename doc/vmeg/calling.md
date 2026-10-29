@@ -128,8 +128,8 @@ volatile Buffer result[16];
 
 .kernel k direct {
   Agu t = { count: 15 }, w = { count: 15, cyc: auto };
-  Transfer in = { type: words, mode: basic, memory: input, count: 15 };
-  Transfer out = { type: words, mode: basic, memory: result, count: 15 };
+  Transfer in = { memory: input, count: 15 };
+  Transfer out = { memory: result, count: 15 };
   .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
   .pe0 { .top = t; .write = w; .spad = top0 + top0; }
   .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }
