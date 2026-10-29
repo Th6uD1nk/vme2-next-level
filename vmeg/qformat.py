@@ -1,6 +1,8 @@
 import re
 import struct
 
+from vmeg.scanner import tokens
+
 WORD_BITS = 24
 
 
@@ -33,3 +35,46 @@ def to_q(text, integer, fraction):
   if not -(1 << (bits - 1)) <= word < 1 << (bits - 1):
     raise ValueError(f"the value {text} does not fit the format Q{integer}.{fraction} (from {-2 ** (integer - 1)} to {2 ** (integer - 1) - 2 ** -fraction})")
   return "0x%08x" % (word & 0xffffffff)
+
+
+def element_edits(toks, integer, fraction):
+  edits = []
+  depth = parens = 0
+  run = []
+
+  def flush():
+    if run:
+      word = to_q("".join(value for _, value, _, _ in run), integer, fraction)
+      if word is not None:
+        edits.append((run[0][2], run[-1][3] - run[0][2], word))
+      run.clear()
+
+  for token in toks:
+    kind, value = token[0], token[1]
+    if kind == "punct" and value == "{":
+      flush()
+      depth += 1
+    elif kind == "punct" and value == "}":
+      flush()
+      depth -= 1
+    elif depth and kind == "punct" and value == "," and not parens:
+      flush()
+    elif depth:
+      if kind == "punct" and value == "(":
+        parens += 1
+      elif kind == "punct" and value == ")":
+        parens -= 1
+      run.append(token)
+  return edits
+
+
+def translate_buffer(text, buffer_type):
+  toks = list(tokens(text))
+  i = next(k for k, (kind, value, _, _) in enumerate(toks) if kind == "ident" and value == "Buffer")
+  size, after = buffer_format(toks, i)
+  edits = [(toks[i][2], toks[after - 1][3] - toks[i][2], buffer_type)]
+  if size is not None:
+    edits += element_edits(toks[after:], *size)
+  for start, length, new in sorted(edits, reverse=True):
+    text = text[:start] + new + text[start + length:]
+  return text
