@@ -5,6 +5,7 @@
 ## Contents
 
 - [8.1 The Buffer keyword](#81-the-buffer-keyword)
+  - [8.1.1 The Q format](#811-the-q-format)
 - [8.2 Global arrays](#82-global-arrays)
 - [8.3 Local arrays](#83-local-arrays)
 - [8.4 Arrays in several files](#84-arrays-in-several-files)
@@ -34,6 +35,28 @@ volatile Buffer table[4] = { 1, 2, 3, 4 };
 - `static` and `extern` can be written in front of it ([8.4](#84-arrays-in-several-files)).
 - `Buffer` declares a variable: it cannot be used in a parameter or in a cast.
 - An array is global ([8.2](#82-global-arrays)) or local ([8.3](#83-local-arrays)).
+
+### 8.1.1 The Q format
+
+```c
+volatile Buffer(Q8.8) matrix[4] = { 0.5, -1.25, 3, 0x10 };
+volatile Buffer(Q4.20) angle[2] = { 0.7071068f, -2.0 };
+```
+
+**Explanation of the code above:**
+
+- `Buffer(Q8.8)` is an array of values with 8 bits of integer part (the sign counts) and 8 bits of fraction: from -128 to 127.99609375, in steps of 1/256.
+- The numbers are the real values. `vmegc` writes them as words: `0.5` is `0x00000080`, `-1.25` is `0xfffffec0` and `3` is `0x00000300`.
+- `0x10` is a hexadecimal number: it stays the word that is written.
+- `Buffer(Q4.20)` has 4 bits of integer part and 20 of fraction, from -8 to 7.999999046325684: `-2.0` is `0xffe00000`.
+
+**Rules:**
+
+- The format is `Qm.n`: `m` is the number of bits of the integer part, sign included, and `n` the number of bits of the fraction. `m` is 1 at least, and `m + n` is 24 at most, the 24 bits of a word of the VME.
+- A decimal number is the real value, with or without a point, an exponent, or the suffix `f`. It is cut toward zero and written on 32 bits, the bit 23 repeated in the 8 high bits.
+- A value outside the range of the format is an error ([8.6](#86-errors)).
+- A hexadecimal number, a macro or an expression stays as it is written, and the C compiler computes it.
+- The array is a `Buffer` like the others, with the same size and the same alignment ([8.1](#81-the-buffer-keyword)). Without a format, the numbers of the initializer stay as they are written.
 
 ## 8.2 Global arrays
 
