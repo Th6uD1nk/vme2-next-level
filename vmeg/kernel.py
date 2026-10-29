@@ -331,9 +331,16 @@ def transfer_control(transfer, direction):
   return transfer["kind"].control(direction)
 
 
+def transfer_destination(buffer, slot, offset):
+  name = f"VME_{buffer.upper()}_BUFF{slot}_WOFF"
+  if offset[0] == "num" and offset[1] < 0:
+    return f"{name} - {to_c(('num', -offset[1]))}"
+  return name + (f" + {offset_text(offset)}" if offset_text(offset) else "")
+
+
 def transfer_destinations(targets):
   return [
-    "0" if buffer is None else f"VME_{buffer.upper()}_BUFF{slot}_WOFF" + (f" + {offset_text(offset)}" if offset_text(offset) else "")
+    "0" if buffer is None else transfer_destination(buffer, slot, offset)
     for buffer, slot, offset in targets or [(None, 0, ("num", 0))]
   ]
 
@@ -485,8 +492,6 @@ def emit_statement(statement, env, lines, state):
         raise ValueError(f"{buffer}{slot[1]} is already set in this .{kind}")
       seen.add((buffer, slot[1]))
       offset = full_value(value, env)
-      if offset[0] == "num" and offset[1] < 0:
-        raise ValueError(f"the offset of {buffer}{slot[1]} cannot be negative")
       targets.append((buffer, slot[1], offset))
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
