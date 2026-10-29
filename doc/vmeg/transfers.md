@@ -84,8 +84,8 @@ Transfer(Words) in = { memory: input, count: 15, gap: 0, step: 4, group: { size:
 The memory is the array of the `Transfer`, the scratchpad is the buffers of the VME. `step` is on the memory side, in bytes. `gap` and `group` are on the scratchpad side, in words.
 
 ```c
-Transfer(Words) vectors = { memory: sharedVec, count: 63, gap: 0, step: 4, group: { size: 3, outer: 16, inner: 1 } };
-Transfer(Words) results = { memory: sharedRes, count: 63, gap: 3, step: 4 };
+Transfer(Words) spread = { memory: source, count: 15, step: 4, group: { size: 3, outer: 16, inner: 1 } };
+Transfer(Words) picked = { memory: result, count: 15, gap: 3, step: 4 };
 ```
 
 | Field | Side | Unit |
@@ -96,12 +96,13 @@ Transfer(Words) results = { memory: sharedRes, count: 63, gap: 3, step: 4 };
 
 **Explanation of the code above:**
 
-- `vectors` is a load of 64 words. The memory is read one word after the other (`step: 4`). The scratchpad receives them in groups of 4 words, one after the other, and a group starts 16 words after the previous one.
-- `results` is a store of 64 words. The scratchpad is read one word out of 4 (`gap: 3` leaves 3 words between two), and the memory is written one word after the other (`step: 4`).
+- `spread` is a load of 16 words. The memory is read one word after the other (`step: 4`). The scratchpad receives them in groups of 4 words, one after the other, and a group starts 16 words after the previous one.
+- `picked` is a store of 16 words. The scratchpad is read one word out of 4 (`gap: 3` leaves 3 words between two), and the memory is written one word after the other (`step: 4`).
 
 **Rules:**
 
 - `step` is the same on a load and on a store: it moves in the memory, whatever the direction.
+- The `mat4x4-mul-batch` sample loads a batch of vectors with a group and stores its results with a gap.
 
 ### 9.2.3 The group
 
