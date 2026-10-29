@@ -11,8 +11,8 @@
  */
 
 volatile Buffer bit6Top0[16] = {
-  -8, -7, -6, -5,
-  -4, -3, -2, -1,
+  0xfffffff8, 0xfffffff9, 0xfffffffa, 0xfffffffb,
+  0xfffffffc, 0xfffffffd, 0xfffffffe, 0xffffffff,
   0, 1, 2, 3,
   4, 5, 6, 7,
 };
@@ -27,36 +27,36 @@ volatile Buffer bit6Base0[16] = {
 volatile Buffer bit6Top1[16] = {
   1, 3, 5, 7,
   9, 11, 13, 15,
-  -1, -3, -5, -7,
-  -9, -11, -13, -15,
+  0xffffffff, 0xfffffffd, 0xfffffffb, 0xfffffff9,
+  0xfffffff7, 0xfffffff5, 0xfffffff3, 0xfffffff1,
 };
 
 volatile Buffer bit6Base1[16] = {
   0, 2, 4, 6,
   8, 10, 12, 14,
-  0, -2, -4, -6,
-  -8, -10, -12, -14,
+  0, 0xfffffffe, 0xfffffffc, 0xfffffffa,
+  0xfffffff8, 0xfffffff6, 0xfffffff4, 0xfffffff2,
 };
 
 volatile Buffer bit6Top2[16] = {
-  0x7ffffe, 0x7fffff, -0x800000, -0x7fffff,
-  0x400000, -0x400000, 0x123456, -0x123456,
-  1, -1, 3, -3,
-  5, -5, 0, 0,
+  0x7ffffe, 0x7fffff, 0xff800000, 0xff800001,
+  0x400000, 0xffc00000, 0x123456, 0xffedcbaa,
+  1, 0xffffffff, 3, 0xfffffffd,
+  5, 0xfffffffb, 0, 0,
 };
 
 volatile Buffer bit6Base2[16] = {
-  1, 1, -1, -1,
-  0x3fffff, -0x3fffff, 0x654321, -0x654321,
-  1, -1, 1, -1,
-  1, -1, 0, 1,
+  1, 1, 0xffffffff, 0xffffffff,
+  0x3fffff, 0xffc00001, 0x654321, 0xff9abcdf,
+  1, 0xffffffff, 1, 0xffffffff,
+  1, 0xffffffff, 0, 1,
 };
 
 volatile Buffer bit6Top3[16] = {
-  0, 1, -1, 2,
-  -2, 3, -3, 4,
-  -4, 5, -5, 6,
-  -6, 7, -7, 8,
+  0, 1, 0xffffffff, 2,
+  0xfffffffe, 3, 0xfffffffd, 4,
+  0xfffffffc, 5, 0xfffffffb, 6,
+  0xfffffffa, 7, 0xfffffff9, 8,
 };
 
 volatile Buffer bit6Base3[16] = {
