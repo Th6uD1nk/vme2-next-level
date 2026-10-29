@@ -84,15 +84,21 @@ Agu t = { count: 15, inner0: { count: 15, step: 1 } };
 
 A read AGU is bound with `.top` or `.base`. It takes the common parameters and `repeat`.
 
-`repeat: true` repeats the range of `inner0` for as long as the run lasts, whatever the `count` of the AGU. The matrix of the mat4x4 sample is read this way: its 16 words are read again and again while the vectors go by.
+`repeat: true` repeats the range of `inner0` for as long as the run lasts, whatever the `count` of the AGU.
 
 ```c
-Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
+Agu cycled = { count: 15, inner0: { count: 3, step: 1 }, repeat: true };
 ```
+
+**Explanation of the code above:**
+
+- `inner0: { count: 3, step: 1 }` is a range of 4 words, one after the other.
+- `repeat: true` reads this range again and again, for as long as the run lasts: the `count: 15` of the AGU does not stop it.
 
 **Rules:**
 
 - `repeat` needs `inner0`.
+- The `mat4x4-mul-batch` sample reads a matrix of 16 words this way, again and again while the vectors go by.
 
 ### 4.2.4 Write AGUs
 
