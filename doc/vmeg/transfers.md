@@ -151,3 +151,40 @@ With `step: 0`, `count` and `gap` do not have their meaning of [9.2.1](#921-the-
 **Rules:**
 
 - A repetition reads `gap + 1` words of the array, so the array has to be at least that long.
+
+## 9.3 .load and .store
+
+A `.load` copies an array to the buffers of the VME. A `.store` copies a buffer back to an array. Both are written in a kernel, after the `Transfer` that they use.
+
+```c
+volatile Buffer input[16];
+volatile Buffer result[16];
+
+.kernel k direct {
+  Transfer in = { memory: input, count: 15 };
+  Transfer out = { memory: result, count: 15 };
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }
+  .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }
+}
+```
+
+| Attribute | Value |
+|---|---|
+| `.transfer` | the `Transfer` that describes the copy |
+| `.scope` | `global` or `local`, the scope of the array ([8](arrays.md)). `local` when it is left out |
+| `.offsets` | the buffers and the place in each of them ([9.4](#94-the-offsets)) |
+
+**Explanation of the code above:**
+
+- `.load` copies `input` with the `Transfer` `in`, once into the buffer `top0` and once into the buffer `top1`.
+- `.store` copies the buffer `base0` into `result` with the `Transfer` `out`.
+- `.scope = global` says that `input` and `result` are global arrays ([8.2](arrays.md#82-global-arrays)).
+
+**Rules:**
+
+- `.transfer` is needed. The `Transfer` is declared before, in the kernel.
+- Each attribute is written once in a `.load` or a `.store`.
+- A buffer is written once in `.offsets`. The copy is done once for each buffer that `.offsets` lists.
+- Without `.offsets` the copy uses the scratchpad from its offset 0.
+- Several `.load` and `.store` can use the same `Transfer`.
+- The copies are done when the kernel is called: the `.load` first and the `.store` last ([10.5](calling.md#105-uploads-and-downloads-around-the-run)).
