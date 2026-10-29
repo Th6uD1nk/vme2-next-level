@@ -5,8 +5,8 @@ from vmeg.blocks import find_blocks, kernel_name
 
 
 def prologue(words, commands=False):
-  shared = "meLibSetSharedUncached32(2);" if commands else "meLibSetSharedUncached32(1);"
-  command = "\n#define meCommand (meLibSharedMemory[1])" if commands else ""
+  shared = "meLibSetSharedUncached32(4);" if commands else "meLibSetSharedUncached32(1);"
+  command = "\n#define meCommand (meLibSharedMemory[1])\n#define meStart (meLibSharedMemory[2])\n#define meCount (meLibSharedMemory[3])" if commands else ""
   debug = "\n#include <pspdebug.h>" if commands else ""
   return f"""#include <pspctrl.h>{debug}
 #include <pspdisplay.h>
@@ -50,6 +50,8 @@ NAVIGATION = """static const char* const vmehNames[] = {NAMES};
 
 #define vmehCount ((int)(sizeof(vmehNames) / sizeof(vmehNames[0])))
 
+static int vmehWords = WORDS;
+
 static void vmehPlay(const int index) {
   pspDebugScreenClear();
   pspDebugScreenSetXY(0, 0);
@@ -67,17 +69,41 @@ static void vmehPlay(const int index) {
     fprintf(log, "Kernel: %03d - %s\\n\\n", index + 1, vmehNames[index]);
     fclose(log);
   }
-  vmeDebugDumpWindow();
+  vmeDebugDumpWindowCount(vmehWords);
 
   sceKernelDelayThread(500000);
+}
+
+static void vmehReadConfig(int* const start, int* const count) {
+  FILE* const config = fopen("./config.txt", "r");
+  if (!config) {
+    return;
+  }
+
+  char line[64];
+  while (fgets(line, sizeof(line), config)) {
+    int value;
+    if (sscanf(line, "start: %d", &value) == 1) {
+      *start = value;
+    } else if (sscanf(line, "count: %d", &value) == 1) {
+      *count = value;
+    }
+  }
+  fclose(config);
 }
 
 int main() {
   scePowerSetClockFrequency(333, 333, 166);
   pspDebugScreenInit();
-  vmeDebugSetupBuffers();
+
+  int start = START;
+  vmehReadConfig(&start, &vmehWords);
+  vmeDebugSetupBuffersCount(vmehWords);
 
   meLibDefaultInit();
+
+  meStart = start;
+  meCount = vmehWords;
 
   int index = 0;
   vmehPlay(index);
@@ -95,8 +121,8 @@ int main() {
 }"""
 
 
-def navigation_main(identifiers):
-  return NAVIGATION.replace("NAMES", ", ".join(f'"{identifier}"' for identifier in identifiers))
+def navigation_main(identifiers, start, words):
+  return NAVIGATION.replace("NAMES", ", ".join(f'"{identifier}"' for identifier in identifiers)).replace("WORDS", str(words)).replace("START", str(start))
 
 
 def kernel_texts(text, identifier):
@@ -123,7 +149,8 @@ def process_function(text, identifier, locals_, start, name="meLibOnProcess", lo
     lines += [f"  {declaration['text']}", ""]
   last = len(emulation["steps"]) - 1
   for index, ((name, actions), pairs, memory) in enumerate(zip(emulation["steps"], emulation["pairs"], emulation["memories"])):
-    body = [f"vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});"] if index == last else []
+    fill = f"vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});" if looped else "vmeDebugFillWithCount(VME_BASE_BUFFERS + meStart * 4, meCount);"
+    body = [fill] if index == last else []
     lines += call_block(name, actions, pairs, memory, body)
   lines += ["", "  meFinish = 1;", "", "  while (1) {", "  }", "}"] if looped else ["}"]
   return "\n".join(lines)
@@ -212,5 +239,5 @@ def extract_program(sources, start=0, words=32):
   for index, ((text, identifier, _), part) in enumerate(zip(entries, parts), 1):
     sections.append(process_function(text, identifier, part["locals"], start, f"vmehRun{index}", False))
   sections.append(on_process_loop(len(entries)))
-  sections.append(navigation_main([identifier for _, identifier, _ in entries]))
+  sections.append(navigation_main([identifier for _, identifier, _ in entries], start, words))
   return "\n\n".join(sections) + "\n"

@@ -18,7 +18,7 @@ BLOCK = "void meLibOnProcess(void) {\n  @emulate \"both\" {\n    @kernel k1 conf
 class ProgramTest(unittest.TestCase):
   def test_several_emulations_give_one_program_with_a_function_per_emulation_and_the_keys_to_move(self):
     out = extract_program([("t.vmeg.cpp", KERNELS + BLOCK)])
-    self.assertIn("meLibSetSharedUncached32(2);", out)
+    self.assertIn("meLibSetSharedUncached32(4);", out)
     self.assertIn('static const char* const vmehNames[] = {"first", "second", "both"};', out)
     for index in (1, 2, 3):
       self.assertIn(f"void vmehRun{index}(void) {{", out)
