@@ -267,6 +267,22 @@ class IterationTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       emulator.write(0x440ff000 + 0x08, 0x58)
 
+  def test_the_four_stage_transfers_of_the_fft_give_the_legs_of_its_readme(self):
+    legs = {
+      8: ([0, 1, 2, 3, 4, 5, 6, 7], [8, 9, 10, 11, 12, 13, 14, 15]),
+      4: ([0, 1, 2, 3, 8, 9, 10, 11], [4, 5, 6, 7, 12, 13, 14, 15]),
+      2: ([0, 1, 4, 5, 8, 9, 12, 13], [2, 3, 6, 7, 10, 11, 14, 15]),
+      1: ([0, 2, 4, 6, 8, 10, 12, 14], [1, 3, 5, 7, 9, 11, 13, 15]),
+    }
+    for stride, (upper, lower) in legs.items():
+      emulator = Emulator()
+      emulator.put_memory(0x1000, [100 + i for i in range(16)] + [0] * 16)
+      for offset, value in ((0x10, 0x1000), (0x14, (1 << 16) | (15 + stride)), (0x18, 0x8000), (0x20, 0), (0x24, 2 * stride - 1), (0x28, (stride << 16) | 1), (0x08, 0x50)):
+        emulator.write(0x440ff000 + offset, value)
+      zone = [emulator.scratchpad.read(0x8000 + i) for i in range(16 + stride)]
+      self.assertEqual(zone[:8], [100 + i for i in upper])
+      self.assertEqual(zone[8 + stride:16 + stride], [100 + i for i in lower])
+
 
 class ListingTest(unittest.TestCase):
   def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
