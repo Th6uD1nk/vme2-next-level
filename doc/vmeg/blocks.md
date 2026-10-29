@@ -120,9 +120,9 @@ void run(void) {
 A kernel that declares parameters ([3.3.4](kernel.md#334-parameters)) takes its values from the block of the call, with `.params`.
 
 ```c
-.kernel lowerLeg direct {
-  .params { int stage; int* table; }
-  Agu t = { count: 15, offset: stage }, w = { count: 15, cyc: auto };
+.kernel shifted direct {
+  .params { int start; int* table; }
+  Agu t = { count: 15, offset: start }, w = { count: 15, cyc: auto };
   .pe0 { .top = t; .write = w; .spad = top0 + top0; }
 }
 
@@ -130,22 +130,22 @@ A kernel that declares parameters ([3.3.4](kernel.md#334-parameters)) takes its 
 }
 
 void run(int i, int* d) {
-  @kernel lowerLeg config | exec, plain config | exec {
-    .params = { stage: i + 1, table: d };
+  @kernel shifted config | exec, plain config | exec {
+    .params = { start: i + 1, table: d };
     .params {}
     done();
   }
-  @kernel lowerLeg config {
-    .params { .table = d; .stage = 3; }
+  @kernel shifted config {
+    .params { .table = d; .start = 3; }
   }
 }
 ```
 
 **Explanation of the code above:**
 
-- `.params = { stage: i + 1, table: d };` gives the values of the first kernel of the list, `lowerLeg`: a pair `name: value` for each parameter, separated by commas.
+- `.params = { start: i + 1, table: d };` gives the values of the first kernel of the list, `shifted`: a pair `name: value` for each parameter, separated by commas.
 - `.params {}` is empty: it is the place of the second kernel, `plain`, which has no parameter.
-- In the second block, `.params { .table = d; .stage = 3; }` is the other way to write it: an assignment `.name = value;` for each parameter.
+- In the second block, `.params { .table = d; .start = 3; }` is the other way to write it: an assignment `.name = value;` for each parameter.
 - The values are C expressions, like `i + 1` and `d`. They are written as they are in the call of the kernel, in the order of its declaration, whatever the order in the `.params`.
 
 **Rules:**
@@ -162,24 +162,24 @@ void run(int i, int* d) {
 A `memory` kernel has a memory config of its own, which its `build` fills and its `config` loads ([10.2](calling.md#102-the-actions)). `.memory` makes a call use another one, a `Memory` ([8.5](arrays.md#85-memory-configs)).
 
 ```c
-volatile Memory stage[2];
+volatile Memory configs[2];
 
-.kernel butterfly memory {
-  .params { int stride; }
-  Agu t = { count: 15, step: stride }, w = { count: 15, cyc: auto };
+.kernel reader memory {
+  .params { int skip; }
+  Agu t = { count: 15, step: skip }, w = { count: 15, cyc: auto };
   .pe0 { .top = t; .write = w; .spad = top0 + top0; }
 }
 
 void run(void) {
   for (int s = 0; s < 2; s++) {
-    @kernel butterfly build {
-      .params = { stride: 1 + s };
-      .memory = stage[s];
+    @kernel reader build {
+      .params = { skip: 1 + s };
+      .memory = configs[s];
     }
   }
   for (int s = 0; s < 2; s++) {
-    @kernel butterfly config | exec {
-      .memory = stage[s];
+    @kernel reader config | exec {
+      .memory = configs[s];
     }
   }
 }
@@ -187,13 +187,13 @@ void run(void) {
 
 **Explanation of the code above:**
 
-- The first loop builds `butterfly` twice, with another `stride` each time. `.memory = stage[s];` makes the `build` write in `stage[s]` and not in the memory config of the kernel, so the two builds do not overwrite each other.
-- The second loop loads `stage[s]` and runs the kernel with it. The memory configs are built once, before, and only loaded here.
+- The first loop builds `reader` twice, with another `skip` each time. `.memory = configs[s];` makes the `build` write in `configs[s]` and not in the memory config of the kernel, so the two builds do not overwrite each other.
+- The second loop loads `configs[s]` and runs the kernel with it. The memory configs are built once, before, and only loaded here.
 - Without `.memory`, nothing changes: the kernel keeps its own memory config.
 
 **Rules:**
 
-- The value is a C expression that names a `Memory`: `stage[1]`, `stage`, a pointer. It is written as it is and `vmegc` does not read it.
+- The value is a C expression that names a `Memory`: `configs[1]`, `configs`, a pointer. It is written as it is and `vmegc` does not read it.
 - `.memory` is for a `memory` kernel. In a `build` it says where to build, in a `config` it says what to load: write the same value in both to load what was built.
 - The first `.memory` goes to the first kernel of the list, the second to the second kernel, and so on, like the `.params` ([11.3.1](#1131-the-params-of-a-call)). `.memory = auto;` is the place of a kernel that keeps its own memory config: it is the default, the same as no `.memory`. The last kernels may have no `.memory`.
 - A `direct` kernel has no memory config: its `.memory` can only be `auto`.
