@@ -70,11 +70,11 @@ void run(void) {
 `@emulate "id" { … }` is a second way to mark. It surrounds calls of kernels written in a function, and the emulator plays these calls, with their values.
 
 ```c
-volatile Memory stage[2];
+volatile Memory configs[2];
 
-.kernel butterfly memory {
-  .params { int stride; }
-  Agu t = { count: 7, step: stride }, w = { count: 7, cyc: auto };
+.kernel reader memory {
+  .params { int skip; }
+  Agu t = { count: 7, step: skip }, w = { count: 7, cyc: auto };
   .pe0 { .top = t; .write = w; .spad = top0 + top0; }
 }
 
@@ -85,12 +85,12 @@ volatile Memory stage[2];
 
 void meLibOnProcess(void) {
   @emulate "two-steps" {
-    @kernel butterfly build {
-      .params = { stride: 2 };
-      .memory = stage[1];
+    @kernel reader build {
+      .params = { skip: 2 };
+      .memory = configs[1];
     }
-    @kernel butterfly config | exec {
-      .memory = stage[1];
+    @kernel reader config | exec {
+      .memory = configs[1];
     }
     @kernel total config | exec {
     }
@@ -101,7 +101,7 @@ void meLibOnProcess(void) {
 **Explanation of the code above:**
 
 - `@emulate "two-steps" { … }` surrounds three calls of `meLibOnProcess`. They are real calls of the program: `vmegc` leaves out `@emulate "two-steps" {` and the brace that closes it, and writes the calls where they are, as if the mark was not there.
-- The emulator plays the three calls in their order, with their `.params` and their `.memory` ([11.3.1](blocks.md#1131-the-params-of-a-call), [11.3.2](blocks.md#1132-the-memory-config-of-a-call)): `butterfly` is built in `stage[1]`, loaded from it and run, then `total` is run.
+- The emulator plays the three calls in their order, with their `.params` and their `.memory` ([11.3.1](blocks.md#1131-the-params-of-a-call), [11.3.2](blocks.md#1132-the-memory-config-of-a-call)): `reader` is built in `configs[1]`, loaded from it and run, then `total` is run.
 - The emulator is asked for this emulation by its id, `two-steps` ([VMEE](../VMEE.md)).
 
 **Rules:**
@@ -110,7 +110,7 @@ void meLibOnProcess(void) {
 - The id has the same characters as in the first form, and it is unique in the file for the two forms together ([13.2](#132-the-rules-of-the-mark)).
 - The two forms can be in the same file. Each one is an emulation: they are listed as different emulations ([VMEE](../VMEE.md)).
 - The arrays that the calls name, `Buffer` and `Memory`, are the ones declared in the file or in the function that holds the block.
-- Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like `stage[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `stage[1]`.
+- Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like `configs[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `configs[1]`.
 - Currently not supported: a kernel called in the block that is defined in another file than the block.
 
 ## 13.4 Errors
