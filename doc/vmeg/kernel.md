@@ -69,9 +69,9 @@ The body of a kernel (.kernel) describes what the VME computes and moves. It hol
 | Statement | What it does | Page |
 |---|---|---|
 | `Int name = expression;` | names a number | [2.4](language.md#24-int) |
-| `Agu name = { … };` | declares an address generator | [AGU variables](agu.md) |
+| `Agu name = { … };`, `Agu(2) name = { … };` | declares an address generator, in the mode 4 or in the mode 2 | [AGU variables](agu.md) |
 | `Staging name;` | declares a result kept in a pe | [Staging, routing and warnings](staging-routing.md) |
-| `Transfer name = { … };` | declares a DMAC transfer | [Transfers](transfers.md) |
+| `Transfer name = { … };`, `Transfer(Words) name = { … };` | declares a DMAC transfer, basic or with the AGUs of the DMAC on | [Transfers](transfers.md) |
 | `.pe0 { … }` to `.pe3 { … }`, `pe[i] { … }` | describes a processing element | [Processing elements](pe.md) |
 | `.load { … }`, `.store { … }` | moves data between the RAM and the scratchpad | [Transfers](transfers.md) |
 | `icn xpcr = …, skew = …;` | writes the interconnect registers | [3.4](#34-interconnect-registers) |
