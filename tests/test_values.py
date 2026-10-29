@@ -185,6 +185,21 @@ class WordsOfATransferTest(unittest.TestCase):
     self.assertEqual(extended.words({"count": "HEADER", "gap": 3, "step": 0}), "((HEADER + 1) * 4)")
 
 
+class OffsetsOfATransferTest(unittest.TestCase):
+  def test_a_negative_offset_is_subtracted_from_its_buffer_a_computed_one_too_and_an_unknown_one_is_left_to_the_c(self):
+    text = (
+      "#define A 6\nvolatile Buffer arr[16];\n.kernel k direct {\n"
+      "  Transfer t = { memory: arr, count: 15 };\n"
+      "  .load { .transfer = t; .scope = global; .offsets { .top1 = -8; .top0 = 4; .base2 = 5 - A; .top2 = 3 - UNKNOWN; } }\n"
+      "}\n@kernel k config | exec\nvoid f() { }\n"
+    )
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("kTLoad(arr, VME_TOP_BUFF1_WOFF - 8);", out)
+    self.assertIn("kTLoad(arr, VME_TOP_BUFF0_WOFF + 4);", out)
+    self.assertIn("kTLoad(arr, VME_BASE_BUFF2_WOFF - 1);", out)
+    self.assertIn("kTLoad(arr, VME_TOP_BUFF2_WOFF + (3 - UNKNOWN));", out)
+
+
 class NamesOfATransferTest(unittest.TestCase):
   def test_the_names_are_found_once_in_the_order_of_the_fields(self):
     transfer = {"kind": TRANSFER_KINDS["Words"], "count": "((HEADER_N * 2) - n)", "gap": "n", "step": "HEADER_STEP", "group": {"size": 3}}
