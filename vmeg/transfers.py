@@ -93,8 +93,7 @@ class ExtendedTransfer(TransferKind):
   base = 0x50
 
   def iteration(self, transfer, text):
-    dims = [transfer["count"]] + ([transfer["gap"]] if "gap" in transfer else [])
-    lines = [f"vme_dma(ITERATION, DIMS, {', '.join(str(text(value)) for value in dims)});"]
+    lines = [f"vme_dma(ITERATION, DIMS, {text(transfer['count'])}, {text(transfer.get('gap', 0))});"]
     if "step" in transfer:
       lines.append(f"vme_dma(ITERATION, STEP, {text(transfer['step'])});")
     group = transfer.get("group", {})
