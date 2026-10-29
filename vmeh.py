@@ -3,13 +3,13 @@ import os
 import sys
 
 from vmee.run import choose_source
-from vmeh.extract import extract_source
+from vmeh.extract import extract_source, single_identifier
 
 
 def main(argv=None):
   parser = argparse.ArgumentParser(prog="vmeh")
   parser.add_argument("input", nargs="+")
-  parser.add_argument("--extract", required=True)
+  parser.add_argument("--extract")
   parser.add_argument("-o", "--output", required=True)
   parser.add_argument("--buffers-start", type=int, default=0)
   parser.add_argument("--buffers-words", type=int, default=32)
@@ -22,10 +22,11 @@ def main(argv=None):
       where = path
       with open(path, encoding="utf-8") as f:
         sources.append((path, f.read()))
-    path, text = choose_source(sources, args.extract)
+    identifier = args.extract or single_identifier(sources)
+    path, text = choose_source(sources, identifier)
     where = path
     others = [other for other_path, other in sources if other_path != path]
-    result = extract_source(text, args.extract, others, args.buffers_start, args.buffers_words)
+    result = extract_source(text, identifier, others, args.buffers_start, args.buffers_words)
     where = args.output
     if os.path.dirname(args.output):
       os.makedirs(os.path.dirname(args.output), exist_ok=True)

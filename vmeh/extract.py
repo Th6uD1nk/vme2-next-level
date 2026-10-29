@@ -1,4 +1,5 @@
 from vmee.extract import chosen_emulation, declared_parts, memory_declarations
+from vmee.listing import emulations
 from vmee.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
 
@@ -40,6 +41,15 @@ MAIN = """int main() {
   sceKernelExitGame();
   return 0;
 }"""
+
+
+def single_identifier(sources):
+  found = [emulation["id"] for _, text in sources for emulation in emulations(text)]
+  if not found:
+    raise ValueError("there is no @emulate in these files")
+  if len(found) > 1:
+    raise ValueError(f"there are {len(found)} @emulate in these files ({', '.join(found)}), give --extract ID")
+  return found[0]
 
 
 def kernel_text(text, identifier):
