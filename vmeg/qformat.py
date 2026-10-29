@@ -1,4 +1,5 @@
 import re
+import struct
 
 WORD_BITS = 24
 
@@ -16,3 +17,19 @@ def buffer_format(toks, i):
   if integer + fraction > WORD_BITS:
     raise ValueError(f"the format Q{integer}.{fraction} has {integer + fraction} bits, a Buffer holds {WORD_BITS} bits at most")
   return (integer, fraction), i + 6
+
+
+NUMBER = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?[fF]?")
+
+
+def to_q(text, integer, fraction):
+  if NUMBER.fullmatch(text) is None:
+    return None
+  value = float(text.rstrip("fF"))
+  if text[-1] in "fF":
+    value = struct.unpack("f", struct.pack("f", value))[0]
+  word = int(value * 2 ** fraction)
+  bits = integer + fraction
+  if not -(1 << (bits - 1)) <= word < 1 << (bits - 1):
+    raise ValueError(f"the value {text} does not fit the format Q{integer}.{fraction} (from {-2 ** (integer - 1)} to {2 ** (integer - 1) - 2 ** -fraction})")
+  return "0x%08x" % (word & 0xffffffff)
