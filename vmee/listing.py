@@ -1,3 +1,4 @@
+from functools import lru_cache
 import re
 
 from vmee.memory import BUFFER_WORDS
@@ -66,6 +67,7 @@ def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, me
   }
 
 
+@lru_cache(maxsize=16)
 def emulations(text):
   blocks = find_blocks(text)
   found = []
