@@ -4,6 +4,7 @@ from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_actions, kernel_arguments, memory_edits
 from vmeg.kernel import generate
+from vmeg.qformat import translate_buffer
 from vmeg.registry import declarations, project_registry
 from vmeg.scanner import tokens
 from vmeg.vmecalls import finish_calls
@@ -109,11 +110,18 @@ def declared_parts(text, identifier, others=()):
   return arrays, parts
 
 
+def buffer_text(declaration):
+  try:
+    return translate_buffer(declaration["text"], BUFFER_TYPE)
+  except ValueError as e:
+    raise ValueError(f"line {declaration['line']}: {e}") from None
+
+
 def host_source(text, identifier, others=(), compat=None):
   arrays, parts = declared_parts(text, identifier, others)
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
-  parts += [re.sub(r"\bBuffer\b", BUFFER_TYPE, declaration["text"]) for declaration in arrays]
+  parts += [buffer_text(declaration) for declaration in arrays]
   parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
   if declared:
     entries = ", ".join(f"{{(u32){name}, sizeof({name}) / 4}}" for name in sorted(declared))
