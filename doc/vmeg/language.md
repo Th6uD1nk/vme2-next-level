@@ -47,8 +47,10 @@ A variable has a type and starts with no dot. `Agu`, `Transfer` and `Int` are de
 |---|---|---|
 | `Agu` | an address generator | `Agu t = { count: 15 };` |
 | `Staging` | a result kept in the pe | `Staging s;` |
-| `Transfer` | a DMAC transfer | `Transfer in = { type: words, mode: basic, memory: a, count: 15 };` |
+| `Transfer` | a DMAC transfer | `Transfer in = { memory: a, count: 15 };` |
 | `Int` | a number known at compile time | `Int n = 16 - 1;` |
+
+`Agu` and `Transfer` can take a kind in parentheses, which gives them their own fields: `Agu(2) t = { count: 15 };` ([4.1](agu.md#41-declaring-an-agu)) and `Transfer(Words) in = { memory: a, count: 15, step: 4 };` ([9.1](transfers.md#91-the-transfer-variable)).
 
 ### 2.2.1 Declaring several at once
 
