@@ -68,6 +68,34 @@ volatile Buffer bit6Base3[16] = {
 
 @emulate "fu-bit6-on"
 .kernel checkBit6On direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: bit6Top0, count };
+  Transfer top1Transfer = { memory: bit6Top1, count };
+  Transfer top2Transfer = { memory: bit6Top2, count };
+  Transfer top3Transfer = { memory: bit6Top3, count };
+  Transfer base0Transfer = { memory: bit6Base0, count };
+  Transfer base1Transfer = { memory: bit6Base1, count };
+  Transfer base2Transfer = { memory: bit6Base2, count };
+  Transfer base3Transfer = { memory: bit6Base3, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = top2Transfer; .scope = global; .offsets { .top2 = 0; } }
+  .load { .transfer = top3Transfer; .scope = global; .offsets { .top3 = 0; } }
+  .load { .transfer = base0Transfer; .scope = global; .offsets { .base0 = 16; } }
+  .load { .transfer = base1Transfer; .scope = global; .offsets { .base1 = 16; } }
+  .load { .transfer = base2Transfer; .scope = global; .offsets { .base2 = 16; } }
+  .load { .transfer = base3Transfer; .scope = global; .offsets { .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 1); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = zsm(top1 - base1 >> 1); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 2); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = zsm(top3 * base3 >> 4); }
 }
 
 @kernel checkBit6On config | exec
