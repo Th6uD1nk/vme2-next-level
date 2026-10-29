@@ -4,8 +4,12 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from vmee.extract import host_source
+from vmeg.blocks import find_blocks
 from vmeg.qformat import buffer_format, to_q, translate_buffer
+from vmeg.registry import array_definitions, extern_declaration
 from vmeg.scanner import tokens
+from vmegc import render
 
 
 def read(text):
@@ -52,6 +56,32 @@ class DeclarationTest(unittest.TestCase):
     self.assertEqual(translate_buffer("static volatile Buffer(Q1.15) a[1] = { 0.25 }, b[1] = { - 0.5 };", "T"), "static volatile T a[1] = { 0x00002000 }, b[1] = { 0xffffc000 };")
     self.assertEqual(translate_buffer("volatile Buffer(Q8.8) g[2][1] = { { 1.0 }, { 0.5 } };", "T"), "volatile T g[2][1] = { { 0x00000100 }, { 0x00000080 } };")
     self.assertEqual(translate_buffer("volatile Buffer(Q8.8) f[3] = { F2Q(1), FOO(a, 2, b), N };", "T"), "volatile T f[3] = { F2Q(1), FOO(a, 2, b), N };")
+
+
+HOST = (
+  "volatile Buffer(Q8.8) input[2] = { 0.5, -1.25f };\n"
+  "@emulate \"double\"\n.kernel k direct {\n  Transfer t = { memory: input, count: 1 };\n"
+  "  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n"
+  "@kernel k config | exec\nvoid run(void) {\n}\n"
+)
+
+
+class FileTest(unittest.TestCase):
+  def test_the_translation_of_a_file_accepts_a_format_and_gives_the_line_of_a_wrong_one(self):
+    out = render(HOST, find_blocks(HOST), "t.vmeg.c")
+    self.assertIn("input[2] = { 0x00000080, 0xfffffec0 };", out)
+    wrong = "volatile Buffer a[4];\nvolatile Buffer(Q20.10) b[4];\n"
+    with self.assertRaisesRegex(ValueError, "line 2"):
+      render(wrong, find_blocks(wrong), "t.vmeg.c")
+
+  def test_the_extern_written_for_another_file_has_no_format_and_no_value(self):
+    definition = array_definitions("a.vmeg.c", "volatile Buffer(Q8.8) shared[4] = { 0.5, -1 };\n")[0]
+    self.assertEqual(extern_declaration(definition), "extern volatile Buffer shared[4];")
+
+  def test_the_host_program_of_the_emulator_has_the_converted_values(self):
+    out = host_source(HOST, "double")
+    self.assertIn("{ 0x00000080, 0xfffffec0 }", out)
+    self.assertNotIn("Q8.8", out)
 
 
 if __name__ == "__main__":
