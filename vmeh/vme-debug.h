@@ -96,8 +96,11 @@ static inline void vmeDebugDumpWords(const char* const path,
   fclose(f);
 }
 
+#define vmeDebugSetupBuffersCount(words)                                       \
+  meLibGetUncached32(vmeDebugBuffers, 8*(words));
+
 #define vmeDebugSetupBuffers()                                                 \
-  meLibGetUncached32(vmeDebugBuffers, 8*VME_DEBUG_BUFFER_WORD_COUNT);
+  vmeDebugSetupBuffersCount(VME_DEBUG_BUFFER_WORD_COUNT)
 
 #define vmeDebugFreeBuffers()                                                  \
   meLibFreeUncached32(vmeDebugBuffers);
@@ -111,14 +114,16 @@ static inline void vmeDebugDumpWords(const char* const path,
   vmeDebugDump("./log.txt", count, (u32*)&(vmeDebugBuffers[count*3]), "BASE 3"); \
 }
 
-#define vmeDebugDumpWindow() {                                                 \
+#define vmeDebugDumpWindowCount(words) {                                       \
                                                                                \
-  const int count = VME_DEBUG_BUFFER_WORD_COUNT;                               \
+  const int count = (words);                                                   \
   vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*0]), "BASE 0"); \
   vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*1]), "BASE 1"); \
   vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*2]), "BASE 2"); \
   vmeDebugDumpWords("./log.txt", count, (u32*)&(vmeDebugBuffers[count*3]), "BASE 3"); \
 }
+
+#define vmeDebugDumpWindow() vmeDebugDumpWindowCount(VME_DEBUG_BUFFER_WORD_COUNT)
 
 #define vmeDebugGetValue(index, offset) \
   (((u32*)&(vmeDebugBuffers[VME_DEBUG_BUFFER_WORD_COUNT * (index)]))[offset])
@@ -150,15 +155,17 @@ static inline void vmeDebugDumpWords(const char* const path,
   _vmeDebugDisplayBuffer(digit, index, x, y);                                  \
 }
 
-#define vmeDebugFillWith(buffer) {                                             \
+#define vmeDebugFillWithCount(buffer, words) {                                 \
                                                                                \
-  const int count = VME_DEBUG_BUFFER_WORD_COUNT;                               \
+  const int count = (words);                                                   \
   const int byteCount = count*4;                                               \
   meCoreMemcpy((void*)&(vmeDebugBuffers[count*0]), (void*)(buffer + VME_SCRATCHPAD_BUFFER_SIZE*0), byteCount); \
   meCoreMemcpy((void*)&(vmeDebugBuffers[count*1]), (void*)(buffer + VME_SCRATCHPAD_BUFFER_SIZE*1), byteCount); \
   meCoreMemcpy((void*)&(vmeDebugBuffers[count*2]), (void*)(buffer + VME_SCRATCHPAD_BUFFER_SIZE*2), byteCount); \
   meCoreMemcpy((void*)&(vmeDebugBuffers[count*3]), (void*)(buffer + VME_SCRATCHPAD_BUFFER_SIZE*3), byteCount); \
 }
+
+#define vmeDebugFillWith(buffer) vmeDebugFillWithCount(buffer, VME_DEBUG_BUFFER_WORD_COUNT)
 
 #define vmeDebugFillAtWith(index, offset) {              \
                                                          \
