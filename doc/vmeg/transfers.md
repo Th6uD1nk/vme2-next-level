@@ -107,7 +107,7 @@ Transfer(Words) picked = { memory: result, count: 15, gap: 3, step: 4 };
 ### 9.2.3 The group
 
 ```c
-Transfer(Words) rows = { memory: matrix, count: 15, step: 4, group: { size: 3, outer: 0x800, inner: 1 } };
+Transfer(Words) split = { memory: source, count: 15, step: 4, group: { size: 3, outer: 0x800, inner: 1 } };
 ```
 
 | Field | Meaning |
@@ -118,15 +118,15 @@ Transfer(Words) rows = { memory: matrix, count: 15, step: 4, group: { size: 3, o
 
 **Explanation of the code above:**
 
-- `rows` is a load of 16 words (`count: 15`), read from the memory one word after the other.
+- `split` is a load of 16 words (`count: 15`), read from the memory one word after the other.
 - The words fill the groups one after the other: a group takes 4 words (`size: 3`), laid next to each other (`inner: 1`).
-- A group starts 0x800 words after the previous one (`outer: 0x800`), that is in the next buffer of the VME: the 4 groups are the 4 rows of the matrix.
+- A group starts 0x800 words after the previous one (`outer: 0x800`), that is in the next buffer of the VME: the 4 groups are in 4 different buffers.
 
 **Rules:**
 
 - The groups are on the scratchpad side, in words.
-- The groups can overlap, when `outer` is smaller than the size of a group: the fft sample lays groups of `2 * stride` words every `stride` words, and the last word written in a place is the one that stays.
-- In the samples `inner` is always 1.
+- The groups can overlap, when `outer` is smaller than the size of a group: the last word written in a place is the one that stays.
+- The `mat4x4-mul-host-batching` sample loads a matrix in several buffers this way, and the `fft-dif-16-point-radix-2` sample uses overlapping groups.
 
 ### 9.2.4 step: 0
 
