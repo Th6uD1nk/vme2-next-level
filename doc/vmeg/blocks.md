@@ -18,7 +18,7 @@ A call written above a function ([10.1](calling.md#101-the-call-of-a-kernel)) is
 
 ```c
 .kernel k direct {
-  Transfer t = { type: words, mode: basic, memory: x, count: 15 };
+  Transfer t = { memory: x, count: 15 };
   .load { .transfer = t; .scope = local; .offsets { .top0 = 0; } }
 }
 
@@ -87,8 +87,8 @@ volatile Buffer result[8];
 void run(void) {
   @kernel k config | exec {
     Int words = 4;
-    Transfer in = { type: words, mode: basic, memory: vectors, count: words - 1 };
-    Transfer out = { type: words, mode: basic, memory: result, count: words - 1 };
+    Transfer in = { memory: vectors, count: words - 1 };
+    Transfer out = { memory: result, count: words - 1 };
     before();
     for i in 0..1 {
       .load { .transfer = in; .scope = global; .offsets { top[i] = 0; } }
