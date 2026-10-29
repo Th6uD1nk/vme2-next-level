@@ -42,17 +42,21 @@ More details in the documentation: [vmee](doc/VMEE.md) (work in progress)
 
 ## vmeh
 
-**vmeh** (VME hardware) generates the code that runs a kernel marked with `@emulate` on the real PSP. This code writes the content of the buffers in a log file, in the same format as vmee, so that the two results can be compared. The program shows nothing on the screen.
+**vmeh** (VME hardware) generates the code that runs the kernels marked with `@emulate` on the real PSP. This code writes the content of the buffers in a log file, in the same format as vmee, so that the two results can be compared.
 
-Go to `samples/vmeh`, give the vmeg file (a path relative to the root of the project) and the id of its `@emulate`, then build:
+Go to `samples/vmeh`, give the vmeg file (a path relative to the root of the project), then build:
 ```
 cd samples/vmeh
 mkdir build && cd build
-cmake -DVMEH_SOURCE=samples/c/saturate-clamp.vmeg.c -DVMEH_ID=saturate-clamp ..
+cmake -DVMEH_SOURCE=samples/c/saturate-clamp.vmeg.c ..
 make
 ```
 
-The EBOOT is in `build`. Run it on the PSP: it writes `log.txt` in the folder of the EBOOT and exits.
+The EBOOT is in `build`. With one `@emulate`, the program runs it, writes `log.txt` in the folder of the EBOOT and exits, and it shows nothing on the screen.
+
+With several `@emulate` in the file, the program has all of them. The screen shows the number and the id of the current one, like `001 - add`. The first one runs at the start. Left and Right go to the previous and to the next one (they stop at the first and at the last), and each one runs when you reach it. `log.txt` holds the dump of the current one only, and each new run replaces it. Its first line is `Kernel: 001 - add`.
+
+`-DVMEH_ID=id` keeps only the `@emulate` with that id.
 
 The window of the buffers that is written can be changed with `-DVMEH_BUFFERS_START=0` and `-DVMEH_BUFFERS_WORDS=32` (the defaults). `vmeemu.py --run` has the same options, `--buffers-start` and `--buffers-words`.
 
