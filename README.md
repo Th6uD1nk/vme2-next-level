@@ -58,7 +58,7 @@ With several `@emulate` in the file, the program has all of them. The screen sho
 
 `-DVMEH_ID=id` keeps only the `@emulate` with that id.
 
-The window of the buffers that is written can be changed with `-DVMEH_BUFFERS_START=0` and `-DVMEH_BUFFERS_WORDS=32` (the defaults). `vmeemu.py --run` has the same options, `--buffers-start` and `--buffers-words`.
+The window of the buffers that is written can be changed with `-DVMEH_BUFFERS_START=0` and `-DVMEH_BUFFERS_WORDS=32` (the defaults). With several `@emulate`, the program reads it at the start from `config.txt`, next to `log.txt`, with the lines `start: 0` and `count: 32`; these two values are the defaults when the file is not there. `vmeemu.py --run` has the same options, `--buffers-start` and `--buffers-words`.
 
 It needs the PSP toolchain, like the other samples.
 
