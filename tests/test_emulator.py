@@ -249,6 +249,24 @@ class IterationTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       emulator.write(0x440ff000 + 0x08, 0x50)
 
+  def test_a_step_of_0_repeats_the_transfer_in_one_stream_through_the_groups(self):
+    emulator = Emulator()
+    emulator.put_memory(0x1000, list(range(100, 108)))
+    for offset, value in ((0x10, 0x1000), (0x14, (1 << 16) | 7), (0x18, 0x8000), (0x20, 0), (0x24, 3), (0x28, (2 << 16) | 1), (0x08, 0x50)):
+      emulator.write(0x440ff000 + offset, value)
+    self.assertEqual([emulator.scratchpad.read(0x8000 + i) for i in range(10)], [100, 101, 104, 105, 100, 101, 104, 105, 106, 107])
+
+  def test_a_step_of_0_is_refused_with_a_store_and_with_a_stream_that_is_not_whole_groups(self):
+    emulator = Emulator()
+    emulator.put_memory(0x1000, list(range(100, 108)))
+    for offset, value in ((0x10, 0x1000), (0x14, (1 << 16) | 4), (0x18, 0x8000), (0x20, 0), (0x24, 2), (0x28, (1 << 16) | 1)):
+      emulator.write(0x440ff000 + offset, value)
+    with self.assertRaises(ValueError):
+      emulator.write(0x440ff000 + 0x08, 0x50)
+    emulator.write(0x440ff000 + 0x24, 0)
+    with self.assertRaises(ValueError):
+      emulator.write(0x440ff000 + 0x08, 0x58)
+
 
 class ListingTest(unittest.TestCase):
   def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
