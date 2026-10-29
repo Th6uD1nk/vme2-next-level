@@ -104,17 +104,17 @@ The registers are written in the order of the statements. The routing of the buf
 A kernel can take parameters: values that the call gives to it, instead of values written in the kernel.
 
 ```c
-.kernel lowerLeg memory {
-  .params { int stage; int* table; }
-  Agu t = { count: 15, offset: stage }, w = { count: 15, cyc: auto };
+.kernel shifted memory {
+  .params { int start; int* table; }
+  Agu t = { count: 15, offset: start }, w = { count: 15, cyc: auto };
   .pe0 { .top = t; .write = w; .spad = top0 + top0; }
 }
 ```
 
 **Explanation of the code above:**
 
-- `.params { int stage; int* table; }` declares two parameters. Each one is written like a C declaration: a C type, then a name, then `;`.
-- `stage` is used as a value of the kernel, here the offset of the AGU `t`. The call gives the value, so the same kernel can be called with several values.
+- `.params { int start; int* table; }` declares two parameters. Each one is written like a C declaration: a C type, then a name, then `;`.
+- `start` is used as a value of the kernel, here the offset of the AGU `t`. The call gives the value, so the same kernel can be called with several values.
 - The kernel is called in a block that gives the values, see [11.3.1](blocks.md#1131-the-params-of-a-call).
 
 **Rules:**
@@ -159,6 +159,6 @@ icn xpcr = 5, skew = 0x10;
 | [3.1](#31-header) | `a kernel is written at the top level of a file, not inside a function` | a `.kernel` or a `.context` written inside a function |
 | [3.1](#31-header) | `unterminated block` | a `{` of a kernel that is never closed |
 | [3.3.4](#334-parameters) | `the parameters of the kernel are declared twice` | two `.params` in the same kernel |
-| [3.3.4](#334-parameters) | `the parameter 'stage' is declared twice` | the same name twice in a `.params` |
+| [3.3.4](#334-parameters) | `the parameter 'start' is declared twice` | the same name twice in a `.params` |
 | [3.3.4](#334-parameters) | `a parameter is a C type and a name, for example 'int stage;'` | an entry with no type, or an array |
 | [3.3.4](#334-parameters) | `expected ';'` | an entry of a `.params` without its `;` |
