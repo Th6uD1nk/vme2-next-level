@@ -10,7 +10,8 @@ from vmeg.listing import kernel_operation_lines
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
 from vmeg.operations import format_operations
-from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry
+from vmeg.qformat import buffer_format, translate_buffer
+from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry, statement_span
 from vmeg.scanner import tokens
 
 
@@ -20,6 +21,23 @@ def default_output(path):
     if name.endswith(source):
       return name[:-len(source)] + result
   raise SystemExit("vmegc: input must end with .vmeg.c or .vmeg.cpp (or pass -o)")
+
+
+def buffer_edits(text, toks):
+  edits = []
+  for i, (kind, value, start, _) in enumerate(toks):
+    if kind != "ident" or value != "Buffer":
+      continue
+    if buffer_format(toks, i)[0] is None:
+      edits.append((start, len("Buffer"), BUFFER_TYPE))
+      continue
+    first, last = statement_span(toks, i)
+    begin, end = toks[first][2], toks[last][3]
+    try:
+      edits.append((begin, end - begin, translate_buffer(text[begin:end], BUFFER_TYPE)))
+    except ValueError as e:
+      raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: {e}") from None
+  return edits
 
 
 def render(text, blocks, path):
@@ -82,7 +100,7 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
     edits.append(extern_edit(text, toks, blocks, quoted, declarations))
   if on_process and on_process[0] not in started:
     edits.append(on_process)
-  edits += [(s, len("Buffer"), BUFFER_TYPE) for kind, value, s, _ in toks if kind == "ident" and value == "Buffer"]
+  edits += buffer_edits(text, toks)
   edits += memory_edits(text, toks)
   edits += calls
   edits += definition_edits(text, blocks, quoted, registry, per_block)
