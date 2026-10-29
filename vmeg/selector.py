@@ -50,7 +50,7 @@ def candidates(tree, operations=OPERATIONS):
 
 def unwrap(tree):
   while True:
-    if tree[0] == "call" and tree[1] == "sat" and len(tree[2]) == 2:
+    if tree[0] == "call" and (tree[1] == "sat" and len(tree[2]) == 2 or tree[1] == "zsm" and len(tree[2]) == 1):
       tree = tree[2][0]
     elif tree[0] == "bin" and tree[1] in (">>", "<<"):
       tree = tree[2]

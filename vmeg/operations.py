@@ -299,6 +299,7 @@ OPERATORS = operators_of(OPERATIONS)
 
 FIELDS = (
   ("sat(op, bits)", "fu_sat(bits)", "the saturation of the operation it wraps, bits 0 to 31"),
+  ("zsm(op)", "fu_zsm(1)", "the bit 6 of the register of the operation it wraps"),
   ("op >> n", "k = n", "the shift applied to the result of the operation, n 0 to 63"),
   ("op << n", "k = 64 - n", "the rotary shift, n 0 to 63"),
 )
