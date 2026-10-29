@@ -178,13 +178,30 @@ class Emulator:
       raise ValueError(f"the group steps {outer}, {inner} with a group of one word are not modeled")
     return [offset + i * gap for i in range(count)]
 
+  def repeat_to_scratchpad(self):
+    dims = self.dmac[DMAC_COUNT]
+    repetitions, words = (dims >> 16) + 1, (dims & 0xffff) + 1
+    stream = self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], words) * repetitions
+    size = self.dmac[DMAC_GROUP_SIZE] + 1
+    outer, inner = self.dmac[DMAC_GROUP_STEPS] >> 16, self.dmac[DMAC_GROUP_STEPS] & 0xffff
+    if len(stream) % size:
+      raise ValueError(f"the {len(stream)} words of the repetitions are not a whole number of groups of {size} words, not modeled")
+    offset = self.dmac[DMAC_SCRATCHPAD_OFFSET]
+    for i, word in enumerate(stream):
+      self.scratchpad.write(offset + i // size * outer + i % size * inner, word)
+
   def iterate_to_scratchpad(self):
+    if self.dmac[DMAC_ITERATION_STEP] == 0:
+      self.repeat_to_scratchpad()
+      return
     step = self.iteration_step()
     addresses = self.iteration_addresses()
     for address, word in zip(addresses, self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], len(addresses), step)):
       self.scratchpad.write(address, word)
 
   def iterate_to_memory(self):
+    if self.dmac[DMAC_ITERATION_STEP] == 0:
+      raise ValueError("the iteration step 0 with a store is not modeled")
     step = self.iteration_step()
     addresses = self.iteration_addresses()
     self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], [self.scratchpad.read(address) for address in addresses], step)
