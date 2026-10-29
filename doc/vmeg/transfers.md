@@ -188,3 +188,37 @@ volatile Buffer result[16];
 - Without `.offsets` the copy uses the scratchpad from its offset 0.
 - Several `.load` and `.store` can use the same `Transfer`.
 - The copies are done when the kernel is called: the `.load` first and the `.store` last ([10.5](calling.md#105-uploads-and-downloads-around-the-run)).
+
+## 9.4 The offsets
+
+`.offsets` says in which buffers of the VME a `.load` or a `.store` copies, and from which word of each buffer.
+
+```c
+.kernel k direct {
+  Transfer in = { memory: input, count: 15 };
+  Int stride = 4;
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; .top1 = 4; .base2 = 0x10; } }
+  for i in 0..3 {
+    .load { .transfer = in; .scope = global; .offsets { base[i] = i * stride; } }
+  }
+}
+```
+
+| Entry | Meaning |
+|---|---|
+| `.top0 = n;` to `.top3 = n;` | the buffer `top0` to `top3`, from the word `n` |
+| `.base0 = n;` to `.base3 = n;` | the buffer `base0` to `base3`, from the word `n` |
+| `top[i] = n;`, `base[i] = n;` | the same, with the number of the buffer in `i` |
+
+**Explanation of the code above:**
+
+- The first `.load` copies `input` three times: into `top0` from its first word, into `top1` from its word 4, and into `base2` from its word 16.
+- `base[i] = i * stride;` is in a `for` ([2.7](language.md#27-loops)), so it is written once for each value of `i`: the second `.load` copies `input` into `base0` from the word 0, into `base1` from the word 4, into `base2` from the word 8 and into `base3` from the word 12.
+
+**Rules:**
+
+- An offset is a number of words, counted from the start of the buffer.
+- `i` in `top[i]` and `base[i]` is a number or a loop variable, from 0 to 3.
+- The value is a number, an `Int`, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- Currently not supported: a negative offset.
+- `.offsets` is the same in a `.load` and in a `.store`: in a `.store` it says where the copy starts in the buffer.
