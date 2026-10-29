@@ -86,17 +86,27 @@ def fill_offset(start):
   return f" + {start} * 4" if start else ""
 
 
+def emulation_parts(text, identifier, others):
+  arrays, macros = declared_parts(text, identifier, others)
+  memories = memory_declarations(text, identifier)
+  declared = arrays + memories
+  return {
+    "macros": macros,
+    "globals": [declaration["text"] for declaration in declared if declaration["where"] == "global"],
+    "locals": [declaration for declaration in declared if declaration["where"] == "local"],
+    "kernels": kernel_text(text, identifier),
+  }
+
+
 def extract_source(text, identifier, others=(), start=0, words=32):
   check_window(start, words)
-  arrays, macros = declared_parts(text, identifier, others)
+  parts = emulation_parts(text, identifier, others)
   sections = [prologue(words)]
-  if macros:
-    sections.append("\n".join(macros))
-  memories = memory_declarations(text, identifier)
-  globals_ = [declaration["text"] for declaration in arrays + memories if declaration["where"] == "global"]
-  if globals_:
-    sections.append("\n\n".join(globals_))
-  sections.append(kernel_text(text, identifier))
-  sections.append(process_function(text, identifier, [declaration for declaration in arrays + memories if declaration["where"] == "local"], start))
+  if parts["macros"]:
+    sections.append("\n".join(parts["macros"]))
+  if parts["globals"]:
+    sections.append("\n\n".join(parts["globals"]))
+  sections.append(parts["kernels"])
+  sections.append(process_function(text, identifier, parts["locals"], start))
   sections.append(MAIN)
   return "\n\n".join(sections) + "\n"
