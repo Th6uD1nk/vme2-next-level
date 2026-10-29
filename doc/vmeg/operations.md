@@ -231,6 +231,7 @@ Staging s;
 
 - A shift written after it, `mac(top0, top1) >> 4`, is applied to the result ([6.4](#64-sat-and-the-shifts)).
 - It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
+- To take the 4th word of each group, shift the `cyc` of the write AGU ([4.2.4](agu.md#424-write-agus)). The `mat4x4-mul-batch` sample does it.
 
 ### 6.3.5 acc
 
@@ -246,7 +247,6 @@ Staging s;
 **Rules:**
 
 - It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
-- The `mat4x4` sample reads the 4th word of each group of a `mac`, with `cyc: auto - 1` ([4.2.4](agu.md#424-write-agus)).
 
 ### 6.3.6 and, or and xor
 
