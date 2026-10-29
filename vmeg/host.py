@@ -1,3 +1,4 @@
+from vmeg.qformat import buffer_format
 from vmeg.blocks import decorator_calls, decorator_names
 from vmeg.scanner import tokens
 from vmeg.vmecalls import ASYNC_END, ASYNC_START, DISABLE, ENABLE
@@ -121,7 +122,13 @@ def check_buffers(text, toks, blocks):
     line = text.count("\n", 0, start) + 1
     if depth > 0:
       raise ValueError(f"line {line}: {value} only declares a variable, it cannot be used in a parameter or a cast")
-    if i + 1 >= len(toks) or toks[i + 1][0] != "ident":
+    after = i + 1
+    if value == "Buffer":
+      try:
+        _, after = buffer_format(toks, i)
+      except ValueError as e:
+        raise ValueError(f"line {line}: {e}") from None
+    if after >= len(toks) or toks[after][0] != "ident":
       raise ValueError(f"line {line}: {value} must be followed by a variable name (volatile {value} name[...])")
     found = False
     j = i - 1
