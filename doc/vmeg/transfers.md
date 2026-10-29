@@ -9,6 +9,7 @@
   - [9.2.1 The fields](#921-the-fields)
   - [9.2.2 Where each field applies](#922-where-each-field-applies)
   - [9.2.3 The group](#923-the-group)
+  - [9.2.4 step: 0](#924-step-0)
 - [9.3 .load and .store](#93-load-and-store)
 - [9.4 The offsets](#94-the-offsets)
 - [9.5 Unknown names in a Transfer](#95-unknown-names-in-a-transfer)
@@ -125,3 +126,27 @@ Transfer(Words) rows = { memory: matrix, count: 15, step: 4, group: { size: 3, o
 - The groups are on the scratchpad side, in words.
 - The groups can overlap, when `outer` is smaller than the size of a group: the fft sample lays groups of `2 * stride` words every `stride` words, and the last word written in a place is the one that stays.
 - In the samples `inner` is always 1.
+
+### 9.2.4 step: 0
+
+```c
+Transfer(Words) repeated = { memory: source, count: 1, gap: 7, step: 0, group: { size: 3, outer: 2, inner: 1 } };
+```
+
+With `step: 0`, `count` and `gap` do not have their meaning of [9.2.1](#921-the-fields):
+
+| Field | Meaning with `step: 0` |
+|---|---|
+| `count` | the number of repetitions of the transfer, minus one |
+| `gap` | the number of words of one repetition, minus one |
+
+**Explanation of the code above:**
+
+- `count: 1` repeats the transfer once: it runs twice, one after the other.
+- `gap: 7` makes a repetition read 8 words of the array, from the first word.
+- The memory starts again at the first word of the array for each repetition.
+- The 16 words of the two repetitions form one stream. It fills the groups one after the other: `group` is windows of 4 words (`size: 3`) laid every 2 words (`outer: 2`) in the scratchpad. Where two windows overlap, the last word written is the one that stays.
+
+**Rules:**
+
+- A repetition reads `gap + 1` words of the array, so the array has to be at least that long.
