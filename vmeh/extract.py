@@ -4,7 +4,9 @@ from vmee.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
 
 
-def prologue(words):
+def prologue(words, commands=False):
+  shared = "meLibSetSharedUncached32(2);" if commands else "meLibSetSharedUncached32(1);"
+  command = "\n#define meCommand (meLibSharedMemory[1])" if commands else ""
   return f"""#include <pspctrl.h>
 #include <pspdisplay.h>
 #include <pspkernel.h>
@@ -20,8 +22,8 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU | PSP_THREAD_ATTR_USER);
 ME_LIB_SETUP_SIMPLE_SUSPEND_HANDLER();
 VME_DEBUG_SET_BUFFER_WORD_COUNT({words});
 
-meLibSetSharedUncached32(1);
-#define meFinish (meLibSharedMemory[0])"""
+{shared}
+#define meFinish (meLibSharedMemory[0]){command}"""
 
 
 MAIN = """int main() {
@@ -52,10 +54,10 @@ def single_identifier(sources):
   return found[0]
 
 
-def kernel_text(text, identifier):
+def kernel_texts(text, identifier):
   names = chosen_emulation(text, identifier)["kernels"]
   blocks = find_blocks(text)
-  return "\n\n".join(text[block[1]:block[3]] for name in names for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
+  return [(name, text[block[1]:block[3]]) for name in names for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name]
 
 
 def call_block(name, actions, pairs, memory, body):
@@ -69,16 +71,16 @@ def call_block(name, actions, pairs, memory, body):
   return lines
 
 
-def process_function(text, identifier, locals_, start):
+def process_function(text, identifier, locals_, start, name="meLibOnProcess", looped=True):
   emulation = chosen_emulation(text, identifier)
-  lines = ["void meLibOnProcess(void) {"]
+  lines = [f"void {name}(void) {{"]
   for declaration in locals_:
     lines += [f"  {declaration['text']}", ""]
   last = len(emulation["steps"]) - 1
   for index, ((name, actions), pairs, memory) in enumerate(zip(emulation["steps"], emulation["pairs"], emulation["memories"])):
     body = [f"vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});"] if index == last else []
     lines += call_block(name, actions, pairs, memory, body)
-  lines += ["", "  meFinish = 1;", "", "  while (1) {", "  }", "}"]
+  lines += ["", "  meFinish = 1;", "", "  while (1) {", "  }", "}"] if looped else ["}"]
   return "\n".join(lines)
 
 
@@ -94,7 +96,7 @@ def emulation_parts(text, identifier, others):
     "macros": macros,
     "globals": [declaration["text"] for declaration in declared if declaration["where"] == "global"],
     "locals": [declaration for declaration in declared if declaration["where"] == "local"],
-    "kernels": kernel_text(text, identifier),
+    "kernels": kernel_texts(text, identifier),
   }
 
 
@@ -106,7 +108,7 @@ def extract_source(text, identifier, others=(), start=0, words=32):
     sections.append("\n".join(parts["macros"]))
   if parts["globals"]:
     sections.append("\n\n".join(parts["globals"]))
-  sections.append(parts["kernels"])
+  sections.append("\n\n".join(kernel for _, kernel in parts["kernels"]))
   sections.append(process_function(text, identifier, parts["locals"], start))
   sections.append(MAIN)
   return "\n\n".join(sections) + "\n"
