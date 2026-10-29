@@ -45,15 +45,6 @@ MAIN = """int main() {
 }"""
 
 
-def single_identifier(sources):
-  found = [emulation["id"] for _, text in sources for emulation in emulations(text)]
-  if not found:
-    raise ValueError("there is no @emulate in these files")
-  if len(found) > 1:
-    raise ValueError(f"there are {len(found)} @emulate in these files ({', '.join(found)}), give --extract ID")
-  return found[0]
-
-
 MAIN_FIRST = """int main() {
   scePowerSetClockFrequency(333, 333, 166);
   vmeDebugSetupBuffers();
@@ -153,4 +144,39 @@ def extract_source(text, identifier, others=(), start=0, words=32):
   sections.append("\n\n".join(kernel for _, kernel in parts["kernels"]))
   sections.append(process_function(text, identifier, parts["locals"], start))
   sections.append(MAIN)
+  return "\n\n".join(sections) + "\n"
+
+
+def merged_macros(parts):
+  values = {}
+  for macro in (macro for part in parts for macro in part["macros"]):
+    name = macro.split()[1]
+    if values.setdefault(name, macro) != macro:
+      raise ValueError(f"the macro {name} has two different values in the files of the @emulate")
+  return list(values.values())
+
+
+def extract_program(sources, start=0, words=32):
+  entries = [
+    (text, emulation["id"], [other for other_index, (_, other) in enumerate(sources) if other_index != index])
+    for index, (_, text) in enumerate(sources) for emulation in emulations(text)
+  ]
+  if not entries:
+    raise ValueError("there is no @emulate in these files")
+  if len(entries) == 1:
+    return extract_source(*entries[0], start, words)
+  check_window(start, words)
+  parts = [emulation_parts(*entry) for entry in entries]
+  sections = [prologue(words, True)]
+  macros = merged_macros(parts)
+  if macros:
+    sections.append("\n".join(macros))
+  globals_ = list(dict.fromkeys(declaration for part in parts for declaration in part["globals"]))
+  if globals_:
+    sections.append("\n\n".join(globals_))
+  sections.append("\n\n".join(dict(kernel for part in parts for kernel in part["kernels"]).values()))
+  for index, ((text, identifier, _), part) in enumerate(zip(entries, parts), 1):
+    sections.append(process_function(text, identifier, part["locals"], start, f"vmehRun{index}", False))
+  sections.append(on_process_loop(len(entries)))
+  sections.append(MAIN_FIRST)
   return "\n\n".join(sections) + "\n"

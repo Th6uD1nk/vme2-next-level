@@ -3,7 +3,7 @@ import os
 import sys
 
 from vmee.run import choose_source
-from vmeh.extract import extract_source, single_identifier
+from vmeh.extract import extract_program, extract_source
 
 
 def main(argv=None):
@@ -22,11 +22,13 @@ def main(argv=None):
       where = path
       with open(path, encoding="utf-8") as f:
         sources.append((path, f.read()))
-    identifier = args.extract or single_identifier(sources)
-    path, text = choose_source(sources, identifier)
-    where = path
-    others = [other for other_path, other in sources if other_path != path]
-    result = extract_source(text, identifier, others, args.buffers_start, args.buffers_words)
+    if args.extract:
+      path, text = choose_source(sources, args.extract)
+      where = path
+      others = [other for other_path, other in sources if other_path != path]
+      result = extract_source(text, args.extract, others, args.buffers_start, args.buffers_words)
+    else:
+      result = extract_program(sources, args.buffers_start, args.buffers_words)
     where = args.output
     if os.path.dirname(args.output):
       os.makedirs(os.path.dirname(args.output), exist_ok=True)
