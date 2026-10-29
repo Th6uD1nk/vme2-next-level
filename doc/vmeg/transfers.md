@@ -220,7 +220,7 @@ volatile Buffer result[16];
 - An offset is a number of words, counted from the start of the buffer.
 - `i` in `top[i]` and `base[i]` is a number or a loop variable, from 0 to 3.
 - The value is a number, an `Int`, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)).
-- Currently not supported: a negative offset.
+- A negative offset counts back from the start of the buffer: `.top1 = -8` starts 8 words before `top1`, that is in the end of `top0`.
 - `.offsets` is the same in a `.load` and in a `.store`: in a `.store` it says where the copy starts in the buffer.
 
 ## 9.5 Unknown names in a Transfer
@@ -281,7 +281,6 @@ The messages start with `line N:`, left out here.
 | [9.3](#93-load-and-store) | `.scope must be local or global` | `.scope` with another value |
 | [9.3](#93-load-and-store) | `this .load is not generated yet (only Transfer and Transfer(Words))` | a `.load` or a `.store` that uses a `Transfer(Halves)` or a `Transfer(Bytes)` |
 | [9.4](#94-the-offsets) | `top0 is already set in this .load` | the same buffer twice in `.offsets` |
-| [9.4](#94-the-offsets) | `the offset of top0 cannot be negative` | a negative offset |
 | [9.4](#94-the-offsets) | `top[...]: buffer index must be a number from 0 to 3` | `top[i]` or `base[i]` with an index out of range |
 | [9.4](#94-the-offsets) | `unknown offset '.top4' (.top0 to .top3, .base0 to .base3)` | a buffer that does not exist |
 | [9.4](#94-the-offsets) | `expected .top0 to .top3, .base0 to .base3, top[...] or base[...]` | an entry of `.offsets` that is none of the forms |
