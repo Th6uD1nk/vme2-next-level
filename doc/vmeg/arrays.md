@@ -190,6 +190,10 @@ The messages start with `line N:`, left out here.
 | [8.1](#81-the-buffer-keyword) | `Buffer must be volatile (volatile Buffer name[...])` | `Buffer` written without `volatile` |
 | [8.1](#81-the-buffer-keyword) | `Buffer must be followed by a variable name (volatile Buffer name[...])` | `Buffer` with no name after it |
 | [8.1](#81-the-buffer-keyword) | `Buffer only declares a variable, it cannot be used in a parameter or a cast` | `Buffer` in a parameter or in a cast |
+| [8.1.1](#811-the-q-format) | `the format of a Buffer is written Qm.n, for example Buffer(Q8.8)` | a format that is not `Qm.n`, like `Buffer(Q8)` or `Buffer(Foo)` |
+| [8.1.1](#811-the-q-format) | `the integer part of a Q format counts the sign, it is 1 at least` | a format with an integer part of 0, like `Buffer(Q0.8)` |
+| [8.1.1](#811-the-q-format) | `the format Q20.10 has 30 bits, a Buffer holds 24 bits at most` | a format of more than 24 bits (the message gives the format and its bits) |
+| [8.1.1](#811-the-q-format) | `the value 2.0 does not fit the format Q1.15 (from -1 to 0.999969482421875)` | a decimal number outside the range of the format (the message gives the value, the format and the range) |
 | [8.2](#82-global-arrays) | `the array 'input' of a global load is not declared with Buffer in any file` | a global `.load` or `.store` (the message says `load` or `store`) that names an array declared with `Buffer` in no file |
 | [8.3](#83-local-arrays) | `'x' is not declared with Buffer in the function marked with @kernel k at line N (local load)` | a local `.load` or `.store` whose array is not declared in the function marked with `@kernel` (the message says `load` or `store`) |
 | [8.3](#83-local-arrays) | `'x' is not declared with Buffer in the function that contains the @kernel k block at line N (local load)` | the same, for a function that holds a block `@kernel k config \| exec { … }` |
