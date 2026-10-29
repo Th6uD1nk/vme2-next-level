@@ -139,7 +139,7 @@ icn xpcr = 5, skew = 0x10;
 | `skew` | stream router with skew |
 
 - The two can be written in one statement or in two. Each one at most once in a kernel.
-- The value is a number, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)). It is written as it is and not checked. The meaning of the bits of the value is currently not documented.
+- The value is a number, an expression ([2.5](language.md#25-expressions)) or a name that `vmegc` does not know ([2.6](language.md#26-numbers-macros-and-unknown-names)). It is written as it is and not checked.
 - The other interconnect registers, the routing of the buffers and the outputs of the pes that hold two operations, are not written with `icn`: they are set from the kernel, see [Staging, routing and warnings](staging-routing.md).
 
 ## 3.5 Errors

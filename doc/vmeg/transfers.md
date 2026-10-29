@@ -87,11 +87,11 @@ Transfer(Words) vectors = { memory: sharedVec, count: 63, gap: 0, step: 4, group
 Transfer(Words) results = { memory: sharedRes, count: 63, gap: 3, step: 4 };
 ```
 
-| Field | Side | Unit | Seen with |
-|---|---|---|---|
-| `step` | memory | bytes | a load and a store |
-| `gap` | scratchpad | words | a store (a load has `gap: 0` in the samples) |
-| `group` | scratchpad | words | a load (a store has no group in the samples) |
+| Field | Side | Unit |
+|---|---|---|
+| `step` | memory | bytes |
+| `gap` | scratchpad | words |
+| `group` | scratchpad | words |
 
 **Explanation of the code above:**
 
@@ -101,7 +101,6 @@ Transfer(Words) results = { memory: sharedRes, count: 63, gap: 3, step: 4 };
 **Rules:**
 
 - `step` is the same on a load and on a store: it moves in the memory, whatever the direction.
-- Currently not verified on the hardware: a `gap` other than 0 with a load, and a `group` with a store.
 
 ### 9.2.3 The group
 

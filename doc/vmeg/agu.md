@@ -78,7 +78,7 @@ Agu t = { count: 15, inner0: { count: 15, step: 1 } };
 
 - The parameters of `inner0` can not have parameters of their own.
 - `inner1` is currently not supported.
-- What the range does on its own is currently not documented. With `repeat` it is the range that is repeated, see [4.2.3](#423-read-agus).
+- With `repeat` it is the range that is repeated, see [4.2.3](#423-read-agus).
 
 ### 4.2.3 Read AGUs
 
@@ -93,7 +93,6 @@ Agu matrix = { count: 15, inner0: { count: 15, step: 1 }, repeat: true };
 **Rules:**
 
 - `repeat` needs `inner0`.
-- Currently not supported: `repeat` together with `reverse`.
 
 ### 4.2.4 Write AGUs
 
@@ -128,7 +127,6 @@ Agu d = { count: 15, cyc: auto + shift };
 **Rules:**
 
 - `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it. `vmegc` warns when another pe that shares it needs a different delay ([7.3](staging-routing.md#73-warnings)).
-- The rule is checked for one and two operations. Three chained operations (12) and a Staging variable read by another pe are not yet verified on the hardware.
 
 ### 4.2.5 The mode 2
 
@@ -155,7 +153,6 @@ Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };
 
 - In the mode 2, `count` and `step` describe the range itself: there is no `inner0`.
 - `repeat` needs nothing else: it repeats the `count + 1` words of the AGU.
-- Currently not verified on the hardware in the mode 2: `reverse`, and `cyc`, `bubbles` and `sync` of a write AGU.
 - An AGU written directly in the braces of a pe is in the mode 4: for the mode 2, declare an `Agu(2)` variable and bind it.
 
 ## 4.3 Binding an AGU to a pe

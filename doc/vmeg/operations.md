@@ -217,8 +217,6 @@ Staging s;
 .pe0 { .spad = subshr(top0, base0, 2); }
 ```
 
-The sign of the result and the place of `n` are not yet verified on the hardware.
-
 ### 6.3.4 mac
 
 `mac(a, b)` is a running inner product: at each word it adds `a * b` to the sum of the previous words. The result is a ramp of partial sums, and the result of a product of 4 elements is the 4th word of each group of 4. `a` and `b` are buffers or `Staging` variables.
