@@ -158,11 +158,15 @@ class Emulator:
     words = [self.scratchpad.read(offset + i) for i in range(self.transfer_count())]
     self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], words)
 
+  def iteration_step(self):
+    step = self.dmac[DMAC_ITERATION_STEP]
+    if step == 0 or step % ITERATION_STEP_BYTES:
+      raise ValueError(f"the iteration step {step} is not modeled (modeled: a multiple of {ITERATION_STEP_BYTES} bytes)")
+    return step
+
   def iteration_addresses(self):
     dims = self.dmac[DMAC_COUNT]
     count, gap = (dims >> 16) + 1, (dims & 0xffff) + 1
-    if self.dmac[DMAC_ITERATION_STEP] != ITERATION_STEP_BYTES:
-      raise ValueError(f"the iteration step {self.dmac[DMAC_ITERATION_STEP]} is not modeled (modeled: {ITERATION_STEP_BYTES}, one word of 32 bits)")
     size = self.dmac[DMAC_GROUP_SIZE] + 1
     outer, inner = self.dmac[DMAC_GROUP_STEPS] >> 16, self.dmac[DMAC_GROUP_STEPS] & 0xffff
     offset = self.dmac[DMAC_SCRATCHPAD_OFFSET]
@@ -175,13 +179,15 @@ class Emulator:
     return [offset + i * gap for i in range(count)]
 
   def iterate_to_scratchpad(self):
+    step = self.iteration_step()
     addresses = self.iteration_addresses()
-    for address, word in zip(addresses, self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], len(addresses))):
+    for address, word in zip(addresses, self.get_memory(self.dmac[DMAC_MEMORY_ADDRESS], len(addresses), step)):
       self.scratchpad.write(address, word)
 
   def iterate_to_memory(self):
+    step = self.iteration_step()
     addresses = self.iteration_addresses()
-    self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], [self.scratchpad.read(address) for address in addresses])
+    self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], [self.scratchpad.read(address) for address in addresses], step)
 
   def mem_to_16(self):
     values = []
@@ -198,18 +204,18 @@ class Emulator:
       words.append(low | high << 16)
     self.put_memory(self.dmac[DMAC_MEMORY_ADDRESS], words)
 
-  def put_memory(self, address, words):
+  def put_memory(self, address, words, step=4):
     first = self.memory_address(address)
     for i, word in enumerate(words):
-      self.memory[first + 4 * i] = word & 0xffffffff
+      self.memory[first + step * i] = word & 0xffffffff
 
-  def get_memory(self, address, count):
+  def get_memory(self, address, count, step=4):
     first = self.memory_address(address)
     words = []
     for i in range(count):
-      word = self.memory.get(first + 4 * i)
+      word = self.memory.get(first + step * i)
       if word is None:
-        raise ValueError(f"the memory image has no word at {first + 4 * i:#x}")
+        raise ValueError(f"the memory image has no word at {first + step * i:#x}")
       words.append(word)
     return words
 
