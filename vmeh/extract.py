@@ -62,6 +62,11 @@ static void vmehPlay(const int index) {
   }
 
   vmeDebugTouch();
+  FILE* const log = fopen("./log.txt", "a");
+  if (log) {
+    fprintf(log, "Kernel: %03d - %s\\n\\n", index + 1, vmehNames[index]);
+    fclose(log);
+  }
   vmeDebugDumpWindow();
 
   sceKernelDelayThread(500000);
