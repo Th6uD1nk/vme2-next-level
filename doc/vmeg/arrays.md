@@ -137,7 +137,7 @@ python3 vmegc.py data.vmeg.c main.vmeg.c
 A `memory` kernel is built in RAM before it is sent to the VME ([3.2.2](kernel.md#322-memory)). `Memory` declares the places in RAM where it is built, when a kernel has to keep several of them at the same time.
 
 ```c
-volatile Memory stage[4];
+volatile Memory configs[4];
 
 void run(void) {
   volatile Memory local[2];
@@ -147,7 +147,7 @@ void run(void) {
 
 **Explanation of the code above:**
 
-- `volatile Memory stage[4];` declares 4 memory configs. Each one has the size and the alignment that the VME needs to load it: 112 words, aligned on 64 bytes. `stage[2]` is the third one.
+- `volatile Memory configs[4];` declares 4 memory configs. Each one has the size and the alignment that the VME needs to load it: 112 words, aligned on 64 bytes. `configs[2]` is the third one.
 - `volatile Memory one;` declares a single memory config.
 - A `Memory` is declared where you need it, outside any function or inside one, as any variable of your program. A call of a kernel names it with `.memory` in the code that sees it, see [11.3.2](blocks.md#1132-the-memory-config-of-a-call).
 
