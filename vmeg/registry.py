@@ -2,6 +2,7 @@ from vmeg.blocks import decorator_calls, find_blocks, header_words, kernel_name
 from vmeg.host import declarator_names, kernel_sources
 from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.macros import known_macros
+from vmeg.qformat import buffer_format
 from vmeg.parser import kernel_statements
 from vmeg.scanner import tokens
 
@@ -153,7 +154,7 @@ def split_declarators(text):
   qualifiers = [value for kind, value, _, _ in toks[:at] if kind == "ident" and value not in ("static", "extern")]
   declarators = [[]]
   nest = 0
-  for token in toks[at + 1:]:
+  for token in toks[buffer_format(toks, at)[1]:]:
     kind, value = token[0], token[1]
     if kind == "punct" and value in "([{":
       nest += 1
