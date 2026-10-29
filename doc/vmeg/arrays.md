@@ -43,7 +43,7 @@ A global array is declared outside any function. A kernel uses it in a `.load` o
 volatile Buffer input[16];
 
 .kernel k direct {
-  Transfer t = { type: words, mode: basic, memory: input, count: 15 };
+  Transfer t = { memory: input, count: 15 };
   .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }
 }
 
@@ -70,7 +70,7 @@ A local array is declared inside the function that calls the kernel. A kernel us
 
 ```c
 .kernel k direct {
-  Transfer t = { type: words, mode: basic, memory: x, count: 15 };
+  Transfer t = { memory: x, count: 15 };
   .load { .transfer = t; .scope = local; .offsets { .top0 = 0; } }
 }
 
@@ -107,7 +107,7 @@ volatile Buffer input[16] = { 1, 2, 3 };
 
 ```c
 .kernel k direct {
-  Transfer t = { type: words, mode: basic, memory: input, count: 15 };
+  Transfer t = { memory: input, count: 15 };
   .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }
 }
 
