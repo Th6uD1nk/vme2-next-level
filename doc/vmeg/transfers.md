@@ -75,7 +75,7 @@ Transfer(Words) in = { memory: input, count: 15, gap: 0, step: 4, group: { size:
 **Rules:**
 
 - The values are the **real values of the registers**: nothing is added or removed, `count: 15` is 16 words.
-- `memory` and `count` are needed. `gap`, `step` and `group` can be left out, and `vmegc` does not write what is left out.
+- `memory` and `count` are needed. `gap` is 0 when it is left out. `step` and `group` can be left out too, and `vmegc` does not write them.
 - `group` takes `size`, and `outer` with `inner` together.
 - The same `Transfer` is used by a `.load` and by a `.store` ([9.3](#93-load-and-store)).
 
