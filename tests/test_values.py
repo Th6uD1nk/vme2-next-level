@@ -175,6 +175,16 @@ if __name__ == "__main__":
   unittest.main()
 
 
+class WordsOfATransferTest(unittest.TestCase):
+  def test_the_words_written_are_the_count_plus_one_and_the_repetitions_of_a_step_of_0_are_multiplied(self):
+    basic, extended = TRANSFER_KINDS["basic"], TRANSFER_KINDS["Words"]
+    self.assertEqual(basic.words({"count": 15}), 16)
+    self.assertEqual(extended.words({"count": 15, "gap": 3, "step": 4}), 16)
+    self.assertEqual(extended.words({"count": 1, "gap": 23, "step": 0}), 48)
+    self.assertEqual(extended.words({"count": 1, "step": 0}), 2)
+    self.assertEqual(extended.words({"count": "HEADER", "gap": 3, "step": 0}), "((HEADER + 1) * 4)")
+
+
 class NamesOfATransferTest(unittest.TestCase):
   def test_the_names_are_found_once_in_the_order_of_the_fields(self):
     transfer = {"kind": TRANSFER_KINDS["Words"], "count": "((HEADER_N * 2) - n)", "gap": "n", "step": "HEADER_STEP", "group": {"size": 3}}
