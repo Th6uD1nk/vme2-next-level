@@ -143,6 +143,10 @@ class TransferValuesTest(unittest.TestCase):
       "vme_dma(GROUP, STEPS, headerOut, 1);",
     ])
 
+  def test_an_extended_transfer_writes_both_values_of_the_dims_with_a_gap_of_0_when_it_is_left_out(self):
+    self.assertEqual(dma_lines("{ memory: arr, count: 7 }", kind="(Words)"), ["vme_dma(ITERATION, DIMS, 7, 0);"])
+    self.assertEqual(dma_lines("{ memory: arr, count: 7, gap: 3 }", kind="(Words)"), ["vme_dma(ITERATION, DIMS, 7, 3);"])
+
   def test_a_known_part_is_replaced_by_its_number_in_the_copy_and_a_known_value_is_a_number(self):
     prefix = "#define KNOWN 64\n"
     self.assertEqual(dma_lines("{ memory: arr, count: KNOWN + HEADER }", prefix), ["vme_dma(ITERATION, DIMS, (64 + header));"])
