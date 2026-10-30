@@ -44,3 +44,31 @@ make
 - The build needs the PSP toolchain, `PSPDEV` set, like the other samples.
 - With one `@emulate`, the program runs it, writes `log.txt` in the folder of the EBOOT and exits. It shows nothing on the screen.
 - `-DVMEH_SOURCE` is needed: without it `cmake` stops with an error ([3.7](#37-errors)).
+
+## 3.3 Several emulations
+
+```c
+@emulate "add"
+.kernel add direct {
+  Agu t = { count: 7 }, w = { count: 7, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+@emulate "sub"
+.kernel sub direct {
+  Agu t = { count: 7 }, w = { count: 7, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 - top0; }
+}
+```
+
+**Explanation of the code above:**
+
+- The file has two `@emulate`. The program built by `vmeh` has both of them.
+- The screen shows the number and the id of the current one, `001 - add` first. The first one runs at the start.
+- Left and Right go to the previous and to the next one. They stop at the first and at the last one, and each emulation runs when it is reached.
+- `log.txt` holds the dump of the current emulation only: each new run replaces it. Its first line is `Kernel: 001 - add`, followed by the buffers in the format of [1.2](running.md#12-running-a-kernel).
+
+**Rules:**
+
+- `-DVMEH_ID=id` keeps only the `@emulate` with that id: `cmake -DVMEH_SOURCE=… -DVMEH_ID=sub ..` builds a program with `sub` alone, which behaves as in [3.2](#32-building).
+- With one `@emulate`, the program shows nothing and does not wait for a button ([3.2](#32-building)).
