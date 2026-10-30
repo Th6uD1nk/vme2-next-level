@@ -64,3 +64,18 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 - `--buffers-start` and `--buffers-words` choose the words shown, as in [1.4](running.md#14-the-window-of-the-buffers).
 - A trace takes a single file ([1.3](running.md#13-several-files)). With `--run` or `--list` the file is read as a vmeg file, and `--trace` and `--compat` go with `--run` only ([1.8](running.md#18-errors)).
 - A trace can be written by hand: only its events are played.
+
+## 2.3 Errors
+
+The errors are printed as `file: line N: message`, with the exit code 1. `N` is the line of the trace. The other errors of `vmee` are in [1.8](running.md#18-errors).
+
+| Section | Message | Cause |
+|---|---|---|
+| [2.1](#21-the-trace-file) | `'x' is not a hexadecimal number` | a value or an address that is not written in hexadecimal |
+| [2.1](#21-the-trace-file) | `'x' is negative` | a negative number |
+| [2.1](#21-the-trace-file) | `W has the wrong number of values` | a `W` that has not an address and a value |
+| [2.1](#21-the-trace-file) | `M has the wrong number of values` | an `M` with no address |
+| [2.1](#21-the-trace-file) | `unknown event 'X' (W, M)` | a line that does not start with `W` or `M` |
+| [2.1](#21-the-trace-file) | `address 0x1000 is not mapped` | a `W` at an address that is in none of the three zones |
+
+The errors found while an event is played, such as a word of the scratchpad that does not exist, start with `line N:` too. They are described with the part of the VME they come from ([Memories](memories.md), [The DMAC](dmac.md), [Datapath registers](registers.md)).
