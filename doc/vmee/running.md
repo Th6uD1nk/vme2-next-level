@@ -234,3 +234,34 @@ defines of the file:
 - The fourth mark is `'name' is not declared with Buffer`, for a source array that is not a `Buffer`.
 - Only one file is given to `--list`.
 - Currently not supported: a block that calls a kernel defined in another file than the block.
+
+## 1.8 Errors
+
+The errors of the command line are printed as `vmeemu: error: message`, with the exit code 2. The other errors are printed as `file: message`, with the exit code 1. The errors of a kernel or of an array come from `vmegc` and are described with the part of the language they come from ([14](../VMEG.md#14-errors)).
+
+| Section | Message | Cause |
+|---|---|---|
+| [1.2](#12-running-a-kernel) | `no @emulate with the id 'x' (a, b)` | an id that no mark has; the message lists the ids of the file, or says that there is no `@emulate` |
+| [1.2](#12-running-a-kernel) | `[Errno 2] No such file or directory: 'file'` | an input file that cannot be read |
+| [1.2](#12-running-a-kernel) | `the library folder … lacks …, the submodule is probably empty (git submodule update --init me-core-mapper)` | the submodule `me-core-mapper` is empty |
+| [1.2](#12-running-a-kernel) | `g++ is needed to build the host program and was not found` | no `g++` |
+| [1.2](#12-running-a-kernel) | `the host program does not build:` | the host program written for the kernel does not compile; the output of `g++` follows |
+| [1.2](#12-running-a-kernel) | `the host program did not finish in 60 seconds` | the host program runs for more than 60 seconds |
+| [1.2](#12-running-a-kernel) | `the host program failed with the exit code N:` | the host program ends with an error; its error output follows |
+| [1.3](#13-several-files) | `several files go only with --run` | several files without `--run` |
+| [1.3](#13-several-files) | `the @emulate "id" is in a and b` | the mark is in two of the files |
+| [1.3](#13-several-files) | `the array x of the @emulate "id" is declared extern and no file defines it` | a global array declared `extern` that no file defines |
+| [1.3](#13-several-files) | `the array x of the @emulate "id" is defined in no file` | an array of a `.load` or of a `.store` that no file declares |
+| [1.3](#13-several-files) | `the Memory x of the @emulate "id" is defined in no file` | a `Memory` named by `.memory` that no file declares |
+| [1.3](#13-several-files) | `the macro N has two different values in the files of the @emulate "id"` | a `#define` with two values in the files that supply the arrays |
+| [1.4](#14-the-window-of-the-buffers) | `the first word of the buffers cannot be negative` | `--buffers-start` below 0 |
+| [1.4](#14-the-window-of-the-buffers) | `the number of words of the buffers must be 1 or more` | `--buffers-words` below 1 |
+| [1.4](#14-the-window-of-the-buffers) | `the window of the buffers goes past the end of a buffer (2048 words)` | `start + words` above 2048 |
+| [1.5](#15---trace) | `--trace goes with --run` | `--trace` without `--run` |
+| [1.6](#16---compat) | `--compat goes with --run` | `--compat` without `--run` |
+| [1.7](#17---list) | `--kernel and --full go with --list` | `--kernel` or `--full` without `--list` |
+| [1.7](#17---list) | `--run does not go with --list` | the two options together |
+| [1.7](#17---list) | `no @emulate on the kernel 'k' (a, b)` | `--kernel` with a kernel that no emulation uses; the message lists the kernels that are used |
+| [1.7](#17---list) | `the kernel q of the @emulate "far" is not defined in this file` | a block that calls a kernel defined in another file |
+| [1.7](#17---list) | `warning: there is no @emulate in this file` | the file has no `@emulate`; the listing is still written |
+| [1.7](#17---list) | `warning: emulate "x": the kernel k has no buffer` | the kernel has no `.load` and no `.store`; the message names all the kernels of a block |
