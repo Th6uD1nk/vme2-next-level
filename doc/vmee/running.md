@@ -157,3 +157,79 @@ vmee --run twice main.vmeg.cpp --compat fat
 ```
 
 `--compat fat` generates the code of the kernel with the opcodes that work on the fat PSP, the way `vmegc --compat fat` does ([1.6](../vmeg/running.md#16---compat)): the addition uses `0x030` and not `0x010`, for example. Without it the code is the default one. It goes with `--run`.
+
+## 1.7 --list
+
+```
+vmee --list main.vmeg.cpp
+```
+
+`--list` shows the emulations of the file and writes nothing else: no kernel is played. An emulation is an `@emulate`, in either form: the mark above a `.kernel`, or the block `@emulate "id" { … }` ([1.1](#11-marking-a-kernel)). For this file:
+
+```c
+volatile Buffer input[16];
+
+@emulate "add-test"
+.kernel add direct {
+  Agu t = { count: 15 }, w = { count: 15, cyc: auto };
+  Transfer in = { memory: input, count: 15 };
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+.kernel twice direct {
+  Agu t = { count: 15 }, w = { count: 15, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 * top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "both" {
+    @kernel add config | exec {
+    }
+    @kernel twice config | exec {
+    }
+  }
+}
+```
+
+the listing is:
+
+```
+emulate "add-test": kernel add (direct, lines 4-9)
+  global loads:
+    TOP_0   16 words  from input
+  local loads: none
+emulate "both": kernels add, twice (lines 17-22)
+  calls:
+    add  config | exec
+    twice  config | exec
+  global loads:
+    TOP_0   16 words  from input
+  local loads: none
+
+defines of the file:
+```
+
+**Explanation of the code above:**
+
+- `add-test` is the mark on `add`: its line gives the kernel, its mode and the lines of the kernel.
+- `both` is the block: its line gives the kernels it calls and the lines of the block, and `calls:` gives the calls in their order, with their actions.
+- `TOP_0   16 words  from input` says that the buffer `TOP_0` receives 16 words of `input`, by a `.load`. The `.store` of the kernels are listed the same way, under `global stores` and `local stores`.
+- The last line, `defines of the file:`, is followed by the `#define` of the file.
+
+**Rules:**
+
+- `--kernel NAME` keeps the emulations that use the kernel `NAME`: `--kernel twice` keeps `both`.
+- `--full` lists the eight buffers, `TOP_0` to `TOP_3` and `BASE_0` to `BASE_3`, of each emulation, and shows `not linked` for those that no `.load` fills.
+- `--kernel` and `--full` go with `--list`. `--run` does not.
+- A line is marked with `<--` when something is likely wrong, as in this listing of two `.load` that overlap, that go past the end of a buffer and that use a name with no `#define`:
+
+```
+    TOP_1   16 words  at 0x7f8  from a  <-- goes past the end of the buffer (0x800 words)
+    TOP_0   16 words  at 8  from b  <-- overlaps TOP_0 at 0 (words 8-15)
+    TOP_2   16 words  at RIGHT  from b  <-- 'RIGHT' has no #define in this file
+```
+
+- The fourth mark is `'name' is not declared with Buffer`, for a source array that is not a `Buffer`.
+- Only one file is given to `--list`.
+- Currently not supported: a block that calls a kernel defined in another file than the block.
