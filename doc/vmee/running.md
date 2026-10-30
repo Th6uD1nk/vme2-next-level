@@ -141,3 +141,19 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 - The number of words is 1 or more.
 - A number of words that is not a multiple of 4 gives a shorter last line.
 - `vmeh` has the same options ([3](vmeh.md)), and the log of the PSP has the same format.
+
+## 1.5 --trace
+
+```
+vmee --run twice main.vmeg.cpp --trace trace.txt
+```
+
+`--trace` also writes the events of the run to a file, in the format of [Traces](traces.md). It goes with `--run`.
+
+## 1.6 --compat
+
+```
+vmee --run twice main.vmeg.cpp --compat fat
+```
+
+`--compat fat` generates the code of the kernel with the opcodes that work on the fat PSP, the way `vmegc --compat fat` does ([1.6](../vmeg/running.md#16---compat)): the addition uses `0x030` and not `0x010`, for example. Without it the code is the default one. It goes with `--run`.
