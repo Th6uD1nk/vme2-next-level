@@ -432,6 +432,14 @@ class EmulationBlockTest(unittest.TestCase):
     self.assertEqual(main[main.index("vmeLibWipe();") + 1:main.index("vmeLibDisable();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext(stage[1]);"])
     self.assertIn("volatile u32 __attribute__((aligned(64))) stage[2][VME_CONTEXT_WORD_COUNT];", host_program(BLOCK, "blk"))
 
+  def test_vmeh_writes_the_statements_of_the_body_of_a_call_before_the_fill(self):
+    text = BODY.replace("    @kernel k exec {\n    }\n", "    @kernel k exec {\n      Transfer back = { memory: b, count: 15 };\n      .store { .transfer = back; .scope = global; .offsets { .base1 = 0; } }\n    }\n")
+    expected = (
+      "  @kernel k config {\n    Transfer out = { memory: b, count: 15 };\n    .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }\n  }\n"
+      "  @kernel k exec {\n    Transfer back = { memory: b, count: 15 };\n    .store { .transfer = back; .scope = global; .offsets { .base1 = 0; } }\n    vmeDebugFillWith(VME_BASE_BUFFERS);\n  }\n"
+    )
+    self.assertIn(expected, extract_source(text, "body"))
+
   def test_vmeh_writes_the_calls_of_the_block_and_the_fill_in_the_last_one(self):
     source = extract_source(BLOCK, "blk")
     expected = (
