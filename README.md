@@ -66,6 +66,7 @@ It needs the PSP toolchain, like the other samples.
 
 [PSP Media Engine Custom Core](https://github.com/mcidclan/psp-media-engine-custom-core)  
 [PSP Virtual Mobile Engine Ext](https://github.com/mcidclan/psp-virtual-mobile-engine-ext)  
+[PSP Media Engine Cracking the Unknown](hhttps://github.com/mcidclan/psp-media-engine-cracking-the-unknown)  
 
 ## Contribution Guidelines
 
