@@ -397,7 +397,36 @@ BLOCK = (
 )
 
 
+BODY = (
+  "volatile Buffer a[16];\n"
+  "volatile Buffer b[16];\n"
+  ".kernel k direct {\n"
+  "  Transfer in = { memory: a, count: 15 };\n"
+  "  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n"
+  "}\n"
+  "void meLibOnProcess(void) {\n"
+  "  @emulate \"body\" {\n"
+  "    @kernel k config {\n"
+  "      Transfer out = { memory: b, count: 15 };\n"
+  "      .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }\n"
+  "    }\n"
+  "    @kernel k exec {\n"
+  "    }\n"
+  "  }\n"
+  "}\n"
+)
+
+
 class EmulationBlockTest(unittest.TestCase):
+  def test_each_call_does_its_own_load_and_the_statements_of_the_body_come_after_its_calls(self):
+    main = [line.strip() for line in host_main(BODY, "body").splitlines()]
+    wait = "meCoreDMACPrimWaitTransferFinish();"
+    self.assertEqual(main[main.index("vmeLibWipe();") + 1:main.index("vmeLibDisable();")], [
+      "kInLoad(a, VME_TOP_BUFF0_WOFF);", wait, "vmeLibSetFlow(VME_DEFAULT);", "k();",
+      "meLibOnProcessOutStore(b, VME_BASE_BUFF0_WOFF);", wait,
+      "kInLoad(a, VME_TOP_BUFF0_WOFF);", wait, "vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();",
+    ])
+
   def test_the_emulator_plays_the_calls_of_the_block_with_their_values_and_their_memory(self):
     main = [line.strip() for line in host_main(BLOCK, "blk").splitlines()]
     self.assertEqual(main[main.index("vmeLibWipe();") + 1:main.index("vmeLibDisable();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext(stage[1]);"])
