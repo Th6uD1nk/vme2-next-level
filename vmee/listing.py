@@ -36,11 +36,23 @@ def kernel_pieces(text, blocks, name, id_):
   return kernel, loads, stores
 
 
+def body_texts(text, blocks, block):
+  texts = []
+  for other in blocks[blocks.index(block) + 1:]:
+    if other[0] == "kernel-block-end":
+      break
+    statement = text[other[1]:other[3]]
+    head = [value for _, value, _, _ in list(tokens(statement))[:2]]
+    if head not in ([".", "params"], [".", "memory"]):
+      texts.append(statement)
+  return texts
+
+
 def mark_steps(mode):
   return ("build", "config", "exec") if mode == "memory" else ("config", "exec")
 
 
-def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, memories=None, sequences=None, after=None):
+def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, memories=None, sequences=None, after=None, bodies=None):
   names = list(dict.fromkeys(name for name, _ in steps))
   pieces = {name: kernel_pieces(text, blocks, name, id_) for name in names}
   modes = {name: next((word for word in header_words(text, pieces[name][0])[2:] if word in ("direct", "memory")), None) for name in names}
@@ -55,6 +67,7 @@ def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, me
     "pairs": pairs or [[] for _ in steps],
     "memories": memories or [None for _ in steps],
     "after": after or [[] for _ in steps],
+    "bodies": bodies or [[] for _ in steps],
     "modes": modes,
     "mode": modes[names[0]],
     "first": first,
@@ -84,11 +97,12 @@ def emulations(text):
       inside = [other for other in blocks[k + 1:] if other[0] == "kernel-block" and other[1] < close[1]]
       steps = [call for other in inside for call in decorator_calls(text, other)]
       sequences = [records[1][other[1]] for other in inside]
+      bodies = [body_texts(text, blocks, other) if i == len(decorator_calls(text, other)) - 1 else [] for other in inside for i in range(len(decorator_calls(text, other)))]
       after = [[call for record in sequence for call in record["calls"]] if i == len(decorator_calls(text, other)) - 1 else [] for other, sequence in zip(inside, sequences) for i in range(len(decorator_calls(text, other)))]
       pairs = [given[other[1]][i] if i < len(given[other[1]]) else [] for other in inside for i in range(len(decorator_calls(text, other)))]
       memories = [kept[other[1]][i] if i < len(kept[other[1]]) and kept[other[1]][i] != "auto" else None for other in inside for i in range(len(decorator_calls(text, other)))]
       local = declared_buffer_names(enclosing_function_tokens(text, block[1]))
-      entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], steps, text.count("\n", 0, block[1]) + 1, text.count("\n", 0, close[3] - 1) + 1, local, pairs, memories, sequences, after)
+      entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], steps, text.count("\n", 0, block[1]) + 1, text.count("\n", 0, close[3] - 1) + 1, local, pairs, memories, sequences, after, bodies)
       found.append(dict(entry, form="block", at=block[1]))
   return found
 

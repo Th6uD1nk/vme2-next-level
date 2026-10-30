@@ -148,9 +148,9 @@ def process_function(text, identifier, locals_, start, name="meLibOnProcess", lo
   for declaration in locals_:
     lines += [f"  {declaration['text']}", ""]
   last = len(emulation["steps"]) - 1
-  for index, ((name, actions), pairs, memory) in enumerate(zip(emulation["steps"], emulation["pairs"], emulation["memories"])):
+  for index, ((name, actions), pairs, memory, statements) in enumerate(zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["bodies"])):
     fill = f"vmeDebugFillWith(VME_BASE_BUFFERS{fill_offset(start)});" if looped else "vmeDebugFillWithCount(VME_BASE_BUFFERS + meStart * 4, meCount);"
-    body = [fill] if index == last else []
+    body = [line for statement in statements for line in statement.splitlines()] + ([fill] if index == last else [])
     lines += call_block(name, actions, pairs, memory, body)
   lines += ["", "  meFinish = 1;", "", "  while (1) {", "  }", "}"] if looped else ["}"]
   return "\n".join(lines)
