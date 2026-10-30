@@ -293,11 +293,10 @@ class ListingTest(unittest.TestCase):
       ".kernel k direct {\n" + loads(("global", "top0", 4, 0, "a"), ("global", "base2", 2, "OFFSET", "a")) + "}\n"
     )
     self.assertEqual(emulations(text), [{
-      "id": "first", "kernel": "k", "kernels": ["k"], "steps": [("k", ("config", "exec"))], "pairs": [[]], "memories": [None], "modes": {"k": "direct"}, "form": "mark", "mode": "direct", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
+      "id": "first", "kernel": "k", "kernels": ["k"], "steps": [("k", ("config", "exec"))], "pairs": [[]], "memories": [None], "after": [[]], "modes": {"k": "direct"}, "form": "mark", "mode": "direct", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10, False), ("BASE_2", 2, "OFFSET", "a", 11, False)],
-      "calls": ["kT0Load(a, VME_TOP_BUFF0_WOFF);", wait_marker("kT0Load"), "kT1Load(a, VME_BASE_BUFF2_WOFF + OFFSET);", wait_marker("kT1Load")],
       "definitions": [function("kT0Load", 3), function("kT1Load", 1)],
-      "stores": {"global": [], "local": []}, "downloads": [],
+      "stores": {"global": [], "local": []},
     }])
 
 
@@ -401,7 +400,7 @@ BLOCK = (
 class EmulationBlockTest(unittest.TestCase):
   def test_the_emulator_plays_the_calls_of_the_block_with_their_values_and_their_memory(self):
     main = [line.strip() for line in host_main(BLOCK, "blk").splitlines()]
-    self.assertEqual(main[main.index("vmegEmulateUpload();") + 1:main.index("vmegEmulateDownload();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "vmeLibLoadCustomContext(stage[1]);"])
+    self.assertEqual(main[main.index("vmeLibWipe();") + 1:main.index("vmeLibDisable();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext(stage[1]);"])
     self.assertIn("volatile u32 __attribute__((aligned(64))) stage[2][VME_CONTEXT_WORD_COUNT];", host_program(BLOCK, "blk"))
 
   def test_vmeh_writes_the_calls_of_the_block_and_the_fill_in_the_last_one(self):

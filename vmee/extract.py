@@ -2,7 +2,7 @@ import re
 
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_actions, kernel_arguments, memory_edits
+from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_lines, memory_edits
 from vmeg.kernel import generate
 from vmeg.qformat import translate_buffer
 from vmeg.registry import declarations, project_registry
@@ -83,11 +83,6 @@ def memory_text(declaration):
   return text
 
 
-def upload_calls(text, identifier):
-  emulation = chosen_emulation(text, identifier)
-  return emulation["calls"]
-
-
 def declared_parts(text, identifier, others=()):
   arrays = array_declarations(text, identifier, others)
   for declaration in arrays:
@@ -141,10 +136,6 @@ def host_source(text, identifier, others=(), compat=None):
   parts.append(kernel_code(text, identifier, compat))
   if emulation["definitions"]:
     parts.append("\n".join(emulation["definitions"]))
-  calls = "".join(f"  {call}\n" for call in upload_calls(text, identifier))
-  parts.append(f"static void vmegEmulateUpload(void) {{\n{calls}}}")
-  downloads = "".join(f"  {call}\n" for call in emulation["downloads"])
-  parts.append(f"static void vmegEmulateDownload(void) {{\n{downloads}}}")
   return finish_calls("\n\n".join(parts) + "\n")
 
 
@@ -154,8 +145,8 @@ INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-cor
 def host_main(text, identifier):
   emulation = chosen_emulation(text, identifier)
   registry = project_registry([("", text)])
-  actions = "".join(f"  {call}\n" for (name, steps), pairs, memory in zip(emulation["steps"], emulation["pairs"], emulation["memories"]) for call in kernel_actions(name, steps, emulation["modes"][name], False, kernel_arguments(registry, name, pairs), memory))
-  return f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n  vmegEmulateUpload();\n{actions}  vmegEmulateDownload();\n  vmeLibDisable();\n  return 0;\n}}\n"
+  calls = "".join(f"  {call}\n" for (name, steps), pairs, memory, written in zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["after"]) for call in kernel_lines(registry, name, steps, pairs, memory) + written)
+  return finish_calls(f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n{calls}  vmeLibDisable();\n  return 0;\n}}\n")
 
 
 def host_program(text, identifier, others=(), compat=None):
