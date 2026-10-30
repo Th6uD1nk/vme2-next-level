@@ -73,9 +73,10 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 
 **Rules:**
 
-- The kernel is `direct` or `memory`. A memory kernel gives the same result as a direct one. The emulator plays the definition of the kernel as `config | exec`: the actions of a `@kernel` call, `build` and `async` among them, are not played.
-- The `.load` of the kernel are played before the run, the `.store` after it, the way `vmegc` generates them for a call. The arrays they use must be declared in the files ([1.3](#13-several-files)).
-- Only the `.load` and the `.store` written in the `.kernel` are played. Currently not supported: the ones written in the block of a `@kernel` call.
+- The kernel is `direct` or `memory`. A memory kernel gives the same result as a direct one.
+- With the mark above a `.kernel`, the emulator plays the definition of the kernel as `config | exec` (with `build` first for a `memory` kernel).
+- With the block `@emulate "id" { … }`, the emulator plays the calls in the order written, each one with its actions: a call with `config` alone configures the kernel and runs nothing.
+- A call does the `.load` of its kernel first and its `.store` last, whatever the actions are, and the vmeg statements written in the body of the call (`.load`, `.store`) come after its actions, the way `vmegc` generates them ([10.5](../vmeg/calling.md#105-uploads-and-downloads-around-the-run), [11.3](../vmeg/blocks.md#113-the-vmeg-statements-of-a-block)). The arrays they use must be declared in the files ([1.3](#13-several-files)).
 - Only the four base buffers are shown. A `.store` does not show its array: read the result in the buffer it comes from.
 - The kernel is built into a small host program with `g++ -m32` and the library of the submodule `me-core-mapper`. `--run` needs `g++` with 32 bit support, and the submodule must not be empty (`git submodule update --init me-core-mapper`).
 - The host program is run, and the events it writes are played by the emulator. The run is stopped after 60 seconds.
