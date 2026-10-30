@@ -62,7 +62,7 @@ The window of the buffers that is written can be changed with `-DVMEH_BUFFERS_ST
 
 It needs the PSP toolchain, like the other samples.
 
-## Related Project
+## Related Projects
 
 [PSP Media Engine Custom Core](https://github.com/mcidclan/psp-media-engine-custom-core)  
 [PSP Virtual Mobile Engine Ext](https://github.com/mcidclan/psp-virtual-mobile-engine-ext)  
