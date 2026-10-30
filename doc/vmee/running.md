@@ -79,3 +79,65 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 - Only the four base buffers are shown. A `.store` does not show its array: read the result in the buffer it comes from.
 - The kernel is built into a small host program with `g++ -m32` and the library of the submodule `me-core-mapper`. `--run` needs `g++` with 32 bit support, and the submodule must not be empty (`git submodule update --init me-core-mapper`).
 - The host program is run, and the events it writes are played by the emulator. The run is stopped after 60 seconds.
+
+## 1.3 Several files
+
+When the arrays of the kernel are defined in other files, all the files are given in the same command:
+
+```c
+// data.vmeg.cpp
+volatile Buffer input[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+```
+
+```c
+// main.vmeg.cpp
+extern volatile Buffer input[8];
+
+@emulate "twice"
+.kernel twice direct {
+  Agu t = { count: 7 }, w = { count: 7, cyc: auto };
+  Transfer in = { memory: input, count: 7 };
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+```
+
+```
+vmee --run twice main.vmeg.cpp data.vmeg.cpp
+```
+
+**Explanation of the code above:**
+
+- `input` is declared `extern` in `main.vmeg.cpp` and defined in `data.vmeg.cpp`. The command gives both files, and the result is the one of [1.2](#12-running-a-kernel).
+
+**Rules:**
+
+- The file that has the `@emulate "id"` is found among the files. It is an error if no file has it, or if two files have it.
+- A `.scope = global` array that this file declares `extern`, or does not declare, is taken from the file that defines it. It is an error if no file defines it.
+- A `.scope = local` array (the default) is taken from the function marked `@kernel name` that calls the kernel, in any of the files.
+- The `#define` of the files that supply the arrays are used too. A macro with two different values is an error.
+- Only `--run` takes several files.
+
+## 1.4 The window of the buffers
+
+`--buffers-start N` and `--buffers-words N` choose the words shown for each base buffer: `N` words from the word `start`. The defaults are 0 and 32.
+
+```
+vmee --run twice main.vmeg.cpp --buffers-start 2 --buffers-words 4
+```
+
+shows, for the kernel of [1.2](#12-running-a-kernel):
+
+```
+Buffer: BASE 0
+0x00000006, 0x00000008, 0x0000000a, 0x0000000c,
+```
+
+followed by the same lines for `BASE 1` to `BASE 3`.
+
+**Rules:**
+
+- The window stays inside a buffer of 2048 words: `start + words` is 2048 at most.
+- The number of words is 1 or more.
+- A number of words that is not a multiple of 4 gives a shorter last line.
+- `vmeh` has the same options ([3](vmeh.md)), and the log of the PSP has the same format.
