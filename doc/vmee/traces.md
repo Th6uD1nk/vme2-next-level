@@ -37,3 +37,30 @@ W 0x440ff008 0x40
 - Everything after a `#` is a comment, and the empty lines are skipped.
 - The events are played in the order of the file.
 - `--trace` of `--run` writes a file in this format ([1.5](running.md#15---trace)).
+
+## 2.2 Playing a trace
+
+```
+vmee trace.txt
+```
+
+shows, for the trace of [2.1](#21-the-trace-file):
+
+```
+Buffer: BASE 0
+0x00000002, 0x00000004, 0x00000006, 0x00000008,
+0x0000000a, 0x0000000c, 0x0000000e, 0x00000010,
+```
+
+followed by the same lines for `BASE 1` to `BASE 3`.
+
+**Explanation of the code above:**
+
+- Without `--run`, the file given to `vmee` is a trace. The emulator plays its events in order and shows the four base buffers, in the format of [1.2](running.md#12-running-a-kernel).
+- This trace was written by `--run` for the kernel of [1.2](running.md#12-running-a-kernel) (`--buffers-words 8`), so the result is the same.
+
+**Rules:**
+
+- `--buffers-start` and `--buffers-words` choose the words shown, as in [1.4](running.md#14-the-window-of-the-buffers).
+- A trace takes a single file ([1.3](running.md#13-several-files)). With `--run` or `--list` the file is read as a vmeg file, and `--trace` and `--compat` go with `--run` only ([1.8](running.md#18-errors)).
+- A trace can be written by hand: only its events are played.
