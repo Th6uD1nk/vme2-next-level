@@ -72,3 +72,27 @@ make
 
 - `-DVMEH_ID=id` keeps only the `@emulate` with that id: `cmake -DVMEH_SOURCE=… -DVMEH_ID=sub ..` builds a program with `sub` alone, which behaves as in [3.2](#32-building).
 - With one `@emulate`, the program shows nothing and does not wait for a button ([3.2](#32-building)).
+
+## 3.4 The window of the buffers
+
+The window is the words of each base buffer that the program writes in `log.txt`, as `--buffers-start` and `--buffers-words` choose them for `vmee` ([1.4](running.md#14-the-window-of-the-buffers)).
+
+```
+cmake -DVMEH_SOURCE=samples/c/saturate-clamp.vmeg.c -DVMEH_BUFFERS_START=2 -DVMEH_BUFFERS_WORDS=4 ..
+```
+
+```
+start: 2
+count: 4
+```
+
+**Explanation of the code above:**
+
+- `-DVMEH_BUFFERS_START` and `-DVMEH_BUFFERS_WORDS` give the first word and the number of words. The defaults are 0 and 32, as in `vmee`.
+- With several `@emulate` ([3.3](#33-several-emulations)), the program reads the window at the start from `config.txt`, next to `log.txt`, with the lines `start:` and `count:`. The window can be changed without building the program again.
+- When `config.txt` is not there, or has no such line, the values given to `cmake` are used.
+
+**Rules:**
+
+- The window has the limits of [1.4](running.md#14-the-window-of-the-buffers): `start + words` is 2048 at most, and the number of words is 1 or more. `cmake` stops with an error if the values it gets are out of these limits ([3.7](#37-errors)). The values of `config.txt` are not checked.
+- With one `@emulate`, only the options of `cmake` apply: the program does not read `config.txt`.
