@@ -159,6 +159,21 @@ class StagingInTheKernelTest(unittest.TestCase):
     self.assertEqual(re.findall(r"fu_code\((OP_\w+)\)", code), ["OP_ADD", "OP_AND_CST"])
 
 
+class SecondUnitTest(unittest.TestCase):
+  def test_a_product_or_a_mac_in_the_second_unit_is_written_with_a_warning_and_a_remap_gives_none(self):
+    def result_of(body):
+      text = ".kernel k direct {\n  .pe0 { " + body + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
+      found = []
+      generate(text, find_blocks(text)[0], found, None)
+      return [line for line in kernel_lines(body, None) if "SECONDARY" in line], [message for _, message in found if "second operation" in message]
+    units, warnings = result_of("Staging s; s = top0 + base0; .spad = mac(s, top1);")
+    self.assertEqual(units, ["vme_pe0(vme_fu(SECONDARY), vme_mux(STAGING_0, TOP_1), VME_FU_OPCODE_MAC_INNER_PRODUCT_BIAS);"])
+    self.assertEqual(warnings, ["mac is the second operation of pe0, it is not known to run in the second unit"])
+    self.assertEqual(result_of("Staging s; s = top0 + base0; .spad = s * top1;")[1], ["mul is the second operation of pe0, it is not known to run in the second unit"])
+    self.assertEqual(result_of("Staging s; s = top0 + base0; .remap = { operator: \"*\", secondary: 0x220 }; .spad = s * top1;")[1], [])
+    self.assertEqual(result_of(".spad = top0 * base0;")[1], [])
+
+
 class RemapTest(unittest.TestCase):
   def test_a_remap_gives_the_opcode_and_the_registers_of_its_unit(self):
     self.assertEqual(kernel_lines(".remap = { operator: \"*\", primary: 0x220 }; .spad = top0 * base0;", None), [
