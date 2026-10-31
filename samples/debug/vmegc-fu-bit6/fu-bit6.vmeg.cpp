@@ -449,3 +449,59 @@ volatile Buffer bit6Shift8Neg[16] = {
 @kernel checkBit6Shift8 config | exec
 void checkBit6Shift8Run(void) {
 }
+
+volatile Buffer bit6LimitAddTop[16] = {
+  0x007fffff, 0x007fffff, 0x007ffffe, 0x007ffffd,
+  0x007fffff, 0x007fffff, 0x00000001, 0xff800000,
+  0xff800000, 0xff800001, 0xff800000, 0xff800002,
+  0xff800000, 0x00400000, 0x003fffff, 0xffc00000,
+};
+
+volatile Buffer bit6LimitAddBase[16] = {
+  0x007fffff, 0x007ffffe, 0x007fffff, 0x007fffff,
+  0x00000001, 0x00000000, 0x007fffff, 0xff800000,
+  0xff800001, 0xff800000, 0x00000001, 0xff800001,
+  0xffffffff, 0x00400000, 0x00400001, 0xffc00000,
+};
+
+volatile Buffer bit6LimitMulTop[16] = {
+  0x007fffff, 0x007fffff, 0xff800000, 0xff800000,
+  0x00400000, 0xffc00000, 0x002d413d, 0x002d413c,
+  0x002d413d, 0xffd2bec3, 0x00100000, 0xfff00000,
+  0x007fffff, 0x00000001, 0xffffffff, 0x00123456,
+};
+
+volatile Buffer bit6LimitMulBase[16] = {
+  0x007fffff, 0xff800000, 0xff800000, 0x007fffff,
+  0x00400000, 0x00400000, 0x002d413d, 0x002d413c,
+  0xffd2bec3, 0xffd2bec3, 0x00100000, 0x00100000,
+  0x007fffff, 0x007fffff, 0x007fffff, 0xffedcbaa,
+};
+
+@emulate "fu-bit6-limits"
+.kernel checkBit6Limits direct {
+  Int count = 16 - 1;
+
+  Transfer addTopTransfer = { memory: bit6LimitAddTop, count };
+  Transfer addBaseTransfer = { memory: bit6LimitAddBase, count };
+  Transfer mulTopTransfer = { memory: bit6LimitMulTop, count };
+  Transfer mulBaseTransfer = { memory: bit6LimitMulBase, count };
+
+  .load { .transfer = addTopTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }
+  .load { .transfer = addBaseTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; } }
+  .load { .transfer = mulTopTransfer; .scope = global; .offsets { .top2 = 0; .top3 = 0; } }
+  .load { .transfer = mulBaseTransfer; .scope = global; .offsets { .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 1); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 1; }
+  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = zsm(top2 * base2 >> 20); }
+  .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = top3 * base3 >> 20; }
+}
+
+@kernel checkBit6Limits config | exec
+void checkBit6LimitsRun(void) {
+}
