@@ -505,3 +505,43 @@ volatile Buffer bit6LimitMulBase[16] = {
 @kernel checkBit6Limits config | exec
 void checkBit6LimitsRun(void) {
 }
+
+volatile Buffer bit6SatShift1[16] = {
+  0x000007fe, 0x000007ff, 0x00000800, 0x00000801,
+  0x00000802, 0x00000ffd, 0x00000ffe, 0x00000fff,
+  0x00001000, 0x00001001, 0xfffff801, 0xfffff800,
+  0xfffff7ff, 0xfffff7fe, 0xfffff001, 0xffffefff,
+};
+
+volatile Buffer bit6SatShift2[16] = {
+  0x000007fe, 0x000007ff, 0x00000800, 0x00000802,
+  0x00000803, 0x00001ffb, 0x00001ffc, 0x00001ffd,
+  0x00001ffe, 0x00001fff, 0x00002000, 0xfffff800,
+  0xfffff7ff, 0xfffff7fd, 0xffffe000, 0xffffdffe,
+};
+
+@emulate "fu-bit6-limits-sat"
+.kernel checkBit6LimitsSat direct {
+  Int count = 16 - 1;
+
+  Transfer shift1Transfer = { memory: bit6SatShift1, count };
+  Transfer shift2Transfer = { memory: bit6SatShift2, count };
+  Transfer zeroTransfer = { memory: bit6Base0, count };
+
+  .load { .transfer = shift1Transfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }
+  .load { .transfer = shift2Transfer; .scope = global; .offsets { .top2 = 0; .top3 = 0; } }
+  .load { .transfer = zeroTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(sat(top0 + base0, 12) >> 1); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = sat(top1 + base1, 12) >> 1; }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(sat(top2 + base2, 12) >> 2); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = sat(top3 + base3, 12) >> 2; }
+}
+
+@kernel checkBit6LimitsSat config | exec
+void checkBit6LimitsSatRun(void) {
+}
