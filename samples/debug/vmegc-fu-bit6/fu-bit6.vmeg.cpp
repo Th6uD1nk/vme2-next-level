@@ -374,9 +374,9 @@ volatile Buffer bit6RampNeg[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 2); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0 >> 2); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 2; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 2); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(top2 + base2 >> 2); }
   .pe3 { .top = top; .base = base; .write = write; .spad = top3 + base3 >> 2; }
 }
 
@@ -400,9 +400,9 @@ void checkBit6Shift2Run(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 3); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0 >> 3); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 3; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 3); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(top2 + base2 >> 3); }
   .pe3 { .top = top; .base = base; .write = write; .spad = top3 + base3 >> 3; }
 }
 
@@ -440,9 +440,9 @@ volatile Buffer bit6Shift8Neg[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 8); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0 >> 8); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 8; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 8); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(top2 + base2 >> 8); }
   .pe3 { .top = top; .base = base; .write = write; .spad = top3 + base3 >> 8; }
 }
 
@@ -496,9 +496,9 @@ volatile Buffer bit6LimitMulBase[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 1); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0 >> 1); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 1; }
-  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = zsm(top2 * base2 >> 20); }
+  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = round(top2 * base2 >> 20); }
   .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = top3 * base3 >> 20; }
 }
 
@@ -536,9 +536,9 @@ volatile Buffer bit6SatShift2[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(sat(top0 + base0, 12) >> 1); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(sat(top0 + base0, 12) >> 1); }
   .pe1 { .top = top; .base = base; .write = write; .spad = sat(top1 + base1, 12) >> 1; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(sat(top2 + base2, 12) >> 2); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(sat(top2 + base2, 12) >> 2); }
   .pe3 { .top = top; .base = base; .write = write; .spad = sat(top3 + base3, 12) >> 2; }
 }
 
