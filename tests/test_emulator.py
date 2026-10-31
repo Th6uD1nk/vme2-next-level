@@ -284,6 +284,29 @@ class IterationTest(unittest.TestCase):
       self.assertEqual(zone[8 + stride:16 + stride], [100 + i for i in lower])
 
 
+def fu_of(opcode):
+  return {"front": "TOP_0", "back": "BASE_0", "opcode": opcode, "sat": 0, "round": 0, "k": 0}
+
+
+def cut24(value):
+  value &= 0xffffff
+  return value - (1 << 24) if value >= 1 << 23 else value
+
+
+class SubtractionOnThePspTest(unittest.TestCase):
+  def test_the_subtractions_give_the_words_read_on_the_psp(self):
+    top, base = (741455, -741455), (741454, 741455)
+    for opcode, registers, wanted in (
+      (0x034, {"a": 7}, (8, -1482903)),
+      (0x048, {"b": 7}, (735663, -747247)),
+      (0x048, {"b": -7}, (6498639, 5015601)),
+      (0x050, {"b": 2}, (-556092, 926818)),
+    ):
+      with self.subTest(opcode=hex(opcode), registers=registers):
+        found = tuple(cut24(execute(fu_of(opcode), base[i], top[i], registers.get("a", 0), registers.get("b", 0))) for i in range(2))
+        self.assertEqual(found, wanted)
+
+
 class ListingTest(unittest.TestCase):
   def test_only_the_emulated_kernels_are_listed_with_their_buffers(self):
     text = (
