@@ -313,3 +313,33 @@ volatile Buffer bit6ChainBase1[16] = {
 @kernel checkBit6FftChain config | exec
 void checkBit6FftChainRun(void) {
 }
+
+@emulate "fu-bit6-fft-chain-split"
+.kernel checkBit6FftChainSplit direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: bit6ChainTop0, count };
+  Transfer base0Transfer = { memory: bit6ChainBase0, count };
+  Transfer top1Transfer = { memory: bit6ChainTop1, count };
+  Transfer base1Transfer = { memory: bit6ChainBase1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; .top2 = 0; } }
+  .load { .transfer = base0Transfer; .scope = global; .offsets { .base0 = 16; .base2 = 16; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; .top3 = 0; } }
+  .load { .transfer = base1Transfer; .scope = global; .offsets { .base1 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  Staging firstReal, firstImag, secondReal, secondImag;
+
+  .pe0 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; firstReal = zsm(top0 * base0 >> 20); }
+  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; firstImag = zsm(top1 * base1 >> 20); .spad = firstReal - firstImag >> 1; }
+  .pe2 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; secondReal = top2 * base2 >> 20; }
+  .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; secondImag = top3 * base3 >> 20; .spad = zsm(secondReal - secondImag >> 1); }
+}
+
+@kernel checkBit6FftChainSplit config | exec
+void checkBit6FftChainSplitRun(void) {
+}
