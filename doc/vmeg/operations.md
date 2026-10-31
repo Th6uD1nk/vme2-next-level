@@ -34,8 +34,9 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 | `a + b + c` | `0x030` | two operands and a number | `(a + b) + c` |
 | `x + c` | `0x024` | one operand and a number | `x + c` |
 | `a - b` | `0x018` | two operands | `a - b` |
-| `a - b + c`, `subacst(a, b, c)` | `0x048` | two operands and a number | `(a - b) + c` |
-| `b - (a >> n)`, `subshr(a, b, n)` | `0x050` | two operands and a number | `b - (a >> n)` |
+| `a - b + c`, `subacst(a, b, c)` | `0x034` | two operands and a number | `(a - b) + c` |
+| `b - (a >> n)`, `subshr(a, b, n)` | `0x048` | two operands and a number | `b - (a >> n)` |
+| `(a >> n) - b` | `0x050` | two operands and a number | `(a >> n) - b` |
 | `a * b` | `0x200` | two operands | `(a * b) >> k`, where `k` is the shift written after it ([6.4](#64-sat-and-the-shifts)) |
 | `a & b` | `0x0c0` | two operands | the bitwise and |
 | `a \| b` | `0x0d0` | two operands | the bitwise or |
@@ -152,6 +153,7 @@ Some operators take a number besides their operands. The operation holds the num
 | `x + c` | |
 | `a - b + c` | `subacst(a, b, c)` ([6.3.2](#632-subacst)) |
 | `b - (a >> n)` | `subshr(a, b, n)` ([6.3.3](#633-subshr)) |
+| `(a >> n) - b` | |
 | `x & c` | `and(x, c)` ([6.3.6](#636-and-or-and-xor)) |
 | `x \| c` | `or(x, c)` |
 | `x ^ c` | `xor(x, c)` |
@@ -213,8 +215,11 @@ Staging s;
 
 `subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number that cannot be negative. It can also be written as an expression, `b - (a >> n)` ([6.2.2](#622-operators-with-a-number)).
 
+`(a >> n) - b` subtracts `b` from `a` shifted to the right by `n`. `n` cannot be negative either. It has no function writing.
+
 ```c
 .pe0 { .spad = subshr(top0, base0, 2); }
+.pe1 { .spad = (top1 >> 2) - base1; }
 ```
 
 ### 6.3.4 mac
@@ -309,6 +314,7 @@ The messages start with `line N:`, left out here.
 | [6.3.2](#632-subacst) | `subacst takes 3 arguments (a, b, c)` | `subacst` with another number of arguments |
 | [6.3.3](#633-subshr) | `subshr takes 3 arguments (a, b, n)` | `subshr` with another number of arguments |
 | [6.3.3](#633-subshr) | `subshr n cannot be less than 0` | a negative `n` |
+| [6.3.3](#633-subshr) | `shrsub n cannot be less than 0` | a negative `n` in `(a >> n) - b` |
 | [6.3.4](#634-mac) | `mac takes 2 arguments (a, b)` | `mac` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes 1 argument (x)` | `acc` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes a buffer or a Staging variable` | an operation inside `acc` |
