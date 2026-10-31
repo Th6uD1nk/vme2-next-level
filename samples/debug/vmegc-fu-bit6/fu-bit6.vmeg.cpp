@@ -137,3 +137,59 @@ void checkBit6OnRun(void) {
 @kernel checkBit6Off config | exec
 void checkBit6OffRun(void) {
 }
+
+volatile Buffer bit6MulTopA[16] = {
+  0x00080000, 0x00080000, 0x00080000, 0x00080000,
+  0x00080000, 0x00080000, 0x00080000, 0x00080000,
+  0x00080000, 0x00080000, 0x00080000, 0x00080000,
+  0x00080000, 0x00080000, 0x00080000, 0x00080000,
+};
+
+volatile Buffer bit6MulBaseA[16] = {
+  0xfffffff8, 0xfffffff9, 0xfffffffa, 0xfffffffb,
+  0xfffffffc, 0xfffffffd, 0xfffffffe, 0xffffffff,
+  0x00000000, 0x00000001, 0x00000002, 0x00000003,
+  0x00000004, 0x00000005, 0x00000006, 0x00000007,
+};
+
+volatile Buffer bit6MulTopB[16] = {
+  0x000b504f, 0xfff4afb1, 0x000ec835, 0xfff9e088,
+  0x00100000, 0xfff00000, 0x00080000, 0xfff80000,
+  0x00040000, 0xfffc0000, 0x000ddb3d, 0xfff224c3,
+  0x00000000, 0x00019999, 0xfffe6667, 0x007ffffe,
+};
+
+volatile Buffer bit6MulBaseB[16] = {
+  0x00100000, 0x00100000, 0x00080000, 0xffe00000,
+  0x00340000, 0xffcc0000, 0x000b504f, 0xfff4afb1,
+  0x00055555, 0xfffaaaab, 0x00180000, 0xffe80000,
+  0x00200000, 0x00780000, 0xff880000, 0xfff00000,
+};
+
+@emulate "fu-bit6-fft-mul"
+.kernel checkBit6FftMul direct {
+  Int count = 16 - 1;
+
+  Transfer topATransfer = { memory: bit6MulTopA, count };
+  Transfer baseATransfer = { memory: bit6MulBaseA, count };
+  Transfer topBTransfer = { memory: bit6MulTopB, count };
+  Transfer baseBTransfer = { memory: bit6MulBaseB, count };
+
+  .load { .transfer = topATransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }
+  .load { .transfer = baseATransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; } }
+  .load { .transfer = topBTransfer; .scope = global; .offsets { .top2 = 0; .top3 = 0; } }
+  .load { .transfer = baseBTransfer; .scope = global; .offsets { .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = zsm(top0 * base0 >> 20); }
+  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = top1 * base1 >> 20; }
+  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = zsm(top2 * base2 >> 20); }
+  .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = top3 * base3 >> 20; }
+}
+
+@kernel checkBit6FftMul config | exec
+void checkBit6FftMulRun(void) {
+}
