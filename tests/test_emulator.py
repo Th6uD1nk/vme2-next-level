@@ -1,5 +1,7 @@
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -7,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from vmee.agu import stream_at
 from vmee.extract import array_declarations, host_main, host_program
 from vmee.fu import execute, opcode_entry
+from vmee.host import build_program, run_program
 from vmee.listing import defines, emulations, format_listing
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from vmee.registers import CONTEXT_WORDS, agu_register, fu_register
@@ -474,6 +477,13 @@ BODY = (
 
 
 class EmulationBlockTest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_the_arrays_of_the_host_program_have_fixed_addresses_written_in_the_trace(self):
+    for _ in range(2):
+      with tempfile.TemporaryDirectory() as folder:
+        trace = run_program(build_program(host_program(BODY, "body"), folder))
+      self.assertEqual([line for line in trace.splitlines() if line.startswith("# array")], ["# array a 0x8800000 16", "# array b 0x8800040 16"])
+
   def test_each_call_does_its_own_load_and_the_statements_of_the_body_come_after_its_calls(self):
     main = [line.strip() for line in host_main(BODY, "body").splitlines()]
     wait = "meCoreDMACPrimWaitTransferFinish();"
