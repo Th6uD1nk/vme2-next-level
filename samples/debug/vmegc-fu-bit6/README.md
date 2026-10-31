@@ -54,4 +54,4 @@ make
 python3 vmeemu.py --run fu-bit6-off samples/debug/vmegc-fu-bit6/fu-bit6.vmeg.cpp
 ```
 
-The emulator does not model the bit 6 with a shift. It refuses an addition that sets the bit with a shift. On the other opcodes it plays the kernel and ignores the bit: the PE with the bit gives the same values as the one without. A bit set with no shift is accepted and changes nothing.
+The emulator plays the 18 kernels. `round` rounds the shift of an addition, of `a - b` and of a product to the nearest, a half goes up. On `subacst`, `subshr` and `(a >> n) - b` it changes nothing. On any other opcode the emulator refuses it.
