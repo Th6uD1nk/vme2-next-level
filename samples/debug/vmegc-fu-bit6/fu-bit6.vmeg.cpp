@@ -193,3 +193,41 @@ volatile Buffer bit6MulBaseB[16] = {
 @kernel checkBit6FftMul config | exec
 void checkBit6FftMulRun(void) {
 }
+
+volatile Buffer bit6LegTop[16] = {
+  0x000b504f, 0xfff4afb1, 0x0007ffff, 0xfff80001,
+  0x000fffff, 0xfff00001, 0x0037ffff, 0xffc80001,
+  0x00000001, 0xffffffff, 0x00000003, 0xfffffffd,
+  0x0001e241, 0xfffe1dbf, 0x000f423f, 0xfff0bdc1,
+};
+
+volatile Buffer bit6LegBase[16] = {
+  0x000b504e, 0x000b504f, 0x00080000, 0xfff7ffff,
+  0x00000001, 0xfffffffe, 0x00380000, 0x0037ffff,
+  0x00000000, 0x00000000, 0x00000002, 0xfffffffe,
+  0x0001e240, 0x0001e241, 0x000f4240, 0xfff0bdc0,
+};
+
+@emulate "fu-bit6-fft-legs"
+.kernel checkBit6FftLegs direct {
+  Int count = 16 - 1;
+
+  Transfer topTransfer = { memory: bit6LegTop, count };
+  Transfer baseTransfer = { memory: bit6LegBase, count };
+
+  .load { .transfer = topTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; .top2 = 0; .top3 = 0; } }
+  .load { .transfer = baseTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 1); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 1; }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 - base2 >> 1); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = top3 - base3 >> 1; }
+}
+
+@kernel checkBit6FftLegs config | exec
+void checkBit6FftLegsRun(void) {
+}
