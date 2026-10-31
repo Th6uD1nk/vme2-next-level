@@ -92,10 +92,12 @@ def op_mul_rshift(back, front, fu, a, b, previous, state):
   return (back * front) >> fu["k"]
 
 
-def op_sub_inv_shf(back, front, fu, a, b, previous, state):
-  if b < 0:
-    raise ValueError("a negative shift (register B) of the opcode 0x50 is not modeled")
-  return back - (front >> b)
+def shift_right(value, amount):
+  return value >> amount if amount >= 0 else value << -amount
+
+
+def op_subshr(back, front, fu, a, b, previous, state):
+  return front - shift_right(back, b)
 
 
 def op_add_ofa(back, front, fu, a, b, previous, state):
@@ -120,7 +122,7 @@ HANDLERS = {
   "add_cst": op_add_cst,
   "sub": op_sub,
   "subacst": op_subacst,
-  "subshr": op_sub_inv_shf,
+  "subshr": op_subshr,
   "mul": op_mul_rshift,
   "mul_vec": op_mul_rshift,
   "and": op_and,

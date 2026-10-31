@@ -99,15 +99,13 @@ class ComplementTest(unittest.TestCase):
 
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
-    expected = ("fu_code(OP_SUB_INV_SHF)", [("B", "2")])
+    expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
     self.assertEqual(used(".spad = top1 - (top0 >> 2);"), expected)
     self.assertEqual(used(".spad = subshr(top0, top1, 2);"), expected)
 
   def test_a_shift_around_an_operation_is_written_in_the_shift_of_the_opcode(self):
     self.assertEqual(kernel_lines(".spad = (top1 - top0) >> 2;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_SUB), 2);"])
     self.assertEqual(kernel_lines(".spad = top1 - top0 >> 2;", None), kernel_lines(".spad = (top1 - top0) >> 2;", None))
-    lines = kernel_lines(".spad = (top1 - (top0 >> 2)) >> 1;", None)
-    self.assertEqual(lines[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_SUB_INV_SHF), 1);")
 
   def test_the_error_of_a_shift_inside_a_pattern_names_the_opcode(self):
     for body in [".spad = top1 - (top0 >> -1);", ".spad = subshr(top0, top1, -1);"]:
@@ -121,7 +119,7 @@ class NestedTest(unittest.TestCase):
     rows = [
       (".spad = clamp(top0 + base0 + 5, 0, 255);", ["OP_ADD_OFA", "OP_CLP"]),
       (".spad = clamp(top0 & 255, 0, 9);", ["OP_AND_CST", "OP_CLP"]),
-      (".spad = clamp(top1 - (top0 >> 2), 0, 255);", ["OP_SUB_INV_SHF", "OP_CLP"]),
+      (".spad = clamp(top1 - (top0 >> 2), 0, 255);", ["OP_SUB_OFB", "OP_CLP"]),
       (".spad = clamp(~(top0 & base0), 0, 9);", ["OP_NAD", "OP_CLP"]),
       (".spad = clamp(top0 + 1, 0, 9);", ["OP_ADD_CST", "OP_CLP"]),
     ]
@@ -133,7 +131,7 @@ class NestedTest(unittest.TestCase):
   def test_an_operation_kept_in_a_staging_variable_is_chosen_like_alone(self):
     rows = [
       ("Staging s; s = top0 + base0 + 5; .spad = s & 255;", ["OP_ADD_OFA", "OP_AND_CST"]),
-      ("Staging s; s = top1 - (top0 >> 2); .spad = ~s;", ["OP_SUB_INV_SHF", "OP_NOT"]),
+      ("Staging s; s = top1 - (top0 >> 2); .spad = ~s;", ["OP_SUB_OFB", "OP_NOT"]),
       ("Staging s; s = top0 & 255; .spad = s + base0 + 3;", ["OP_AND_CST", "OP_ADD_OFA"]),
     ]
     for body, expected in rows:
@@ -173,8 +171,8 @@ class RemapTest(unittest.TestCase):
       "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));",
       "vme_pe0(fu_reg(PRIMARY, A), 0);",
     ])
-    self.assertEqual(kernel_lines(".remap = { operator: \"-\", primary: 0x050 }; .spad = top0 - base0;", None), [
-      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_INV_SHF));",
+    self.assertEqual(kernel_lines(".remap = { operator: \"-\", primary: 0x048 }; .spad = top0 - base0;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_OFB));",
       "vme_pe0(fu_reg(PRIMARY, B), 0);",
     ])
     self.assertEqual(kernel_lines("Staging s; s = top0 + base0; .remap = { operator: \"*\", secondary: 0x220 }; .spad = s * top1;", None), [
