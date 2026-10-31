@@ -255,3 +255,61 @@ void checkBit6FftLegsRun(void) {
 @kernel checkBit6FftNoShift config | exec
 void checkBit6FftNoShiftRun(void) {
 }
+
+volatile Buffer bit6ChainTop0[16] = {
+  0x00080000, 0xfff80000, 0x00180000, 0xffe80000,
+  0x000b504f, 0xfff4afb1, 0x00040000, 0xfffc0000,
+  0x00100000, 0xfff00000, 0x00055555, 0xfffaaaab,
+  0x0013c0ca, 0xffec3f36, 0x00019999, 0xfffe6667,
+};
+
+volatile Buffer bit6ChainBase0[16] = {
+  0x00100000, 0x00100000, 0x00080000, 0x00080000,
+  0x0016a09e, 0x0016a09e, 0x000c0000, 0x000c0000,
+  0x00140000, 0x00140000, 0x000aaaaa, 0x000aaaaa,
+  0x000e6666, 0x000e6666, 0xffee6667, 0x00119999,
+};
+
+volatile Buffer bit6ChainTop1[16] = {
+  0x00080000, 0x00040000, 0xfff80000, 0xfffc0000,
+  0x00100000, 0x000ddb3d, 0xfff224c3, 0x00019999,
+  0x00055555, 0x00180000, 0xffe80000, 0x000b504f,
+  0xfff4afb1, 0x000ffffe, 0xfff00002, 0x00000000,
+};
+
+volatile Buffer bit6ChainBase1[16] = {
+  0x00080000, 0x00100000, 0x00100000, 0x00080000,
+  0x000c0000, 0x000c0000, 0x00140000, 0x00140000,
+  0x0016a09e, 0x000e6666, 0x000e6666, 0x00119999,
+  0x00119999, 0x000553f7, 0x000553f7, 0x00100000,
+};
+
+@emulate "fu-bit6-fft-chain"
+.kernel checkBit6FftChain direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: bit6ChainTop0, count };
+  Transfer base0Transfer = { memory: bit6ChainBase0, count };
+  Transfer top1Transfer = { memory: bit6ChainTop1, count };
+  Transfer base1Transfer = { memory: bit6ChainBase1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; .top2 = 0; } }
+  .load { .transfer = base0Transfer; .scope = global; .offsets { .base0 = 16; .base2 = 16; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; .top3 = 0; } }
+  .load { .transfer = base1Transfer; .scope = global; .offsets { .base1 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  Staging onReal, onImag, offReal, offImag;
+
+  .pe0 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; onReal = zsm(top0 * base0 >> 20); }
+  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; onImag = zsm(top1 * base1 >> 20); .spad = zsm(onReal - onImag >> 1); }
+  .pe2 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; offReal = top2 * base2 >> 20; }
+  .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; offImag = top3 * base3 >> 20; .spad = offReal - offImag >> 1; }
+}
+
+@kernel checkBit6FftChain config | exec
+void checkBit6FftChainRun(void) {
+}
