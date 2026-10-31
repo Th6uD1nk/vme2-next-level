@@ -113,7 +113,7 @@ def op_add_cst(back, front, fu, a, b, previous, state):
 
 
 def op_sub(back, front, fu, a, b, previous, state):
-  return front - back
+  return (front - back) >> fu["k"]
 
 
 def op_subacst(back, front, fu, a, b, previous, state):
