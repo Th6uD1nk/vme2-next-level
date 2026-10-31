@@ -490,6 +490,19 @@ class EmulationBlockTest(unittest.TestCase):
         trace = run_program(build_program(host_program(BODY, "body"), folder))
       self.assertEqual([line for line in trace.splitlines() if line.startswith("# array")], ["# array a 0x8800000 16", "# array b 0x8800040 16"])
 
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_the_steps_of_the_host_program_run_one_after_the_other_as_the_whole_program_does(self):
+    def events(trace):
+      return [line for line in trace.splitlines() if not line.startswith("# array")]
+    with tempfile.TemporaryDirectory() as folder:
+      executable = build_program(host_program(BODY, "body"), folder)
+      whole = events(run_program(executable))
+      first = events(run_program(executable, ("0",)))
+      second = events(run_program(executable, ("1",)))
+    self.assertEqual(first + second, whole)
+    self.assertIn("W 0x440ff000 0x80", first)
+    self.assertNotIn("W 0x440ff000 0x80", second)
+
   def test_each_call_does_its_own_load_and_the_statements_of_the_body_come_after_its_calls(self):
     wait = "meCoreDMACPrimWaitTransferFinish();"
     self.assertEqual(main_calls(BODY, "body"), [
