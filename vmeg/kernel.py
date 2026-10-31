@@ -104,20 +104,20 @@ def flatten(expr, stagings, compat):
         raise ValueError("the shift goes after the sat: sat(x, n) >> k")
       operations[-1]["sat"] = bits
       return operations
-    if name == "zsm":
+    if name == "round":
       if len(args) != 1:
-        raise ValueError("zsm takes 1 argument (value)")
+        raise ValueError("round takes 1 argument (value)")
       _, operations = split_source(args[0], stagings, compat)
       if not operations:
-        raise ValueError("zsm must wrap an operation")
-      if operations[-1].get("zsm"):
-        raise ValueError("an operation takes only one zsm")
-      operations[-1]["zsm"] = True
+        raise ValueError("round must wrap an operation")
+      if operations[-1].get("round"):
+        raise ValueError("an operation takes only one round")
+      operations[-1]["round"] = True
       return operations
     if name in FUNCTIONS:
       check_arguments(name, args)
       return table_operation(FUNCTIONS[name], name, args, stagings, compat)
-    raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', *FUNCTIONS])})")
+    raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', 'round', *FUNCTIONS])})")
   if kind == "not":
     found = choose_opcode(expr, compat)
     if found is None:
@@ -443,8 +443,8 @@ def place(state, lines, pe, operations, line):
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
     if operation.get("shift"):
       sat += f", {operation['shift']}"
-    if operation.get("zsm"):
-      sat += ", fu_zsm(1)"
+    if operation.get("round"):
+      sat += ", (1 << 6)"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
     if encoding is not specification:
       for argument in specification["registers"].values():

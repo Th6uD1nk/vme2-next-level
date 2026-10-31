@@ -86,17 +86,17 @@ class CompatTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = top0 - base0;", "fat"), kernel_lines(".spad = top0 - base0;", None))
 
 
-class ZsmTest(unittest.TestCase):
-  def test_zsm_sets_the_bit_6_of_the_operation_it_wraps_before_or_after_the_shift_and_only_once(self):
+class RoundTest(unittest.TestCase):
+  def test_round_sets_the_bit_6_of_the_operation_it_wraps_before_or_after_the_shift_and_only_once(self):
     plain = ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD), 1);"]
-    marked = ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD), 1, fu_zsm(1));"]
+    marked = ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD), 1, (1 << 6));"]
     self.assertEqual(kernel_lines(".spad = top0 + base0 >> 1;", None), plain)
-    self.assertEqual(kernel_lines(".spad = zsm(top0 + base0) >> 1;", None), marked)
-    self.assertEqual(kernel_lines(".spad = zsm(top0 + base0 >> 1);", None), marked)
+    self.assertEqual(kernel_lines(".spad = round(top0 + base0) >> 1;", None), marked)
+    self.assertEqual(kernel_lines(".spad = round(top0 + base0 >> 1);", None), marked)
     with self.assertRaises(ValueError):
-      kernel_lines(".spad = zsm(zsm(top0 + base0));", None)
+      kernel_lines(".spad = round(round(top0 + base0));", None)
     with self.assertRaises(ValueError):
-      kernel_lines(".spad = zsm(top0);", None)
+      kernel_lines(".spad = round(top0);", None)
 
 
 class KnownMacrosInAKernelTest(unittest.TestCase):
