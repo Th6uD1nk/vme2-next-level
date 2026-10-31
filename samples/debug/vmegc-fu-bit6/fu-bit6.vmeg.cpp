@@ -343,3 +343,43 @@ void checkBit6FftChainRun(void) {
 @kernel checkBit6FftChainSplit config | exec
 void checkBit6FftChainSplitRun(void) {
 }
+
+volatile Buffer bit6RampPos[16] = {
+  0x00000000, 0x00000001, 0x00000002, 0x00000003,
+  0x00000004, 0x00000005, 0x00000006, 0x00000007,
+  0x00000008, 0x00000009, 0x0000000a, 0x0000000b,
+  0x0000000c, 0x0000000d, 0x0000000e, 0x0000000f,
+};
+
+volatile Buffer bit6RampNeg[16] = {
+  0x00000000, 0xffffffff, 0xfffffffe, 0xfffffffd,
+  0xfffffffc, 0xfffffffb, 0xfffffffa, 0xfffffff9,
+  0xfffffff8, 0xfffffff7, 0xfffffff6, 0xfffffff5,
+  0xfffffff4, 0xfffffff3, 0xfffffff2, 0xfffffff1,
+};
+
+@emulate "fu-bit6-shift-2"
+.kernel checkBit6Shift2 direct {
+  Int count = 16 - 1;
+
+  Transfer posTransfer = { memory: bit6RampPos, count };
+  Transfer negTransfer = { memory: bit6RampNeg, count };
+  Transfer zeroTransfer = { memory: bit6Base0, count };
+
+  .load { .transfer = posTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }
+  .load { .transfer = negTransfer; .scope = global; .offsets { .top2 = 0; .top3 = 0; } }
+  .load { .transfer = zeroTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 2); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 2; }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 2); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = top3 + base3 >> 2; }
+}
+
+@kernel checkBit6Shift2 config | exec
+void checkBit6Shift2Run(void) {
+}
