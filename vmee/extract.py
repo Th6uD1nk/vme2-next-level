@@ -118,6 +118,8 @@ def host_source(text, identifier, others=(), compat=None):
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [buffer_text(declaration) for declaration in arrays]
   parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
+  fixed = "".join(f"  fprintf(hwTraceFile(), \"# array {name} 0x%x %u\\n\", emuFixArray((void*){name}, sizeof({name}) / 4), (unsigned)(sizeof({name}) / 4));\n" for name in sorted(declared))
+  parts.append(f"static void vmegFixArrays(void) {{\n{fixed}}}")
   if declared:
     entries = ", ".join(f"{{(u32){name}, sizeof({name}) / 4}}" for name in sorted(declared))
     parts.append(
@@ -146,7 +148,7 @@ def host_main(text, identifier):
   emulation = chosen_emulation(text, identifier)
   registry = project_registry([("", text)])
   calls = "".join(f"  {call}\n" for (name, steps), pairs, memory, written in zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["after"]) for call in kernel_lines(registry, name, steps, pairs, memory) + written)
-  return finish_calls(f"int main() {{\n  vmeLibEnable();\n  vmeLibWipe();\n{calls}  vmeLibDisable();\n  return 0;\n}}\n")
+  return finish_calls(f"int main() {{\n  vmegFixArrays();\n  vmeLibEnable();\n  vmeLibWipe();\n{calls}  vmeLibDisable();\n  return 0;\n}}\n")
 
 
 def host_program(text, identifier, others=(), compat=None):

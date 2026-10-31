@@ -2,9 +2,14 @@
 #include <map>
 #include <string.h>
 
-static u32 virtualAddress(const void* pointer, u32 count) {
+static std::map<const void*, u32>& knownAddresses() {
   static std::map<const void*, u32> known;
-  static u32 next = 0x08800000;
+  return known;
+}
+
+static u32 virtualAddress(const void* pointer, u32 count) {
+  std::map<const void*, u32>& known = knownAddresses();
+  static u32 next = 0x0a000000;
   std::map<const void*, u32>::iterator found = known.find(pointer);
   if (found != known.end()) {
     return found->second;
@@ -23,6 +28,14 @@ static void transfer(u32 address, u32 offset, u32 count, u32 control) {
 }
 
 extern "C" {
+u32 emuFixArray(void* pointer, u32 words) {
+  static u32 next = 0x08800000;
+  u32 address = next;
+  next += (words * 4 + 63) & ~63u;
+  knownAddresses()[pointer] = address;
+  return address;
+}
+
 u32 emuUsegMem(void* pointer, u32 words) {
   u32 address = virtualAddress(pointer, words);
   hwTraceMemory(address, (const u32*)pointer, words);
