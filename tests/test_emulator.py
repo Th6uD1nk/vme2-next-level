@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmee.agu import stream_at
 from vmee.extract import array_declarations, host_main, host_program
-from vmee.fu import execute
+from vmee.fu import execute, opcode_entry
 from vmee.listing import defines, emulations, format_listing
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from vmee.registers import CONTEXT_WORDS, agu_register, fu_register
@@ -305,6 +305,39 @@ class SubtractionOnThePspTest(unittest.TestCase):
       with self.subTest(opcode=hex(opcode), registers=registers):
         found = tuple(cut24(execute(fu_of(opcode), base[i], top[i], registers.get("a", 0), registers.get("b", 0))) for i in range(2))
         self.assertEqual(found, wanted)
+
+
+def rounded_fu(opcode, k, round_):
+  return {"front": "TOP_0", "back": "BASE_0", "opcode": opcode, "sat": 0, "round": round_, "k": k}
+
+
+class RoundOnThePspTest(unittest.TestCase):
+  def test_the_bit_rounds_the_shift_of_an_addition_a_subtraction_and_a_product_as_the_psp_does(self):
+    for opcode, k, back, front, off, on in (
+      (0x010, 1, 0, 1, 0, 1),
+      (0x010, 1, 0, -1, -1, 0),
+      (0x010, 2, 0, -2, -1, 0),
+      (0x010, 8, 0, 128, 0, 1),
+      (0x010, 8, 0, -128, -1, 0),
+      (0x018, 1, 741454, 741455, 0, 1),
+      (0x200, 4, 1, 8, 0, 1),
+      (0x220, 20, -7, 0x80000, -4, -3),
+      (0x010, 0, 0, 5, 5, 5),
+      (0x018, 0, 0, 5, 5, 5),
+    ):
+      with self.subTest(opcode=hex(opcode), k=k, back=back, front=front):
+        self.assertEqual(execute(rounded_fu(opcode, k, 0), back, front), off)
+        self.assertEqual(execute(rounded_fu(opcode, k, 1), back, front), on)
+
+  def test_the_bit_changes_nothing_on_the_three_subtractions_and_is_refused_where_it_is_not_known(self):
+    for opcode, a, b in ((0x034, 7, 0), (0x048, 0, 7), (0x050, 0, 2)):
+      with self.subTest(opcode=hex(opcode)):
+        self.assertEqual(execute(rounded_fu(opcode, 1, 1), 741454, 741455, a, b), execute(rounded_fu(opcode, 1, 0), 741454, 741455, a, b))
+    for opcode in (0x0c0, 0x024, 0x07c, 0x240):
+      with self.subTest(opcode=hex(opcode)):
+        with self.assertRaisesRegex(ValueError, "rounding bit of the opcode"):
+          opcode_entry(rounded_fu(opcode, 1, 1))
+        opcode_entry(rounded_fu(opcode, 1, 0))
 
 
 class ListingTest(unittest.TestCase):
