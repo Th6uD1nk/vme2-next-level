@@ -131,7 +131,7 @@ Four of its blocks:
 ```
 0x010: a + b
        the sum of a and b
-       can be remapped with 0x024, 0x030, 0x048
+       can be remapped with 0x024, 0x030, 0x034, 0x048
        position any
        not portable
 
@@ -139,7 +139,7 @@ Four of its blocks:
        a minus b, plus c
        also written subacst(a, b, c)
        registers c = B
-       can be remapped with 0x010, 0x024, 0x030
+       can be remapped with 0x010, 0x024, 0x030, 0x034
        position any
 
 0x07c: clamp(x, low, high)
@@ -159,7 +159,7 @@ Four of its blocks:
 - The first line of a block is the opcode and how the operation is written. The lines under it say what it does.
 - `also written` gives another writing of the same opcode ([6.2.2](operations.md#622-operators-with-a-number)).
 - `registers c = B` says that the number `c` is written in the register B. `clamp` writes two numbers, in A and in B.
-- `can be remapped with` lists the opcodes that a `.remap` can give to this operation: the ones that have its operator ([5.4](pe.md#54-remapping-an-opcode)). An opcode that only a `.remap` reaches, `0x220`, has the line `only reached by a remap`.
+- `can be remapped with` lists the opcodes that a `.remap` can give to this operation: the ones that have its operator ([5.4](pe.md#54-remapping-an-opcode)). An opcode that only a `.remap` reaches, such as `0x220` or `0x034`, has the line `only reached by a remap`.
 - `position first operation of the pe only` is for the operations that must be the first one of their pe ([5.3](pe.md#53-operations-in-a-pe)). The other operations can stand anywhere: `position any`.
 - `not portable` marks an opcode that does not work on every model of the PSP. `--compat fat` leaves it out ([1.6](#16---compat)).
 
