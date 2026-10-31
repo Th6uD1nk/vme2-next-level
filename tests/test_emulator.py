@@ -477,7 +477,7 @@ BODY = (
 
 
 def main_calls(text, identifier):
-  structure = ("if (", "}", "vmeLibEnable();", "vmeLibWipe();", "vmeLibDisable();")
+  structure = ("if (", "}", "vmegLoadArrays(", "hwTraceMuted()", "vmeLibEnable();", "vmeLibWipe();", "vmeLibDisable();")
   lines = [line.strip() for line in host_main(text, identifier).splitlines()]
   return [line for line in lines[lines.index("vmegFixArrays();") + 1:] if not line.startswith(structure) and line != "return 0;"]
 

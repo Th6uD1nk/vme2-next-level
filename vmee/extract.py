@@ -118,6 +118,26 @@ def host_source(text, identifier, others=(), compat=None):
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [buffer_text(declaration) for declaration in arrays]
   parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
+  entries = ", ".join(f'{{"{name}", (u32*){name}, (u32)(sizeof({name}) / 4)}}' for name in sorted(declared))
+  parts.append(
+    "static void vmegLoadArrays(const char* path) {\n"
+    + (
+      f"  static const struct {{ const char* name; u32* data; u32 words; }} arrays[] = {{ {entries} }};\n"
+      "  std::ifstream file(path);\n"
+      "  std::string line;\n"
+      "  while (std::getline(file, line)) {\n"
+      "    std::istringstream words(line);\n"
+      "    std::string name;\n"
+      "    words >> name;\n"
+      "    for (unsigned i = 0; i < sizeof(arrays) / sizeof(arrays[0]); i++) {\n"
+      "      for (u32 k = 0, value; name == arrays[i].name && k < arrays[i].words && (words >> std::hex >> value); k++) {\n"
+      "        arrays[i].data[k] = value;\n"
+      "      }\n"
+      "    }\n"
+      "  }\n" if declared else ""
+    )
+    + "}"
+  )
   fixed = "".join(f"  fprintf(hwTraceFile(), \"# array {name} 0x%x %u\\n\", emuFixArray((void*){name}, sizeof({name}) / 4), (unsigned)(sizeof({name}) / 4));\n" for name in sorted(declared))
   parts.append(f"static void vmegFixArrays(void) {{\n{fixed}}}")
   if declared:
@@ -141,7 +161,7 @@ def host_source(text, identifier, others=(), compat=None):
   return finish_calls("\n\n".join(parts) + "\n")
 
 
-INCLUDES = '#include <cstdlib>\n#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
+INCLUDES = '#include <cstdlib>\n#include <fstream>\n#include <sstream>\n#include <string>\n#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
 
 
 def host_main(text, identifier):
@@ -149,7 +169,7 @@ def host_main(text, identifier):
   registry = project_registry([("", text)])
   steps = list(zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["after"]))
   blocks = "".join(
-    f"  if (all || step == {index}) {{\n" + "".join(f"    {call}\n" for call in kernel_lines(registry, name, actions, pairs, memory) + written) + "  }\n"
+    f"  if (all || step >= {index}) {{\n    hwTraceMuted() = step > {index};\n" + "".join(f"    {call}\n" for call in kernel_lines(registry, name, actions, pairs, memory) + written) + "  }\n"
     for index, ((name, actions), pairs, memory, written) in enumerate(steps)
   )
   return finish_calls(
@@ -157,7 +177,9 @@ def host_main(text, identifier):
     "  const int step = argc > 1 ? atoi(argv[1]) : -1;\n"
     "  const bool all = step < 0;\n"
     "  vmegFixArrays();\n"
-    "  if (all || step == 0) {\n    vmeLibEnable();\n    vmeLibWipe();\n  }\n"
+    "  if (argc > 2) {\n    vmegLoadArrays(argv[2]);\n  }\n"
+    "  hwTraceMuted() = step > 0;\n"
+    "  vmeLibEnable();\n  vmeLibWipe();\n"
     f"{blocks}"
     f"  if (all || step == {len(steps) - 1}) {{\n    vmeLibDisable();\n  }}\n"
     "  return 0;\n}\n"

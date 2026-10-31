@@ -17,6 +17,11 @@ inline FILE*& hwTraceFile() {
   return file;
 }
 
+inline bool& hwTraceMuted() {
+  static bool muted = false;
+  return muted;
+}
+
 inline std::map<u32, u32>& hwTraceLast() {
   static std::map<u32, u32> last;
   return last;
@@ -34,6 +39,9 @@ inline void hwTraceClose() {
 }
 
 inline void hwTraceMemory(u32 address, const u32* words, int count) {
+  if (hwTraceMuted()) {
+    return;
+  }
   fprintf(hwTraceFile(), "M 0x%x", address);
   for (int i = 0; i < count; i++) {
     fprintf(hwTraceFile(), " 0x%x", words[i]);
@@ -61,7 +69,9 @@ struct HwRef {
       *(volatile u32*)(uintptr_t)address = value;
       return *this;
     }
-    fprintf(hwTraceFile(), "W 0x%x 0x%x\n", address, value);
+    if (!hwTraceMuted()) {
+      fprintf(hwTraceFile(), "W 0x%x 0x%x\n", address, value);
+    }
     hwTraceLast()[address] = value;
     return *this;
   }
