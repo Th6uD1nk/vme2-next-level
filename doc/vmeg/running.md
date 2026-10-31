@@ -116,7 +116,7 @@ main.vmeg.cpp:1-5: .kernel run direct
 
 - `--kernel` goes with `--list`.
 - The name is the one of a kernel of the files given, which are one project ([1.2](#12-several-files)).
-- The `sat` and the shifts written on an operation ([6.4](operations.md#64-sat-and-the-shifts)) are not shown.
+- The `sat`, `round` and the shifts written on an operation ([6.4](operations.md#64-sat-and-the-shifts)) are not shown.
 
 ## 1.5 --ops
 
@@ -124,7 +124,7 @@ main.vmeg.cpp:1-5: .kernel run direct
 python3 vmegc.py --ops
 ```
 
-`--ops` shows the operations that a pe can run, sorted by opcode, and writes nothing. Each operation is a block: its opcode and how it is written (as an expression, or as a function for the operations that have no other writing), what it does, its other writings (`also written …`), the registers that receive its numbers, the opcodes it can be remapped with, and where it can stand in a pe (any position, or the first operation of the pe only). A block ends with `not portable` when the opcode is not usable on every model of the PSP. Under the blocks, the options that `sat`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
+`--ops` shows the operations that a pe can run, sorted by opcode, and writes nothing. Each operation is a block: its opcode and how it is written (as an expression, or as a function for the operations that have no other writing), what it does, its other writings (`also written …`), the registers that receive its numbers, the opcodes it can be remapped with, and where it can stand in a pe (any position, or the first operation of the pe only). A block ends with `not portable` when the opcode is not usable on every model of the PSP. Under the blocks, the options that `sat`, `round`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
 
 Four of its blocks:
 

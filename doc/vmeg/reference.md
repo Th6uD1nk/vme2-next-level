@@ -94,7 +94,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `mac` | [6.3.4](operations.md#634-mac) |
 | `acc` | [6.3.5](operations.md#635-acc) |
 | `and`, `or`, `xor` | [6.3.6](operations.md#636-and-or-and-xor) |
-| `sat`, `>>`, `<<` | [6.4](operations.md#64-sat-and-the-shifts) |
+| `sat`, `round`, `>>`, `<<` | [6.4](operations.md#64-sat-and-the-shifts) |
 
 ## 15.7 Staging
 

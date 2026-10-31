@@ -35,7 +35,7 @@ vmegc_sources(app SOURCES main.vmeg.cpp)
 | 3 | [The kernel](#3-the-kernel) | `.kernel`, the modes `direct` and `memory` |
 | 4 | [AGU variables](#4-agu-variables) | `Agu`, its parameters, the bindings |
 | 5 | [Processing elements](#5-processing-elements) | `.pe0` to `.pe3`, `pe[i]` |
-| 6 | [Operations](#6-operations) | the operators and the functions of a pe, `sat`, the shifts |
+| 6 | [Operations](#6-operations) | the operators and the functions of a pe, `sat`, `round`, the shifts |
 | 7 | [Staging, routing and warnings](#7-staging-routing-and-warnings) | `Staging`, the derived routing, the warnings |
 | 8 | [Arrays](#8-arrays) | the `Buffer` keyword, global and local arrays, the `Memory` keyword |
 | 9 | [Transfers](#9-transfers) | `Transfer`, `.load`, `.store`, the generated functions |
@@ -80,7 +80,7 @@ Details: [Processing elements](vmeg/pe.md)
 
 ## 6. Operations
 
-A pe computes with operators (`+`, `-`, `*`, `&`, `|`, `^`, `~`) and with functions (`clamp`, `mac`, `acc`, `subacst`, `subshr`, `and`, `or`, `xor`). `sat` and the shifts `>>` and `<<` adjust the operation they wrap. These are the operations currently supported, the list is not complete. `vmegc --ops` shows the table of all of them.
+A pe computes with operators (`+`, `-`, `*`, `&`, `|`, `^`, `~`) and with functions (`clamp`, `mac`, `acc`, `subacst`, `subshr`, `and`, `or`, `xor`). `sat`, `round` and the shifts `>>` and `<<` adjust the operation they wrap. These are the operations currently supported, the list is not complete. `vmegc --ops` shows the table of all of them.
 
 Details: [Operations](vmeg/operations.md)
 
