@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 from vmee.extract import chosen_emulation, host_program
@@ -19,12 +20,41 @@ def choose_source(sources, identifier):
   raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in these files'})")
 
 
+def array_table(trace):
+  table = {}
+  for line in trace.splitlines():
+    parts = line.split()
+    if parts[:2] == ["#", "array"]:
+      table[parts[2]] = (int(parts[3], 16), int(parts[4]))
+  return table
+
+
+def arrays_text(emulator, table):
+  lines = []
+  for name, (address, count) in table.items():
+    first = emulator.memory_address(address)
+    words = [emulator.memory.get(first + 4 * index) for index in range(count)]
+    if None not in words:
+      lines.append(name + " " + " ".join("%x" % word for word in words))
+  return "".join(line + "\n" for line in lines)
+
+
 def run_emulation(text, identifier, trace_path=None, others=(), compat=None):
+  steps = len(chosen_emulation(text, identifier)["steps"])
+  emulator = Emulator()
+  traces = []
   with tempfile.TemporaryDirectory() as folder:
-    trace = run_program(build_program(host_program(text, identifier, others, compat), folder))
+    executable = build_program(host_program(text, identifier, others, compat), folder)
+    path = os.path.join(folder, "arrays.txt")
+    arguments = ()
+    for step in range(steps):
+      trace = run_program(executable, (str(step), *arguments))
+      traces.append(trace)
+      replay(emulator, trace)
+      with open(path, "w", encoding="utf-8") as f:
+        f.write(arrays_text(emulator, array_table(trace)))
+      arguments = (path,)
   if trace_path is not None:
     with open(trace_path, "w", encoding="utf-8") as f:
-      f.write(trace)
-  emulator = Emulator()
-  replay(emulator, trace)
+      f.write("".join(traces))
   return emulator
