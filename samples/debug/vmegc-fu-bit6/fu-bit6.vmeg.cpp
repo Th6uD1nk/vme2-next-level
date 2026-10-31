@@ -569,3 +569,27 @@ void checkBit6LimitsSatRun(void) {
 @kernel checkBit6SubOfbK0 config | exec
 void checkBit6SubOfbK0Run(void) {
 }
+
+@emulate "fu-bit6-sub-ofb-k1"
+.kernel checkBit6SubOfbK1 direct {
+  Int count = 16 - 1;
+
+  Transfer topTransfer = { memory: bit6LegTop, count };
+  Transfer baseTransfer = { memory: bit6LegBase, count };
+
+  .load { .transfer = topTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; .top2 = 0; .top3 = 0; } }
+  .load { .transfer = baseTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(subacst(top0, base0, 7) >> 1); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = subacst(top1, base1, 7) >> 1; }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subacst(top2, base2, -7) >> 1); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = subacst(top3, base3, -7) >> 1; }
+}
+
+@kernel checkBit6SubOfbK1 config | exec
+void checkBit6SubOfbK1Run(void) {
+}
