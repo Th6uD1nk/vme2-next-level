@@ -144,7 +144,7 @@ Some operators take a number besides their operands. The operation holds the num
 
 - `top0 + base0 + 5` adds the number to the sum: `(top0 + base0) + 5`.
 - `top1 - base1 + 3` adds the number to the difference.
-- `base2 - (top2 >> 2)` subtracts `top2` shifted to the right by 2 from `base2`. The shift cannot be negative.
+- `base2 - (top2 >> 2)` subtracts `top2` shifted to the right by 2 from `base2`.
 - `(top3 + base3) & 0xff` keeps the low byte of the sum. `pe3` holds two operations: the sum, then the and.
 
 | Written | Also written as a function |
@@ -213,9 +213,9 @@ Staging s;
 
 ### 6.3.3 subshr
 
-`subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number that cannot be negative. It can also be written as an expression, `b - (a >> n)` ([6.2.2](#622-operators-with-a-number)).
+`subshr(a, b, n)` computes `b - (a >> n)`. `a` and `b` are buffers or `Staging` variables, `n` is a number. A negative `n` shifts `a` to the left. It can also be written as an expression, `b - (a >> n)` ([6.2.2](#622-operators-with-a-number)).
 
-`(a >> n) - b` subtracts `b` from `a` shifted to the right by `n`. `n` cannot be negative either. It has no function writing.
+`(a >> n) - b` subtracts `b` from `a` shifted to the right by `n`. It has no function writing.
 
 ```c
 .pe0 { .spad = subshr(top0, base0, 2); }
@@ -319,8 +319,6 @@ The messages start with `line N:`, left out here.
 | [6.3.1](#631-clamp) | `clamp takes 3 arguments (x, low, high)` | `clamp` with another number of arguments |
 | [6.3.2](#632-subacst) | `subacst takes 3 arguments (a, b, c)` | `subacst` with another number of arguments |
 | [6.3.3](#633-subshr) | `subshr takes 3 arguments (a, b, n)` | `subshr` with another number of arguments |
-| [6.3.3](#633-subshr) | `subshr n cannot be less than 0` | a negative `n` |
-| [6.3.3](#633-subshr) | `shrsub n cannot be less than 0` | a negative `n` in `(a >> n) - b` |
 | [6.3.4](#634-mac) | `mac takes 2 arguments (a, b)` | `mac` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes 1 argument (x)` | `acc` with another number of arguments |
 | [6.3.5](#635-acc) | `acc takes a buffer or a Staging variable` | an operation inside `acc` |
