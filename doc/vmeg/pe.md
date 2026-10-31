@@ -75,7 +75,7 @@ Staging s;
 - A third operation in the same pe is an error.
 - `sat`, `round` and the shifts `>>` and `<<` are not operations: they set the saturation, the rounding and the shift of the operation they wrap, and are not counted.
 - `~` is one operation when it combines with what it complements, as in `~(a & b)`, and two operations otherwise, as in `~(a + b)` ([6.2.1](operations.md#621-the-complement)).
-- `mul`, `mac` and `acc` must be the first operation of the pe: the innermost one, or the first one written. Written after another operation of the pe, they are refused.
+- `mul`, `mac` and `acc` are meant to be the first operation of the pe: the innermost one, or the first one written. Written after another operation of the pe, they are written for the second unit and `vmegc` warns ([7.3](staging-routing.md#73-warnings)).
 
 ```c
 Staging s, t;
@@ -85,7 +85,7 @@ Staging s, t;
 .pe2 { t = top0 + top1; .spad = mac(top2, top3); }
 ```
 
-`pe0` and `pe1` are accepted, `pe2` is refused.
+`pe0` and `pe1` give no warning. `pe2` gives one: `mac` is the second operation of the pe.
 
 The operations are described in [Operations](operations.md).
 
@@ -134,7 +134,7 @@ Staging s;
 - The opcode must be in the table of `vmegc`, and it must have the operator of the `.remap`. `vmegc --ops` lists, under each opcode, the opcodes it can be remapped with ([1.5](running.md#15---ops)).
 - The selector is not changed: it chooses the opcode from the way the operation is written, then the `.remap` replaces it. The registers (`A`, `B`) are those of the new opcode: a register that the new opcode has and the expression does not give is 0.
 - A warning is given when the expression gives a value that the new opcode has no register for. It is not given in the other direction.
-- A `.remap` lifts the rule of 5.3 that makes `mul`, `mac` and `acc` the first operation of the pe, for the unit it names.
+- A `.remap` that names a unit gives no warning for a `mul`, `mac` or `acc` in this unit ([5.3](#53-operations-in-a-pe)).
 
 ## 5.5 Errors
 
@@ -149,7 +149,6 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `pe0.top is already set at line N` | the same member (`.top`, `.base`, `.write`) set twice in a pe |
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
 | [5.3](#53-operations-in-a-pe) | `a pe holds two operations at most, this pe needs 3` | more than two operations in a pe |
-| [5.3](#53-operations-in-a-pe) | `mac must be the first operation of the pe` | `mul`, `mac` or `acc` (the message names the one used) after another operation of the same pe |
 | [5.4](#54-remapping-an-opcode) | `unknown field 'x' of .remap (operator, primary, secondary)` | a field other than `operator`, `primary` and `secondary` |
 | [5.4](#54-remapping-an-opcode) | `duplicate field 'primary' in .remap` | the same field twice (the message names it) |
 | [5.4](#54-remapping-an-opcode) | `the field 'operator' is needed in .remap` | a `.remap` with no `operator` |
