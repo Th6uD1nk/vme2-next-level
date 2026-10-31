@@ -641,3 +641,27 @@ void checkBit6SubInvK0Run(void) {
 @kernel checkBit6SubInvK1 config | exec
 void checkBit6SubInvK1Run(void) {
 }
+
+@emulate "fu-bit6-sub-shr-a"
+.kernel checkBit6SubShrA direct {
+  Int count = 16 - 1;
+
+  Transfer topTransfer = { memory: bit6LegTop, count };
+  Transfer baseTransfer = { memory: bit6LegBase, count };
+
+  .load { .transfer = topTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; .top2 = 0; .top3 = 0; } }
+  .load { .transfer = baseTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(subshr(top0, base0, 2)); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = subshr(top1, base1, 2); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subshr(top2, base2, 2) >> 1); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = subshr(top3, base3, 2) >> 1; }
+}
+
+@kernel checkBit6SubShrA config | exec
+void checkBit6SubShrARun(void) {
+}
