@@ -1,30 +1,53 @@
 # fu-bit6 (WIP)
 
-Finds what the bit 6 of the register of a FU does. Two kernels have the same inputs and the same operations. The kernel `fu-bit6-on` sets the bit 6 on its four PEs (`zsm(…)`), the kernel `fu-bit6-off` does not. The outputs of the two are compared.
+Finds what the bit 6 of the register of a FU does. Every kernel computes the same operation with the bit and without it, on the same inputs, and the two results are compared.
 
-Each PE has its own pair of inputs, `TOP_p` and `BASE_p`, and writes its result in `BASE_p`, words 0 to 15:
+`zsm(…)` sets the bit 6 of the operation it wraps. The name is provisional and `zsm` is not in the documentation until the behavior is known.
 
-| PE | Operation | Inputs |
+## Kernels
+
+| Id | What it checks |
+|---|---|
+| `fu-bit6-on` | `+`, `-` and `*` with a shift of 1, 1, 2 and 4, the bit set on the four PEs |
+| `fu-bit6-off` | the same operations, the bit not set |
+| `fu-bit6-fft-mul` | `*` with the opcode `0x220` and a shift of 20, as the FFT multiplies by the twiddles |
+| `fu-bit6-fft-legs` | `+` and `-` with a shift of 1, as the legs of the FFT butterfly |
+| `fu-bit6-fft-noshift` | `+` and `-` with no shift: the bit alone |
+| `fu-bit6-fft-chain` | a multiplication on two PEs, then a subtraction on the secondary FU, the bit on the three |
+| `fu-bit6-fft-chain-split` | the same chain, the bit on the multiplications only, then on the subtraction only |
+| `fu-bit6-shift-2`, `-3`, `-8` | `+` with a shift of 2, 3 and 8, on positive and negative values around the middle of each step |
+| `fu-bit6-limits` | `+` with a shift of 1 and `*` with a shift of 20, on values at the limits of the 24 bits |
+| `fu-bit6-limits-sat` | `+` with `sat` and a shift of 1 and 2, on values at the border of the saturation |
+
+## Results
+
+Each PE writes its result in `BASE_p`, words 0 to 15. The inputs are in the words 16 to 31 of the same buffer.
+
+In every kernel except `fu-bit6-on` and `fu-bit6-off`, the PEs work by pairs on the same inputs:
+
+| PE | Bit 6 | Result in |
 |---|---|---|
-| `pe0` | `top0 + base0 >> 1` | small values around 0 |
-| `pe1` | `top1 - base1 >> 1` | odd and even values, positive and negative |
-| `pe2` | `top2 + base2 >> 2` | values of 24 bits and small values |
-| `pe3` | `top3 * base3 >> 4` | small values, positive and negative |
+| `pe0` | set | `BASE_0` |
+| `pe1` | not set | `BASE_1` |
+| `pe2` | set | `BASE_2` |
+| `pe3` | not set | `BASE_3` |
 
-The `TOP_p` inputs are loaded at the word 0 of their buffer. The `BASE_p` inputs are loaded at the word 16, so they are not overwritten by the outputs: in `log.txt`, the words 0 to 15 of each `BASE` are the outputs and the words 16 to 31 are the inputs.
+In `fu-bit6-fft-chain` and `fu-bit6-fft-chain-split`, a chain uses two PEs: the result of the first chain is in `BASE_1`, the one of the second chain is in `BASE_3`.
 
-`zsm` is the name of `fu_zsm` in the library: it is provisional, it sets the bit 6 of the operation it wraps, and it is not in the documentation until the behavior is known.
+## Running on the PSP
 
-PSP, with vmeh:
 ```
 cd samples/vmeh && mkdir build && cd build
-cmake -DVMEH_SOURCE=samples/debug/vmegc-fu-bit6/fu-bit6.vmeg.cpp ..
+cmake -DVMEH_SOURCE=samples/debug/vmegc-fu-bit6/fu-bit6.vmeg.cpp -DVMEH_ID=fu-bit6-shift-2 ..
 make
 ```
 
-The program has the two kernels: `001 - fu-bit6-on` runs at the start, Right goes to `002 - fu-bit6-off`. `log.txt` holds the dump of the current kernel, and its first line says which one. Copy it before moving to the other one.
+`-DVMEH_ID` keeps one kernel. Without it, the program has all of them: the first one runs at the start and Right goes to the next one. `log.txt` holds the dump of the current kernel and its first line says which one. Copy it before moving to the next kernel.
 
-Emulator (the kernel with the bit is refused, the emulator does not model the bit with a shift):
+## Emulator
+
 ```
 python3 vmeemu.py --run fu-bit6-off samples/debug/vmegc-fu-bit6/fu-bit6.vmeg.cpp
 ```
+
+The emulator does not model the bit 6 with a shift: it refuses every kernel that sets it with one. Only `fu-bit6-off` and `fu-bit6-fft-noshift` can be played.
