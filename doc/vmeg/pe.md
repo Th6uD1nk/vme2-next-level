@@ -110,12 +110,20 @@ Staging s;
   s = top0 + top1;
   .spad = s + top2;
 }
+
+.pe2 {
+  .top = t;
+  .write = w;
+  .remap = { operator: "+", primary: 0x034 };
+  .spad = top0 - top1 + 5;
+}
 ```
 
 **Explanation of the code above:**
 
 - In `pe0`, the `*` that the first unit of the pe computes takes the opcode `0x220`. Without the `.remap`, it takes the opcode that the selector chooses for `*`.
 - In `pe1`, a `+` takes `0x030` in the first unit (`primary`) and `0x010` in the second one (`secondary`). The first `+` of `pe1` (`s = top0 + top1;`) is in the first unit, the second one (`.spad = s + top2;`) in the second unit.
+- In `pe2`, the opcode `0x034` replaces the opcode of `top0 - top1 + 5`. It is the opcode `OP_SUB_INV_OFA` of the library, `(back - front) + a`: the 5 goes in its register A, and the subtraction is the other way round from the one of the opcode that the selector chooses for this expression, `0x048`.
 - `primary` and `secondary` are both optional, but at least one is needed. A unit that is not given keeps the opcode that the selector chooses.
 
 **Rules:**
