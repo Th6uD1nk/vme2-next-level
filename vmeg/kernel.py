@@ -423,7 +423,7 @@ def place(state, lines, pe, operations, line):
     state["operations"].append(dict(operation, pe=pe, line=line))
     remap = state["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
     if specification["units"] == "primary" and number != 0 and unit.lower() not in remap:
-      raise ValueError(f"{operation['kind']} must be the first operation of the pe")
+      warn(state, line, f"{operation['kind']} is the second operation of pe{pe}, it is not known to run in the second unit")
     encoding = OPERATIONS[remap[unit.lower()]] if unit.lower() in remap else specification
     code = encoding["code"]
     if len(specification["operands"]) == 2:

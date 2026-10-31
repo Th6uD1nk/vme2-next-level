@@ -340,7 +340,7 @@ def operation_block(specification):
     lines.append(indent + "can be remapped with " + ", ".join(f"0x{opcode:03x}" for opcode in others))
   if specification.get("auxiliary"):
     lines.append(indent + "only reached by a remap")
-  lines.append(indent + ("position first operation of the pe only" if specification["units"] == "primary" else "position any"))
+  lines.append(indent + ("position first operation of the pe, a warning in the second one" if specification["units"] == "primary" else "position any"))
   if specification.get("not_portable"):
     lines.append(indent + "not portable")
   return lines
