@@ -55,6 +55,17 @@ OPERATIONS = {
     "units": "any",
     "note": "a minus b, plus c",
   },
+  "sub_inv_ofa": {
+    "opcode": 0x034,
+    "auxiliary": True,
+    "pattern": "b - a + c",
+    "arguments": (("a", "operand"), ("b", "operand"), ("c", "number")),
+    "registers": {"A": "c"},
+    "code": "fu_code(OP_SUB_INV_OFA)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "b minus a, plus c, the inverse of subacst with c in the register A",
+  },
   "subshr": {
     "opcode": 0x050,
     "pattern": "b - (a >> n)",
