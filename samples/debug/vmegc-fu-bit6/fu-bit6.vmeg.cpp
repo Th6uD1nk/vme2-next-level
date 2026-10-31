@@ -184,9 +184,9 @@ volatile Buffer bit6MulBaseB[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = zsm(top0 * base0 >> 20); }
+  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = round(top0 * base0 >> 20); }
   .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = top1 * base1 >> 20; }
-  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = zsm(top2 * base2 >> 20); }
+  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = round(top2 * base2 >> 20); }
   .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; .spad = top3 * base3 >> 20; }
 }
 
@@ -222,9 +222,9 @@ volatile Buffer bit6LegBase[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 1); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0 >> 1); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 1; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 - base2 >> 1); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(top2 - base2 >> 1); }
   .pe3 { .top = top; .base = base; .write = write; .spad = top3 - base3 >> 1; }
 }
 
@@ -246,9 +246,9 @@ void checkBit6FftLegsRun(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 - base2); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(top2 - base2); }
   .pe3 { .top = top; .base = base; .write = write; .spad = top3 - base3; }
 }
 
@@ -304,8 +304,8 @@ volatile Buffer bit6ChainBase1[16] = {
 
   Staging onReal, onImag, offReal, offImag;
 
-  .pe0 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; onReal = zsm(top0 * base0 >> 20); }
-  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; onImag = zsm(top1 * base1 >> 20); .spad = zsm(onReal - onImag >> 1); }
+  .pe0 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; onReal = round(top0 * base0 >> 20); }
+  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; onImag = round(top1 * base1 >> 20); .spad = round(onReal - onImag >> 1); }
   .pe2 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; offReal = top2 * base2 >> 20; }
   .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; offImag = top3 * base3 >> 20; .spad = offReal - offImag >> 1; }
 }
@@ -334,10 +334,10 @@ void checkBit6FftChainRun(void) {
 
   Staging firstReal, firstImag, secondReal, secondImag;
 
-  .pe0 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; firstReal = zsm(top0 * base0 >> 20); }
-  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; firstImag = zsm(top1 * base1 >> 20); .spad = firstReal - firstImag >> 1; }
+  .pe0 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; firstReal = round(top0 * base0 >> 20); }
+  .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; firstImag = round(top1 * base1 >> 20); .spad = firstReal - firstImag >> 1; }
   .pe2 { .top = top; .base = base; .remap = { operator: "*", primary: 0x220 }; secondReal = top2 * base2 >> 20; }
-  .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; secondImag = top3 * base3 >> 20; .spad = zsm(secondReal - secondImag >> 1); }
+  .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "*", primary: 0x220 }; secondImag = top3 * base3 >> 20; .spad = round(secondReal - secondImag >> 1); }
 }
 
 @kernel checkBit6FftChainSplit config | exec
