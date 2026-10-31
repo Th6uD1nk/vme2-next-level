@@ -21,10 +21,13 @@ def fu_operands(registers, pe, kind):
   return signed32(registers[first]), signed32(registers[first + 1])
 
 
+def shifted(value, fu):
+  k = fu["k"]
+  return (value + (1 << k - 1) if fu["round"] and k else value) >> k
+
+
 def op_add(back, front, fu, a, b, previous, state):
-  if fu["round"] and fu["k"]:
-    raise ValueError("the rounding bit of an ADD with a shift is not modeled")
-  return (back + front) >> fu["k"]
+  return shifted(back + front, fu)
 
 
 def op_clp(back, front, fu, a, b, previous, state):
@@ -89,7 +92,7 @@ def op_mac_inner_product_bias(back, front, fu, a, b, previous, state):
 
 
 def op_mul_rshift(back, front, fu, a, b, previous, state):
-  return (back * front) >> fu["k"]
+  return shifted(back * front, fu)
 
 
 def shift_right(value, amount):
@@ -113,7 +116,7 @@ def op_add_cst(back, front, fu, a, b, previous, state):
 
 
 def op_sub(back, front, fu, a, b, previous, state):
-  return (front - back) >> fu["k"]
+  return shifted(front - back, fu)
 
 
 def op_subacst(back, front, fu, a, b, previous, state):
