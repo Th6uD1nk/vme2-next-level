@@ -13,6 +13,7 @@ from vmee.host import build_program, run_program
 from vmee.listing import defines, emulations, format_listing
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from vmee.registers import CONTEXT_WORDS, agu_register, fu_register
+from vmee.run import run_emulation
 from vmee.trace import replay
 from vmee.machine import Emulator
 from vmeg.vmecalls import wait_marker
@@ -482,6 +483,36 @@ def main_calls(text, identifier):
   return [line for line in lines[lines.index("vmegFixArrays();") + 1:] if not line.startswith(structure) and line != "return 0;"]
 
 
+CHAIN = (
+  "volatile Buffer input[4] = { 1, 2, 3, 4 };\n"
+  "volatile Buffer middle[4];\n"
+  ".kernel first direct {\n"
+  "  Int count = 4 - 1;\n"
+  "  Transfer in = { memory: input, count };\n"
+  "  Transfer out = { memory: middle, count };\n"
+  "  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n"
+  "  Agu top = { count };\n"
+  "  Agu write = { count, cyc: auto };\n"
+  "  .pe0 { .top = top; .write = write; .spad = top0 + top0; }\n"
+  "  .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }\n"
+  "}\n"
+  ".kernel second direct {\n"
+  "  Int count = 4 - 1;\n"
+  "  Transfer back = { memory: middle, count };\n"
+  "  .load { .transfer = back; .scope = global; .offsets { .top0 = 0; } }\n"
+  "  Agu top = { count };\n"
+  "  Agu write = { count, cyc: auto };\n"
+  "  .pe0 { .top = top; .write = write; .spad = top0 + top0; }\n"
+  "}\n"
+  "void meLibOnProcess(void) {\n"
+  "  @emulate \"chain\" {\n"
+  "    @kernel first config | exec {\n    }\n"
+  "    @kernel second config | exec {\n    }\n"
+  "  }\n"
+  "}\n"
+)
+
+
 class EmulationBlockTest(unittest.TestCase):
   @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
   def test_the_arrays_of_the_host_program_have_fixed_addresses_written_in_the_trace(self):
@@ -526,6 +557,18 @@ class EmulationBlockTest(unittest.TestCase):
     self.assertEqual(steps[0] + steps[1] + steps[2], whole)
     context = [line for line in steps[2] if line.startswith("M 0xa")][0].split()[2:]
     self.assertTrue(any(int(word, 16) for word in context))
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_store_of_a_call_is_what_the_load_of_the_next_call_reads(self):
+    emulator = run_emulation(CHAIN, "chain")
+    self.assertEqual([emulator.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [4, 8, 12, 16])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_block_of_one_call_gives_what_the_whole_program_gives(self):
+    single = CHAIN.replace("    @kernel second config | exec {\n    }\n", "")
+    emulator = run_emulation(single, "chain")
+    self.assertEqual([emulator.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
+    self.assertEqual([emulator.memory[0x08800040 + 4 * i] for i in range(4)], [2, 4, 6, 8])
 
   def test_each_call_does_its_own_load_and_the_statements_of_the_body_come_after_its_calls(self):
     wait = "meCoreDMACPrimWaitTransferFinish();"
