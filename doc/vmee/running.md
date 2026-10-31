@@ -77,9 +77,10 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 - With the mark above a `.kernel`, the emulator plays the definition of the kernel as `config | exec` (with `build` first for a `memory` kernel).
 - With the block `@emulate "id" { … }`, the emulator plays the calls in the order written, each one with its actions: a call with `config` alone configures the kernel and runs nothing.
 - A call does the `.load` of its kernel first and its `.store` last, whatever the actions are, and the vmeg statements written in the body of the call (`.load`, `.store`) come after its actions, the way `vmegc` generates them ([10.5](../vmeg/calling.md#105-uploads-and-downloads-around-the-run), [11.3](../vmeg/blocks.md#113-the-vmeg-statements-of-a-block)). The arrays they use must be declared in the files ([1.3](#13-several-files)).
+- The VME is reset once, before the first call. A call starts from the state that the previous one left in the scratchpad, and the arrays that a `.store` has written are what the `.load` of the next calls read.
 - Only the four base buffers are shown. A `.store` does not show its array: read the result in the buffer it comes from.
 - The kernel is built into a small host program with `g++ -m32` and the library of the submodule `me-core-mapper`. `--run` needs `g++` with 32 bit support, and the submodule must not be empty (`git submodule update --init me-core-mapper`).
-- The host program is run, and the events it writes are played by the emulator. The run is stopped after 60 seconds.
+- The host program is run once for each call, and the events it writes are played by the emulator, one call after the other. Each run is stopped after 60 seconds.
 
 ## 1.3 Several files
 
