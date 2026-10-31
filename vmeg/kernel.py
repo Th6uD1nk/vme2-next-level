@@ -78,9 +78,6 @@ def table_operation(kind, label, args, stagings, compat):
   for (argument, argument_kind), expr_argument in zip(specification["arguments"], args):
     if argument_kind == "number":
       numbers[argument] = constant(expr_argument, f"{label} {argument}")
-      minimum = specification.get("minimums", {}).get(argument)
-      if minimum is not None and numbers[argument] < minimum:
-        raise ValueError(f"{label} {argument} cannot be less than {minimum}")
   operands, operations = table_operands(label, specification, args, stagings, compat)
   return operations + [{"kind": kind, **operands, "numbers": numbers, "sat": None}]
 

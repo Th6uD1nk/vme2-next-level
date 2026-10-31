@@ -13,7 +13,7 @@ from vmeg.kernel import generate
 def used(body, compat=None):
   lines = kernel_lines(body, compat)
   code = re.search(r"(fu_code\(\w+\)|VME_FU_OPCODE_\w+)", lines[0]).group(1)
-  registers = re.findall(r"fu_reg\(PRIMARY, (\w)\), (\w+)\)", " ".join(lines[1:]))
+  registers = re.findall(r"fu_reg\(PRIMARY, (\w)\), (-?\w+)\)", " ".join(lines[1:]))
   return code, registers
 
 
@@ -108,11 +108,10 @@ class ShiftTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = (top1 - top0) >> 2;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_SUB), 2);"])
     self.assertEqual(kernel_lines(".spad = top1 - top0 >> 2;", None), kernel_lines(".spad = (top1 - top0) >> 2;", None))
 
-  def test_the_error_of_a_shift_inside_a_pattern_names_the_opcode(self):
+  def test_a_negative_shift_amount_of_a_subtraction_goes_to_the_register_B_as_written(self):
     for body in [".spad = top1 - (top0 >> -1);", ".spad = subshr(top0, top1, -1);"]:
       with self.subTest(body=body):
-        with self.assertRaisesRegex(ValueError, "subshr n cannot be less than 0"):
-          used(body)
+        self.assertEqual(used(body), ("fu_code(OP_SUB_OFB)", [("B", "-1")]))
 
 
 class NestedTest(unittest.TestCase):
