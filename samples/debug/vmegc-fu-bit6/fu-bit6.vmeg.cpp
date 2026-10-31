@@ -545,3 +545,27 @@ volatile Buffer bit6SatShift2[16] = {
 @kernel checkBit6LimitsSat config | exec
 void checkBit6LimitsSatRun(void) {
 }
+
+@emulate "fu-bit6-sub-ofb-k0"
+.kernel checkBit6SubOfbK0 direct {
+  Int count = 16 - 1;
+
+  Transfer topTransfer = { memory: bit6LegTop, count };
+  Transfer baseTransfer = { memory: bit6LegBase, count };
+
+  .load { .transfer = topTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; .top2 = 0; .top3 = 0; } }
+  .load { .transfer = baseTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 - base0 + 7); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = top1 - base1 + 7; }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subacst(top2, base2, -7)); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = subacst(top3, base3, -7); }
+}
+
+@kernel checkBit6SubOfbK0 config | exec
+void checkBit6SubOfbK0Run(void) {
+}
