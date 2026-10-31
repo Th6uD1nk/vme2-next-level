@@ -37,9 +37,9 @@ def build_program(source, folder):
   return executable
 
 
-def run_program(executable):
+def run_program(executable, arguments=()):
   try:
-    done = subprocess.run([executable], capture_output=True, text=True, timeout=RUN_TIMEOUT)
+    done = subprocess.run([executable, *arguments], capture_output=True, text=True, timeout=RUN_TIMEOUT)
   except subprocess.TimeoutExpired:
     raise ValueError(f"the host program did not finish in {RUN_TIMEOUT} seconds") from None
   if done.returncode:

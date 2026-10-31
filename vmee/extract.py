@@ -141,14 +141,27 @@ def host_source(text, identifier, others=(), compat=None):
   return finish_calls("\n\n".join(parts) + "\n")
 
 
-INCLUDES = '#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
+INCLUDES = '#include <cstdlib>\n#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
 
 
 def host_main(text, identifier):
   emulation = chosen_emulation(text, identifier)
   registry = project_registry([("", text)])
-  calls = "".join(f"  {call}\n" for (name, steps), pairs, memory, written in zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["after"]) for call in kernel_lines(registry, name, steps, pairs, memory) + written)
-  return finish_calls(f"int main() {{\n  vmegFixArrays();\n  vmeLibEnable();\n  vmeLibWipe();\n{calls}  vmeLibDisable();\n  return 0;\n}}\n")
+  steps = list(zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["after"]))
+  blocks = "".join(
+    f"  if (all || step == {index}) {{\n" + "".join(f"    {call}\n" for call in kernel_lines(registry, name, actions, pairs, memory) + written) + "  }\n"
+    for index, ((name, actions), pairs, memory, written) in enumerate(steps)
+  )
+  return finish_calls(
+    "int main(int argc, char** argv) {\n"
+    "  const int step = argc > 1 ? atoi(argv[1]) : -1;\n"
+    "  const bool all = step < 0;\n"
+    "  vmegFixArrays();\n"
+    "  if (all || step == 0) {\n    vmeLibEnable();\n    vmeLibWipe();\n  }\n"
+    f"{blocks}"
+    f"  if (all || step == {len(steps) - 1}) {{\n    vmeLibDisable();\n  }}\n"
+    "  return 0;\n}\n"
+  )
 
 
 def host_program(text, identifier, others=(), compat=None):

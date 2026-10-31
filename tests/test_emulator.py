@@ -476,6 +476,12 @@ BODY = (
 )
 
 
+def main_calls(text, identifier):
+  structure = ("if (", "}", "vmeLibEnable();", "vmeLibWipe();", "vmeLibDisable();")
+  lines = [line.strip() for line in host_main(text, identifier).splitlines()]
+  return [line for line in lines[lines.index("vmegFixArrays();") + 1:] if not line.startswith(structure) and line != "return 0;"]
+
+
 class EmulationBlockTest(unittest.TestCase):
   @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
   def test_the_arrays_of_the_host_program_have_fixed_addresses_written_in_the_trace(self):
@@ -485,17 +491,15 @@ class EmulationBlockTest(unittest.TestCase):
       self.assertEqual([line for line in trace.splitlines() if line.startswith("# array")], ["# array a 0x8800000 16", "# array b 0x8800040 16"])
 
   def test_each_call_does_its_own_load_and_the_statements_of_the_body_come_after_its_calls(self):
-    main = [line.strip() for line in host_main(BODY, "body").splitlines()]
     wait = "meCoreDMACPrimWaitTransferFinish();"
-    self.assertEqual(main[main.index("vmeLibWipe();") + 1:main.index("vmeLibDisable();")], [
+    self.assertEqual(main_calls(BODY, "body"), [
       "kInLoad(a, VME_TOP_BUFF0_WOFF);", wait, "vmeLibSetFlow(VME_DEFAULT);", "k();",
       "meLibOnProcessOutStore(b, VME_BASE_BUFF0_WOFF);", wait,
       "kInLoad(a, VME_TOP_BUFF0_WOFF);", wait, "vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();",
     ])
 
   def test_the_emulator_plays_the_calls_of_the_block_with_their_values_and_their_memory(self):
-    main = [line.strip() for line in host_main(BLOCK, "blk").splitlines()]
-    self.assertEqual(main[main.index("vmeLibWipe();") + 1:main.index("vmeLibDisable();")], ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext(stage[1]);"])
+    self.assertEqual(main_calls(BLOCK, "blk"), ["mBuild(stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext(stage[1]);"])
     self.assertIn("volatile u32 __attribute__((aligned(64))) stage[2][VME_CONTEXT_WORD_COUNT];", host_program(BLOCK, "blk"))
 
   def test_vmeh_writes_the_statements_of_the_body_of_a_call_before_the_fill(self):
