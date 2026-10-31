@@ -110,12 +110,8 @@ def op_sub(back, front, fu, a, b, previous, state):
   return front - back
 
 
-def op_sub_ofb(back, front, fu, a, b, previous, state):
-  return (front - back) + b
-
-
-def op_sub_inv_ofa(back, front, fu, a, b, previous, state):
-  return (back - front) + a
+def op_subacst(back, front, fu, a, b, previous, state):
+  return (front - back) + a
 
 
 HANDLERS = {
@@ -123,8 +119,7 @@ HANDLERS = {
   "add_ofa": op_add_ofa,
   "add_cst": op_add_cst,
   "sub": op_sub,
-  "subacst": op_sub_ofb,
-  "sub_inv_ofa": op_sub_inv_ofa,
+  "subacst": op_subacst,
   "subshr": op_sub_inv_shf,
   "mul": op_mul_rshift,
   "mul_vec": op_mul_rshift,

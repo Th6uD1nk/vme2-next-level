@@ -22,7 +22,7 @@ WRITTEN = [
   (".spad = top1 + top2;", None, "fu_code(OP_ADD)", []),
   (".spad = top0 + base0;", "fat", "fu_code(OP_ADD_OFA)", [("A", "0")]),
   (".spad = top0 + base0 + 5;", None, "fu_code(OP_ADD_OFA)", [("A", "5")]),
-  (".spad = top1 - base1 + 3;", None, "fu_code(OP_SUB_OFB)", [("B", "3")]),
+  (".spad = top1 - base1 + 3;", None, "fu_code(OP_SUB_INV_OFA)", [("A", "3")]),
   (".spad = top1 + 1;", None, "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".spad = top1 + 1;", "fat", "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".spad = top0 + base0 + 5;", "fat", "fu_code(OP_ADD_OFA)", [("A", "5")]),
@@ -173,9 +173,9 @@ class RemapTest(unittest.TestCase):
       "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));",
       "vme_pe0(fu_reg(PRIMARY, A), 0);",
     ])
-    self.assertEqual(kernel_lines(".remap = { operator: \"+\", primary: 0x034 }; .spad = top0 - base0 + 5;", None), [
-      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_INV_OFA));",
-      "vme_pe0(fu_reg(PRIMARY, A), 5);",
+    self.assertEqual(kernel_lines(".remap = { operator: \"-\", primary: 0x050 }; .spad = top0 - base0;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_INV_SHF));",
+      "vme_pe0(fu_reg(PRIMARY, B), 0);",
     ])
     self.assertEqual(kernel_lines("Staging s; s = top0 + base0; .remap = { operator: \"*\", secondary: 0x220 }; .spad = s * top1;", None), [
       "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));",
