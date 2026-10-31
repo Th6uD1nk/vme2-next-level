@@ -409,3 +409,43 @@ void checkBit6Shift2Run(void) {
 @kernel checkBit6Shift3 config | exec
 void checkBit6Shift3Run(void) {
 }
+
+volatile Buffer bit6Shift8Pos[16] = {
+  0x00000000, 0x00000001, 0x0000007f, 0x00000080,
+  0x00000081, 0x000000ff, 0x00000100, 0x00000101,
+  0x0000017f, 0x00000180, 0x00000181, 0x000001ff,
+  0x00000200, 0x00000201, 0x00000280, 0x000003e8,
+};
+
+volatile Buffer bit6Shift8Neg[16] = {
+  0x00000000, 0xffffffff, 0xffffff81, 0xffffff80,
+  0xffffff7f, 0xffffff01, 0xffffff00, 0xfffffeff,
+  0xfffffe81, 0xfffffe80, 0xfffffe7f, 0xfffffe01,
+  0xfffffe00, 0xfffffdff, 0xfffffd80, 0xfffffc18,
+};
+
+@emulate "fu-bit6-shift-8"
+.kernel checkBit6Shift8 direct {
+  Int count = 16 - 1;
+
+  Transfer posTransfer = { memory: bit6Shift8Pos, count };
+  Transfer negTransfer = { memory: bit6Shift8Neg, count };
+  Transfer zeroTransfer = { memory: bit6Base0, count };
+
+  .load { .transfer = posTransfer; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }
+  .load { .transfer = negTransfer; .scope = global; .offsets { .top2 = 0; .top3 = 0; } }
+  .load { .transfer = zeroTransfer; .scope = global; .offsets { .base0 = 16; .base1 = 16; .base2 = 16; .base3 = 16; } }
+
+  Agu top = { count };
+  Agu base = { count, offset: 16 };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 8); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = top1 + base1 >> 8; }
+  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 8); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = top3 + base3 >> 8; }
+}
+
+@kernel checkBit6Shift8 config | exec
+void checkBit6Shift8Run(void) {
+}
