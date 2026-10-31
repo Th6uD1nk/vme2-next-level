@@ -155,6 +155,8 @@ if sorted(HANDLERS) != sorted(OPERATIONS):
 
 OPCODES = {specification["opcode"]: (HANDLERS[kind], specification["operands"]) for kind, specification in OPERATIONS.items()}
 
+ROUNDED = {OPERATIONS[kind]["opcode"] for kind in ("add", "sub", "mul", "mul_vec", "subacst", "subshr", "shrsub")}
+
 if len(OPCODES) != len(OPERATIONS):
   raise ValueError("two operations of the table have the same opcode")
 
@@ -163,6 +165,8 @@ def opcode_entry(fu):
   entry = OPCODES.get(fu["opcode"])
   if entry is None:
     raise ValueError(f"the opcode {fu['opcode']:#x} is not modeled (modeled: {', '.join(hex(opcode) for opcode in sorted(OPCODES))})")
+  if fu["round"] and fu["opcode"] not in ROUNDED:
+    raise ValueError(f"the rounding bit of the opcode {fu['opcode']:#x} is not modeled")
   return entry
 
 
