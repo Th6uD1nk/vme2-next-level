@@ -235,9 +235,6 @@ def generate_agu(target, params, env, state, at, line, mode=4):
     raise ValueError(f"pe{pe}.{agu}: 'count' is required")
   if mode == 2:
     return agu2_lines(pe, agu, values)
-  if values.get("repeat"):
-    if "inner0" not in values:
-      raise ValueError(f"pe{pe}.{agu}: repeat needs inner0, the range to repeat")
   mode = "VME_DEF_MODE"
   if "offset" in values:
     mode += f", {values['offset']}"

@@ -63,6 +63,13 @@ def agu_lines(body, kind):
 
 
 class AguModeTest(unittest.TestCase):
+  def test_the_repeat_of_a_read_agu_is_written_without_inner0_too(self):
+    self.assertEqual(agu_lines("  Agu t = { count: 15, repeat: true };\n  Agu w = { count: 15, cyc: 6 };", "top"), [
+      "vme_pe0(agu_top(MODE), VME_DEF_MODE);",
+      "vme_pe0(agu_top(COUNT), VME_DEF_STEP, 0xf);",
+      "vme_pe0(agu_top(FORMAT_0), VME_RING_TOKEN);",
+    ])
+
   def test_an_agu_of_the_mode_2_takes_its_step_and_its_count_in_inner0(self):
     self.assertEqual(agu_lines("  Agu(2) t = { offset: 128, count: 7, step: 1, repeat: true };\n  Agu w = { count: 15, cyc: 6 };", "top"), [
       "vme_pe0(agu_top(MODE), agu_mode(2), 0x80);",
