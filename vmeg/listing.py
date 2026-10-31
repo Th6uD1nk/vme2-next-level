@@ -7,8 +7,8 @@ def reference_text(ref):
 
 def bound_values(operation):
   specification = OPERATIONS[operation["kind"]]
-  if specification["operands"] == ("front", "back"):
-    operands = [reference_text(operation["front"]), reference_text(operation["back"])]
+  if len(specification["operands"]) == 2:
+    operands = [reference_text(operation[slot]) for slot in specification["operands"]]
   else:
     operands = [reference_text(operation["source"] or f"STAGING_{operation['pe']}")]
   values = []

@@ -64,8 +64,8 @@ def check_arguments(name, args):
 
 def table_operands(label, specification, args, stagings, compat):
   given = [(kind, expr) for (_, kind), expr in zip(specification["arguments"], args) if kind != "number"]
-  if specification["operands"] == ("front", "back"):
-    return {"front": operand(given[0][1], stagings), "back": operand(given[1][1], stagings)}, []
+  if len(specification["operands"]) == 2:
+    return {slot: operand(expr, stagings) for slot, (_, expr) in zip(specification["operands"], given)}, []
   source, operations = split_source(given[0][1], stagings, compat)
   if operations and given[0][0] == "operand":
     raise ValueError(f"{label} takes a buffer or a Staging variable")
@@ -429,7 +429,7 @@ def place(state, lines, pe, operations, line):
       raise ValueError(f"{operation['kind']} must be the first operation of the pe")
     encoding = OPERATIONS[remap[unit.lower()]] if unit.lower() in remap else specification
     code = encoding["code"]
-    if specification["operands"] == ("front", "back"):
+    if len(specification["operands"]) == 2:
       mux = f"vme_mux({operation['front']}, {operation['back']})"
       reads = (operation["front"], operation["back"])
     else:
