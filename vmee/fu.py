@@ -100,6 +100,10 @@ def op_subshr(back, front, fu, a, b, previous, state):
   return front - shift_right(back, b)
 
 
+def op_shrsub(back, front, fu, a, b, previous, state):
+  return shift_right(back, b) - front
+
+
 def op_add_ofa(back, front, fu, a, b, previous, state):
   return (back + front) + a
 
@@ -123,6 +127,7 @@ HANDLERS = {
   "sub": op_sub,
   "subacst": op_subacst,
   "subshr": op_subshr,
+  "shrsub": op_shrsub,
   "mul": op_mul_rshift,
   "mul_vec": op_mul_rshift,
   "and": op_and,

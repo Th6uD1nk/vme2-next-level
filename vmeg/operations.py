@@ -67,6 +67,17 @@ OPERATIONS = {
     "units": "any",
     "note": "b minus a shifted to the right by n",
   },
+  "shrsub": {
+    "opcode": 0x050,
+    "pattern": "(a >> n) - b",
+    "arguments": (("a", "operand"), ("b", "operand"), ("n", "number")),
+    "registers": {"B": "n"},
+    "minimums": {"n": 0},
+    "code": "fu_code(OP_SUB_INV_SHF)",
+    "operands": ("back", "front"),
+    "units": "any",
+    "note": "a shifted to the right by n, minus b",
+  },
   "mul": {
     "opcode": 0x200,
     "pattern": "a * b",

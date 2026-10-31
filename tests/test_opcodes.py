@@ -23,6 +23,7 @@ WRITTEN = [
   (".spad = top0 + base0;", "fat", "fu_code(OP_ADD_OFA)", [("A", "0")]),
   (".spad = top0 + base0 + 5;", None, "fu_code(OP_ADD_OFA)", [("A", "5")]),
   (".spad = top1 - base1 + 3;", None, "fu_code(OP_SUB_INV_OFA)", [("A", "3")]),
+  (".spad = (top1 >> 2) - base1;", None, "fu_code(OP_SUB_INV_SHF)", [("B", "2")]),
   (".spad = top1 + 1;", None, "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".spad = top1 + 1;", "fat", "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".spad = top0 + base0 + 5;", "fat", "fu_code(OP_ADD_OFA)", [("A", "5")]),
