@@ -97,7 +97,6 @@ Agu cycled = { count: 15, inner0: { count: 3, step: 1 }, repeat: true };
 
 **Rules:**
 
-- `repeat` needs `inner0`.
 - The `mat4x4-mul-batch` sample reads a matrix of 16 words this way, again and again while the vectors go by.
 
 ### 4.2.4 Write AGUs
@@ -219,7 +218,6 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 | [4.2.2](#422-inner0) | `pe0.top.inner0: duplicate parameter 'count'` | the same parameter of `inner0` written twice |
 | [4.2.2](#422-inner0) | `pe0.top.inner0: 'step' is required` | `inner0` without `count` or without `step` |
 | [4.2.2](#422-inner0) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `inner0` |
-| [4.2.3](#423-read-agus) | `pe0.top: repeat needs inner0, the range to repeat` | `repeat` without `inner0` in the mode 4 |
 | [4.2.4](#424-write-agus) | `pe0.write: the bubbles 5000 are outside 0 to 4095` | `bubbles` out of range |
 | [4.2.4](#424-write-agus) | `pe0.write: auto is only for cyc` | `auto` in a parameter other than `cyc` |
 | [4.2.4](#424-write-agus) | `auto is reserved for the cyc of a write AGU` | an `Int` named `auto` |
