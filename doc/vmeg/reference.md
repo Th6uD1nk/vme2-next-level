@@ -90,6 +90,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `clamp` | [6.3.1](operations.md#631-clamp) |
 | `subacst` | [6.3.2](operations.md#632-subacst) |
 | `subshr` | [6.3.3](operations.md#633-subshr) |
+| `(a >> n) - b` | [6.3.3](operations.md#633-subshr) |
 | `mac` | [6.3.4](operations.md#634-mac) |
 | `acc` | [6.3.5](operations.md#635-acc) |
 | `and`, `or`, `xor` | [6.3.6](operations.md#636-and-or-and-xor) |
