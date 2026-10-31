@@ -503,6 +503,30 @@ class EmulationBlockTest(unittest.TestCase):
     self.assertIn("W 0x440ff000 0x80", first)
     self.assertNotIn("W 0x440ff000 0x80", second)
 
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_the_arrays_given_in_a_file_are_the_content_that_the_calls_read(self):
+    with tempfile.TemporaryDirectory() as folder:
+      executable = build_program(host_program(BODY, "body"), folder)
+      path = os.path.join(folder, "arrays.txt")
+      with open(path, "w") as f:
+        f.write("a " + " ".join("%x" % (0x100 + i) for i in range(16)) + "\n")
+      given = run_program(executable, ("0", path)).splitlines()
+      declared = run_program(executable, ("0",)).splitlines()
+    self.assertIn("M 0x8800000 " + " ".join("0x%x" % (0x100 + i) for i in range(16)), given)
+    self.assertIn("M 0x8800000 " + " ".join("0x0" for _ in range(16)), declared)
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_step_finds_the_contexts_built_by_the_earlier_steps(self):
+    def events(trace):
+      return [line for line in trace.splitlines() if not line.startswith("# array")]
+    with tempfile.TemporaryDirectory() as folder:
+      executable = build_program(host_program(BLOCK, "blk"), folder)
+      steps = [events(run_program(executable, (str(index),))) for index in range(3)]
+      whole = events(run_program(executable))
+    self.assertEqual(steps[0] + steps[1] + steps[2], whole)
+    context = [line for line in steps[2] if line.startswith("M 0xa")][0].split()[2:]
+    self.assertTrue(any(int(word, 16) for word in context))
+
   def test_each_call_does_its_own_load_and_the_statements_of_the_body_come_after_its_calls(self):
     wait = "meCoreDMACPrimWaitTransferFinish();"
     self.assertEqual(main_calls(BODY, "body"), [
