@@ -2,7 +2,7 @@
 
 Finds what the bit 6 of the register of a FU does. Every kernel computes the same operation with the bit and without it, on the same inputs, and the two results are compared.
 
-`zsm(…)` sets the bit 6 of the operation it wraps. The name is provisional and `zsm` is not in the documentation until the behavior is known.
+`round(…)` sets the bit 6 of the operation it wraps.
 
 ## Kernels
 

@@ -92,10 +92,10 @@ volatile Buffer bit6Base3[16] = {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 + base0 >> 1); }
-  .pe1 { .top = top; .base = base; .write = write; .spad = zsm(top1 - base1 >> 1); }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(top2 + base2 >> 2); }
-  .pe3 { .top = top; .base = base; .write = write; .spad = zsm(top3 * base3 >> 4); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 + base0 >> 1); }
+  .pe1 { .top = top; .base = base; .write = write; .spad = round(top1 - base1 >> 1); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(top2 + base2 >> 2); }
+  .pe3 { .top = top; .base = base; .write = write; .spad = round(top3 * base3 >> 4); }
 }
 
 @kernel checkBit6On config | exec
