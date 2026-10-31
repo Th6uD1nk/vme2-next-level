@@ -173,6 +173,10 @@ class RemapTest(unittest.TestCase):
       "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));",
       "vme_pe0(fu_reg(PRIMARY, A), 0);",
     ])
+    self.assertEqual(kernel_lines(".remap = { operator: \"+\", primary: 0x034 }; .spad = top0 - base0 + 5;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_INV_OFA));",
+      "vme_pe0(fu_reg(PRIMARY, A), 5);",
+    ])
     self.assertEqual(kernel_lines("Staging s; s = top0 + base0; .remap = { operator: \"*\", secondary: 0x220 }; .spad = s * top1;", None), [
       "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));",
       "vme_pe0(vme_fu(SECONDARY), vme_mux(STAGING_0, TOP_1), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
