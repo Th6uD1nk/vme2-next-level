@@ -124,7 +124,7 @@ main.vmeg.cpp:1-5: .kernel run direct
 python3 vmegc.py --ops
 ```
 
-`--ops` shows the operations that a pe can run, sorted by opcode, and writes nothing. Each operation is a block: its opcode and how it is written (as an expression, or as a function for the operations that have no other writing), what it does, its other writings (`also written …`), the registers that receive its numbers, the opcodes it can be remapped with, and where it can stand in a pe (any position, or the first operation of the pe only). A block ends with `not portable` when the opcode is not usable on every model of the PSP. Under the blocks, the options that `sat`, `round`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
+`--ops` shows the operations that a pe can run, sorted by opcode, and writes nothing. Each operation is a block: its opcode and how it is written (as an expression, or as a function for the operations that have no other writing), what it does, its other writings (`also written …`), the registers that receive its numbers, the opcodes it can be remapped with, and where it can stand in a pe (any position, or the first operation of the pe with a warning in the second one). A block ends with `not portable` when the opcode is not usable on every model of the PSP. Under the blocks, the options that `sat`, `round`, `>>` and `<<` set on the operation they wrap. The operations are described in [Operations](../VMEG.md#6-operations).
 
 Four of its blocks:
 
@@ -151,7 +151,7 @@ Four of its blocks:
 0x200: a * b
        the product of a and b, shifted by the `>> n` after it
        can be remapped with 0x220
-       position first operation of the pe only
+       position first operation of the pe, a warning in the second one
 ```
 
 **Explanation of the code above:**
@@ -160,7 +160,7 @@ Four of its blocks:
 - `also written` gives another writing of the same opcode ([6.2.2](operations.md#622-operators-with-a-number)).
 - `registers c = B` says that the number `c` is written in the register B. `clamp` writes two numbers, in A and in B.
 - `can be remapped with` lists the opcodes that a `.remap` can give to this operation: the ones that have its operator ([5.4](pe.md#54-remapping-an-opcode)). An opcode that only a `.remap` reaches, `0x220`, has the line `only reached by a remap`.
-- `position first operation of the pe only` is for the operations that must be the first one of their pe ([5.3](pe.md#53-operations-in-a-pe)). The other operations can stand anywhere: `position any`.
+- `position first operation of the pe, a warning in the second one` is for the operations that are meant to be the first one of their pe: `vmegc` warns when one is written second ([5.3](pe.md#53-operations-in-a-pe)). The other operations can stand anywhere: `position any`.
 - `not portable` marks an opcode that does not work on every model of the PSP. `--compat fat` leaves it out ([1.6](#16---compat)).
 
 `--ops` goes alone, without a file or another option.

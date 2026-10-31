@@ -54,7 +54,7 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 | `mac(a, b)` | `0x240` | two operands | a running inner product |
 | `acc(x)` | `0x250` | one operand | a running sum |
 
-- `mul`, `mac` and `acc` must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
+- `mul`, `mac` and `acc` are meant to be the first operation of the pe: in the second one `vmegc` warns ([5.3](pe.md#53-operations-in-a-pe)).
 - `acc` reads a buffer or a `Staging` variable only. `clamp`, `~x` and the operations with `x` also read an operation.
 - An operation with two writings gives the same result with either one.
 
@@ -235,7 +235,7 @@ Staging s;
 **Rules:**
 
 - A shift written after it, `mac(top0, top1) >> 4`, is applied to the result ([6.4](#64-sat-and-the-shifts)).
-- It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
+- It is meant to be the first operation of the pe: in the second one `vmegc` warns ([5.3](pe.md#53-operations-in-a-pe)).
 - To take the 4th word of each group, shift the `cyc` of the write AGU ([4.2.4](agu.md#424-write-agus)). The `mat4x4-mul-batch` sample does it.
 
 ### 6.3.5 acc
@@ -251,7 +251,7 @@ Staging s;
 
 **Rules:**
 
-- It must be the first operation of the pe ([5.3](pe.md#53-operations-in-a-pe)).
+- It is meant to be the first operation of the pe: in the second one `vmegc` warns ([5.3](pe.md#53-operations-in-a-pe)).
 
 ### 6.3.6 and, or and xor
 
