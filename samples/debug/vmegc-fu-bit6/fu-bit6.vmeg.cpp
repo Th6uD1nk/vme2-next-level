@@ -560,9 +560,9 @@ void checkBit6LimitsSatRun(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(top0 - base0 + 7); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(top0 - base0 + 7); }
   .pe1 { .top = top; .base = base; .write = write; .spad = top1 - base1 + 7; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subacst(top2, base2, -7)); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(subacst(top2, base2, -7)); }
   .pe3 { .top = top; .base = base; .write = write; .spad = subacst(top3, base3, -7); }
 }
 
@@ -584,9 +584,9 @@ void checkBit6SubOfbK0Run(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(subacst(top0, base0, 7) >> 1); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(subacst(top0, base0, 7) >> 1); }
   .pe1 { .top = top; .base = base; .write = write; .spad = subacst(top1, base1, 7) >> 1; }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subacst(top2, base2, -7) >> 1); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(subacst(top2, base2, -7) >> 1); }
   .pe3 { .top = top; .base = base; .write = write; .spad = subacst(top3, base3, -7) >> 1; }
 }
 
@@ -608,9 +608,9 @@ void checkBit6SubOfbK1Run(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = zsm(subacst(top0, base0, 7)); }
+  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = round(subacst(top0, base0, 7)); }
   .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = subacst(top1, base1, 7); }
-  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = zsm(subacst(top2, base2, -7)); }
+  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = round(subacst(top2, base2, -7)); }
   .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = subacst(top3, base3, -7); }
 }
 
@@ -632,9 +632,9 @@ void checkBit6SubInvK0Run(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = zsm(subacst(top0, base0, 7) >> 1); }
+  .pe0 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = round(subacst(top0, base0, 7) >> 1); }
   .pe1 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = subacst(top1, base1, 7) >> 1; }
-  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = zsm(subacst(top2, base2, -7) >> 1); }
+  .pe2 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = round(subacst(top2, base2, -7) >> 1); }
   .pe3 { .top = top; .base = base; .write = write; .remap = { operator: "+", primary: 0x034 }; .spad = subacst(top3, base3, -7) >> 1; }
 }
 
@@ -656,9 +656,9 @@ void checkBit6SubInvK1Run(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(subshr(top0, base0, 2)); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(subshr(top0, base0, 2)); }
   .pe1 { .top = top; .base = base; .write = write; .spad = subshr(top1, base1, 2); }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subshr(top2, base2, 2) >> 1); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(subshr(top2, base2, 2) >> 1); }
   .pe3 { .top = top; .base = base; .write = write; .spad = subshr(top3, base3, 2) >> 1; }
 }
 
@@ -680,9 +680,9 @@ void checkBit6SubShrARun(void) {
   Agu base = { count, offset: 16 };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .base = base; .write = write; .spad = zsm(subshr(top0, base0, 1)); }
+  .pe0 { .top = top; .base = base; .write = write; .spad = round(subshr(top0, base0, 1)); }
   .pe1 { .top = top; .base = base; .write = write; .spad = subshr(top1, base1, 1); }
-  .pe2 { .top = top; .base = base; .write = write; .spad = zsm(subshr(top2, base2, 3)); }
+  .pe2 { .top = top; .base = base; .write = write; .spad = round(subshr(top2, base2, 3)); }
   .pe3 { .top = top; .base = base; .write = write; .spad = subshr(top3, base3, 3); }
 }
 
