@@ -18,6 +18,10 @@ Finds what the bit 6 of the register of a FU does. Every kernel computes the sam
 | `fu-bit6-shift-2`, `-3`, `-8` | `+` with a shift of 2, 3 and 8, on positive and negative values around the middle of each step |
 | `fu-bit6-limits` | `+` with a shift of 1 and `*` with a shift of 20, on values at the limits of the 24 bits |
 | `fu-bit6-limits-sat` | `+` with `sat` and a shift of 1 and 2, on values at the border of the saturation |
+| `fu-bit6-sub-ofb-k0`, `-k1` | `a - b + c` (`0x048`) with `c` = 7 and -7, with no shift and with a shift of 1 |
+| `fu-bit6-sub-inv-k0`, `-k1` | the same with the opcode `0x034` (`.remap` of the `+`), `c` in the register A |
+| `fu-bit6-sub-shr-a` | `b - (a >> 2)` (`0x050`), with no shift and with a shift of 1 after it |
+| `fu-bit6-sub-shr-b` | `b - (a >> n)` with `n` = 1 and 3, no shift after it |
 
 ## Results
 
@@ -50,4 +54,4 @@ make
 python3 vmeemu.py --run fu-bit6-off samples/debug/vmegc-fu-bit6/fu-bit6.vmeg.cpp
 ```
 
-The emulator does not model the bit 6 with a shift: it refuses every kernel that sets it with one. Only `fu-bit6-off` and `fu-bit6-fft-noshift` can be played.
+The emulator does not model the bit 6 with a shift. It refuses an addition that sets the bit with a shift. On the other opcodes it plays the kernel and ignores the bit: the PE with the bit gives the same values as the one without. A bit set with no shift is accepted and changes nothing.
