@@ -162,7 +162,7 @@ void meLibOnProcess(void) {
       .params = { stride: 8 };
     }
     @kernel butterfly config {
-      Transfer(Words) realIn = { memory: fftReal3, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
+      Transfer(Words) realIn = { memory: fftReal0, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
       Transfer(Words) imagIn = { memory: fftImag, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
       .load { .transfer = realIn; .scope = global; .offsets { .top1 = -8; } }
       .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -8; } }
