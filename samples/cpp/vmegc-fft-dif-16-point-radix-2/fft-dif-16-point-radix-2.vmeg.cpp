@@ -122,3 +122,7 @@ volatile Buffer(Q4.20) fftImag[32] = {
   0, 0, 0, 0,
   0, 0, 0, 0,
 };
+
+volatile Buffer(Q4.20) fftStageReal[32];
+
+volatile Buffer(Q4.20) fftStageImag[32];
