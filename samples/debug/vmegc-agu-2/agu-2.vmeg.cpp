@@ -164,3 +164,67 @@ void probeAgu2C7NoInnerRun(void) {
 @kernel probeAgu2C7R4Offset3 config | exec
 void probeAgu2C7R4Offset3Run(void) {
 }
+
+@emulate "agu4-c7-r4"
+.kernel probeAgu4C7R4 direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu read = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu4C7R4 config | exec
+void probeAgu4C7R4Run(void) {
+}
+
+@emulate "agu4-c5-r4"
+.kernel probeAgu4C5R4 direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu read = { count: 5, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu4C5R4 config | exec
+void probeAgu4C5R4Run(void) {
+}
+
+@emulate "agu4-c0-r4"
+.kernel probeAgu4C0R4 direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu read = { count: 0, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu4C0R4 config | exec
+void probeAgu4C0R4Run(void) {
+}
+
+@emulate "agu4-c7-no-inner"
+.kernel probeAgu4C7NoInner direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu read = { count: 7 };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu4C7NoInner config | exec
+void probeAgu4C7NoInnerRun(void) {
+}
