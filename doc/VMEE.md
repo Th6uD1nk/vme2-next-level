@@ -27,7 +27,7 @@ vmee --run add-test main.vmeg.cpp
 
 | | Page | What it covers |
 |---|---|---|
-| 1 | [Running vmee](#1-running-vmee) | `--run`, several files, the window of the buffers, `--trace`, `--compat` |
+| 1 | [Running vmee](#1-running-vmee) | `--run`, several files, the window of the buffers, `--trace`, `--compat`, `--use` |
 | 2 | [Traces](#2-traces) | the trace file, the lines `W` and `M` |
 | 3 | [Running on the PSP with vmeh](#3-running-on-the-psp-with-vmeh) | the build, the kernels, `config.txt`, `log.txt`, the comparison with vmee |
 | 4 | [Memories](#4-memories) | the scratchpad, the stagings, the RAM |
