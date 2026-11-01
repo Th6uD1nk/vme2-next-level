@@ -155,6 +155,21 @@ emulate "three-steps": kernels reader (lines 10-20)
     reader  config | exec
 ```
 
+**Explanation of the code above:**
+
+- `for s in 0..2 { … }` stands for three copies of the two calls inside it: one with `s` equal to 0, one with 1 and one with 2. The two values 0 and 2 are both included.
+- In each copy, `s` is replaced by its number: `skip: 1 << s` becomes `1 << 0`, `1 << 1` and `1 << 2`, and `configs[s]` becomes `configs[0]`, `configs[1]` and `configs[2]`.
+- `vmegc` writes the program with the six calls, as if they were written one by one. The emulator and `vmeh` play the same six calls ([VMEE](../VMEE.md)).
+
+**Rules:**
+
+- The loop is written in the block `@emulate "id" { … }` ([13.3](#133-the-block-form)), around calls. A `for` anywhere else is left as it is: a C `for (…)`, the `for` of the vmeg statements in the body of a call ([2.7](language.md#27-loops)), or a loop outside a block.
+- The form is `for name in low..high {`. Both bounds are integers, and both are included. A first bound above the second is an error, unlike the loop of [2.7](language.md#27-loops), which then writes nothing.
+- The body holds at least one `@kernel` call. It holds no preprocessor line.
+- A loop can hold other loops, with other names.
+- The name of the loop is replaced wherever it is used as a name in the body. It is not replaced after a dot, and a key of `.params` with the same name keeps its name: in `.params = { stride: 8 >> stride }` only the second `stride` is replaced.
+- The lines of the file do not change: the copies are written on the line of the `for`, and the lines that follow stay where they were. An error found in a copy gives the line of the `for`.
+
 ## 13.5 Errors
 
 The messages start with `line N:`, left out here.
