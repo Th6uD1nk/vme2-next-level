@@ -16,9 +16,9 @@ AGU_PARAMS = {
     "write": ("count", "offset", "step", "inner0", "reverse", "cyc", "bubbles", "sync"),
   },
   2: {
-    "top": ("count", "offset", "step", "reverse", "repeat"),
-    "base": ("count", "offset", "step", "reverse", "repeat"),
-    "write": ("count", "offset", "step", "reverse", "cyc", "bubbles", "sync"),
+    "top": ("count", "offset", "step", "inner0", "reverse", "repeat"),
+    "base": ("count", "offset", "step", "inner0", "reverse", "repeat"),
+    "write": ("count", "offset", "step", "inner0", "reverse", "cyc", "bubbles", "sync"),
   },
 }
 

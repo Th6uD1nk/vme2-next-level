@@ -233,9 +233,8 @@ def generate_agu(target, params, env, state, at, line, mode=4):
       values[key] = to_c(folded)
   if "count" not in values:
     raise ValueError(f"pe{pe}.{agu}: 'count' is required")
-  if mode == 2:
-    return agu2_lines(pe, agu, values)
-  mode = "VME_DEF_MODE"
+  two = mode == 2
+  mode = "agu_mode(2)" if two else "VME_DEF_MODE"
   if "offset" in values:
     mode += f", {values['offset']}"
   if "cyc" in values:
@@ -246,29 +245,8 @@ def generate_agu(target, params, env, state, at, line, mode=4):
     f"vme_pe{pe}(agu_{agu}(COUNT), {step}, {values['count']});",
   ]
   if "inner0" in values:
-    lines.append(f"vme_pe{pe}(agu_{agu}(INNER_0), {values['inner0']['count']} << 16, {values['inner0']['step']});")
-  format0 = []
-  if values.get("bubbles", "0") != "0":
-    format0.append(values["bubbles"])
-  if values.get("reverse"):
-    format0.append("0x10000000")
-  if values.get("repeat"):
-    format0.append("VME_RING_TOKEN")
-  if format0:
-    lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_0), {', '.join(format0)});")
-  if values.get("sync"):
-    lines.append(f"vme_pe{pe}(agu_{agu}(FORMAT_1), VME_END_TOKEN);")
-  return lines
-
-
-def agu2_lines(pe, agu, values):
-  mode = "agu_mode(2)" + (f", {values['offset']}" if "offset" in values else "") + (f", vme_cyc({values['cyc']})" if "cyc" in values else "")
-  step = values.get("step", "1")
-  lines = [
-    f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
-    f"vme_pe{pe}(agu_{agu}(COUNT), 0);",
-    f"vme_pe{pe}(agu_{agu}(INNER_0), agu_step({step}), {values['count']});",
-  ]
+    inner = values["inner0"]
+    lines.append(f"vme_pe{pe}(agu_{agu}(INNER_0), agu_step({inner['step']}), {inner['count']});" if two else f"vme_pe{pe}(agu_{agu}(INNER_0), {inner['count']} << 16, {inner['step']});")
   format0 = []
   if values.get("bubbles", "0") != "0":
     format0.append(values["bubbles"])

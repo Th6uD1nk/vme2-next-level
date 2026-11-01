@@ -70,17 +70,16 @@ class AguModeTest(unittest.TestCase):
       "vme_pe0(agu_top(FORMAT_0), VME_RING_TOKEN);",
     ])
 
-  def test_an_agu_of_the_mode_2_takes_its_step_and_its_count_in_inner0(self):
-    self.assertEqual(agu_lines("  Agu(2) t = { offset: 128, count: 7, step: 1, repeat: true };\n  Agu w = { count: 15, cyc: 6 };", "top"), [
+  def test_an_agu_of_the_mode_2_writes_its_count_and_swaps_the_fields_of_inner0(self):
+    self.assertEqual(agu_lines("  Agu(2) t = { offset: 128, count: 7, inner0: { count: 3, step: 1 }, repeat: true };\n  Agu w = { count: 15, cyc: 6 };", "top"), [
       "vme_pe0(agu_top(MODE), agu_mode(2), 0x80);",
-      "vme_pe0(agu_top(COUNT), 0);",
-      "vme_pe0(agu_top(INNER_0), agu_step(1), 7);",
+      "vme_pe0(agu_top(COUNT), VME_DEF_STEP, 7);",
+      "vme_pe0(agu_top(INNER_0), agu_step(1), 3);",
       "vme_pe0(agu_top(FORMAT_0), VME_RING_TOKEN);",
     ])
     self.assertEqual(agu_lines("  Agu t = { count: 15 };\n  Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };", "write"), [
       "vme_pe0(agu_write(MODE), agu_mode(2), 4, vme_cyc(6));",
-      "vme_pe0(agu_write(COUNT), 0);",
-      "vme_pe0(agu_write(INNER_0), agu_step(2), 0xf);",
+      "vme_pe0(agu_write(COUNT), agu_step(2), 0xf);",
       "vme_pe0(agu_write(FORMAT_0), 2);",
       "vme_pe0(agu_write(FORMAT_1), VME_END_TOKEN);",
     ])
