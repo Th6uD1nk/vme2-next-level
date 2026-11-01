@@ -142,7 +142,20 @@ volatile Buffer(Q4.20) fftStageImag[32];
 }
 
 void meLibOnProcess(void) {
-  @kernel butterfly config | exec {
-    .params = { stride: 8 };
+  @emulate "fft-butterfly-0" {
+    @kernel butterfly config {
+      .params = { stride: 8 };
+      Transfer(Words) realIn = { memory: fftReal3, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
+      Transfer(Words) imagIn = { memory: fftImag, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
+      .load { .transfer = realIn; .scope = global; .offsets { .top1 = -8; } }
+      .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -8; } }
+    }
+    @kernel butterfly exec {
+      .params = { stride: 8 };
+      Transfer realOut = { memory: fftStageReal, count: 15 };
+      Transfer imagOut = { memory: fftStageImag, count: 15 };
+      .store { .transfer = realOut; .scope = global; .offsets { .base1 = -8; } }
+      .store { .transfer = imagOut; .scope = global; .offsets { .base3 = -8; } }
+    }
   }
 }
