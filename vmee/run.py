@@ -34,8 +34,8 @@ def arrays_text(emulator, table):
   for name, (address, count) in table.items():
     first = emulator.memory_address(address)
     words = [emulator.memory.get(first + 4 * index) for index in range(count)]
-    if None not in words:
-      lines.append(name + " " + " ".join("%x" % word for word in words))
+    if any(word is not None for word in words):
+      lines.append(name + " " + " ".join("-" if word is None else "%x" % word for word in words))
   return "".join(line + "\n" for line in lines)
 
 
