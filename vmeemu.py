@@ -7,6 +7,7 @@ from vmee.machine import Emulator
 from vmee.memory import dump_base_buffers
 from vmee.run import choose_source, run_emulation
 from vmee.trace import replay
+from vmeg.unroll import unroll_loops
 
 
 USE = re.compile(r"([A-Za-z_]\w*)=([A-Za-z_]\w*)")
@@ -73,6 +74,13 @@ def main(argv=None):
     for path in args.input:
       with open(path, encoding="utf-8") as f:
         sources.append((path, f.read()))
+    if args.run is not None or args.list:
+      unrolled = []
+      for path, text in sources:
+        where = path
+        unrolled.append((path, unroll_loops(text)))
+      sources = unrolled
+      where = ", ".join(args.input)
     text = sources[0][1]
     if args.list:
       list_emulations(text, args.kernel, args.full)
