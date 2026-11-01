@@ -39,12 +39,12 @@ def arrays_text(emulator, table):
   return "".join(line + "\n" for line in lines)
 
 
-def run_emulation(text, identifier, trace_path=None, others=(), compat=None):
+def run_emulation(text, identifier, trace_path=None, others=(), compat=None, uses=()):
   steps = len(chosen_emulation(text, identifier)["steps"])
   emulator = Emulator()
   traces = []
   with tempfile.TemporaryDirectory() as folder:
-    executable = build_program(host_program(text, identifier, others, compat), folder)
+    executable = build_program(host_program(text, identifier, others, compat, uses), folder)
     path = os.path.join(folder, "arrays.txt")
     arguments = ()
     for step in range(steps):

@@ -33,7 +33,7 @@ def other_declaration(others, source):
   return None
 
 
-def array_declarations(text, identifier, others=()):
+def array_declarations(text, identifier, others=(), uses=()):
   emulation = chosen_emulation(text, identifier)
   blocks = find_blocks(text)
   available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
@@ -46,7 +46,7 @@ def array_declarations(text, identifier, others=()):
   result = []
   seen = set()
   for qualifier in ("global", "local"):
-    for source in dict.fromkeys(entry[3] for entry in emulation[qualifier] + emulation["stores"][qualifier]):
+    for source in dict.fromkeys([entry[3] for entry in emulation[qualifier] + emulation["stores"][qualifier]] + [used for _, used in uses]):
       found = next((declaration for declaration in available[qualifier] if source in declaration["names"]), None)
       if qualifier == "global" and (found is None or found["extern"]):
         found = other_declaration(others, source) or found
@@ -83,8 +83,8 @@ def memory_text(declaration):
   return text
 
 
-def declared_parts(text, identifier, others=()):
-  arrays = array_declarations(text, identifier, others)
+def declared_parts(text, identifier, others=(), uses=()):
+  arrays = array_declarations(text, identifier, others, uses)
   for declaration in arrays:
     if declaration["extern"]:
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern and no file defines it")
@@ -93,6 +93,12 @@ def declared_parts(text, identifier, others=()):
   for source in dict.fromkeys(entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]):
     if source not in declared:
       raise ValueError(f"the array {source} of the @emulate \"{identifier}\" is defined in no file")
+  read = {entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]}
+  for replaced, used in uses:
+    if replaced not in read:
+      raise ValueError(f"--use {replaced}={used}: the array {replaced} is not read or written by the @emulate \"{identifier}\"")
+    if used not in declared:
+      raise ValueError(f"--use {replaced}={used}: the array {used} is defined in no file")
   known = dict(defines(text))
   parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
   for origin in dict.fromkeys(declaration["origin"] for declaration in arrays if declaration["origin"] is not text):
@@ -112,11 +118,12 @@ def buffer_text(declaration):
     raise ValueError(f"line {declaration['line']}: {e}") from None
 
 
-def host_source(text, identifier, others=(), compat=None):
-  arrays, parts = declared_parts(text, identifier, others)
+def host_source(text, identifier, others=(), compat=None, uses=()):
+  arrays, parts = declared_parts(text, identifier, others, uses)
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [buffer_text(declaration) for declaration in arrays]
+  parts += [f'static_assert(sizeof({replaced}) == sizeof({used}), "--use {replaced}={used}: the two arrays must have the same size");' for replaced, used in uses]
   parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
   entries = ", ".join(f'{{"{name}", (u32*){name}, (u32)(sizeof({name}) / 4)}}' for name in sorted(declared))
   parts.append(
@@ -144,14 +151,15 @@ def host_source(text, identifier, others=(), compat=None):
   fixed = "".join(f"  fprintf(hwTraceFile(), \"# array {name} 0x%x %u\\n\", emuFixArray((void*){name}, sizeof({name}) / 4), (unsigned)(sizeof({name}) / 4));\n" for name in sorted(declared))
   parts.append(f"static void vmegFixArrays(void) {{\n{fixed}}}")
   if declared:
-    entries = ", ".join(f"{{(u32){name}, sizeof({name}) / 4}}" for name in sorted(declared))
+    redirected = dict(uses)
+    entries = ", ".join(f"{{(u32){name}, (u32){redirected.get(name, name)}, sizeof({redirected.get(name, name)}) / 4}}" for name in sorted(declared))
     parts.append(
       "#undef useg_mem\n"
       "static u32 vmegUsegMem(u32 pointer) {\n"
-      f"  static const struct {{ u32 pointer; u32 words; }} arrays[] = {{ {entries} }};\n"
+      f"  static const struct {{ u32 pointer; u32 target; u32 words; }} arrays[] = {{ {entries} }};\n"
       "  for (unsigned i = 0; i < sizeof(arrays) / sizeof(arrays[0]); i++) {\n"
       "    if (arrays[i].pointer == pointer) {\n"
-      "      return emuUsegMem((void*)pointer, arrays[i].words);\n"
+      "      return emuUsegMem((void*)arrays[i].target, arrays[i].words);\n"
       "    }\n"
       "  }\n"
       "  return pointer;\n"
@@ -189,5 +197,5 @@ def host_main(text, identifier):
   )
 
 
-def host_program(text, identifier, others=(), compat=None):
-  return INCLUDES + "\n" + host_source(text, identifier, others, compat) + "\n" + host_main(text, identifier)
+def host_program(text, identifier, others=(), compat=None, uses=()):
+  return INCLUDES + "\n" + host_source(text, identifier, others, compat, uses) + "\n" + host_main(text, identifier)
