@@ -1,4 +1,5 @@
 import argparse
+import re
 import sys
 
 from vmee.listing import defines, emulations, format_listing
@@ -6,6 +7,21 @@ from vmee.machine import Emulator
 from vmee.memory import dump_base_buffers
 from vmee.run import choose_source, run_emulation
 from vmee.trace import replay
+
+
+USE = re.compile(r"([A-Za-z_]\w*)=([A-Za-z_]\w*)")
+
+
+def parse_uses(parser, values):
+  uses = []
+  for value in values:
+    found = USE.fullmatch(value)
+    if found is None:
+      parser.error(f"--use takes NAME=NAME, for example --use input=other (got '{value}')")
+    if any(found.group(1) == replaced for replaced, _ in uses):
+      parser.error(f"--use: the array {found.group(1)} is replaced twice")
+    uses.append(found.groups())
+  return uses
 
 
 def list_emulations(text, kernel, full):
@@ -35,6 +51,7 @@ def main(argv=None):
   parser.add_argument("--run")
   parser.add_argument("--trace")
   parser.add_argument("--compat", choices=["fat"])
+  parser.add_argument("--use", action="append", default=[])
   args = parser.parse_args(argv)
   if (args.kernel is not None or args.full) and not args.list:
     parser.error("--kernel and --full go with --list")
@@ -44,6 +61,9 @@ def main(argv=None):
     parser.error("--trace goes with --run")
   if args.compat is not None and args.run is None:
     parser.error("--compat goes with --run")
+  if args.use and args.run is None:
+    parser.error("--use goes with --run")
+  uses = parse_uses(parser, args.use)
   if args.run is None and len(args.input) != 1:
     parser.error("several files go only with --run")
 
@@ -61,7 +81,7 @@ def main(argv=None):
       path, text = choose_source(sources, args.run)
       where = path
       others = [other for other_path, other in sources if other_path != path]
-      emulator = run_emulation(text, args.run, args.trace, others, args.compat)
+      emulator = run_emulation(text, args.run, args.trace, others, args.compat, uses)
     else:
       emulator = Emulator()
       replay(emulator, text)
