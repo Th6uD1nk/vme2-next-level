@@ -126,3 +126,23 @@ volatile Buffer(Q4.20) fftImag[32] = {
 volatile Buffer(Q4.20) fftStageReal[32];
 
 volatile Buffer(Q4.20) fftStageImag[32];
+
+.kernel butterfly direct {
+  .params { int stride; }
+
+  Agu upperTop = { count: 7, offset: 0x800 - 8 };
+  Agu lowerTop = { count: 7, offset: stride };
+  Agu upperWrite = { count: 7, offset: 0x800 - 8, cyc: 6 };
+  Agu lowerWrite = { count: 7, cyc: 6 };
+
+  .pe0 { .top = upperTop; .write = upperWrite; .spad = round(top1 + top0) >> 1; }
+  .pe1 { .top = lowerTop; .write = lowerWrite; .spad = round(top0 - top1); }
+  .pe2 { .top = upperTop; .write = upperWrite; .spad = round(top3 + top2) >> 1; }
+  .pe3 { .top = lowerTop; .write = lowerWrite; .spad = round(top2 - top3); }
+}
+
+void meLibOnProcess(void) {
+  @kernel butterfly config | exec {
+    .params = { stride: 8 };
+  }
+}
