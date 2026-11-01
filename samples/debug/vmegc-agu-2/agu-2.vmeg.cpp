@@ -228,3 +228,19 @@ void probeAgu4C0R4Run(void) {
 @kernel probeAgu4C7NoInner config | exec
 void probeAgu4C7NoInnerRun(void) {
 }
+
+@emulate "agu2-c14-step2-r4"
+.kernel probeAgu2C14Step2R4 direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu(2) read = { count: 14, step: 2, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu2C14Step2R4 config | exec
+void probeAgu2C14Step2R4Run(void) {
+}

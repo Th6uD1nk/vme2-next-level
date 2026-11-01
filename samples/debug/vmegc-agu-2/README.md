@@ -21,6 +21,7 @@ The table has 32 words: the word `n` holds `n + 1`, so a value read says which w
 | `agu4-c5-r4` | `Agu` | 5 | 4 words, step 1 | yes | |
 | `agu4-c0-r4` | `Agu` | 0 | 4 words, step 1 | yes | |
 | `agu4-c7-no-inner` | `Agu` | 7 | none | no | |
+| `agu2-c14-step2-r4` | `Agu(2)` | 14 | 4 words, step 1 | yes | `step: 2` on the AGU |
 
 `COUNT` is the `count` of the AGU. A ring of 4 words is `inner0: { count: 3, step: 1 }`.
 
