@@ -244,3 +244,54 @@ void probeAgu4C7NoInnerRun(void) {
 @kernel probeAgu2C14Step2R4 config | exec
 void probeAgu2C14Step2R4Run(void) {
 }
+
+.kernel probeSweep direct {
+  .params { int rangeCount; int ringCount; int out; }
+
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu(2) read = { count: rangeCount, inner0: { count: ringCount, step: 1 }, repeat: true };
+  Agu write = { count: 23, offset: out, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "agu2-sweep-r2" {
+    for c in 0..16 {
+      @kernel probeSweep config | exec {
+        .params = { rangeCount: c, ringCount: 1, out: 32 * c };
+      }
+    }
+  }
+  @emulate "agu2-sweep-r3" {
+    for c in 0..16 {
+      @kernel probeSweep config | exec {
+        .params = { rangeCount: c, ringCount: 2, out: 32 * c };
+      }
+    }
+  }
+  @emulate "agu2-sweep-r4" {
+    for c in 0..16 {
+      @kernel probeSweep config | exec {
+        .params = { rangeCount: c, ringCount: 3, out: 32 * c };
+      }
+    }
+  }
+  @emulate "agu2-sweep-r5" {
+    for c in 0..16 {
+      @kernel probeSweep config | exec {
+        .params = { rangeCount: c, ringCount: 4, out: 32 * c };
+      }
+    }
+  }
+  @emulate "agu2-sweep-r8" {
+    for c in 0..16 {
+      @kernel probeSweep config | exec {
+        .params = { rangeCount: c, ringCount: 7, out: 32 * c };
+      }
+    }
+  }
+}
