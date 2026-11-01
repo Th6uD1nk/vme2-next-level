@@ -107,7 +107,7 @@ void probeAgu2C15R4Run(void) {
 
   .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
 
-  Agu(2) read = { count: 7, inner0: { count: 3, step: 2 }, repeat: true };
+  Agu(2) read = { count: 7, inner0: { count: 6, step: 2 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
 
   .pe0 { .top = read; .write = write; .spad = top0 | top0; }
