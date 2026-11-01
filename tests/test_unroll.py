@@ -1,6 +1,8 @@
 import contextlib
+import importlib.util
 import io
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -9,6 +11,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from vmeg.unroll import unroll_loops
 from vmegc import main as vmegc_main
+from vmeemu import main as vmeemu_main
+
+SPEC = importlib.util.spec_from_file_location("vmeh_command", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vmeh.py"))
+VMEH = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(VMEH)
+vmeh_main = VMEH.main
 
 HEAD = (
   "volatile Buffer input[4] = { 1, 2, 3, 4 };\n"
@@ -60,7 +68,6 @@ def in_files(files, command, read=()):
         code = exit.code
     written = [read_file(os.path.join(folder, name)) for name in read]
     return code, out.getvalue(), err.getvalue().replace(folder + os.sep, ""), written
-
 
 
 class UnrollTest(unittest.TestCase):
@@ -129,6 +136,34 @@ class UnrollToolsTest(unittest.TestCase):
     code, _, err, _ = in_files([("main.vmeg.cpp", LOOP.replace("0..2", "2..0"))], lambda paths, folder: vmegc_main([paths[0], "-o", os.path.join(folder, "out.cpp")]))
     self.assertEqual(code, 1)
     self.assertTrue(err.startswith("main.vmeg.cpp: line 16: the for runs from 2 to 0"), err)
+
+  def test_vmeemu_lists_the_unrolled_calls_and_names_the_file_of_an_error(self):
+    code, out, _, _ = in_files([("main.vmeg.cpp", LOOP)], lambda paths, folder: vmeemu_main(["--list", paths[0]]))
+    self.assertEqual(code, 0)
+    self.assertEqual(out.count("bump  build"), 3)
+    self.assertEqual(out.count("bump  config | exec"), 3)
+    code, _, err, _ = in_files([("main.vmeg.cpp", LOOP), ("bad.vmeg.cpp", around("for s in 3..1 { @kernel k config | exec { } }"))], lambda paths, folder: vmeemu_main(["--run", "loop", *paths]))
+    self.assertEqual(code, 1)
+    self.assertTrue(err.startswith("bad.vmeg.cpp: line 3: the for runs from 3 to 1"), err)
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_vmeemu_plays_a_loop_as_it_plays_the_calls_written_one_by_one(self):
+    results = []
+    for text in (LOOP, MANUAL):
+      code, out, err, written = in_files([("main.vmeg.cpp", text)], lambda paths, folder: vmeemu_main(["--run", "loop", paths[0], "--trace", os.path.join(folder, "trace.txt"), "--buffers-words", "4"]), ["trace.txt"])
+      self.assertEqual((code, err), (0, ""))
+      results.append((out, written[0]))
+    self.assertEqual(results[0], results[1])
+    self.assertEqual(results[0][0].splitlines()[1], "0x00000002, 0x00000004, 0x00000006, 0x00000008,")
+
+  def test_vmeh_writes_for_a_loop_the_program_of_the_calls_written_one_by_one(self):
+    programs = []
+    for text in (LOOP, MANUAL):
+      code, _, err, written = in_files([("main.vmeg.cpp", text)], lambda paths, folder: vmeh_main([paths[0], "--extract", "loop", "-o", os.path.join(folder, "hw.vmeg.cpp")]), ["hw.vmeg.cpp"])
+      self.assertEqual((code, err), (0, ""))
+      programs.append(squeezed(written[0]))
+    self.assertEqual(programs[0], programs[1])
+    self.assertEqual(programs[0].count("@kernel bump"), 6)
 
 
 if __name__ == "__main__":
