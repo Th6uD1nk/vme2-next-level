@@ -195,16 +195,27 @@ class RingTest(unittest.TestCase):
 
 
 class Mode2Test(unittest.TestCase):
-  def test_an_agu_of_the_mode_2_reads_with_the_step_and_the_count_of_inner0(self):
+  def play(self, count, inner0, format0, cycles):
     emulator = Emulator()
     emulator.active[:] = [0] * 106
-    emulator.scratchpad.transfer(TOP_OFFSET, [0x100 + i for i in range(8)])
+    emulator.scratchpad.transfer(TOP_OFFSET, [0x100 + i for i in range(32)])
     emulator.active[28] = 0x4440
     emulator.active[agu_register(0, "top", "mode")] = 0x82000000
-    emulator.active[agu_register(0, "top", "inner0")] = (2 << 16) | 3
-    self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(6)], [0x100, 0x102, 0x104, 0x106, 0x106, 0x106])
-    emulator.active[agu_register(0, "top", "format0")] = 0x20000
-    self.assertEqual([stream_at(emulator, "top", 0, cycle, {}) for cycle in range(6)], [0x100, 0x102, 0x104, 0x106, 0x100, 0x102])
+    emulator.active[agu_register(0, "top", "count")] = count
+    emulator.active[agu_register(0, "top", "inner0")] = inner0
+    emulator.active[agu_register(0, "top", "format0")] = format0
+    return [stream_at(emulator, "top", 0, cycle, {}) for cycle in range(cycles)], emulator.warnings
+
+  def test_a_ring_is_read_until_the_range_and_the_ring_end_together_then_the_last_word_is_held(self):
+    self.assertEqual(self.play(0x10000 | 7, (2 << 16) | 6, 0x20000, 10), ([0x100, 0x102, 0x104, 0x106] * 2 + [0x106] * 2, []))
+    self.assertEqual(self.play(0x10000 | 5, (1 << 16) | 3, 0x20000, 14), ([0x100, 0x101, 0x102, 0x103] * 3 + [0x103] * 2, []))
+
+  def test_without_the_ring_token_the_reads_are_linear_and_without_inner0_the_first_word_is_read(self):
+    self.assertEqual(self.play(0x10000 | 3, (1 << 16) | 3, 0, 6), ([0x100, 0x101, 0x102, 0x103, 0x103, 0x103], []))
+    self.assertEqual(self.play(0x10000 | 3, 0, 0x20000, 3), ([0x100] * 3, []))
+
+  def test_the_parent_step_divides_the_count(self):
+    self.assertEqual(self.play(0x20000 | 14, (1 << 16) | 3, 0x20000, 10), ([0x100, 0x101, 0x102, 0x103] * 2 + [0x103] * 2, []))
 
 
 class SyncTest(unittest.TestCase):

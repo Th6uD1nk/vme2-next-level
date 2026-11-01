@@ -1,3 +1,5 @@
+from math import lcm
+
 from vmee.fu import signed32
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from vmee.registers import END_TOKEN, RING_TOKEN, SYNC_MINIMUM, agu_view, routing_view
@@ -73,9 +75,20 @@ def ring_active(view):
   return view["repeat"] and view["inner_step"] != 0
 
 
+def mode2_offsets(view, label, warn):
+  words = view["parent_count"] // view["parent_step"] + 1
+  step, count = view["inner_step"], view["inner_count"]
+  if step == 0:
+    return [view["offset"]]
+  if view["repeat"]:
+    ring = count // step + 1
+    return [view["offset"] + n % ring * step for n in range(lcm(words, ring))]
+  return [view["offset"] + n * step for n in range(words)]
+
+
 def stream_ring(registers, kind, buffer):
   found = read_view(registers, kind, buffer)
-  return found is not None and ring_active(found[1])
+  return found is not None and found[1]["mode"] != 2 and ring_active(found[1])
 
 
 def stream_offsets(registers, kind, buffer, warn=lambda message: None):
@@ -85,7 +98,9 @@ def stream_offsets(registers, kind, buffer, warn=lambda message: None):
   label, view = found
   group = TOP_OFFSET if kind == "top" else BASE_OFFSET
   first = group + buffer * BUFFER_WORDS
-  if ring_active(view):
+  if view["mode"] == 2:
+    offsets = mode2_offsets(view, label, warn)
+  elif ring_active(view):
     if view["mode"] not in AGU_MODES:
       raise ValueError(f"the mode {view['mode']} of {label} is not modeled with the ring (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
     if view["reverse"]:
