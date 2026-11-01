@@ -14,6 +14,7 @@ class Emulator:
     self.memory = {}
     self.staging = [[0] * STAGING_WORDS for _ in range(STAGING_COUNT)]
     self.cycles = 0
+    self.warnings = []
 
   def locate(self, address):
     for first, count, registers in ((DATAPATH_BASE, REGISTER_COUNT, self.registers), (DMAC_BASE, DMAC_REGISTER_COUNT, self.dmac)):
@@ -236,6 +237,10 @@ class Emulator:
       words.append(word)
     return words
 
+  def warn(self, message):
+    if message not in self.warnings:
+      self.warnings.append(message)
+
   def memory_address(self, address):
     if address & 3:
       raise ValueError(f"memory address {address:#x} is not aligned on 4 bytes")
@@ -245,7 +250,7 @@ class Emulator:
     return [0 if offset is None else self.scratchpad.read(offset) for offset in offsets]
 
   def read_stream(self, kind, buffer):
-    offsets = stream_offsets(self.active, kind, buffer)
+    offsets = stream_offsets(self.active, kind, buffer, self.warn)
     return None if offsets is None else self.read_words(offsets)
 
   def synced_words(self):

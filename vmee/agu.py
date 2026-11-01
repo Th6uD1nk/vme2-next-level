@@ -78,7 +78,7 @@ def stream_ring(registers, kind, buffer):
   return found is not None and ring_active(found[1])
 
 
-def stream_offsets(registers, kind, buffer):
+def stream_offsets(registers, kind, buffer, warn=lambda message: None):
   found = read_view(registers, kind, buffer)
   if found is None:
     return None
@@ -108,7 +108,7 @@ def stream_at(emulator, kind, buffer, cycle, cache, synced=None):
     raise ValueError(f"cycle {cycle} is before the start of the run")
   key = (kind, buffer)
   if key not in cache:
-    offsets = stream_offsets(emulator.active, kind, buffer)
+    offsets = stream_offsets(emulator.active, kind, buffer, emulator.warn)
     cache[key] = (offsets, None if offsets is None else emulator.read_words(offsets), stream_ring(emulator.active, kind, buffer))
   offsets, stream, ring = cache[key]
   if stream is None:

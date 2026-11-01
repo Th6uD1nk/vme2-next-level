@@ -93,6 +93,8 @@ def main(argv=None):
     else:
       emulator = Emulator()
       replay(emulator, text)
+    for warning in emulator.warnings:
+      print(f"warning: {warning}", file=sys.stderr)
     sys.stdout.write(dump_base_buffers(emulator.scratchpad, args.buffers_start, args.buffers_words))
   except (ValueError, OSError) as e:
     print(f"{where}: {e}", file=sys.stderr)
