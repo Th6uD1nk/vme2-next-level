@@ -194,6 +194,20 @@ Buffer: BASE 0
 
 followed by the same lines for `BASE 1` to `BASE 3`.
 
+**Explanation of the code above:**
+
+- `--use input=other` plays the emulation with the array `other` in place of the array `input`. The `.load` of `in` reads `other`, so the kernel adds each of its words to itself: 20, 40, 60, … 160.
+- Without the option the same command shows 2, 4, 6, … 16.
+
+**Rules:**
+
+- `--use A=B` can be written several times, one for each array to replace. An array is replaced once.
+- `A` is an array that a `.load` or a `.store` of the emulation names. Everywhere the emulation names `A`, in a load or in a store, it reads or writes `B`.
+- `B` is an array defined in the files of the command ([1.3](#13-several-files)). It has the same size as `A`.
+- The array `A` is not read nor written by the run.
+- In an emulation with several calls ([1.2](#12-running-a-kernel)), a store to `A` goes to `B`, and a later load of `A` reads it there.
+- `--use` goes with `--run`. It does not change the kernel, the file or the program for the PSP.
+
 ## 1.8 --list
 
 ```
