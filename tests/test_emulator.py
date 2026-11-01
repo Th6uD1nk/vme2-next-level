@@ -217,6 +217,21 @@ class Mode2Test(unittest.TestCase):
   def test_the_parent_step_divides_the_count(self):
     self.assertEqual(self.play(0x20000 | 14, (1 << 16) | 3, 0x20000, 10), ([0x100, 0x101, 0x102, 0x103] * 2 + [0x103] * 2, []))
 
+  def test_what_the_psp_does_not_like_or_what_is_not_measured_is_played_with_a_warning(self):
+    cases = (
+      (0x10000 | 7, (2 << 16) | 3, 0x20000, "inner0 count 3 with the step 2"),
+      (0x20000 | 7, (1 << 16) | 3, 0x20000, "count 7 with the step 2"),
+      (0x10000 | 7, (2 << 16) | 6, 0, "no ring with a step other than 1"),
+      (0x10000 | 7, (1 << 16) | 3, 0x20000 | 0x10000000, "reverses the order in the mode 2"),
+      (0, (1 << 16) | 3, 0x20000, "step 0"),
+    )
+    for count, inner0, format0, expected in cases:
+      words, warnings = self.play(count, inner0, format0, 4)
+      self.assertEqual(len(words), 4)
+      self.assertTrue(any(expected in warning for warning in warnings), (expected, warnings))
+    words, _ = self.play(0x10000 | 7, (2 << 16) | 3, 0x20000, 6)
+    self.assertEqual(words, [0x100, 0x102, 0x100, 0x102, 0x100, 0x102])
+
 
 class SyncTest(unittest.TestCase):
   def run_kernel(self, sync):

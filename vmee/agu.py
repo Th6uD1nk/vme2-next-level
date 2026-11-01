@@ -76,14 +76,35 @@ def ring_active(view):
 
 
 def mode2_offsets(view, label, warn):
-  words = view["parent_count"] // view["parent_step"] + 1
-  step, count = view["inner_step"], view["inner_count"]
+  step, count = view["parent_step"], view["parent_count"]
+  inner_step, inner_count = view["inner_step"], view["inner_count"]
   if step == 0:
-    return [view["offset"]]
-  if view["repeat"]:
-    ring = count // step + 1
-    return [view["offset"] + n % ring * step for n in range(lcm(words, ring))]
-  return [view["offset"] + n * step for n in range(words)]
+    warn(f"{label} has the step 0 in the register COUNT in the mode 2: not measured on the PSP, the count is read as a number of words")
+    step = 1
+  elif count % step:
+    warn(f"{label} has the count {count} with the step {step}: a count that is not a multiple of its step, the PSP does not like it, the range is rounded down")
+  words = count // step + 1
+  if inner_step == 0:
+    if inner_count or step != 1:
+      warn(f"{label} has an inner0 with a count and no step, or a step other than 1 without a ring in the mode 2: not measured on the PSP, the first word is read")
+    offsets = [view["offset"]]
+  elif inner_count % inner_step:
+    warn(f"{label} has the inner0 count {inner_count} with the step {inner_step}: a count that is not a multiple of its step, the PSP does not like it, the ring is rounded down")
+    offsets = None
+  else:
+    offsets = None
+  if offsets is None:
+    if view["repeat"]:
+      ring = inner_count // inner_step + 1
+      offsets = [view["offset"] + n % ring * inner_step for n in range(lcm(words, ring))]
+    else:
+      if inner_step != 1 or step != 1:
+        warn(f"{label} has no ring with a step other than 1 in the mode 2: not measured on the PSP, the reads are linear with the step of inner0")
+      offsets = [view["offset"] + n * inner_step for n in range(words)]
+  if view["reverse"]:
+    warn(f"{label} reverses the order in the mode 2: not measured on the PSP, the reads are reversed")
+    offsets = offsets[::-1]
+  return offsets
 
 
 def stream_ring(registers, kind, buffer):
