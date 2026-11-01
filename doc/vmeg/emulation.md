@@ -184,3 +184,8 @@ The messages start with `line N:`, left out here.
 | [13.3](#133-the-block-form) | `the @emulate "x" block calls no kernel, write at least one @kernel call in it` | a block with no `@kernel` call |
 | [13.3](#133-the-block-form) | `unterminated @emulate block` | a block that is never closed |
 | [13.3](#133-the-block-form) | `the kernel q of the @emulate "far" is not defined in this file` | a kernel of the block defined in another file |
+| [13.4](#134-loops) | `expected 'for name in low..high {', for example for s in 0..3 {` | a loop of a block whose header is not a name, `in`, two bounds with `..` between them and `{` (the line is the one of the `for`, as for the next four) |
+| [13.4](#134-loops) | `the bounds of a for are integers, '0..N' is not accepted` | a bound that is a name, a macro or a number with a point |
+| [13.4](#134-loops) | `the for runs from 3 to 1, the first bound must not be above the second` | a first bound above the second |
+| [13.4](#134-loops) | `the for calls no kernel, write at least one @kernel call in it` | a loop of a block whose body has no `@kernel` call |
+| [13.4](#134-loops) | `a preprocessor line cannot be inside a for of an emulate block` | a line starting with `#` in the body of the loop |
