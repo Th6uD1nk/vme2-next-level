@@ -62,12 +62,12 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 **Rules:**
 
 - `--buffers-start` and `--buffers-words` choose the words shown, as in [1.4](running.md#14-the-window-of-the-buffers).
-- A trace takes a single file ([1.3](running.md#13-several-files)). With `--run` or `--list` the file is read as a vmeg file, and `--trace` and `--compat` go with `--run` only ([1.8](running.md#18-errors)).
+- A trace takes a single file ([1.3](running.md#13-several-files)). With `--run` or `--list` the file is read as a vmeg file, and `--trace` and `--compat` go with `--run` only ([1.9](running.md#19-errors)).
 - A trace can be written by hand: only its events are played.
 
 ## 2.3 Errors
 
-The errors are printed as `file: line N: message`, with the exit code 1. `N` is the line of the trace. The other errors of `vmee` are in [1.8](running.md#18-errors).
+The errors are printed as `file: line N: message`, with the exit code 1. `N` is the line of the trace. The other errors of `vmee` are in [1.9](running.md#19-errors).
 
 | Section | Message | Cause |
 |---|---|---|

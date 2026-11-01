@@ -10,8 +10,9 @@
 - [1.4 The window of the buffers](#14-the-window-of-the-buffers)
 - [1.5 --trace](#15---trace)
 - [1.6 --compat](#16---compat)
-- [1.7 --list](#17---list)
-- [1.8 Errors](#18-errors)
+- [1.7 --use](#17---use)
+- [1.8 --list](#18---list)
+- [1.9 Errors](#19-errors)
 
 ## 1.1 Marking a kernel
 
@@ -160,7 +161,40 @@ vmee --run twice main.vmeg.cpp --compat fat
 
 `--compat fat` generates the code of the kernel with the opcodes that work on the fat PSP, the way `vmegc --compat fat` does ([1.6](../vmeg/running.md#16---compat)): the addition uses `0x030` and not `0x010`, for example. Without it the code is the default one. It goes with `--run`.
 
-## 1.7 --list
+## 1.7 --use
+
+```c
+volatile Buffer input[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+volatile Buffer other[8] = { 10, 20, 30, 40, 50, 60, 70, 80 };
+
+@emulate "twice"
+.kernel twice direct {
+  Agu t = { count: 7 }, w = { count: 7, cyc: auto };
+  Transfer in = { memory: input, count: 7 };
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+@kernel twice config | exec
+void run(void) {
+}
+```
+
+```
+vmee --run twice main.vmeg.cpp --use input=other --buffers-words 8
+```
+
+shows:
+
+```
+Buffer: BASE 0
+0x00000014, 0x00000028, 0x0000003c, 0x00000050,
+0x00000064, 0x00000078, 0x0000008c, 0x000000a0,
+```
+
+followed by the same lines for `BASE 1` to `BASE 3`.
+
+## 1.8 --list
 
 ```
 vmee --list main.vmeg.cpp
@@ -236,7 +270,7 @@ defines of the file:
 - Only one file is given to `--list`.
 - Currently not supported: a block that calls a kernel defined in another file than the block.
 
-## 1.8 Errors
+## 1.9 Errors
 
 The errors of the command line are printed as `vmeemu: error: message`, with the exit code 2. The other errors are printed as `file: message`, with the exit code 1. The errors of a kernel or of an array come from `vmegc` and are described with the part of the language they come from ([14](../VMEG.md#14-errors)).
 
@@ -260,9 +294,9 @@ The errors of the command line are printed as `vmeemu: error: message`, with the
 | [1.4](#14-the-window-of-the-buffers) | `the window of the buffers goes past the end of a buffer (2048 words)` | `start + words` above 2048 |
 | [1.5](#15---trace) | `--trace goes with --run` | `--trace` without `--run` |
 | [1.6](#16---compat) | `--compat goes with --run` | `--compat` without `--run` |
-| [1.7](#17---list) | `--kernel and --full go with --list` | `--kernel` or `--full` without `--list` |
-| [1.7](#17---list) | `--run does not go with --list` | the two options together |
-| [1.7](#17---list) | `no @emulate on the kernel 'k' (a, b)` | `--kernel` with a kernel that no emulation uses; the message lists the kernels that are used |
-| [1.7](#17---list) | `the kernel q of the @emulate "far" is not defined in this file` | a block that calls a kernel defined in another file |
-| [1.7](#17---list) | `warning: there is no @emulate in this file` | the file has no `@emulate`; the listing is still written |
-| [1.7](#17---list) | `warning: emulate "x": the kernel k has no buffer` | the kernel has no `.load` and no `.store`; the message names all the kernels of a block |
+| [1.8](#18---list) | `--kernel and --full go with --list` | `--kernel` or `--full` without `--list` |
+| [1.8](#18---list) | `--run does not go with --list` | the two options together |
+| [1.8](#18---list) | `no @emulate on the kernel 'k' (a, b)` | `--kernel` with a kernel that no emulation uses; the message lists the kernels that are used |
+| [1.8](#18---list) | `the kernel q of the @emulate "far" is not defined in this file` | a block that calls a kernel defined in another file |
+| [1.8](#18---list) | `warning: there is no @emulate in this file` | the file has no `@emulate`; the listing is still written |
+| [1.8](#18---list) | `warning: emulate "x": the kernel k has no buffer` | the kernel has no `.load` and no `.store`; the message names all the kernels of a block |
