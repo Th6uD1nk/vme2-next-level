@@ -325,6 +325,38 @@ void probeAgu4C18I9S3Run(void) {
 void probeAgu4C7I7S1Run(void) {
 }
 
+@emulate "agu2-c7-r4-s3"
+.kernel probeAgu2C7R4S3 direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu(2) read = { count: 7, inner0: { count: 9, step: 3 }, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu2C7R4S3 config | exec
+void probeAgu2C7R4S3Run(void) {
+}
+
+@emulate "agu2-c11-r3-s2"
+.kernel probeAgu2C11R3S2 direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu(2) read = { count: 11, inner0: { count: 4, step: 2 }, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu2C11R3S2 config | exec
+void probeAgu2C11R3S2Run(void) {
+}
+
 .kernel probeSweep direct {
   .params { int rangeCount; int ringCount; int out; }
 
