@@ -370,6 +370,32 @@ void probeAgu2C11R3S2Run(void) {
   .pe0 { .top = read; .write = write; .spad = top0 | top0; }
 }
 
+.kernel probeStepMode2 direct {
+  .params { int parentStep; int rangeCount; int out; }
+
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu(2) read = { count: rangeCount, step: parentStep, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu write = { count: 23, offset: out, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+.kernel probeStepMode4 direct {
+  .params { int parentStep; int rangeCount; int out; }
+
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu read = { count: rangeCount, step: parentStep };
+  Agu write = { count: 23, offset: out, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
 void meLibOnProcess(void) {
   @emulate "agu2-sweep-r2" {
     for c in 0..16 {
@@ -403,6 +429,48 @@ void meLibOnProcess(void) {
     for c in 0..16 {
       @kernel probeSweep config | exec {
         .params = { rangeCount: c, ringCount: 7, out: 32 * c };
+      }
+    }
+  }
+  @emulate "agu2-step2-sweep" {
+    for k in 0..8 {
+      @kernel probeStepMode2 config | exec {
+        .params = { parentStep: 2, rangeCount: 2 * k, out: 32 * k };
+      }
+    }
+  }
+  @emulate "agu2-step3-sweep" {
+    for k in 0..5 {
+      @kernel probeStepMode2 config | exec {
+        .params = { parentStep: 3, rangeCount: 3 * k, out: 32 * k };
+      }
+    }
+  }
+  @emulate "agu2-step4-sweep" {
+    for k in 0..4 {
+      @kernel probeStepMode2 config | exec {
+        .params = { parentStep: 4, rangeCount: 4 * k, out: 32 * k };
+      }
+    }
+  }
+  @emulate "agu4-step2-sweep" {
+    for k in 0..8 {
+      @kernel probeStepMode4 config | exec {
+        .params = { parentStep: 2, rangeCount: 2 * k, out: 32 * k };
+      }
+    }
+  }
+  @emulate "agu4-step3-sweep" {
+    for k in 0..5 {
+      @kernel probeStepMode4 config | exec {
+        .params = { parentStep: 3, rangeCount: 3 * k, out: 32 * k };
+      }
+    }
+  }
+  @emulate "agu4-step4-sweep" {
+    for k in 0..4 {
+      @kernel probeStepMode4 config | exec {
+        .params = { parentStep: 4, rangeCount: 4 * k, out: 32 * k };
       }
     }
   }
