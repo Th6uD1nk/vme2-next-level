@@ -1,3 +1,5 @@
+import contextlib
+import io
 import os
 import shutil
 import sys
@@ -18,6 +20,7 @@ from vmee.trace import replay
 from vmee.machine import Emulator
 from vmeg.vmecalls import wait_marker
 from vmeh.extract import extract_source
+from vmeemu import main as vmeemu_main
 
 
 def loads(*rows):
@@ -602,6 +605,47 @@ class EmulationBlockTest(unittest.TestCase):
     self.assertIn("volatile Memory stage[2];", source)
     marked = "@emulate \"mk\"\n.kernel m memory {\n}\n"
     self.assertIn("@kernel m build | config | exec {", extract_source(marked, "mk"))
+
+
+
+USE_FILE = CHAIN.replace("volatile Buffer middle[4];\n", "volatile Buffer middle[4];\nvolatile Buffer other[4] = { 10, 20, 30, 40 };\nvolatile Buffer spare[4];\nvolatile Buffer small[2];\n")
+
+
+class UseTest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_load_reads_the_array_given_in_place_of_the_one_it_names(self):
+    emulator = run_emulation(USE_FILE, "chain", uses=[("input", "other")])
+    self.assertEqual([emulator.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [40, 80, 120, 160])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_store_goes_to_the_array_given_in_place_and_the_next_load_reads_it_there(self):
+    emulator = run_emulation(USE_FILE, "chain", uses=[("middle", "spare")])
+    self.assertEqual([emulator.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [4, 8, 12, 16])
+    self.assertEqual([emulator.memory[0x08800080 + 4 * i] for i in range(4)], [2, 4, 6, 8])
+    self.assertNotIn(0x08800040, emulator.memory)
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_an_array_that_is_not_used_does_not_exist_or_has_another_size_is_refused(self):
+    with self.assertRaisesRegex(ValueError, "--use other=spare: the array other is not read or written"):
+      run_emulation(USE_FILE, "chain", uses=[("other", "spare")])
+    with self.assertRaisesRegex(ValueError, "--use input=nope: the array nope is defined in no file"):
+      run_emulation(USE_FILE, "chain", uses=[("input", "nope")])
+    with self.assertRaisesRegex(ValueError, "--use input=small: the two arrays must have the same size"):
+      run_emulation(USE_FILE, "chain", uses=[("input", "small")])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_the_option_of_the_command_gives_the_arrays_and_refuses_what_is_not_a_pair(self):
+    with tempfile.TemporaryDirectory() as folder:
+      path = os.path.join(folder, "chain.vmeg.cpp")
+      with open(path, "w", encoding="utf-8") as f:
+        f.write(USE_FILE)
+      out = io.StringIO()
+      with contextlib.redirect_stdout(out):
+        self.assertEqual(vmeemu_main(["--run", "chain", path, "--use", "input=other", "--buffers-words", "4"]), 0)
+      self.assertEqual(out.getvalue().splitlines()[1], "0x00000028, 0x00000050, 0x00000078, 0x000000a0,")
+      for arguments in (["--run", "chain", path, "--use", "input"], ["--run", "chain", path, "--use", "input=other", "--use", "input=spare"], ["--list", path, "--use", "input=other"]):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+          vmeemu_main(arguments)
 
 
 if __name__ == "__main__":
