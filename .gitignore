@@ -1,13 +1,10 @@
-notes.txt
+*notes.txt
 saturate-clamp.c
 build
 __pycache__/
 *.pyc
-reverse-notes.txt
 work/
 hardware-unknowns.txt
 VMEGC.md
 EMU.md
-sample-notes.txt
 samples/usbhostfs_pc
-psplink-notes.txt
