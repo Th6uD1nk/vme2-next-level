@@ -45,15 +45,35 @@ def substitute(text, items, first, last, name, value):
   return body
 
 
+def loop_bounds(text, items, j):
+  line = text.count("\n", 0, items[j][2]) + 1
+  opening = next((k for k in range(j, len(items)) if items[k][1] in ("{", ";")), None)
+  if opening is None or items[opening][1] != "{":
+    raise ValueError(f"line {line}: expected 'for name in low..high {{', for example for s in 0..3 {{")
+  header = [item[1] for item in items[j + 3:opening]]
+  if len(header) != 4 or header[1:3] != [".", "."]:
+    raise ValueError(f"line {line}: expected 'for name in low..high {{', for example for s in 0..3 {{")
+  try:
+    low, high = int(header[0], 0), int(header[3], 0)
+  except ValueError:
+    raise ValueError(f"line {line}: the bounds of a for are integers, '{header[0]}..{header[3]}' is not accepted") from None
+  if low > high:
+    raise ValueError(f"line {line}: the for runs from {low} to {high}, the first bound must not be above the second")
+  close = closing(items, opening)
+  if not any(items[k][1] == "@" and items[k + 1][1] == "kernel" for k in range(opening + 1, close)):
+    raise ValueError(f"line {line}: the for calls no kernel, write at least one @kernel call in it")
+  if any(items[k][0] == "pp" for k in range(opening + 1, close)):
+    raise ValueError(f"line {line}: a preprocessor line cannot be inside a for of an emulate block")
+  return opening, close, low, high
+
+
 def unroll_loops(text):
   while True:
     items = list(walk(text))
     j = block_loop(items)
     if j is None:
       return text
-    opening = next(k for k in range(j, len(items)) if items[k][1] == "{")
-    close = closing(items, opening)
-    low, high = int(items[opening - 4][1], 0), int(items[opening - 1][1], 0)
+    opening, close, low, high = loop_bounds(text, items, j)
     copies = [flatten(substitute(text, items, opening + 1, close, items[j + 1][1], value)).strip() for value in range(low, high + 1)]
     statement = text[items[j][2]:items[close][3]]
     text = text[:items[j][2]] + " ".join(copies) + "\n" * statement.count("\n") + text[items[close][3]:]
