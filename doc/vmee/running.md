@@ -308,6 +308,12 @@ The errors of the command line are printed as `vmeemu: error: message`, with the
 | [1.4](#14-the-window-of-the-buffers) | `the window of the buffers goes past the end of a buffer (2048 words)` | `start + words` above 2048 |
 | [1.5](#15---trace) | `--trace goes with --run` | `--trace` without `--run` |
 | [1.6](#16---compat) | `--compat goes with --run` | `--compat` without `--run` |
+| [1.7](#17---use) | `--use goes with --run` | `--use` without `--run` |
+| [1.7](#17---use) | `--use takes NAME=NAME, for example --use input=other (got 'x')` | a `--use` that is not two names with `=` between them |
+| [1.7](#17---use) | `--use: the array a is replaced twice` | two `--use` with the same array before the `=` |
+| [1.7](#17---use) | `--use a=b: the array a is not read or written by the @emulate "id"` | `a` is not named by a `.load` or a `.store` of the emulation |
+| [1.7](#17---use) | `--use a=b: the array b is defined in no file` | `b` is declared in no file of the command |
+| [1.7](#17---use) | `--use a=b: the two arrays must have the same size` | the sizes differ; the message is in the output of `g++` that follows `the host program does not build:` |
 | [1.8](#18---list) | `--kernel and --full go with --list` | `--kernel` or `--full` without `--list` |
 | [1.8](#18---list) | `--run does not go with --list` | the two options together |
 | [1.8](#18---list) | `no @emulate on the kernel 'k' (a, b)` | `--kernel` with a kernel that no emulation uses; the message lists the kernels that are used |
