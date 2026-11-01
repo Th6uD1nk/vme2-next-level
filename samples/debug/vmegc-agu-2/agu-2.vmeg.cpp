@@ -245,6 +245,38 @@ void probeAgu4C7NoInnerRun(void) {
 void probeAgu2C14Step2R4Run(void) {
 }
 
+@emulate "agu2-c7-repeat-no-inner"
+.kernel probeAgu2C7RepeatNoInner direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu(2) read = { count: 7, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu2C7RepeatNoInner config | exec
+void probeAgu2C7RepeatNoInnerRun(void) {
+}
+
+@emulate "agu4-c7-repeat-no-inner"
+.kernel probeAgu4C7RepeatNoInner direct {
+  Transfer tableTransfer = { memory: aguTable, count: 31 };
+
+  .load { .transfer = tableTransfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu read = { count: 7, repeat: true };
+  Agu write = { count: 23, cyc: auto };
+
+  .pe0 { .top = read; .write = write; .spad = top0 | top0; }
+}
+
+@kernel probeAgu4C7RepeatNoInner config | exec
+void probeAgu4C7RepeatNoInnerRun(void) {
+}
+
 .kernel probeSweep direct {
   .params { int rangeCount; int ringCount; int out; }
 
