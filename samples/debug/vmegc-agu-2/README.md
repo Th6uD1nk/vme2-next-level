@@ -32,6 +32,26 @@ The table has 32 words: the word `n` holds `n + 1`, so a value read says which w
 
 `COUNT` is the `count` of the AGU. A ring of 4 words is `inner0: { count: 3, step: 1 }`.
 
+## Sweeps
+
+Eleven emulations call a kernel with parameters several times, in a loop, and keep the 24 words of each call in a different place of `BASE_0`: the call `n` writes at the word `32 * n`.
+
+| Id | AGU | Ring | Calls | `COUNT` of the call `n` |
+|---|---|---|---|---|
+| `agu2-sweep-r2` | `Agu(2)` | 2 words, step 1 | 17 | `n` (0 to 16) |
+| `agu2-sweep-r3` | `Agu(2)` | 3 words, step 1 | 17 | `n` |
+| `agu2-sweep-r4` | `Agu(2)` | 4 words, step 1 | 17 | `n` |
+| `agu2-sweep-r5` | `Agu(2)` | 5 words, step 1 | 17 | `n` |
+| `agu2-sweep-r8` | `Agu(2)` | 8 words, step 1 | 17 | `n` |
+| `agu2-step2-sweep` | `Agu(2)` | 4 words, step 1 | 9 | `2 * n`, with `step: 2` |
+| `agu2-step3-sweep` | `Agu(2)` | 4 words, step 1 | 6 | `3 * n`, with `step: 3` |
+| `agu2-step4-sweep` | `Agu(2)` | 4 words, step 1 | 5 | `4 * n`, with `step: 4` |
+| `agu4-step2-sweep` | `Agu` | none, no `repeat` | 9 | `2 * n`, with `step: 2` |
+| `agu4-step3-sweep` | `Agu` | none, no `repeat` | 6 | `3 * n`, with `step: 3` |
+| `agu4-step4-sweep` | `Agu` | none, no `repeat` | 5 | `4 * n`, with `step: 4` |
+
+The window has to hold the 17 calls of the longest sweep, 16 * 32 + 24 = 536 words: 576 words, `-DVMEH_BUFFERS_WORDS=576` for `cmake` and `--buffers-words 576` for `vmee`.
+
 ## Results
 
 `pe0` reads `TOP_0` through the AGU and writes it in `BASE_0`, words 0 to 23 (the write AGU has `count: 23`). The window of 32 words, the default, shows all of them.
