@@ -29,7 +29,7 @@ def block_loop(items):
 
 
 def substitute(text, items, first, last, name, value):
-  number = str(value) if value >= 0 else f"({value})"
+  number = str(value)
   start = items[first][2]
   edits = []
   for k in range(first, last):
