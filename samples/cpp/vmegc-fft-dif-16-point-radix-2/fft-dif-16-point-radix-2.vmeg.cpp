@@ -157,7 +157,7 @@ volatile Buffer(Q4.20) fftStageImag[32];
 }
 
 void meLibOnProcess(void) {
-  @emulate "fft-stage-0" {
+  @emulate "fft-4-stages" {
     @kernel butterfly build {
       .params = { stride: 8 };
     }
@@ -177,6 +177,72 @@ void meLibOnProcess(void) {
       Transfer imagTwiddles = { memory: fftTwiddleImag, count: 14 };
       .load { .transfer = realTwiddles; .scope = global; .offsets { .top0 = 128; } }
       .load { .transfer = imagTwiddles; .scope = global; .offsets { .top2 = 128; } }
+    }
+    @kernel lowerLeg exec {
+      Transfer realOut = { memory: fftStageReal, count: 15 };
+      Transfer imagOut = { memory: fftStageImag, count: 15 };
+      .store { .transfer = realOut; .scope = global; .offsets { .base1 = -8; } }
+      .store { .transfer = imagOut; .scope = global; .offsets { .base3 = -8; } }
+    }
+    @kernel butterfly build {
+      .params = { stride: 4 };
+    }
+    @kernel butterfly config {
+      Transfer(Words) realIn = { memory: fftStageReal, count: 1, gap: 19, step: 0, group: { size: 7, outer: 4, inner: 1 } };
+      Transfer(Words) imagIn = { memory: fftStageImag, count: 1, gap: 19, step: 0, group: { size: 7, outer: 4, inner: 1 } };
+      .load { .transfer = realIn; .scope = global; .offsets { .top1 = -8; } }
+      .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -8; } }
+    }
+    @kernel butterfly exec {
+    }
+    @kernel lowerLeg build {
+      .params = { twiddleOffset: 136, twiddleCount: 3 };
+    }
+    @kernel lowerLeg config {
+    }
+    @kernel lowerLeg exec {
+      Transfer realOut = { memory: fftStageReal, count: 15 };
+      Transfer imagOut = { memory: fftStageImag, count: 15 };
+      .store { .transfer = realOut; .scope = global; .offsets { .base1 = -8; } }
+      .store { .transfer = imagOut; .scope = global; .offsets { .base3 = -8; } }
+    }
+    @kernel butterfly build {
+      .params = { stride: 2 };
+    }
+    @kernel butterfly config {
+      Transfer(Words) realIn = { memory: fftStageReal, count: 1, gap: 17, step: 0, group: { size: 3, outer: 2, inner: 1 } };
+      Transfer(Words) imagIn = { memory: fftStageImag, count: 1, gap: 17, step: 0, group: { size: 3, outer: 2, inner: 1 } };
+      .load { .transfer = realIn; .scope = global; .offsets { .top1 = -8; } }
+      .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -8; } }
+    }
+    @kernel butterfly exec {
+    }
+    @kernel lowerLeg build {
+      .params = { twiddleOffset: 140, twiddleCount: 1 };
+    }
+    @kernel lowerLeg config {
+    }
+    @kernel lowerLeg exec {
+      Transfer realOut = { memory: fftStageReal, count: 15 };
+      Transfer imagOut = { memory: fftStageImag, count: 15 };
+      .store { .transfer = realOut; .scope = global; .offsets { .base1 = -8; } }
+      .store { .transfer = imagOut; .scope = global; .offsets { .base3 = -8; } }
+    }
+    @kernel butterfly build {
+      .params = { stride: 1 };
+    }
+    @kernel butterfly config {
+      Transfer(Words) realIn = { memory: fftStageReal, count: 1, gap: 16, step: 0, group: { size: 1, outer: 1, inner: 1 } };
+      Transfer(Words) imagIn = { memory: fftStageImag, count: 1, gap: 16, step: 0, group: { size: 1, outer: 1, inner: 1 } };
+      .load { .transfer = realIn; .scope = global; .offsets { .top1 = -8; } }
+      .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -8; } }
+    }
+    @kernel butterfly exec {
+    }
+    @kernel lowerLeg build {
+      .params = { twiddleOffset: 142, twiddleCount: 0 };
+    }
+    @kernel lowerLeg config {
     }
     @kernel lowerLeg exec {
       Transfer realOut = { memory: fftStageReal, count: 15 };
