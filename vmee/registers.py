@@ -60,13 +60,14 @@ def agu_view(registers, pe, agu):
   enabled, mode, rest = decode_mode(registers[agu_register(pe, agu, "mode")])
   step, elements = decode_count(registers[agu_register(pe, agu, "count")])
   offset, cyc = decode_offset_cyc(rest)
+  count_register = registers[agu_register(pe, agu, "count")]
   inner_count, inner_step = decode_inner(registers[agu_register(pe, agu, "inner0")])
   if mode == 2:
     step, elements = inner_count, inner_step + 1
     inner_count, inner_step = inner_step, step
   format0 = registers[agu_register(pe, agu, "format0")]
   return {"enabled": enabled, "mode": mode, "offset": offset, "cyc": cyc, "step": step, "elements": elements,
-    "inner_count": inner_count, "inner_step": inner_step, "format0": format0, **decode_format0(format0),
+    "parent_step": count_register >> 16, "parent_count": count_register & 0xffff, "inner_count": inner_count, "inner_step": inner_step, "format0": format0, **decode_format0(format0),
     "format1": registers[agu_register(pe, agu, "format1")]}
 
 
