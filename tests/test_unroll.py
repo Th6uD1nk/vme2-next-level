@@ -1,10 +1,14 @@
+import contextlib
+import io
 import os
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.unroll import unroll_loops
+from vmegc import main as vmegc_main
 
 HEAD = (
   "volatile Buffer input[4] = { 1, 2, 3, 4 };\n"
@@ -32,6 +36,30 @@ def squeezed(text):
 
 def around(block):
   return "void f(void) {\n  @emulate \"a\" {\n" + block + "\n  }\n}\nint after;\n"
+
+
+def read_file(path):
+  if not os.path.exists(path):
+    return None
+  with open(path, encoding="utf-8") as f:
+    return f.read()
+
+
+def in_files(files, command, read=()):
+  with tempfile.TemporaryDirectory() as folder:
+    paths = []
+    for name, text in files:
+      paths.append(os.path.join(folder, name))
+      with open(paths[-1], "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+      try:
+        code = command(paths, folder)
+      except SystemExit as exit:
+        code = exit.code
+    written = [read_file(os.path.join(folder, name)) for name in read]
+    return code, out.getvalue(), err.getvalue().replace(folder + os.sep, ""), written
 
 
 
@@ -84,6 +112,23 @@ class UnrollTest(unittest.TestCase):
     for block, message in cases:
       with self.assertRaisesRegex(ValueError, message.replace("(", "\\(").replace(".", "\\.")):
         unroll_loops(around(block))
+
+
+class UnrollToolsTest(unittest.TestCase):
+  def test_vmegc_writes_for_a_loop_the_code_of_the_calls_written_one_by_one(self):
+    outputs = []
+    for text in (LOOP, MANUAL):
+      code, _, err, written = in_files([("main.vmeg.cpp", text)], lambda paths, folder: vmegc_main([paths[0], "-o", os.path.join(folder, "out.cpp")]), ["out.cpp"])
+      self.assertEqual((code, err), (0, ""))
+      outputs.append(squeezed(written[0]))
+    self.assertEqual(outputs[0], outputs[1])
+    self.assertEqual(outputs[0].count("twice") + outputs[0].count("bump("), outputs[1].count("twice") + outputs[1].count("bump("))
+    self.assertIn("bump(8 >> 2)", outputs[0])
+
+  def test_vmegc_reports_the_error_of_a_loop_with_the_name_of_the_file(self):
+    code, _, err, _ = in_files([("main.vmeg.cpp", LOOP.replace("0..2", "2..0"))], lambda paths, folder: vmegc_main([paths[0], "-o", os.path.join(folder, "out.cpp")]))
+    self.assertEqual(code, 1)
+    self.assertTrue(err.startswith("main.vmeg.cpp: line 16: the for runs from 2 to 0"), err)
 
 
 if __name__ == "__main__":
