@@ -9,7 +9,8 @@ The emulator plays a kernel marked here, or the calls of kernels written in a bl
 - [13.1 The @emulate mark](#131-the-emulate-mark)
 - [13.2 The rules of the mark](#132-the-rules-of-the-mark)
 - [13.3 The block form](#133-the-block-form)
-- [13.4 Errors](#134-errors)
+- [13.4 Loops](#134-loops)
+- [13.5 Errors](#135-errors)
 
 ## 13.1 The @emulate mark
 
@@ -113,7 +114,48 @@ void meLibOnProcess(void) {
 - Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like `configs[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `configs[1]`.
 - Currently not supported: a kernel called in the block that is defined in another file than the block.
 
-## 13.4 Errors
+## 13.4 Loops
+
+A loop written around the calls of a block stands for the copies of those calls.
+
+```c
+volatile Memory configs[3];
+
+.kernel reader memory {
+  .params { int skip; }
+  Agu t = { count: 7, step: skip }, w = { count: 7, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "three-steps" {
+    for s in 0..2 {
+      @kernel reader build {
+        .params = { skip: 1 << s };
+        .memory = configs[s];
+      }
+      @kernel reader config | exec {
+        .memory = configs[s];
+      }
+    }
+  }
+}
+```
+
+`vmee --list main.vmeg.cpp` shows the six calls that the loop stands for:
+
+```
+emulate "three-steps": kernels reader (lines 10-20)
+  calls:
+    reader  build
+    reader  config | exec
+    reader  build
+    reader  config | exec
+    reader  build
+    reader  config | exec
+```
+
+## 13.5 Errors
 
 The messages start with `line N:`, left out here.
 
