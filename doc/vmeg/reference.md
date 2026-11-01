@@ -159,3 +159,4 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `@emulate "id"` | [13.1](emulation.md#131-the-emulate-mark) |
 | the rules of the mark | [13.2](emulation.md#132-the-rules-of-the-mark) |
 | `@emulate` on a block | [13.3](emulation.md#133-the-block-form) |
+| `for name in low..high { }` around the calls of a block | [13.4](emulation.md#134-loops) |

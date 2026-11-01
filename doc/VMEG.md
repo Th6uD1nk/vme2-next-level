@@ -42,7 +42,7 @@ vmegc_sources(app SOURCES main.vmeg.cpp)
 | 10 | [Calling a kernel](#10-calling-a-kernel) | `@kernel` and the actions `build`, `config`, `exec`, `async` |
 | 11 | [Blocks](#11-blocks) | the vmeg statements inside a `@kernel` block |
 | 12 | [meLibOnProcess](#12-melibonprocess) | the start of the function of the Media Engine |
-| 13 | [Emulation](#13-emulation) | `@emulate`, how a kernel is played (see also [VMEE](VMEE.md)) |
+| 13 | [Emulation](#13-emulation) | `@emulate`, the loops of a block, how a kernel is played (see also [VMEE](VMEE.md)) |
 | 14 | [Errors](#14-errors) | where the messages of `vmegc` are listed, by page |
 | 15 | [Reference](#15-reference) | the whole syntax on one page |
 

@@ -192,6 +192,8 @@ writes the same as `pe[0] { .top = t; .spad = top0 + top0; }` followed by `pe[1]
 
 This is not the C `for (…)`, which stays C code.
 
+A loop can also be written around the calls of an `@emulate` block, with integer bounds only: see [13.4](emulation.md#134-loops).
+
 An `Int` declared in the body is computed again at each turn. An `Agu`, a `Staging` or a `Transfer` declared in the body is declared again at each turn, which fails at the second one: currently, declare it before the loop.
 
 ## 2.8 Synonyms
