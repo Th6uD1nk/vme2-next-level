@@ -3,6 +3,7 @@ import os
 import sys
 
 from vmee.run import choose_source
+from vmeg.unroll import unroll_loops
 from vmeh.extract import extract_program, extract_source
 
 
@@ -21,7 +22,7 @@ def main(argv=None):
     for path in args.input:
       where = path
       with open(path, encoding="utf-8") as f:
-        sources.append((path, f.read()))
+        sources.append((path, unroll_loops(f.read())))
     if args.extract:
       path, text = choose_source(sources, args.extract)
       where = path
