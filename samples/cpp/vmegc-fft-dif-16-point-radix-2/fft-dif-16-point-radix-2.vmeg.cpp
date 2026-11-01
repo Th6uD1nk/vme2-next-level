@@ -144,7 +144,7 @@ volatile Buffer(Q4.20) fftStageImag[32];
 .kernel lowerLeg memory {
   .params { int twiddleOffset; int twiddleCount; }
 
-  Agu(2) twiddles = { offset: twiddleOffset, count: twiddleCount, step: 1, repeat: true };
+  Agu(2) twiddles = { offset: twiddleOffset, count: 7, inner0: { count: twiddleCount, step: 1 }, repeat: true };
   Agu lowerBase = { count: 7 };
   Agu lowerWrite = { count: 7, cyc: auto };
 
