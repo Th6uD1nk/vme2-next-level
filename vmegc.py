@@ -9,6 +9,7 @@ from vmeg.kernel import block_statement_records, build_kernel, generate
 from vmeg.listing import kernel_operation_lines
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
+from vmeg.unroll import unroll_loops
 from vmeg.operations import format_operations
 from vmeg.qformat import buffer_format, translate_buffer
 from vmeg.registry import check_calls, check_definitions, check_uses, needed_externs, needed_prototypes, project_registry, statement_span
@@ -161,6 +162,7 @@ def main(argv=None):
       print(f"{path}: {e.strerror.lower()}", file=sys.stderr)
       return 1
     try:
+      text = unroll_loops(text)
       found.append((path, text, find_blocks(text)))
     except ValueError as e:
       print(f"{path}: {e}", file=sys.stderr)
