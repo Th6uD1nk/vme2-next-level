@@ -82,14 +82,14 @@ def mode2_offsets(view, label, warn):
     warn(f"{label} has the step 0 in the register COUNT in the mode 2: not measured on the PSP, the count is read as a number of words")
     step = 1
   elif count % step:
-    warn(f"{label} has the count {count} with the step {step}: a count that is not a multiple of its step, the PSP does not like it, the range is rounded down")
+    warn(f"{label} has the count {count} with the step {step}: a count that is not a multiple of its step, seen to stop the ME on the PSP, the range is rounded down")
   words = count // step + 1
   if inner_step == 0:
     if inner_count or step != 1:
       warn(f"{label} has an inner0 with a count and no step, or a step other than 1 without a ring in the mode 2: not measured on the PSP, the first word is read")
     offsets = [view["offset"]]
   elif inner_count % inner_step:
-    warn(f"{label} has the inner0 count {inner_count} with the step {inner_step}: a count that is not a multiple of its step, the PSP does not like it, the ring is rounded down")
+    warn(f"{label} has the inner0 count {inner_count} with the step {inner_step}: a count that is not a multiple of its step, seen to stop the ME on the PSP, the ring is rounded down")
     offsets = None
   else:
     offsets = None
