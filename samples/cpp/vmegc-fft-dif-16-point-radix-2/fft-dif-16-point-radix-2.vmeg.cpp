@@ -141,8 +141,23 @@ volatile Buffer(Q4.20) fftStageImag[32];
   .pe3 { .top = lowerTop; .write = lowerWrite; .spad = round(top2 - top3); }
 }
 
+.kernel lowerLeg direct {
+  .params { int twiddleOffset; int twiddleCount; }
+
+  Agu(2) twiddles = { offset: twiddleOffset, count: twiddleCount, step: 1, repeat: true };
+  Agu lowerBase = { count: 7 };
+  Agu lowerWrite = { count: 7, cyc: auto };
+
+  Staging realReal, imagImag, realImag, imagReal;
+
+  .pe0 { .top = twiddles; .remap = { operator: "*", primary: 0x220 }; realReal = round(base1 * top0 >> 20); }
+  .pe1 { .base = lowerBase; .write = lowerWrite; .remap = { operator: "*", primary: 0x220 }; imagImag = round(base3 * top2 >> 20); .spad = round(realReal - imagImag) >> 1; }
+  .pe2 { .top = twiddles; .remap = { operator: "*", primary: 0x220 }; realImag = round(base1 * top2 >> 20); }
+  .pe3 { .base = lowerBase; .write = lowerWrite; .remap = { operator: "*", primary: 0x220 }; imagReal = round(base3 * top0 >> 20); .spad = round(imagReal + realImag) >> 1; }
+}
+
 void meLibOnProcess(void) {
-  @emulate "fft-butterfly-0" {
+  @emulate "fft-stage-0" {
     @kernel butterfly config {
       .params = { stride: 8 };
       Transfer(Words) realIn = { memory: fftReal3, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
@@ -152,6 +167,16 @@ void meLibOnProcess(void) {
     }
     @kernel butterfly exec {
       .params = { stride: 8 };
+    }
+    @kernel lowerLeg config {
+      .params = { twiddleOffset: 128, twiddleCount: 7 };
+      Transfer realTwiddles = { memory: fftTwiddleReal, count: 14 };
+      Transfer imagTwiddles = { memory: fftTwiddleImag, count: 14 };
+      .load { .transfer = realTwiddles; .scope = global; .offsets { .top0 = 128; } }
+      .load { .transfer = imagTwiddles; .scope = global; .offsets { .top2 = 128; } }
+    }
+    @kernel lowerLeg exec {
+      .params = { twiddleOffset: 128, twiddleCount: 7 };
       Transfer realOut = { memory: fftStageReal, count: 15 };
       Transfer imagOut = { memory: fftStageImag, count: 15 };
       .store { .transfer = realOut; .scope = global; .offsets { .base1 = -8; } }
