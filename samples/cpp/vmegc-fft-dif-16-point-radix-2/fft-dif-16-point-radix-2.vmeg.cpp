@@ -127,7 +127,7 @@ volatile Buffer(Q4.20) fftStageReal[32];
 
 volatile Buffer(Q4.20) fftStageImag[32];
 
-.kernel butterfly direct {
+.kernel butterfly memory {
   .params { int stride; }
 
   Agu upperTop = { count: 7, offset: 0x800 - 8 };
@@ -141,7 +141,7 @@ volatile Buffer(Q4.20) fftStageImag[32];
   .pe3 { .top = lowerTop; .write = lowerWrite; .spad = round(top2 - top3); }
 }
 
-.kernel lowerLeg direct {
+.kernel lowerLeg memory {
   .params { int twiddleOffset; int twiddleCount; }
 
   Agu(2) twiddles = { offset: twiddleOffset, count: twiddleCount, step: 1, repeat: true };
@@ -158,25 +158,27 @@ volatile Buffer(Q4.20) fftStageImag[32];
 
 void meLibOnProcess(void) {
   @emulate "fft-stage-0" {
-    @kernel butterfly config {
+    @kernel butterfly build {
       .params = { stride: 8 };
+    }
+    @kernel butterfly config {
       Transfer(Words) realIn = { memory: fftReal3, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
       Transfer(Words) imagIn = { memory: fftImag, count: 1, gap: 23, step: 0, group: { size: 15, outer: 8, inner: 1 } };
       .load { .transfer = realIn; .scope = global; .offsets { .top1 = -8; } }
       .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -8; } }
     }
     @kernel butterfly exec {
-      .params = { stride: 8 };
+    }
+    @kernel lowerLeg build {
+      .params = { twiddleOffset: 128, twiddleCount: 7 };
     }
     @kernel lowerLeg config {
-      .params = { twiddleOffset: 128, twiddleCount: 7 };
       Transfer realTwiddles = { memory: fftTwiddleReal, count: 14 };
       Transfer imagTwiddles = { memory: fftTwiddleImag, count: 14 };
       .load { .transfer = realTwiddles; .scope = global; .offsets { .top0 = 128; } }
       .load { .transfer = imagTwiddles; .scope = global; .offsets { .top2 = 128; } }
     }
     @kernel lowerLeg exec {
-      .params = { twiddleOffset: 128, twiddleCount: 7 };
       Transfer realOut = { memory: fftStageReal, count: 15 };
       Transfer imagOut = { memory: fftStageImag, count: 15 };
       .store { .transfer = realOut; .scope = global; .offsets { .base1 = -8; } }
