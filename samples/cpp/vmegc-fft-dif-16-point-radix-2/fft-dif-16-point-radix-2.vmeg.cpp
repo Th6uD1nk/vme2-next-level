@@ -33,6 +33,8 @@ meLibSetSharedUncached32(10);
 
 #define FFT_POINT_COUNT (16)
 #define FFT_VALUE_COUNT FFT_POINT_COUNT
+#define SAMPLE_SIZE (FFT_VALUE_COUNT * 2)
+#define SAMPLE_BYTE_COUNT (FFT_VALUE_COUNT * 2 * 4)
 
 #define Q_FORMAT 20
 
@@ -54,7 +56,7 @@ volatile Buffer(Q4.20) fftTwiddleImag[15] = {
   0.0f, -1.0f, 0.0f,
 };
 
-volatile Buffer(Q4.20) fftReal0[32] = {
+volatile Buffer(Q4.20) fftReal0[SAMPLE_SIZE] = {
   1.0f, 1.0f, 1.0f, 1.0f,
   1.0f, 1.0f, 1.0f, 1.0f,
   1.0f, 1.0f, 1.0f, 1.0f,
@@ -65,7 +67,7 @@ volatile Buffer(Q4.20) fftReal0[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal1[32] = {
+volatile Buffer(Q4.20) fftReal1[SAMPLE_SIZE] = {
   1.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
@@ -76,7 +78,7 @@ volatile Buffer(Q4.20) fftReal1[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal2[32] = {
+volatile Buffer(Q4.20) fftReal2[SAMPLE_SIZE] = {
   0.0f, 0.0f, 0.0f, 0.0f,
   1.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
@@ -87,7 +89,7 @@ volatile Buffer(Q4.20) fftReal2[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal3[32] = {
+volatile Buffer(Q4.20) fftReal3[SAMPLE_SIZE] = {
   1.000000f, 0.923880f, 0.707107f, 0.382683f,
   0.000000f, -0.382683f, -0.707107f, -0.923880f,
   -1.000000f, -0.923880f, -0.707107f, -0.382683f,
@@ -98,7 +100,7 @@ volatile Buffer(Q4.20) fftReal3[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal4[32] = {
+volatile Buffer(Q4.20) fftReal4[SAMPLE_SIZE] = {
   1.0f, 0.7071f, 0.0f, -0.7071f,
   -1.0f, -0.7071f, 0.0f, 0.7071f,
   1.0f, 0.7071f, 0.0f, -0.7071f,
@@ -109,7 +111,7 @@ volatile Buffer(Q4.20) fftReal4[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal5[32] = {
+volatile Buffer(Q4.20) fftReal5[SAMPLE_SIZE] = {
   1.0f, -1.0f, 1.0f, -1.0f,
   1.0f, -1.0f, 1.0f, -1.0f,
   1.0f, -1.0f, 1.0f, -1.0f,
@@ -120,7 +122,7 @@ volatile Buffer(Q4.20) fftReal5[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal6[32] = {
+volatile Buffer(Q4.20) fftReal6[SAMPLE_SIZE] = {
   0.000000f, 0.382683f, 0.707107f, 0.923880f,
   1.000000f, 0.923880f, 0.707107f, 0.382683f,
   0.000000f, -0.382683f, -0.707107f, -0.923880f,
@@ -131,7 +133,7 @@ volatile Buffer(Q4.20) fftReal6[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal7[32] = {
+volatile Buffer(Q4.20) fftReal7[SAMPLE_SIZE] = {
   2.000000f, 1.306563f, 0.000000f, -0.541196f,
   0.000000f, 0.541196f, 0.000000f, -1.306563f,
   -2.000000f, -1.306563f, 0.000000f, 0.541196f,
@@ -142,7 +144,7 @@ volatile Buffer(Q4.20) fftReal7[32] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftImag[32] = {
+volatile Buffer(Q4.20) fftImag[SAMPLE_SIZE] = {
   0.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
@@ -258,6 +260,10 @@ void meLibOnProcess(void) {
       }
     }
 
+    meCoreDcacheWritebackRange((void*)fftTwiddleReal, sizeof(fftTwiddleReal));
+    meCoreDcacheWritebackRange((void*)fftTwiddleImag, sizeof(fftTwiddleImag));
+    meCoreDcacheWritebackRange((void*)fftImag, SAMPLE_BYTE_COUNT);
+
     @kernel lowerLeg config {
       .memory = lowerLegConfigs[0];
 
@@ -266,6 +272,10 @@ void meLibOnProcess(void) {
 
       .load { .transfer = realTwiddles; .scope = global; .offsets { .top0 = FFT_TWIDDLE_BASE_OFFSET; } }
       .load { .transfer = imagTwiddles; .scope = global; .offsets { .top2 = FFT_TWIDDLE_BASE_OFFSET; } }
+    }
+
+    while (1) {
+      meCounter += 1;
     }
   }
 }
