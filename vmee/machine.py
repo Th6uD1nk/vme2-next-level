@@ -1,7 +1,7 @@
 from vmee.agu import agu_inside_offsets, run_length, stream_at, stream_offsets, write_agu
 from vmee.dmac import CLEAR_LOCAL_BUFFER, CONTEXT_TRANSFER_BITS, CONTEXT_TRANSFER_MASK, DMAC_BASE, DMAC_CONTROL, DMAC_COUNT, DMAC_GROUP_SIZE, DMAC_GROUP_STEPS, DMAC_ITERATION_STEP, DMAC_MEMORY_ADDRESS, DMAC_REGISTER_COUNT, DMAC_SCRATCHPAD_OFFSET, ITERATE_TO_MEMORY, ITERATE_TO_SCRATCHPAD, ITERATION_STEP_BYTES, MEM_FROM_16, MEM_TO_16, PRELOAD_CONTEXT, RING_TO_MEMORY, RING_TO_SCRATCHPAD, TRIGGER
 from vmee.fu import execute, fu_operands, opcode_entry
-from vmee.memory import BASE_OFFSET, BUFFER_WORDS, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad
+from vmee.memory import BASE_OFFSET, BUFFER_WORDS, EDRAM_BYTES, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad
 from vmee.registers import CONTEXT_WORDS, DATAPATH_BASE, FU_KINDS, REGISTER_COUNT, SWEN_REGISTER, decode_fu, fu_register, output_fu
 
 
@@ -230,11 +230,17 @@ class Emulator:
   def get_memory(self, address, count, step=4):
     first = self.memory_address(address)
     words = []
+    missing = []
     for i in range(count):
-      word = self.memory.get(first + step * i)
+      address = first + step * i
+      word = self.memory.get(address)
       if word is None:
-        raise ValueError(f"the memory image has no word at {first + step * i:#x}")
+        word = 0
+        if address >= EDRAM_BYTES:
+          missing.append(address)
       words.append(word)
+    if missing:
+      self.warn(f"{len(missing)} words never written are read as 0 outside the eDRAM, the first at {missing[0]:#x}")
     return words
 
   def warn(self, message):
