@@ -191,7 +191,8 @@ def pointer_declarations(text, identifier, others):
         continue
       if not bindings[name]:
         raise ValueError(f"the pointer {name} of the @emulate \"{identifier}\" is initialised with an expression that vmeh cannot write, give it the name of an array")
-      declared.append({"where": declaration["where"], "text": f"volatile Buffer* {name} = {bindings[name]};"})
+      target = bindings[name][1] if isinstance(bindings[name], tuple) else bindings[name]
+      declared.append({"where": declaration["where"], "text": f"volatile Buffer* {name} = {target};"})
   return declared
 
 
