@@ -17,6 +17,7 @@
 #include <psppower.h>
 #include <pspgu.h>
 #include <me-core-mapper/me-core.h>
+#include <me-core-mapper/vme-fu-opcodes.h>
 #include <debug.h>
 
 PSP_MODULE_INFO("vme-fft", 0, 1, 1);
@@ -32,6 +33,11 @@ meLibSetSharedUncached32(10);
 
 #define FFT_POINT_COUNT (16)
 #define FFT_VALUE_COUNT FFT_POINT_COUNT
+
+#define Q_FORMAT 20
+
+#define FFT_STAGE_0_STRIDE (FFT_VALUE_COUNT / 2)
+#define FFT_TWIDDLE_BASE_OFFSET (128)
 
 volatile Buffer(Q4.20) fftTwiddleReal[15] = {
   1.0f, 0.9238795f, 0.7071068f, 0.3826834f,
@@ -154,7 +160,50 @@ volatile Buffer* fftSignals[8] = {
 volatile Buffer* fftStageReal = (volatile u32*)0x40000000;
 volatile Buffer* fftStageImag = (volatile u32*)(0x40000000 | (FFT_VALUE_COUNT * 4 * 2));
 
+volatile Memory butterflyConfigs[4];
+
+.kernel butterfly memory {
+  .params { int stride; }
+
+  Agu upperTop = { count: FFT_STAGE_0_STRIDE - 1, offset: 0x800 - FFT_STAGE_0_STRIDE };
+  Agu lowerTop = { count: FFT_STAGE_0_STRIDE - 1, offset: stride };
+  Agu upperWrite = { count: FFT_STAGE_0_STRIDE - 1, offset: 0x800 - FFT_STAGE_0_STRIDE, cyc: 6 };
+  Agu lowerWrite = { count: FFT_STAGE_0_STRIDE - 1, cyc: 6 };
+
+  .pe0 {
+    .top = upperTop;
+    .write = upperWrite;
+    .spad = round(top1 + top0) >> 1;
+  }
+
+  .pe1 {
+    .top = lowerTop;
+    .write = lowerWrite;
+    .spad = round(top0 - top1);
+  }
+
+  .pe2 {
+    .top = upperTop;
+    .write = upperWrite;
+    .spad = round(top3 + top2) >> 1;
+  }
+
+  .pe3 {
+    .top = lowerTop;
+    .write = lowerWrite;
+    .spad = round(top2 - top3);
+  }
+}
+
 void meLibOnProcess(void) {
+  @emulate "fft-4-stages" {
+    for s in 0..3 {
+      @kernel butterfly build {
+        .params = { stride: FFT_STAGE_0_STRIDE >> s };
+        .memory = butterflyConfigs[s];
+      }
+    }
+  }
 }
 
 int main() {
