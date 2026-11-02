@@ -275,6 +275,51 @@ void meLibOnProcess(void) {
     }
 
     while (1) {
+      volatile Buffer* signal = fftSignals[meFFTIndex];
+      meCoreDcacheWritebackRange((void*)signal, SAMPLE_BYTE_COUNT);
+
+      @kernel butterfly config {
+        .memory = butterflyConfigs[0];
+
+        Transfer(Words) realIn = { memory: signal, count: 1, gap: FFT_VALUE_COUNT - 1 + FFT_STAGE_0_STRIDE, step: 0, group: { size: 2 * FFT_STAGE_0_STRIDE - 1, outer: FFT_STAGE_0_STRIDE, inner: 1 } };
+        Transfer(Words) imagIn = { memory: fftImag, count: 1, gap: FFT_VALUE_COUNT - 1 + FFT_STAGE_0_STRIDE, step: 0, group: { size: 2 * FFT_STAGE_0_STRIDE - 1, outer: FFT_STAGE_0_STRIDE, inner: 1 } };
+
+        .load { .transfer = realIn; .scope = local; .offsets { .top1 = -FFT_STAGE_0_STRIDE; } }
+        .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -FFT_STAGE_0_STRIDE; } }
+      }
+
+      @kernel butterfly exec {
+        .memory = butterflyConfigs[0];
+      }
+
+      @kernel lowerLeg config | exec {
+        .memory = lowerLegConfigs[0];
+      }
+
+      for s in 1..3 {
+        @kernel butterfly config {
+          .memory = butterflyConfigs[s];
+
+          Transfer realOut = { memory: fftStageReal, count: FFT_VALUE_COUNT - 1 };
+          Transfer imagOut = { memory: fftStageImag, count: FFT_VALUE_COUNT - 1 };
+          Transfer(Words) realIn = { memory: fftStageReal, count: 1, gap: FFT_VALUE_COUNT - 1 + (FFT_STAGE_0_STRIDE >> s), step: 0, group: { size: 2 * (FFT_STAGE_0_STRIDE >> s) - 1, outer: FFT_STAGE_0_STRIDE >> s, inner: 1 } };
+          Transfer(Words) imagIn = { memory: fftStageImag, count: 1, gap: FFT_VALUE_COUNT - 1 + (FFT_STAGE_0_STRIDE >> s), step: 0, group: { size: 2 * (FFT_STAGE_0_STRIDE >> s) - 1, outer: FFT_STAGE_0_STRIDE >> s, inner: 1 } };
+
+          .store { .transfer = realOut; .scope = global; .offsets { .base1 = -FFT_STAGE_0_STRIDE; } }
+          .store { .transfer = imagOut; .scope = global; .offsets { .base3 = -FFT_STAGE_0_STRIDE; } }
+          .load { .transfer = realIn; .scope = global; .offsets { .top1 = -(FFT_STAGE_0_STRIDE >> s); } }
+          .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -(FFT_STAGE_0_STRIDE >> s); } }
+        }
+
+        @kernel butterfly exec {
+          .memory = butterflyConfigs[s];
+        }
+
+        @kernel lowerLeg config | exec {
+          .memory = lowerLegConfigs[s];
+        }
+      }
+
       meCounter += 1;
     }
   }
