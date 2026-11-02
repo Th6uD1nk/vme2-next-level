@@ -108,6 +108,13 @@ def unroll_marks(text, items):
   return marks
 
 
+def remove_unroll_marks(text):
+  items = list(walk(text))
+  for m in reversed(unroll_marks(text, items)):
+    text = text[:items[m][2]] + text[items[m + 1][3]:].lstrip(" \t")
+  return text
+
+
 def c_loop_values(text, items, j):
   end = next(k for k in range(j + 1, len(items)) if items[k][1] == ")" and items[k][4] == items[j][4] and items[k + 1][1] == "{")
   parts = [[]]
