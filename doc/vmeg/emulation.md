@@ -163,7 +163,7 @@ emulate "three-steps": kernels reader (lines 10-20)
 
 **Rules:**
 
-- The loop is written in the block `@emulate "id" { … }` ([13.3](#133-the-block-form)), around calls. A `for` anywhere else is left as it is: a C `for (…)`, the `for` of the vmeg statements in the body of a call ([2.7](language.md#27-loops)), or a loop outside a block.
+- The loop is written in the block `@emulate "id" { … }` ([13.3](#133-the-block-form)), around calls, at any depth of the block, for example inside a C `while` or `if`. A `for` anywhere else is left as it is: a C `for (…)`, the `for` of the vmeg statements in the body of a call ([2.7](language.md#27-loops)), or a loop outside a block.
 - The form is `for name in low..high {`. Both bounds are integers, and both are included. A first bound above the second is an error, unlike the loop of [2.7](language.md#27-loops), which then writes nothing.
 - The body holds at least one `@kernel` call. It holds no preprocessor line.
 - A loop can hold other loops, with other names.
