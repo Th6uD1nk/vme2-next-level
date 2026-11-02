@@ -79,8 +79,8 @@ def function_tokens(text, block):
   return body
 
 
-def function_buffer_names(text, block):
-  return declared_buffer_names(function_tokens(text, block))
+def function_buffer_names(text, block, pointers=False):
+  return declared_buffer_names(function_tokens(text, block), pointers)
 
 
 def enclosing_function_tokens(text, position):
@@ -100,7 +100,7 @@ def enclosing_function_tokens(text, position):
   return []
 
 
-def declared_buffer_names(toks):
+def declared_buffer_names(toks, pointers=False):
   names = set()
   depth = 0
   for i, (kind, value, _, _) in enumerate(toks):
@@ -108,7 +108,7 @@ def declared_buffer_names(toks):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == "Buffer" and depth == 1 and not is_pointer(toks, i):
+    elif kind == "ident" and value == "Buffer" and depth == 1 and is_pointer(toks, i) == pointers:
       names.update(declarator_names(toks, i))
   return names
 
@@ -201,9 +201,10 @@ def check_local_sources(text, blocks, registry, path, per_block):
       continue
     where = text.count("\n", 0, block[1]) + 1
     if block[0] == "decorator":
-      declared = function_buffer_names(text, block)
+      declared = function_buffer_names(text, block) | function_buffer_names(text, block, True)
     else:
-      declared = declared_buffer_names(enclosing_function_tokens(text, block[1]))
+      tokens_of_function = enclosing_function_tokens(text, block[1])
+      declared = declared_buffer_names(tokens_of_function) | declared_buffer_names(tokens_of_function, True)
       for record in per_block[block[1]]:
         if record["scope"] == "local" and record["memory"] not in declared:
           raise ValueError(f"line {record['line']}: '{record['memory']}' is not declared with Buffer in the function that contains the @kernel block at line {where} (local {record['kind']})")
