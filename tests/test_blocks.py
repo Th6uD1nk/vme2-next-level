@@ -504,7 +504,7 @@ class MemoryConfigTest(unittest.TestCase):
     text = ".kernel k memory {\n  .params { int stride; }\n}\n.kernel p memory {\n}\nvolatile Memory stage[4];\nvoid run(int s) {\n  @kernel k build {\n    .params = { stride: 8 >> s };\n    .memory = stage[s];\n  }\n  @kernel k config {\n    .memory = stage[s];\n  }\n  @kernel p build | config {\n    .memory = auto;\n  }\n}\n"
     body = squashed(run_body(text))
     self.assertIn("kBuild((void*)stage[s], 8 >> s);", body)
-    self.assertIn("vmeLibLoadCustomContext(stage[s]);", body)
+    self.assertIn("vmeLibLoadCustomContext((void*)stage[s]);", body)
     self.assertIn("pContext = p(0);", body)
     self.assertIn("vmeLibLoadCustomContext(pContext);", body)
     never = ".kernel k memory {\n}\nvoid run(void) {\n  @kernel k config | exec {\n  }\n}\n"

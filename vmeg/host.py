@@ -321,7 +321,7 @@ def kernel_actions(name, actions, mode="direct", built=False, args="", memory=No
     rest = tuple(action for action in actions if action != "build")
     return made + kernel_actions(name, rest, mode, True, args, memory) if rest else made
   if mode == "memory":
-    load = [f"vmeLibLoadCustomContext({memory or name + 'Context'});"]
+    load = [f"vmeLibLoadCustomContext({'(void*)' + memory if memory else name + 'Context'});"]
   else:
     load = [f"{name}({args});"]
   if "async" in actions:

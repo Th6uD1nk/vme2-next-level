@@ -608,7 +608,7 @@ class EmulationBlockTest(unittest.TestCase):
     ])
 
   def test_the_emulator_plays_the_calls_of_the_block_with_their_values_and_their_memory(self):
-    self.assertEqual(main_calls(BLOCK, "blk"), ["mBuild((void*)stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext(stage[1]);"])
+    self.assertEqual(main_calls(BLOCK, "blk"), ["mBuild((void*)stage[1], 5);", "vmeLibStart();", "d();", "vmeLibFinish();", "mT0Load(src, VME_TOP_BUFF0_WOFF);", "meCoreDMACPrimWaitTransferFinish();", "vmeLibLoadCustomContext((void*)stage[1]);"])
     self.assertIn("volatile u32 __attribute__((aligned(64))) stage[2][VME_CONTEXT_WORD_COUNT];", host_program(BLOCK, "blk"))
 
   def test_vmeh_writes_the_statements_of_the_body_of_a_call_before_the_fill(self):
