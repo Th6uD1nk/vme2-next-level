@@ -296,7 +296,8 @@ void meLibOnProcess(void) {
         .memory = lowerLegConfigs[0];
       }
 
-      for s in 1..3 {
+      @unroll
+      for (int s = 1; s < 4; s++) {
         @kernel butterfly config {
           .memory = butterflyConfigs[s];
 
@@ -317,6 +318,11 @@ void meLibOnProcess(void) {
 
         @kernel lowerLeg config | exec {
           .memory = lowerLegConfigs[s];
+
+          if (s == 3) {
+            vmeDebugFillAtWith(0, VME_BASE_BUFF1_WOFF - FFT_STAGE_0_STRIDE);
+            vmeDebugFillAtWith(1, VME_BASE_BUFF3_WOFF - FFT_STAGE_0_STRIDE);
+          }
         }
       }
 
