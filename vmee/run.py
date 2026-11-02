@@ -20,6 +20,10 @@ def choose_source(sources, identifier):
   raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in these files'})")
 
 
+def unbound_pointers(trace):
+  return [line.split()[2] for line in trace.splitlines() if line.split()[:2] == ["#", "unbound"]]
+
+
 def array_table(trace):
   table = {}
   for line in trace.splitlines():
@@ -51,6 +55,8 @@ def run_emulation(text, identifier, trace_path=None, others=(), compat=None, use
       trace = run_program(executable, (str(step), *arguments))
       traces.append(trace)
       replay(emulator, trace)
+      for name in unbound_pointers(trace):
+        emulator.warn(f"the pointer {name} is not bound to an array, it reads zeros: give it one with --use {name}=array")
       with open(path, "w", encoding="utf-8") as f:
         f.write(arrays_text(emulator, array_table(trace)))
       arguments = (path,)

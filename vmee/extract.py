@@ -161,7 +161,7 @@ def host_source(text, identifier, others=(), compat=None, uses=()):
   parts.append(
     "static void vmegBindPointers(void) {\n"
     + "".join(f"  {name} = {target};\n" for name, target in sorted(bindings.items()) if target)
-    + "".join(f"  {name} = vmegEmpty;\n" for name in unbound)
+    + "".join(f"  {name} = vmegEmpty;\n  fprintf(hwTraceFile(), \"# unbound {name}\\n\");\n" for name in unbound)
     + "}"
   )
   parts += [f'static_assert(sizeof({replaced}) == sizeof({used}), "--use {replaced}={used}: the two arrays must have the same size");' for replaced, used in uses]
