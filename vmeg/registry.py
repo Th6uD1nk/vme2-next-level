@@ -25,7 +25,7 @@ def statement_span(toks, i):
   return first, len(toks) - 1
 
 
-def declarations(text, toks, depth_wanted, word="Buffer"):
+def declarations(text, toks, depth_wanted, word="Buffer", pointers=False):
   found = []
   depth = 0
   for i, (kind, value, _, _) in enumerate(toks):
@@ -33,7 +33,7 @@ def declarations(text, toks, depth_wanted, word="Buffer"):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == word and depth == depth_wanted and not (word == "Buffer" and is_pointer(toks, i)):
+    elif kind == "ident" and value == word and depth == depth_wanted and (word != "Buffer" or is_pointer(toks, i) == pointers):
       first, last = statement_span(toks, i)
       statement = toks[first:last + 1]
       found.append({
@@ -48,8 +48,16 @@ def declarations(text, toks, depth_wanted, word="Buffer"):
 
 def array_definitions(path, text):
   return [
-    {"name": name, "path": path, "line": declaration["line"], "static": declaration["static"], "extern": declaration["extern"], "text": declaration["text"]}
+    {"name": name, "path": path, "line": declaration["line"], "static": declaration["static"], "extern": declaration["extern"], "text": declaration["text"], "pointer": False}
     for declaration in declarations(text, list(tokens(text)), 0)
+    for name in declaration["names"]
+  ]
+
+
+def pointer_definitions(path, text):
+  return [
+    {"name": name, "path": path, "line": declaration["line"], "static": declaration["static"], "extern": declaration["extern"], "text": declaration["text"], "pointer": True}
+    for declaration in declarations(text, list(tokens(text)), 0, "Buffer", True)
     for name in declaration["names"]
   ]
 
@@ -101,7 +109,7 @@ def project_registry(sources):
   block_transfers = []
   for path, text in sources:
     try:
-      array_list = array_definitions(path, text)
+      array_list = array_definitions(path, text) + pointer_definitions(path, text)
       kernel_list = kernel_definitions(path, text)
       calls += call_definitions(path, text)
       block_transfers += block_definitions(path, text)
@@ -131,11 +139,12 @@ def check_array(registry, source, path, line, kind):
   declared = registry["arrays"].get(source, [])
   if not declared:
     raise ValueError(f"{where}: the array '{source}' of a global {kind} is not declared with Buffer in any file")
+  noun = "pointer" if declared[0]["pointer"] else "array"
   defined = [definition for definition in declared if not definition["extern"]]
   if not defined:
-    raise ValueError(f"{where}: the array '{source}' of a global {kind} is declared extern but defined in no file")
+    raise ValueError(f"{where}: the {noun} '{source}' of a global {kind} is declared extern but defined in no file")
   if defined[0]["static"] and defined[0]["path"] != path:
-    raise ValueError(f"{where}: the array '{source}' of a global {kind} is static in {defined[0]['path']} line {defined[0]['line']}, it cannot be used from another file")
+    raise ValueError(f"{where}: the {noun} '{source}' of a global {kind} is static in {defined[0]['path']} line {defined[0]['line']}, it cannot be used from another file")
 
 
 def check_uses(registry):
@@ -182,9 +191,10 @@ def drop_initializer(declarator):
 def extern_declaration(definition):
   qualifiers, declarators = split_declarators(definition["text"])
   for declarator in declarators:
-    if declarator and declarator[0][1] == definition["name"]:
+    names = [value for kind, value, _, _ in declarator if kind == "ident" and value not in ("const", "volatile", "restrict")]
+    if declarator and names and names[0] == definition["name"]:
       kept = drop_initializer(declarator)
-      return " ".join(["extern"] + qualifiers + ["Buffer"]) + " " + definition["text"][kept[0][2]:kept[-1][3]] + ";"
+      return " ".join(["extern"] + qualifiers + ["u32" if definition["pointer"] else "Buffer"]) + " " + definition["text"][kept[0][2]:kept[-1][3]] + ";"
   raise ValueError(f"the array '{definition['name']}' is not in its own declaration")
 
 
