@@ -72,12 +72,15 @@ def pointer_target(declaration, name):
 
 
 def pointer_bindings(text, identifier, others=(), uses=()):
+  emulation = chosen_emulation(text, identifier)
+  read = {entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]}
   found = array_declarations(text, identifier, others, (), True)
   used = dict(uses)
   bindings = {}
   for declaration in found:
     for name in declaration["names"]:
-      bindings[name] = used.get(name) or pointer_target(declaration, name)
+      if name in read:
+        bindings[name] = used.get(name) or pointer_target(declaration, name)
   return found, bindings
 
 
@@ -151,7 +154,16 @@ def host_source(text, identifier, others=(), compat=None, uses=()):
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [buffer_text(declaration) for declaration in arrays]
   parts += [f"volatile u32* {name};" for name in sorted(bindings)]
-  parts.append("static void vmegBindPointers(void) {\n" + "".join(f"  {name} = {target};\n" for name, target in sorted(bindings.items()) if target) + "}")
+  unbound = sorted(name for name, target in bindings.items() if not target)
+  if unbound:
+    parts.append("volatile u32 __attribute__((aligned(64))) vmegEmpty[2048];")
+    declared.add("vmegEmpty")
+  parts.append(
+    "static void vmegBindPointers(void) {\n"
+    + "".join(f"  {name} = {target};\n" for name, target in sorted(bindings.items()) if target)
+    + "".join(f"  {name} = vmegEmpty;\n" for name in unbound)
+    + "}"
+  )
   parts += [f'static_assert(sizeof({replaced}) == sizeof({used}), "--use {replaced}={used}: the two arrays must have the same size");' for replaced, used in uses]
   parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
   entries = ", ".join(f'{{"{name}", (u32*){name}, (u32)(sizeof({name}) / 4)}}' for name in sorted(declared))
