@@ -28,6 +28,19 @@ class ProgramTest(unittest.TestCase):
     self.assertIn("index > 0", out)
     self.assertIn("index < vmehCount - 1", out)
 
+  def test_the_pointers_of_an_emulation_are_written_after_the_arrays_and_one_without_an_array_is_refused(self):
+    kernel = ".kernel k direct {\n  Transfer t = { memory: %s, count: 3 };\n  .load { .transfer = t; .scope = %s; .offsets { .top0 = 0; } }\n}\n"
+    glob = "volatile Buffer a[4];\nvolatile Buffer* g = a;\n" + kernel % ("g", "global") + "void meLibOnProcess(void) {\n  @emulate \"e\" {\n    @kernel k config | exec {\n    }\n  }\n}\n"
+    out = extract_source(glob, "e")
+    self.assertLess(out.index("volatile Buffer a[4];"), out.index("volatile Buffer* g = a;"))
+    self.assertLess(out.index("volatile Buffer* g = a;"), out.index("void meLibOnProcess(void) {"))
+    local = "volatile Buffer a[4];\n" + kernel % ("p", "local") + "void meLibOnProcess(void) {\n  volatile Buffer* p = a;\n  @emulate \"e\" {\n    @kernel k config | exec {\n    }\n  }\n}\n"
+    out = extract_source(local, "e")
+    self.assertLess(out.index("void meLibOnProcess(void) {"), out.index("  volatile Buffer* p = a;"))
+    computed = local.replace("volatile Buffer* p = a;", "volatile Buffer* p = table[1];")
+    with self.assertRaisesRegex(ValueError, "the pointer p of the @emulate \"e\" is initialised with an expression that vmeh cannot write"):
+      extract_source(computed, "e")
+
   def test_one_emulation_gives_the_program_of_that_emulation_and_no_emulation_is_refused(self):
     text = KERNELS.split("@emulate \"second\"")[0]
     self.assertEqual(extract_program([("t.vmeg.cpp", text)]), extract_source(text, "first"))
