@@ -213,6 +213,16 @@ class RenderTest(unittest.TestCase):
     t = "u32 __attribute__((aligned(64)))"
     self.assertEqual(out, f'#line 1 "t.vmeg.c"\nvolatile {t} a[4];\nconst char* s = "Buffer";\n/* Buffer */\nint Buffers, MyBuffer;\nvoid f(void) {{ static volatile {t} b[2]; }}\n')
 
+  def test_a_pointer_to_a_buffer_is_written_as_a_plain_u32_pointer(self):
+    text = "volatile Buffer a[4];\nvolatile Buffer* p = a;\nvolatile Buffer* const c = a, *d;\nvolatile Buffer(Q4.20)* q;\nvoid f(void) { volatile Buffer* local = a; }\n"
+    out = render(text, [], "t.vmeg.c")
+    t = "u32 __attribute__((aligned(64)))"
+    self.assertEqual(out, f'#line 1 "t.vmeg.c"\nvolatile {t} a[4];\nvolatile u32* p = a;\nvolatile u32* const c = a, *d;\nvolatile u32* q;\nvoid f(void) {{ volatile u32* local = a; }}\n')
+
+  def test_a_pointer_to_a_buffer_is_not_an_array_of_the_project(self):
+    text = "volatile Buffer a[4], b[2];\nvolatile Buffer* const p = a;\nvolatile Buffer(Q4.20)* q;\n"
+    self.assertEqual([definition["name"] for definition in array_definitions("t.vmeg.c", text)], ["a", "b"])
+
   def test_buffer_without_volatile_is_refused(self):
     for text in ["Buffer a[4];\n", "int x;\nstatic Buffer a[4];\n", "const Buffer a[4];\n"]:
       with self.subTest(text=text):
