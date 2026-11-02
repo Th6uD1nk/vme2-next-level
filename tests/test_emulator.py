@@ -696,6 +696,9 @@ POINTERS = (
 )
 
 
+COMPUTED_POINTER = POINTERS.replace("  volatile Buffer* local = one;\n", "  volatile Buffer* table[2] = { one, two };\n  volatile Buffer* local = table[1];\n")
+
+
 class PointerTest(unittest.TestCase):
   @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
   def test_a_buffer_pointer_initialised_with_an_array_name_reads_that_array_in_the_emulation(self):
@@ -706,13 +709,19 @@ class PointerTest(unittest.TestCase):
 
   @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
   def test_the_option_use_gives_an_array_to_a_pointer_whatever_it_is_initialised_with(self):
-    computed = POINTERS.replace("  volatile Buffer* local = one;\n", "  volatile Buffer* table[2] = { one, two };\n  volatile Buffer* local = table[1];\n")
-    local = run_emulation(computed, "local", uses=[("local", "one")])
+    local = run_emulation(COMPUTED_POINTER, "local", uses=[("local", "one")])
     self.assertEqual([local.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
     chosen = run_emulation(POINTERS, "global", uses=[("chosen", "one")])
     self.assertEqual([chosen.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
     with self.assertRaisesRegex(ValueError, "--use chosen=nothing: the array nothing is defined in no file"):
       run_emulation(POINTERS, "global", uses=[("chosen", "nothing")])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_pointer_that_nothing_gives_an_array_to_reads_zeros_and_is_reported(self):
+    unbound = run_emulation(COMPUTED_POINTER, "local")
+    self.assertEqual([unbound.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [0, 0, 0, 0])
+    self.assertEqual(unbound.warnings, ["the pointer local is not bound to an array, it reads zeros: give it one with --use local=array"])
+    self.assertEqual(run_emulation(COMPUTED_POINTER, "local", uses=[("local", "two")]).warnings, [])
 
 
 if __name__ == "__main__":
