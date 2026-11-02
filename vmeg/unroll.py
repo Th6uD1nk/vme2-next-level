@@ -91,6 +91,23 @@ def unroll_loops(text):
     text = text[:items[j][2]] + " ".join(copies) + "\n" * statement.count("\n") + text[items[close][3]:]
 
 
+def unroll_marks(text, items):
+  inside = []
+  for i, item in enumerate(items):
+    if item[1] == "@" and item[4] > 0 and i + 3 < len(items) and items[i + 1][1] == "emulate" and items[i + 3][1] == "{":
+      end = closing(items, i + 3)
+      inside.append((i + 4, end, call_bodies(items, i + 4, end)))
+  marks = []
+  for m, item in enumerate(items):
+    if item[1] != "@" or m + 1 >= len(items) or items[m + 1][1] != "unroll":
+      continue
+    placed = m + 3 < len(items) and item[5] in (";", "}", "{") and items[m + 2][1] == "for" and items[m + 3][1] == "("
+    if not placed or not any(first <= m < last and not any(opening < m < close for opening, close in bodies) for first, last, bodies in inside):
+      raise ValueError(f"line {text.count(chr(10), 0, item[2]) + 1}: @unroll is written before a for loop of an @emulate block, outside the calls")
+    marks.append(m)
+  return marks
+
+
 def c_loop_values(text, items, j):
   end = next(k for k in range(j + 1, len(items)) if items[k][1] == ")" and items[k][4] == items[j][4] and items[k + 1][1] == "{")
   parts = [[]]
