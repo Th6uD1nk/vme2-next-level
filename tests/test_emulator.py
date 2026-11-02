@@ -724,5 +724,37 @@ class PointerTest(unittest.TestCase):
     self.assertEqual(run_emulation(COMPUTED_POINTER, "local", uses=[("local", "two")]).warnings, [])
 
 
+EDRAM = (
+  "#define FFT_VALUE_COUNT 16\n"
+  "volatile Buffer one[4] = { 1, 2, 3, 4 };\n"
+  "volatile Buffer two[4] = { 10, 20, 30, 40 };\n"
+  "volatile Buffer* real = (volatile u32*)0x40000000;\n"
+  "volatile Buffer* imag = (volatile u32*)(0x40000000 | (FFT_VALUE_COUNT * 4 * 2));\n"
+  ".kernel doubler direct {\n"
+  "  Agu top = { count: 3 }, write = { count: 3, cyc: auto };\n"
+  "  .pe0 { .top = top; .write = write; .spad = top0 + top0; }\n"
+  "}\n"
+  "void meLibOnProcess(void) {\n"
+  "  @emulate \"edram\" {\n"
+  "    @kernel doubler config {\n      Transfer in = { memory: one, count: 3 };\n      .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n    }\n"
+  "    @kernel doubler exec {\n      Transfer out = { memory: real, count: 3 };\n      .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }\n    }\n"
+  "    @kernel doubler config {\n      Transfer in = { memory: two, count: 3 };\n      .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n    }\n"
+  "    @kernel doubler exec {\n      Transfer out = { memory: imag, count: 3 };\n      .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }\n    }\n"
+  "    @kernel doubler config {\n      Transfer back = { memory: LAST, count: 3 };\n      .load { .transfer = back; .scope = global; .offsets { .top0 = 0; } }\n    }\n"
+  "    @kernel doubler exec {\n    }\n"
+  "  }\n"
+  "}\n"
+)
+
+
+class AddressPointerTest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_pointers_initialised_with_constant_addresses_keep_them_and_do_not_share_their_memory(self):
+    for last, expected in (("real", [4, 8, 12, 16]), ("imag", [40, 80, 120, 160])):
+      emulator = run_emulation(EDRAM.replace("LAST", last), "edram")
+      self.assertEqual([emulator.scratchpad.read(BASE_OFFSET + i) for i in range(4)], expected)
+      self.assertEqual(emulator.warnings, [])
+
+
 if __name__ == "__main__":
   unittest.main()
