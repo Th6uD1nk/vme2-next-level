@@ -71,6 +71,16 @@ def pointer_target(declaration, name):
   return None
 
 
+def pointer_bindings(text, identifier, others=(), uses=()):
+  found = array_declarations(text, identifier, others, (), True)
+  used = dict(uses)
+  bindings = {}
+  for declaration in found:
+    for name in declaration["names"]:
+      bindings[name] = used.get(name) or pointer_target(declaration, name)
+  return found, bindings
+
+
 def memory_declarations(text, identifier):
   emulation = chosen_emulation(text, identifier)
   available = [dict(declaration, where="global") for declaration in declarations(text, list(tokens(text)), 0, "Memory")]
@@ -96,14 +106,15 @@ def memory_text(declaration):
 
 
 def declared_parts(text, identifier, others=(), uses=()):
-  arrays = array_declarations(text, identifier, others, uses)
+  _, bindings = pointer_bindings(text, identifier, others, uses)
+  arrays = array_declarations(text, identifier, others, [pair for pair in uses if pair[0] not in bindings], False, [target for target in bindings.values() if target])
   for declaration in arrays:
     if declaration["extern"]:
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern and no file defines it")
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
   for source in dict.fromkeys(entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]):
-    if source not in declared:
+    if source not in declared and source not in bindings:
       raise ValueError(f"the array {source} of the @emulate \"{identifier}\" is defined in no file")
   read = {entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]}
   for replaced, used in uses:
@@ -111,6 +122,8 @@ def declared_parts(text, identifier, others=(), uses=()):
       raise ValueError(f"--use {replaced}={used}: the array {replaced} is not read or written by the @emulate \"{identifier}\"")
     if used not in declared:
       raise ValueError(f"--use {replaced}={used}: the array {used} is defined in no file")
+    if replaced in bindings:
+      continue
   known = dict(defines(text))
   parts = [f"#define {name} {value}".rstrip() for name, value in defines(text)]
   for origin in dict.fromkeys(declaration["origin"] for declaration in arrays if declaration["origin"] is not text):
