@@ -1,4 +1,4 @@
-from vmee.extract import chosen_emulation, declared_parts, memory_declarations
+from vmee.extract import chosen_emulation, declared_parts, memory_declarations, pointer_bindings
 from vmee.listing import emulations
 from vmee.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
@@ -182,10 +182,23 @@ def on_process_loop(count):
 }}"""
 
 
+def pointer_declarations(text, identifier, others):
+  found, bindings = pointer_bindings(text, identifier, others)
+  declared = []
+  for declaration in found:
+    for name in declaration["names"]:
+      if name not in bindings:
+        continue
+      if not bindings[name]:
+        raise ValueError(f"the pointer {name} of the @emulate \"{identifier}\" is initialised with an expression that vmeh cannot write, give it the name of an array")
+      declared.append({"where": declaration["where"], "text": f"volatile Buffer* {name} = {bindings[name]};"})
+  return declared
+
+
 def emulation_parts(text, identifier, others):
   arrays, macros = declared_parts(text, identifier, others)
   memories = memory_declarations(text, identifier)
-  declared = arrays + memories
+  declared = arrays + memories + pointer_declarations(text, identifier, others)
   return {
     "macros": macros,
     "globals": [declaration["text"] for declaration in declared if declaration["where"] == "global"],
