@@ -59,7 +59,11 @@ def array_declarations(text, identifier, others=(), uses=(), pointers=False, als
   return result
 
 
-def pointer_target(declaration, name):
+ADDRESS_WORDS = ("u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "int", "unsigned", "signed", "long", "short", "char", "void", "volatile", "const")
+ADDRESS_OPERATORS = "()+-*/|&^~%<>"
+
+
+def pointer_target(declaration, name, macros=()):
   _, declarators = split_declarators(declaration["text"])
   for declarator in declarators:
     names = [value for kind, value, _, _ in declarator if kind == "ident" and value not in ("const", "volatile", "restrict")]
@@ -67,7 +71,12 @@ def pointer_target(declaration, name):
       for at, (kind, value, _, _) in enumerate(declarator):
         if kind == "punct" and value == "=":
           rest = declarator[at + 1:]
-          return rest[0][1] if len(rest) == 1 and rest[0][0] == "ident" else None
+          if len(rest) == 1 and rest[0][0] == "ident":
+            return rest[0][1]
+          known = all(kind == "num" or kind == "punct" and value in ADDRESS_OPERATORS or kind == "ident" and (value in ADDRESS_WORDS or value in macros) for kind, value, _, _ in rest)
+          if rest and known and any(kind == "num" or kind == "ident" and value in macros for kind, value, _, _ in rest):
+            return ("address", declaration["text"][rest[0][2]:rest[-1][3]])
+          return None
   return None
 
 
@@ -76,12 +85,17 @@ def pointer_bindings(text, identifier, others=(), uses=()):
   read = {entry[3] for qualifier in ("global", "local") for entry in emulation[qualifier] + emulation["stores"][qualifier]}
   found = array_declarations(text, identifier, others, (), True)
   used = dict(uses)
+  macros = {re.match(r"\w+", name).group() for source in (text, *others) for name, _ in defines(source)}
   bindings = {}
   for declaration in found:
     for name in declaration["names"]:
       if name in read:
-        bindings[name] = used.get(name) or pointer_target(declaration, name)
+        bindings[name] = used.get(name) or pointer_target(declaration, name, macros)
   return found, bindings
+
+
+def binding_arrays(bindings):
+  return [target for target in bindings.values() if isinstance(target, str)]
 
 
 def memory_declarations(text, identifier):
@@ -110,7 +124,7 @@ def memory_text(declaration):
 
 def declared_parts(text, identifier, others=(), uses=()):
   _, bindings = pointer_bindings(text, identifier, others, uses)
-  arrays = array_declarations(text, identifier, others, [pair for pair in uses if pair[0] not in bindings], False, [target for target in bindings.values() if target])
+  arrays = array_declarations(text, identifier, others, [pair for pair in uses if pair[0] not in bindings], False, binding_arrays(bindings))
   for declaration in arrays:
     if declaration["extern"]:
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern and no file defines it")
@@ -160,7 +174,7 @@ def host_source(text, identifier, others=(), compat=None, uses=()):
     declared.add("vmegEmpty")
   parts.append(
     "static void vmegBindPointers(void) {\n"
-    + "".join(f"  {name} = {target};\n" for name, target in sorted(bindings.items()) if target)
+    + "".join(f"  {name} = {target[1] if isinstance(target, tuple) else target};\n" for name, target in sorted(bindings.items()) if target)
     + "".join(f"  {name} = vmegEmpty;\n  fprintf(hwTraceFile(), \"# unbound {name}\\n\");\n" for name in unbound)
     + "}"
   )
