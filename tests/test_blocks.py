@@ -137,6 +137,18 @@ class RenderTest(unittest.TestCase):
           render(text, find_blocks(text), "t.vmeg.c")
         self.assertIn("(local load)", str(ctx.exception))
 
+  def test_a_local_source_of_a_block_can_be_declared_in_an_enclosing_block_before_it(self):
+    kernel = ".kernel k direct {\n  Transfer t = { memory: x, count: 0 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n"
+    call = "  @kernel k config | exec {\n  }\n"
+    ok = "volatile Buffer a[1];\n" + kernel + "void g(void) {\n  while (1) {\n    volatile Buffer* x = a;\n" + call + "  }\n}\n"
+    self.assertIn("kTLoad(x, VME_TOP_BUFF0_WOFF);", render(ok, find_blocks(ok), "t.vmeg.c"))
+    for body in ["  { volatile Buffer* x = a; }\n" + call, call + "  volatile Buffer* x = a;\n"]:
+      text = "volatile Buffer a[1];\n" + kernel + "void g(void) {\n" + body + "}\n"
+      with self.subTest(body=body):
+        with self.assertRaises(ValueError) as ctx:
+          render(text, find_blocks(text), "t.vmeg.c")
+        self.assertIn("(local load)", str(ctx.exception))
+
   def test_local_buffers_are_uploaded_in_the_decorated_function(self):
     text = ".kernel k direct {\n  Transfer ta = { memory: a, count: 3 };\n  Transfer tb = { memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k config | exec\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
