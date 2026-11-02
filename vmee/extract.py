@@ -42,7 +42,7 @@ def array_declarations(text, identifier, others=(), uses=(), pointers=False, als
       if block[0] == "decorator" and any(name in decorator_names(file, block) for name in emulation["kernels"]):
         available["local"] += [dict(declaration, origin=file) for declaration in declarations(file, function_tokens(file, block), 1, "Buffer", pointers)]
   if emulation["form"] == "block":
-    available["local"] += [dict(declaration, origin=text) for declaration in declarations(text, enclosing_function_tokens(text, emulation["at"]), 1, "Buffer", pointers)]
+    available["local"] += [dict(declaration, origin=text) for declaration in declarations(text, enclosing_function_tokens(text, emulation["at"]), None, "Buffer", pointers)]
   result = []
   seen = set()
   for qualifier in ("global", "local"):

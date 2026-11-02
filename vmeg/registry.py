@@ -33,7 +33,7 @@ def declarations(text, toks, depth_wanted, word="Buffer", pointers=False):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == word and depth == depth_wanted and (word != "Buffer" or is_pointer(toks, i) == pointers):
+    elif kind == "ident" and value == word and (depth == depth_wanted or depth_wanted is None and depth >= 1) and (word != "Buffer" or is_pointer(toks, i) == pointers):
       first, last = statement_span(toks, i)
       statement = toks[first:last + 1]
       found.append({
