@@ -30,6 +30,26 @@ meLibSetSharedUncached32(10);
 #define meCounter    (meLibSharedMemory[0])
 #define meFFTIndex   (meLibSharedMemory[1])
 
+#define FFT_POINT_COUNT (16)
+#define FFT_VALUE_COUNT FFT_POINT_COUNT
+
+volatile Buffer(Q4.20) fftTwiddleReal[15] = {
+  1.0f, 0.9238795f, 0.7071068f, 0.3826834f,
+  0.0f, -0.3826834f, -0.7071068f, -0.9238795f,
+  1.0f, 0.7071068f, 0.0f, -0.7071068f,
+  1.0f, 0.0f, 1.0f,
+};
+
+volatile Buffer(Q4.20) fftTwiddleImag[15] = {
+  0.0f, -0.3826834f, -0.7071068f, -0.9238795f,
+  -1.0f, -0.9238795f, -0.7071068f, -0.3826834f,
+  0.0f, -0.7071068f, -1.0f, -0.7071068f,
+  0.0f, -1.0f, 0.0f,
+};
+
+volatile Buffer* fftStageReal = (volatile u32*)0x40000000;
+volatile Buffer* fftStageImag = (volatile u32*)(0x40000000 | (FFT_VALUE_COUNT * 4 * 2));
+
 void meLibOnProcess(void) {
 }
 
