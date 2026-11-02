@@ -41,6 +41,31 @@ int main() {
   pspDebugScreenInit();
   pspDebugScreenPrintf("16-point-radix-2");
 
+  int up = 1;
+  SceCtrlData ctl;
+  do {
+
+    sceCtrlPeekBufferPositive(&ctl, 1);
+
+    if (up && (ctl.Buttons & PSP_CTRL_TRIANGLE)) {
+
+      meFFTIndex += meFFTIndex < 7 ? 1 : 0;
+      up = 0;
+    }
+
+    if (up && (ctl.Buttons & PSP_CTRL_CROSS)) {
+
+      meFFTIndex -= meFFTIndex > 0 ? 1 : 0;
+      up = 0;
+    }
+
+    if (!(ctl.Buttons)) {
+      up = 1;
+    }
+
+    sceDisplayWaitVblankStart();
+  } while (!(ctl.Buttons & PSP_CTRL_HOME));
+
   vmeDebugTouch();
   vmeDebugDumpBuffers();
   vmeDebugFreeBuffers();
