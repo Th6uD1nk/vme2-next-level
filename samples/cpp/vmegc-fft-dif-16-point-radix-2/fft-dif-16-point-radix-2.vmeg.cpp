@@ -308,8 +308,8 @@ void meLibOnProcess(void) {
 
           .store { .transfer = realOut; .scope = global; .offsets { .base1 = -FFT_STAGE_0_STRIDE; } }
           .store { .transfer = imagOut; .scope = global; .offsets { .base3 = -FFT_STAGE_0_STRIDE; } }
-          .load { .transfer = realIn; .scope = global; .offsets { .top1 = -(FFT_STAGE_0_STRIDE >> s); } }
-          .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -(FFT_STAGE_0_STRIDE >> s); } }
+          .load { .transfer = realIn; .scope = global; .offsets { .top1 = -FFT_STAGE_0_STRIDE; } }
+          .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -FFT_STAGE_0_STRIDE; } }
         }
 
         @kernel butterfly exec {
