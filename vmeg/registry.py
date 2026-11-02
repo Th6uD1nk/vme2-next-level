@@ -1,5 +1,5 @@
 from vmeg.blocks import decorator_calls, find_blocks, header_words, kernel_name
-from vmeg.host import declarator_names, kernel_sources
+from vmeg.host import declarator_names, is_pointer, kernel_sources
 from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.macros import known_macros
 from vmeg.qformat import buffer_format
@@ -33,7 +33,7 @@ def declarations(text, toks, depth_wanted, word="Buffer"):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == word and depth == depth_wanted:
+    elif kind == "ident" and value == word and depth == depth_wanted and not (word == "Buffer" and is_pointer(toks, i)):
       first, last = statement_span(toks, i)
       statement = toks[first:last + 1]
       found.append({

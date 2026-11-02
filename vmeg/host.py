@@ -8,6 +8,14 @@ DECLARATION_QUALIFIERS = ("static", "const", "volatile", "extern", "register", "
 BUFFER_TYPE = "u32 __attribute__((aligned(64)))"
 
 
+def is_pointer(toks, i):
+  try:
+    _, after = buffer_format(toks, i)
+  except ValueError:
+    return False
+  return after < len(toks) and toks[after][:2] == ("punct", "*")
+
+
 def declarator_names(toks, i):
   names = []
   expect = True
@@ -24,7 +32,7 @@ def declarator_names(toks, i):
         break
       if kind == "punct" and value == ",":
         expect = True
-      elif kind == "ident" and expect:
+      elif kind == "ident" and expect and value not in DECLARATION_QUALIFIERS:
         names.append(value)
         expect = False
   return names
@@ -38,7 +46,7 @@ def file_buffer_names(toks):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == "Buffer" and depth == 0:
+    elif kind == "ident" and value == "Buffer" and depth == 0 and not is_pointer(toks, i):
       names.update(declarator_names(toks, i))
   return names
 
@@ -100,7 +108,7 @@ def declared_buffer_names(toks):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == "Buffer" and depth == 1:
+    elif kind == "ident" and value == "Buffer" and depth == 1 and not is_pointer(toks, i):
       names.update(declarator_names(toks, i))
   return names
 
@@ -128,6 +136,9 @@ def check_buffers(text, toks, blocks):
         _, after = buffer_format(toks, i)
       except ValueError as e:
         raise ValueError(f"line {line}: {e}") from None
+    if value == "Buffer" and after < len(toks) and toks[after][:2] == ("punct", "*"):
+      while after < len(toks) and (toks[after][:2] == ("punct", "*") or toks[after][0] == "ident" and toks[after][1] in DECLARATION_QUALIFIERS):
+        after += 1
     if after >= len(toks) or toks[after][0] != "ident":
       raise ValueError(f"line {line}: {value} must be followed by a variable name (volatile {value} name[...])")
     found = False

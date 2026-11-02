@@ -4,7 +4,7 @@ import re
 import sys
 
 from vmeg.blocks import find_blocks, kernel_name
-from vmeg.host import BUFFER_TYPE, build_only, call_edits, check_buffers, check_decorators, check_local_sources, check_params, params_by_kernel, definition_edits, line_indent, memories_by_kernel, memory_edits, on_process_edit, passthrough
+from vmeg.host import BUFFER_TYPE, is_pointer, build_only, call_edits, check_buffers, check_decorators, check_local_sources, check_params, params_by_kernel, definition_edits, line_indent, memories_by_kernel, memory_edits, on_process_edit, passthrough
 from vmeg.kernel import block_statement_records, build_kernel, generate
 from vmeg.listing import kernel_operation_lines
 from vmeg.vmecalls import finish_calls
@@ -28,6 +28,9 @@ def buffer_edits(text, toks):
   edits = []
   for i, (kind, value, start, _) in enumerate(toks):
     if kind != "ident" or value != "Buffer":
+      continue
+    if is_pointer(toks, i):
+      edits.append((start, toks[buffer_format(toks, i)[1] - 1][3] - start, "u32"))
       continue
     if buffer_format(toks, i)[0] is None:
       edits.append((start, len("Buffer"), BUFFER_TYPE))

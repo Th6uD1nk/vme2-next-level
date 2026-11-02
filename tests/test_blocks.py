@@ -221,7 +221,7 @@ class RenderTest(unittest.TestCase):
         self.assertIn("volatile", str(ctx.exception))
 
   def test_buffer_only_declares_a_variable(self):
-    cases = ["volatile Buffer* p;\n", "void f(volatile Buffer* p) { }\n", "void f(volatile Buffer a[]) { }\n", "int* p = (volatile Buffer*)x;\n", "volatile Buffer;\n"]
+    cases = ["void f(volatile Buffer* p) { }\n", "void f(volatile Buffer a[]) { }\n", "int* p = (volatile Buffer*)x;\n", "volatile Buffer;\n"]
     for text in cases:
       with self.subTest(text=text):
         with self.assertRaises(ValueError) as ctx:
