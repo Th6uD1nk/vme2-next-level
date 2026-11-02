@@ -46,7 +46,7 @@ def file_buffer_names(toks):
       depth += 1
     elif kind == "punct" and value == "}":
       depth -= 1
-    elif kind == "ident" and value == "Buffer" and depth == 0 and not is_pointer(toks, i):
+    elif kind == "ident" and value == "Buffer" and depth == 0:
       names.update(declarator_names(toks, i))
   return names
 
