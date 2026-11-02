@@ -3,7 +3,7 @@ import re
 
 from vmee.memory import BUFFER_WORDS
 from vmeg.blocks import decorator_calls, decorator_names, find_blocks, header_words, kernel_name
-from vmeg.host import declared_buffer_names, enclosing_function_tokens, file_buffer_names, function_buffer_names
+from vmeg.host import declared_buffer_names, enclosing_function_tokens, file_buffer_names, function_buffer_names, visible_buffer_names
 from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.macros import evaluate, known_macros, macro_events
 from vmeg.parser import kernel_statements
@@ -101,7 +101,8 @@ def emulations(text):
       after = [[call for record in sequence for call in record["calls"]] if i == len(decorator_calls(text, other)) - 1 else [] for other, sequence in zip(inside, sequences) for i in range(len(decorator_calls(text, other)))]
       pairs = [given[other[1]][i] if i < len(given[other[1]]) else [] for other in inside for i in range(len(decorator_calls(text, other)))]
       memories = [kept[other[1]][i] if i < len(kept[other[1]]) and kept[other[1]][i] != "auto" else None for other in inside for i in range(len(decorator_calls(text, other)))]
-      local = declared_buffer_names(enclosing_function_tokens(text, block[1]))
+      function = enclosing_function_tokens(text, block[1])
+      local = set().union(*(visible_buffer_names(function, other[1]) for other in inside))
       entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], steps, text.count("\n", 0, block[1]) + 1, text.count("\n", 0, close[3] - 1) + 1, local, pairs, memories, sequences, after, bodies)
       found.append(dict(entry, form="block", at=block[1]))
   return found

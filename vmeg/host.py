@@ -113,6 +113,20 @@ def declared_buffer_names(toks, pointers=False):
   return names
 
 
+def visible_buffer_names(toks, position):
+  scopes = [set()]
+  for i, (kind, value, start, _) in enumerate(toks):
+    if start >= position:
+      break
+    if kind == "punct" and value == "{":
+      scopes.append(set())
+    elif kind == "punct" and value == "}":
+      scopes.pop()
+    elif kind == "ident" and value == "Buffer":
+      scopes[-1].update(declarator_names(toks, i))
+  return set().union(*scopes)
+
+
 MEMORY_WORDS = "VME_CONTEXT_WORD_COUNT"
 
 
@@ -204,7 +218,7 @@ def check_local_sources(text, blocks, registry, path, per_block):
       declared = function_buffer_names(text, block) | function_buffer_names(text, block, True)
     else:
       tokens_of_function = enclosing_function_tokens(text, block[1])
-      declared = declared_buffer_names(tokens_of_function) | declared_buffer_names(tokens_of_function, True)
+      declared = visible_buffer_names(tokens_of_function, block[1])
       for record in per_block[block[1]]:
         if record["scope"] == "local" and record["memory"] not in declared:
           raise ValueError(f"line {record['line']}: '{record['memory']}' is not declared with Buffer in the function that contains the @kernel block at line {where} (local {record['kind']})")
