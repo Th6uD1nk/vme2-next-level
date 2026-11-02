@@ -6,7 +6,7 @@ A port in vmeg of the `fft-dif-16-point-radix-2` sample of `me-vme-samples`: a 1
 
 | File | Content |
 |---|---|
-| `fft-dif-16-point-radix-2.vmeg.cpp` | the data, the two kernels `butterfly` and `lowerLeg`, and the emulation `fft-4-stages` |
+| `fft-dif-16-point-radix-2.vmeg.c` | the data, the two kernels `butterfly` and `lowerLeg`, and the emulation `fft-4-stages` |
 
 The file has no `main` and no CMake project. `vmee` plays the emulation, and `vmeh` builds a program of it for the PSP ([VMEE](../../../doc/VMEE.md)).
 
