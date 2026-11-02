@@ -1,5 +1,6 @@
 import re
 
+from vmeg.macros import evaluate, known_macros
 from vmeg.scanner import STRING, walk
 
 COMMENT = re.compile(STRING.pattern + r"|//[^\n]*|/\*.*?\*/", re.S)
@@ -88,3 +89,41 @@ def unroll_loops(text):
     copies = [flatten(substitute(text, items, opening + 1, close, items[j + 1][1], value)).strip() for value in range(low, high + 1)]
     statement = text[items[j][2]:items[close][3]]
     text = text[:items[j][2]] + " ".join(copies) + "\n" * statement.count("\n") + text[items[close][3]:]
+
+
+def c_loop_values(text, items, j):
+  end = next(k for k in range(j + 1, len(items)) if items[k][1] == ")" and items[k][4] == items[j][4] and items[k + 1][1] == "{")
+  parts = [[]]
+  depth = 0
+  for k in range(j + 2, end):
+    depth += (items[k][1] in "([") - (items[k][1] in ")]")
+    if items[k][1] == ";" and depth == 0:
+      parts.append([])
+    else:
+      parts[-1].append(k)
+  if len(parts) != 3:
+    return None
+  init, cond, step = ([items[k] for k in part] for part in parts)
+  at = next((n for n, item in enumerate(init) if item[1] == "="), None)
+  if at is None or at == 0 or init[at - 1][0] != "ident" or any(item[0] != "ident" for item in init[:at]):
+    return None
+  name = init[at - 1][1]
+  macros = known_macros(text, items[j][2])
+
+  def value(group):
+    return evaluate(text[group[0][2]:group[-1][3]], macros.get) if group else None
+
+  low = value(init[at + 1:])
+  if not cond or cond[0][1] != name or len(cond) < 2 or cond[1][1] != "<":
+    return None
+  inclusive = len(cond) > 2 and cond[2][1] == "=" and cond[2][2] == cond[1][3]
+  high = value(cond[3 if inclusive else 2:])
+  if step and [item[1] for item in step] == [name, "+", "+"]:
+    each = 1
+  elif len(step) > 3 and [item[1] for item in step[:3]] == [name, "+", "="]:
+    each = value(step[3:])
+  else:
+    return None
+  if low is None or high is None or each is None or each < 1:
+    return None
+  return name, list(range(low, high + (1 if inclusive else 0), each))
