@@ -699,6 +699,15 @@ POINTERS = (
 )
 
 
+NESTED_POINTER = POINTERS.replace(
+  "  volatile Buffer* local = one;\n  @emulate \"local\" {\n",
+  "  @emulate \"local\" {\n    while (1) {\n      volatile Buffer* local = one;\n",
+).replace(
+  "    @kernel doubler exec {\n    }\n  }\n  @emulate \"global\" {\n",
+  "    @kernel doubler exec {\n    }\n    }\n  }\n  @emulate \"global\" {\n",
+)
+
+
 COMPUTED_POINTER = POINTERS.replace("  volatile Buffer* local = one;\n", "  volatile Buffer* table[2] = { one, two };\n  volatile Buffer* local = table[1];\n")
 
 
@@ -709,6 +718,13 @@ class PointerTest(unittest.TestCase):
     self.assertEqual([local.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
     chosen = run_emulation(POINTERS, "global")
     self.assertEqual([chosen.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [20, 40, 60, 80])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_pointer_declared_in_a_nested_block_of_the_emulate_block_is_found(self):
+    self.assertIn("while (1)", NESTED_POINTER)
+    nested = run_emulation(NESTED_POINTER, "local")
+    self.assertEqual([nested.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
+    self.assertEqual(nested.warnings, [])
 
   @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
   def test_the_option_use_gives_an_array_to_a_pointer_whatever_it_is_initialised_with(self):
