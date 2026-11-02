@@ -5,7 +5,7 @@ from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_lines, memory_edits
 from vmeg.kernel import generate
 from vmeg.qformat import translate_buffer
-from vmeg.registry import declarations, project_registry
+from vmeg.registry import declarations, project_registry, split_declarators
 from vmeg.scanner import tokens
 from vmeg.vmecalls import finish_calls
 
@@ -25,31 +25,31 @@ def kernel_code(text, identifier, compat=None):
   return "\n\n".join(generate(text, block, None, compat) for name in emulation["kernels"] for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name)
 
 
-def other_declaration(others, source):
+def other_declaration(others, source, pointers=False):
   for other in others:
-    for declaration in declarations(other, list(tokens(other)), 0):
+    for declaration in declarations(other, list(tokens(other)), 0, "Buffer", pointers):
       if source in declaration["names"] and not declaration["extern"] and not declaration["static"]:
         return dict(declaration, origin=other)
   return None
 
 
-def array_declarations(text, identifier, others=(), uses=()):
+def array_declarations(text, identifier, others=(), uses=(), pointers=False, also=()):
   emulation = chosen_emulation(text, identifier)
   blocks = find_blocks(text)
-  available = {"global": declarations(text, list(tokens(text)), 0), "local": []}
+  available = {"global": declarations(text, list(tokens(text)), 0, "Buffer", pointers), "local": []}
   for file in (text, *others):
     for block in (blocks if file is text else find_blocks(file)):
       if block[0] == "decorator" and any(name in decorator_names(file, block) for name in emulation["kernels"]):
-        available["local"] += [dict(declaration, origin=file) for declaration in declarations(file, function_tokens(file, block), 1)]
+        available["local"] += [dict(declaration, origin=file) for declaration in declarations(file, function_tokens(file, block), 1, "Buffer", pointers)]
   if emulation["form"] == "block":
-    available["local"] += [dict(declaration, origin=text) for declaration in declarations(text, enclosing_function_tokens(text, emulation["at"]), 1)]
+    available["local"] += [dict(declaration, origin=text) for declaration in declarations(text, enclosing_function_tokens(text, emulation["at"]), 1, "Buffer", pointers)]
   result = []
   seen = set()
   for qualifier in ("global", "local"):
-    for source in dict.fromkeys([entry[3] for entry in emulation[qualifier] + emulation["stores"][qualifier]] + [used for _, used in uses]):
+    for source in dict.fromkeys([entry[3] for entry in emulation[qualifier] + emulation["stores"][qualifier]] + [used for _, used in uses] + list(also)):
       found = next((declaration for declaration in available[qualifier] if source in declaration["names"]), None)
       if qualifier == "global" and (found is None or found["extern"]):
-        found = other_declaration(others, source) or found
+        found = other_declaration(others, source, pointers) or found
       if found is None:
         continue
       key = (qualifier, found["line"], found["text"])
@@ -57,6 +57,18 @@ def array_declarations(text, identifier, others=(), uses=()):
         seen.add(key)
         result.append(dict(found, where=qualifier, origin=found.get("origin", text)))
   return result
+
+
+def pointer_target(declaration, name):
+  _, declarators = split_declarators(declaration["text"])
+  for declarator in declarators:
+    names = [value for kind, value, _, _ in declarator if kind == "ident" and value not in ("const", "volatile", "restrict")]
+    if declarator and names and names[0] == name:
+      for at, (kind, value, _, _) in enumerate(declarator):
+        if kind == "punct" and value == "=":
+          rest = declarator[at + 1:]
+          return rest[0][1] if len(rest) == 1 and rest[0][0] == "ident" else None
+  return None
 
 
 def memory_declarations(text, identifier):
