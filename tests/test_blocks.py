@@ -503,7 +503,7 @@ class MemoryConfigTest(unittest.TestCase):
   def test_a_call_builds_and_loads_the_memory_given_or_the_automatic_one(self):
     text = ".kernel k memory {\n  .params { int stride; }\n}\n.kernel p memory {\n}\nvolatile Memory stage[4];\nvoid run(int s) {\n  @kernel k build {\n    .params = { stride: 8 >> s };\n    .memory = stage[s];\n  }\n  @kernel k config {\n    .memory = stage[s];\n  }\n  @kernel p build | config {\n    .memory = auto;\n  }\n}\n"
     body = squashed(run_body(text))
-    self.assertIn("kBuild(stage[s], 8 >> s);", body)
+    self.assertIn("kBuild((void*)stage[s], 8 >> s);", body)
     self.assertIn("vmeLibLoadCustomContext(stage[s]);", body)
     self.assertIn("pContext = p(0);", body)
     self.assertIn("vmeLibLoadCustomContext(pContext);", body)
