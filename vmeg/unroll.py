@@ -144,3 +144,30 @@ def c_loop_values(text, items, j):
   if low is None or high is None or each is None or each < 1:
     return None
   return name, list(range(low, high + (1 if inclusive else 0), each))
+
+
+MAX_COPIES = 256
+
+
+def unroll_marked_loops(text):
+  while True:
+    items = list(walk(text))
+    marks = unroll_marks(text, items)
+    if not marks:
+      return text
+    m = marks[0]
+    j = m + 2
+    line = text.count("\n", 0, items[m][2]) + 1
+    found = c_loop_values(text, items, j)
+    if found is None:
+      raise ValueError(f"line {line}: the @unroll loop is not unrolled, the form is for (int name = low; name < high; name++) with bounds and step made of numbers and macros of the file")
+    name, values = found
+    if len(values) > MAX_COPIES:
+      raise ValueError(f"line {line}: the @unroll loop runs {len(values)} turns, at most {MAX_COPIES} are unrolled")
+    opening = next(k for k in range(j, len(items)) if items[k][1] == "{")
+    close = closing(items, opening)
+    if not any(items[k][1] == "@" and items[k + 1][1] == "kernel" for k in range(opening + 1, close)):
+      raise ValueError(f"line {line}: the @unroll loop calls no kernel, write at least one @kernel call in it")
+    copies = [flatten(substitute(text, items, opening + 1, close, name, value)).strip() for value in values]
+    statement = text[items[m][2]:items[close][3]]
+    text = text[:items[m][2]] + " ".join(copies) + "\n" * statement.count("\n") + text[items[close][3]:]

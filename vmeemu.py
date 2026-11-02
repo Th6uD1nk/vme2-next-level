@@ -7,7 +7,7 @@ from vmee.machine import Emulator
 from vmee.memory import dump_base_buffers
 from vmee.run import choose_source, run_emulation
 from vmee.trace import replay
-from vmeg.unroll import unroll_loops
+from vmeg.unroll import unroll_loops, unroll_marked_loops
 
 
 USE = re.compile(r"([A-Za-z_]\w*)=([A-Za-z_]\w*)")
@@ -78,7 +78,7 @@ def main(argv=None):
       unrolled = []
       for path, text in sources:
         where = path
-        unrolled.append((path, unroll_loops(text)))
+        unrolled.append((path, unroll_marked_loops(unroll_loops(text))))
       sources = unrolled
       where = ", ".join(args.input)
     text = sources[0][1]
