@@ -125,6 +125,18 @@ class RenderTest(unittest.TestCase):
     both = kernel + "@kernel k config | exec\n" + declared + "@kernel k config | exec\n" + declared.replace("f()", "g()")
     render(both, find_blocks(both), "t.vmeg.c")
 
+  def test_a_local_source_can_be_a_buffer_pointer_of_the_function_and_is_passed_as_it_is(self):
+    kernel = ".kernel k direct {\n  Transfer t = { memory: x, count: 0 };\n  .load { .transfer = t; .offsets { .top0 = 0; } }\n}\n"
+    decorated = "volatile Buffer a[1];\n" + kernel + "@kernel k config | exec\nvoid f() {\n  volatile Buffer* x = a;\n}\n"
+    self.assertIn("  kTLoad(x, VME_TOP_BUFF0_WOFF);", render(decorated, find_blocks(decorated), "t.vmeg.c"))
+    block = "volatile Buffer a[1];\n" + kernel + "void g(void) {\n  volatile Buffer* x = a;\n  @kernel k config | exec {\n  }\n}\n"
+    self.assertIn("    kTLoad(x, VME_TOP_BUFF0_WOFF);", render(block, find_blocks(block), "t.vmeg.c"))
+    for text in ["volatile Buffer* x;\n" + kernel + "@kernel k config | exec\nvoid f() { }\n", kernel + "@kernel k config | exec\nvoid f() {\n  if (1) { volatile Buffer* x = 0; }\n}\n"]:
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError) as ctx:
+          render(text, find_blocks(text), "t.vmeg.c")
+        self.assertIn("(local load)", str(ctx.exception))
+
   def test_local_buffers_are_uploaded_in_the_decorated_function(self):
     text = ".kernel k direct {\n  Transfer ta = { memory: a, count: 3 };\n  Transfer tb = { memory: b, count: 1 };\n  .load { .transfer = ta; .offsets { .top0 = 0; } }\n  .load { .transfer = tb; .offsets { .base1 = 8; } }\n}\n@kernel k config | exec\nvoid f() {\n  volatile Buffer a[4], b[2];\n  go();\n}\n"
     out = render(text, find_blocks(text), "t.vmeg.c")
