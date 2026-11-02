@@ -674,5 +674,36 @@ class UseTest(unittest.TestCase):
           vmeemu_main(arguments)
 
 
+POINTERS = (
+  "volatile Buffer one[4] = { 1, 2, 3, 4 };\n"
+  "volatile Buffer two[4] = { 10, 20, 30, 40 };\n"
+  "volatile Buffer* chosen = two;\n"
+  ".kernel doubler direct {\n"
+  "  Agu top = { count: 3 }, write = { count: 3, cyc: auto };\n"
+  "  .pe0 { .top = top; .write = write; .spad = top0 + top0; }\n"
+  "}\n"
+  "void meLibOnProcess(void) {\n"
+  "  volatile Buffer* local = one;\n"
+  "  @emulate \"local\" {\n"
+  "    @kernel doubler config {\n      Transfer in = { memory: local, count: 3 };\n      .load { .transfer = in; .scope = local; .offsets { .top0 = 0; } }\n    }\n"
+  "    @kernel doubler exec {\n    }\n"
+  "  }\n"
+  "  @emulate \"global\" {\n"
+  "    @kernel doubler config {\n      Transfer in = { memory: chosen, count: 3 };\n      .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n    }\n"
+  "    @kernel doubler exec {\n    }\n"
+  "  }\n"
+  "}\n"
+)
+
+
+class PointerTest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_a_buffer_pointer_initialised_with_an_array_name_reads_that_array_in_the_emulation(self):
+    local = run_emulation(POINTERS, "local")
+    self.assertEqual([local.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
+    chosen = run_emulation(POINTERS, "global")
+    self.assertEqual([chosen.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [20, 40, 60, 80])
+
+
 if __name__ == "__main__":
   unittest.main()
