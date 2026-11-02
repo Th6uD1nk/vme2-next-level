@@ -37,6 +37,7 @@ meLibSetSharedUncached32(10);
 #define Q_FORMAT 20
 
 #define FFT_STAGE_0_STRIDE (FFT_VALUE_COUNT / 2)
+#define FFT_TWIDDLE_COUNT (FFT_VALUE_COUNT - 1)
 #define FFT_TWIDDLE_BASE_OFFSET (128)
 
 volatile Buffer(Q4.20) fftTwiddleReal[15] = {
@@ -255,6 +256,16 @@ void meLibOnProcess(void) {
         };
         .memory = lowerLegConfigs[s];
       }
+    }
+
+    @kernel lowerLeg config {
+      .memory = lowerLegConfigs[0];
+
+      Transfer realTwiddles = { memory: fftTwiddleReal, count: FFT_TWIDDLE_COUNT - 1 };
+      Transfer imagTwiddles = { memory: fftTwiddleImag, count: FFT_TWIDDLE_COUNT - 1 };
+
+      .load { .transfer = realTwiddles; .scope = global; .offsets { .top0 = FFT_TWIDDLE_BASE_OFFSET; } }
+      .load { .transfer = imagTwiddles; .scope = global; .offsets { .top2 = FFT_TWIDDLE_BASE_OFFSET; } }
     }
   }
 }
