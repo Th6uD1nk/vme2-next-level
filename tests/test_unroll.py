@@ -81,6 +81,13 @@ class UnrollTest(unittest.TestCase):
     self.assertEqual(squeezed(out).count("@kernel k"), 4)
     self.assertEqual([word for word in squeezed(out).split() if word in ("0", "1", "5", "6")], ["0", "5", "0", "6", "1", "5", "1", "6"])
 
+  def test_a_loop_inside_a_c_block_of_the_emulate_block_is_unrolled_and_the_lines_are_kept(self):
+    source = around("    while (1) {\n      if (go) {\n        for s in 0..1 {\n          @kernel k config | exec { .params = { n: s }; }\n        }\n      }\n    }")
+    out = unroll_loops(source)
+    self.assertEqual(squeezed(out).count("@kernel k"), 2)
+    self.assertNotIn("for s in", out)
+    self.assertEqual(out.split("\n").index("int after;"), source.split("\n").index("int after;"))
+
   def test_a_comment_in_the_body_does_not_swallow_the_next_call_and_a_string_is_kept(self):
     out = unroll_loops(around("    for s in 0..1 {\n      @kernel k config | exec { .params = { n: s }; } // s of the stage\n      @kernel q config | exec { .params = { name: \"s\" }; }\n    }"))
     self.assertEqual(squeezed(out).count("@kernel q"), 2)
