@@ -704,6 +704,16 @@ class PointerTest(unittest.TestCase):
     chosen = run_emulation(POINTERS, "global")
     self.assertEqual([chosen.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [20, 40, 60, 80])
 
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_the_option_use_gives_an_array_to_a_pointer_whatever_it_is_initialised_with(self):
+    computed = POINTERS.replace("  volatile Buffer* local = one;\n", "  volatile Buffer* table[2] = { one, two };\n  volatile Buffer* local = table[1];\n")
+    local = run_emulation(computed, "local", uses=[("local", "one")])
+    self.assertEqual([local.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
+    chosen = run_emulation(POINTERS, "global", uses=[("chosen", "one")])
+    self.assertEqual([chosen.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [2, 4, 6, 8])
+    with self.assertRaisesRegex(ValueError, "--use chosen=nothing: the array nothing is defined in no file"):
+      run_emulation(POINTERS, "global", uses=[("chosen", "nothing")])
+
 
 if __name__ == "__main__":
   unittest.main()
