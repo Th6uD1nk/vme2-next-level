@@ -145,9 +145,13 @@ def buffer_text(declaration):
 
 def host_source(text, identifier, others=(), compat=None, uses=()):
   arrays, parts = declared_parts(text, identifier, others, uses)
+  _, bindings = pointer_bindings(text, identifier, others, uses)
+  uses = [pair for pair in uses if pair[0] not in bindings]
   emulation = chosen_emulation(text, identifier)
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [buffer_text(declaration) for declaration in arrays]
+  parts += [f"volatile u32* {name};" for name in sorted(bindings)]
+  parts.append("static void vmegBindPointers(void) {\n" + "".join(f"  {name} = {target};\n" for name, target in sorted(bindings.items()) if target) + "}")
   parts += [f'static_assert(sizeof({replaced}) == sizeof({used}), "--use {replaced}={used}: the two arrays must have the same size");' for replaced, used in uses]
   parts += [memory_text(declaration) for declaration in memory_declarations(text, identifier)]
   entries = ", ".join(f'{{"{name}", (u32*){name}, (u32)(sizeof({name}) / 4)}}' for name in sorted(declared))
@@ -213,6 +217,7 @@ def host_main(text, identifier):
     "  const int step = argc > 1 ? atoi(argv[1]) : -1;\n"
     "  const bool all = step < 0;\n"
     "  vmegFixArrays();\n"
+    "  vmegBindPointers();\n"
     "  if (argc > 2) {\n    vmegLoadArrays(argv[2]);\n  }\n"
     "  hwTraceMuted() = step > 0;\n"
     "  vmeLibEnable();\n  vmeLibWipe();\n"
