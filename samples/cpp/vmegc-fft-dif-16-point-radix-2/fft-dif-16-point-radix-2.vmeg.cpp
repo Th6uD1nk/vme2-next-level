@@ -195,12 +195,65 @@ volatile Memory butterflyConfigs[4];
   }
 }
 
+volatile Memory lowerLegConfigs[4];
+
+.kernel lowerLeg memory {
+  .params { int twiddleOffset; int twiddleCount; }
+
+  Agu(2) twiddles = {
+    offset: twiddleOffset,
+    count: FFT_STAGE_0_STRIDE - 1,
+    inner0: { count: twiddleCount, step: 1 },
+    repeat: true
+  };
+  Agu lowerBase = { count: FFT_STAGE_0_STRIDE - 1 };
+  Agu lowerWrite = { count: FFT_STAGE_0_STRIDE - 1, cyc: auto };
+
+  Staging realReal, imagImag, realImag, imagReal;
+
+  .pe0 {
+    .top = twiddles;
+    .remap = { operator: "*", primary: 0x220 };
+    realReal = round(base1 * top0 >> Q_FORMAT);
+  }
+
+  .pe1 {
+    .base = lowerBase;
+    .write = lowerWrite;
+    .remap = { operator: "*", primary: 0x220 };
+    imagImag = round(base3 * top2 >> Q_FORMAT);
+    .spad = round(realReal - imagImag) >> 1;
+  }
+
+  .pe2 {
+    .top = twiddles;
+    .remap = { operator: "*", primary: 0x220 };
+    realImag = round(base1 * top2 >> Q_FORMAT);
+  }
+
+  .pe3 {
+    .base = lowerBase;
+    .write = lowerWrite;
+    .remap = { operator: "*", primary: 0x220 };
+    imagReal = round(base3 * top0 >> Q_FORMAT);
+    .spad = round(imagReal + realImag) >> 1;
+  }
+}
+
 void meLibOnProcess(void) {
   @emulate "fft-4-stages" {
     for s in 0..3 {
       @kernel butterfly build {
         .params = { stride: FFT_STAGE_0_STRIDE >> s };
         .memory = butterflyConfigs[s];
+      }
+
+      @kernel lowerLeg build {
+        .params = {
+          twiddleOffset: FFT_TWIDDLE_BASE_OFFSET + FFT_VALUE_COUNT - (FFT_VALUE_COUNT >> s),
+          twiddleCount: (FFT_VALUE_COUNT >> (s + 1)) - 1
+        };
+        .memory = lowerLegConfigs[s];
       }
     }
   }
