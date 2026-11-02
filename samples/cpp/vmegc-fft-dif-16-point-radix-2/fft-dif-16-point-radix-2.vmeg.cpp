@@ -63,6 +63,20 @@ int main() {
       up = 1;
     }
 
+    pspDebugScreenSetXY(1, 2);
+    pspDebugScreenPrintf("meCounter: 0x%08lx    ", meCounter);
+
+    pspDebugScreenSetXY(1, 4);
+    pspDebugScreenPrintf("Real parts: ");
+    vmeDebugDisplayBufferWithSpace('8', 0, 1, 5);
+
+    pspDebugScreenSetXY(1, 10);
+    pspDebugScreenPrintf("Imaginary parts: ");
+    vmeDebugDisplayBufferWithSpace('8', 1, 1, 11);
+
+    pspDebugScreenSetXY(1, 18);
+    pspDebugScreenPrintf("Stimulus index: %lx", meFFTIndex);
+
     sceDisplayWaitVblankStart();
   } while (!(ctl.Buttons & PSP_CTRL_HOME));
 
