@@ -17,14 +17,25 @@ def closing(items, opening):
   return next(k for k in range(opening + 1, len(items)) if items[k][1] == "}" and items[k][4] == depth)
 
 
+def call_bodies(items, first, last):
+  bodies = []
+  for k in range(first, last):
+    if items[k][1] == "@" and items[k + 1][1] == "kernel":
+      opening = next(m for m in range(k, last) if items[m][1] == "{")
+      bodies.append((opening, closing(items, opening)))
+  return bodies
+
+
 def block_loop(items):
   for i, item in enumerate(items):
     if not (item[1] == "@" and item[4] > 0 and i + 3 < len(items) and items[i + 1][1] == "emulate" and items[i + 3][1] == "{"):
       continue
-    level = items[i + 3][4] + 1
-    for j in range(i + 4, closing(items, i + 3)):
-      if items[j][1] == "for" and items[j][4] == level and items[j][5] in (";", "}", "{") and items[j + 1][0] == "ident" and items[j + 2][1] == "in":
-        return j
+    end = closing(items, i + 3)
+    bodies = call_bodies(items, i + 4, end)
+    for j in range(i + 4, end):
+      if items[j][1] == "for" and items[j][5] in (";", "}", "{") and items[j + 1][0] == "ident" and items[j + 2][1] == "in":
+        if not any(opening < j < close for opening, close in bodies):
+          return j
   return None
 
 
