@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.unroll import unroll_loops
+from vmeg.unroll import unroll_loops, unroll_marked_loops
 from vmegc import main as vmegc_main
 from vmeemu import main as vmeemu_main
 
@@ -126,6 +126,29 @@ class UnrollTest(unittest.TestCase):
     for block, message in cases:
       with self.assertRaisesRegex(ValueError, message.replace("(", "\\(").replace(".", "\\.")):
         unroll_loops(around(block))
+
+
+class UnrollMarkTest(unittest.TestCase):
+  def test_a_c_loop_marked_unroll_is_the_copies_for_vmee_and_stays_a_loop_for_vmegc(self):
+    call = "@kernel k config | exec { .params = { n: 8 >> s }; }"
+    copies = squeezed(around("    " + " ".join(call.replace(">> s", f">> {s}") for s in (1, 2, 3))))
+    for header in ("for (int s = 1; s < 4; s++)", "for (unsigned int s = 1; s <= LAST; s += 1)", "for (int s = LOW; s < 2 * 2; s++)"):
+      with self.subTest(header=header):
+        out = unroll_marked_loops("#define LOW 1\n#define LAST 3\n" + around(f"    @unroll\n    {header} {{ {call} }}"))
+        self.assertEqual(squeezed(out).replace("#define LOW 1 #define LAST 3 ", ""), copies)
+    for block, message in [
+      ("@unroll\n    for (int s = 1; s < get(); s++) { " + call + " }", "line 3: the @unroll loop is not unrolled"),
+      ("@unroll\n    for (int s = 0; s < 300; s++) { " + call + " }", "line 3: the @unroll loop runs 300 turns"),
+      ("@unroll\n    for (int s = 0; s < 2; s++) { go(s); }", "line 3: the @unroll loop calls no kernel"),
+      ("@unroll\n    while (1) { }", "line 3: @unroll is written before a for loop"),
+    ]:
+      with self.assertRaisesRegex(ValueError, message):
+        unroll_marked_loops(around("    " + block))
+    marked = LOOP.replace("for s in 0..2 {", "@unroll\n    for (int s = 0; s < 3; s++) {")
+    code, _, err, written = in_files([("main.vmeg.cpp", marked)], lambda paths, folder: vmegc_main([paths[0], "-o", os.path.join(folder, "out.cpp")]), ["out.cpp"])
+    self.assertEqual((code, err), (0, ""))
+    self.assertIn("for (int s = 0; s < 3; s++)", written[0])
+    self.assertNotIn("unroll", written[0])
 
 
 class UnrollToolsTest(unittest.TestCase):
