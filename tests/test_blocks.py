@@ -404,6 +404,14 @@ class RegistryTest(unittest.TestCase):
     self.assertIn("declared extern but defined in no file", self.failure(check_uses, [("a.vmeg.c", "extern Buffer g[4];\n" + KERNEL)]))
     self.assertIn("is static in a.vmeg.c line 1", self.failure(check_uses, [("a.vmeg.c", "static volatile Buffer g[4];\n"), ("b.vmeg.c", KERNEL)]))
 
+  def test_the_memory_of_a_global_line_can_be_a_buffer_pointer_with_the_rules_of_an_array(self):
+    check_uses(project_registry([("a.vmeg.c", "volatile Buffer* g;\n" + KERNEL)]))
+    check_uses(project_registry([("a.vmeg.c", "volatile Buffer* g;\n"), ("b.vmeg.c", "extern volatile Buffer* g;\n" + KERNEL)]))
+    self.assertIn("the pointer 'g' of a global load is declared extern but defined in no file", self.failure(check_uses, [("a.vmeg.c", "extern volatile Buffer* g;\n" + KERNEL)]))
+    self.assertIn("the pointer 'g' of a global load is static in a.vmeg.c line 1", self.failure(check_uses, [("a.vmeg.c", "static volatile Buffer* g;\n"), ("b.vmeg.c", KERNEL)]))
+    registry = project_registry([("a.vmeg.c", "volatile Buffer* const g[2] = { 0, 0 };\n"), ("b.vmeg.c", KERNEL)])
+    self.assertEqual(needed_externs(registry, "b.vmeg.c"), ["extern volatile u32 * const g[2];"])
+
   def test_extern_declaration_of_an_array_and_the_ones_a_file_needs(self):
     text = (
       "volatile Buffer g[4] = { 1, 2, 3, 4 };\n"
