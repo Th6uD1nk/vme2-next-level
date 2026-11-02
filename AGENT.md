@@ -25,3 +25,5 @@ Files named `*.vmeg.c` or `*.vmeg.cpp` are processed by the `vmegc` script and t
 - `vmeg`, `vmee` (emu) and `vmeh` share their basic building blocks whenever possible. A piece of logic needed by more than one of them is written once, in a generic form, and the others use it.
 - A piece that belongs to one tool only stays in its own folder.
 - Ask the human when hardware behavior is unknown. Do not guess any hardware values or behavior.
+- If you detect an anomaly (a bug in an original, a read out of bounds, a doc that contradicts the code), say it first and alone as a clear warning (WARNING!) with its location, before any question or option.
+- Never fold an anomaly into a design question.
