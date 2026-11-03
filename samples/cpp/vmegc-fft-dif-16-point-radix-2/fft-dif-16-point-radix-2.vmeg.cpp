@@ -318,11 +318,27 @@ void meLibOnProcess(void) {
       @kernel butterfly config {
         .memory = butterflyConfigs[0];
 
-        Transfer(Words) realIn = { memory: signal, count: 1, gap: FFT_VALUE_COUNT - 1 + FFT_STAGE_0_STRIDE, step: 0, group: { size: 2 * FFT_STAGE_0_STRIDE - 1, outer: FFT_STAGE_0_STRIDE, inner: 1 } };
-        Transfer(Words) imagIn = { memory: fftImag, count: 1, gap: FFT_VALUE_COUNT - 1 + FFT_STAGE_0_STRIDE, step: 0, group: { size: 2 * FFT_STAGE_0_STRIDE - 1, outer: FFT_STAGE_0_STRIDE, inner: 1 } };
+        .load {
+          .transfer = {
+            ...stageIn,
+            memory: signal
+          };
+          .scope = local;
+          .offsets {
+            .top1 = -FFT_STAGE_0_STRIDE;
+          }
+        }
 
-        .load { .transfer = realIn; .scope = local; .offsets { .top1 = -FFT_STAGE_0_STRIDE; } }
-        .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -FFT_STAGE_0_STRIDE; } }
+        .load {
+          .transfer = {
+            ...stageIn,
+            memory: fftImag
+          };
+          .scope = global;
+          .offsets {
+            .top3 = -FFT_STAGE_0_STRIDE;
+          }
+        }
       }
 
       @kernel butterfly exec {
