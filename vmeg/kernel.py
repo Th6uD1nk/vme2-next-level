@@ -346,6 +346,19 @@ def transfer_function(name, transfer, direction):
   return f"static inline void {name}(volatile u32* memory, u32 spadOffset{parameters}) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
 
 
+def shared_transfer_name(type_name, direction):
+  return f"vmeTransfer{direction.capitalize()}{'Words' if type_name == 'Words' else ''}"
+
+
+def shared_transfer_function(type_name, direction):
+  fields = ["transfer->count", "transfer->gap"] if type_name == "Words" else ["transfer->count"]
+  lines = ["vme_dma(MEMORY, ADDR, useg_mem((u32)transfer->memory));", f"vme_dma(ITERATION, DIMS, {', '.join(fields)});"]
+  if type_name == "Words":
+    lines += ["vme_dma(ITERATION, STEP, transfer->step);", "vme_dma(GROUP, SIZE, transfer->groupSize);", "vme_dma(GROUP, STEPS, transfer->groupOuter, transfer->groupInner);"]
+  lines += ["vme_dma(SPAD, OFFSET, spadOffset);", f"vme_dma(CTRL, VALUE, {TRANSFER_KINDS[type_name].control(direction)});"]
+  return f"static inline void {shared_transfer_name(type_name, direction)}(const {TRANSFER_TYPES[type_name]}* transfer, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in lines) + "}"
+
+
 def transfer_calls(name, transfer, targets):
   arguments = "".join(f", {original}" for original in transfer_names(transfer))
   return [line for destination in transfer_destinations(targets) for line in (f"{name}({transfer['memory']}, {destination}{arguments});", wait_marker(name))]
@@ -485,14 +498,16 @@ def emit_statement(statement, env, lines, state):
     record = {"function": function, "definition": transfer_function(function, transfer, kind) if function else None, "calls": transfer_calls(function, transfer, targets) if function else None, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
     state[kind + "s"].append(record)
     state["sequence"].append(record)
-  elif kind == "transferdecl":
+  elif kind in ("transferdecl", "declaredtransfer"):
     if statement[1] in state["transfers"]:
       raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")
     if statement[1] in state["agus"]:
       raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
     if statement[1] in state["stagings"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
-    state["transfers"][statement[1]] = TRANSFER_KINDS[statement[3]].check(statement[1], statement[2], env)
+    state["transfers"][statement[1]] = dict(TRANSFER_KINDS[statement[3]].check(statement[1], statement[2], env), type=statement[3])
+    if kind == "declaredtransfer":
+      state["transfers"][statement[1]]["declared"] = transfer_variable(statement[1])
   elif kind == "aguref":
     variable = state["agus"].get(statement[2][1])
     if variable is None:

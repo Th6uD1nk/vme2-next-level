@@ -663,7 +663,7 @@ def declare_statements(text, block):
 
 
 def declared_statements(text, position):
-  return [statement for block in visible_declares(text, position) for statement in declare_statements(text, block)]
+  return [("declaredtransfer",) + statement[1:] if statement[0] == "transferdecl" else statement for block in visible_declares(text, position) for statement in declare_statements(text, block)]
 
 
 def kernel_statements(text, block, cache):
