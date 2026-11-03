@@ -8,6 +8,7 @@ set(VMEH_SOURCE "" CACHE STRING "vmeg file with an @emulate, relative to the roo
 set(VMEH_ID "" CACHE STRING "id of the @emulate to keep, when the file has several")
 set(VMEH_BUFFERS_START 0 CACHE STRING "first word of the window of the buffers")
 set(VMEH_BUFFERS_WORDS 32 CACHE STRING "number of words of the window of the buffers")
+set(VMEH_USE "" CACHE STRING "pointer=array pairs separated by ;, the array given to a pointer, for example signal=fftReal3")
 
 if(NOT VMEH_SOURCE)
   message(FATAL_ERROR "give the vmeg file that has the @emulate, for example: cmake -DVMEH_SOURCE=path/to/file.vmeg.cpp ..")
@@ -15,6 +16,11 @@ endif()
 
 get_filename_component(VMEH_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 get_filename_component(VMEH_INPUT "${VMEH_ROOT}/${VMEH_SOURCE}" ABSOLUTE)
+set(VMEH_USE_ARGS)
+foreach(VMEH_PAIR IN LISTS VMEH_USE)
+  list(APPEND VMEH_USE_ARGS --use "${VMEH_PAIR}")
+endforeach()
+
 if(VMEH_ID)
   set(VMEH_EXTRACT --extract "${VMEH_ID}")
   set(VMEH_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/hw-${VMEH_ID}.vmeg.cpp")
@@ -25,7 +31,7 @@ endif()
 
 execute_process(
   COMMAND "${VMEGC_PYTHON}" "${VMEH_ROOT}/vmeh.py"
-    ${VMEH_EXTRACT} "${VMEH_INPUT}" -o "${VMEH_OUTPUT}"
+    ${VMEH_EXTRACT} ${VMEH_USE_ARGS} "${VMEH_INPUT}" -o "${VMEH_OUTPUT}"
     --buffers-start "${VMEH_BUFFERS_START}" --buffers-words "${VMEH_BUFFERS_WORDS}"
   RESULT_VARIABLE VMEH_RESULT
   ERROR_VARIABLE VMEH_ERROR)
