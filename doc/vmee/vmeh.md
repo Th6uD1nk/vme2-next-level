@@ -60,8 +60,10 @@ void meLibOnProcess(void) {
 
 **Rules:**
 
-- The target of a pointer is, as in `vmee` ([1.7.1](running.md#171-pointers)): the array that its initializer names alone, or an address made of numbers, operators, words of types and macros of the files. `vmeh` has no `--use`.
-- A pointer whose initializer is neither one nor the other, like `volatile Buffer* signal = table[index];`, stops `vmeh` with `the pointer signal of the @emulate "pick" is initialised with an expression that vmeh cannot write, give it the name of an array`.
+- The target of a pointer is, as in `vmee` ([1.7.1](running.md#171-pointers)): the array of `--use`; the array that its initializer names alone; or an address made of numbers, operators, words of types and macros of the files.
+- A pointer whose initializer is none of these, like `volatile Buffer* signal = table[index];`, stops `vmeh` with `the pointer signal of the @emulate "pick" is initialised with an expression that vmeh cannot write, give it the name of an array`. `--use signal=two` gives it the array `two`.
+- `--use pointer=array` gives the array to the pointer, as in `vmee` ([1.7](running.md#17---use)), but only to a pointer: a name that is not a pointer that the emulation names is an error ([3.7](#37-errors)), where `vmee --use` also replaces an array.
+- With several emulations ([3.3](#33-several-emulations)), a `--use` goes to the emulations that name that pointer.
 - The pointers that the emulation does not name are not written in the program.
 
 ## 3.2 Building
@@ -84,6 +86,7 @@ make
 - The build needs the PSP toolchain, `PSPDEV` set, like the other samples.
 - With one `@emulate`, the program runs it, writes `log.txt` in the folder of the EBOOT and exits. It shows nothing on the screen.
 - `-DVMEH_SOURCE` is needed: without it `cmake` stops with an error ([3.7](#37-errors)).
+- `-DVMEH_USE="signal=two"` gives an array to a pointer, as `--use` does ([3.1.1](#311-pointers)). Several pairs are separated with `;`: `-DVMEH_USE="signal=two;stage=other"`.
 
 ## 3.3 Several emulations
 
