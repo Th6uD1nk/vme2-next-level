@@ -136,7 +136,7 @@ Agu d = { count: 15, cyc: auto + shift };
 ### 4.2.5 The mode 2
 
 ```c
-Agu(2) t = { offset: 128, count: 7, step: 1, repeat: true };
+Agu(2) twiddles = { offset: 128, count: 7, inner0: { count: 3, step: 1 }, repeat: true };
 Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };
 ```
 
@@ -144,20 +144,42 @@ Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };
 |---|---|---|---|
 | `count` | required | required | the number of words minus 1, as in [4.2.1](#421-common-parameters) |
 | `offset` | yes | yes | as in [4.2.1](#421-common-parameters) |
-| `step` | yes | yes | the distance between two successive words, in words. Default 1 |
+| `step` | yes | yes | the step of `count`, in words. Default 1. It only divides `count`, see below |
+| `inner0` | yes | yes | the ring: `inner0: { count: 3, step: 1 }`, as in [4.2.2](#422-inner0) |
 | `reverse` | yes | yes | as in [4.2.1](#421-common-parameters) |
-| `repeat` | yes | no | the range is read again and again for as long as the run lasts |
+| `repeat` | yes | no | the ring token: the ring is read again and again |
 | `cyc`, `bubbles`, `sync` | no | yes | as in [4.2.4](#424-write-agus) |
 
 **Explanation of the code above:**
 
-- `t` reads 8 words from the word 128, one after the other, and starts again at the first one until the run ends.
-- `w` writes 16 words from the word 4, one word out of two, with the same delay, bubbles and sync as a mode 4 write AGU.
+- `twiddles` is the AGU of the twiddles of the `fft-dif-16-point-radix-2` sample. `count: 7` gives 8 reads and `inner0: { count: 3, step: 1 }` a ring of 4 words, starting at the word 128.
+- `w` writes 16 words from the word 4, with the delay, the bubbles and the sync of a mode 4 write AGU. The write AGU of the mode 2 has not been measured on the PSP.
+
+**What a read AGU gives in the mode 2** (measured on the PSP with the `samples/debug/vmegc-agu-2` sample, a table where the word `n` holds `n + 1` read through the AGU):
+
+With `M = count / step + 1` and `R = inner0 count / inner0 step + 1`:
+
+- with `inner0` and `repeat`: the AGU reads `lcm(M, R)` words, then holds the last one. The word read number `n` is the word `offset + (n mod R) * inner0 step`.
+- with `inner0` and no `repeat`: the AGU reads `M` words one after the other from `offset` (measured with an `inner0` step of 1), then holds the last one. The `inner0` is not used.
+- without `inner0`, with or without `repeat`: the AGU always reads the word `offset`.
+- `step` only divides `count`: it does not change the addresses of a stream with a ring (measured with the steps 2, 3 and 4 and a ring of 4 words).
+
+| `count` | `step` | `inner0` | `repeat` | Words read |
+|---|---|---|---|---|
+| 7 | 1 | `{ count: 3, step: 1 }` | yes | 1 2 3 4 1 2 3 4, then 4 held |
+| 5 | 1 | `{ count: 3, step: 1 }` | yes | 1 2 3 4 three times (12 words), then 4 held |
+| 3 | 1 | `{ count: 7, step: 1 }` | yes | 1 to 8, then 8 held |
+| 0 | 1 | `{ count: 3, step: 1 }` | yes | 1 2 3 4, then 4 held |
+| 7 | 1 | `{ count: 6, step: 2 }` | yes | 1 3 5 7 1 3 5 7, then 7 held |
+| 14 | 2 | `{ count: 3, step: 1 }` | yes | 1 2 3 4 1 2 3 4, then 4 held |
+| 7 | 1 | `{ count: 3, step: 1 }` | no | 1 to 8, then 8 held |
+| 7 | 1 | none | no | 1 1 1 1 … |
 
 **Rules:**
 
-- In the mode 2, `count` and `step` describe the range itself: there is no `inner0`.
-- `repeat` needs nothing else: it repeats the `count + 1` words of the AGU.
+- The `count` and the `step` of a range are written so that `count` is a multiple of `step`: `count` of the AGU and `step`, `count` of `inner0` and its `step`. A `count` that is not a multiple of its step has been seen to stop the ME on the PSP.
+- `vmegc` writes `step` and `count` in the register `COUNT` (`step` in the high 16 bits), and `inner0` in `INNER_0` with its `step` in the high 16 bits. The two fields of `INNER_0` are in the other order in the mode 4. `repeat` writes the ring token in `FORMAT_0`. An `Agu(2)` without `inner0` writes no `INNER_0`.
+- A step of 0, `reverse`, and an `inner0` with a `step` other than 1 and no `repeat` have not been measured in the mode 2.
 - An AGU written directly in the braces of a pe is in the mode 4: for the mode 2, declare an `Agu(2)` variable and bind it.
 
 ## 4.3 Binding an AGU to a pe
@@ -222,7 +244,6 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 | [4.2.4](#424-write-agus) | `pe0.write: auto is only for cyc` | `auto` in a parameter other than `cyc` |
 | [4.2.4](#424-write-agus) | `auto is reserved for the cyc of a write AGU` | an `Int` named `auto` |
 | [4.2.4](#424-write-agus) | `pe0.write: cyc auto needs an operation in pe0` | `cyc: auto` on a pe without an operation that leaves it |
-| [4.2.5](#425-the-mode-2) | `pe0.top: unknown parameter 'inner0' (count, offset, step, reverse, repeat)` | `inner0` in an `Agu(2)` (the message lists the parameters of the mode) |
 | [4.3](#43-binding-an-agu-to-a-pe) | `unknown Agu variable 'zzz'` | `.top = zzz;` with a name that is not an `Agu` |
 | [4.3](#43-binding-an-agu-to-a-pe) | `pe0.top is already set at line N` | the same AGU kind set twice in a pe |
 | [4.3](#43-binding-an-agu-to-a-pe) | `the Agu variable 'a' is already bound to .top, it cannot be bound to .base` | one variable given to two kinds |
