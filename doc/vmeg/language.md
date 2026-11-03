@@ -8,6 +8,7 @@
 - [2.2 Variables](#22-variables)
   - [2.2.1 Declaring several at once](#221-declaring-several-at-once)
   - [2.2.2 Names](#222-names)
+  - [2.2.3 The @declare block](#223-the-declare-block)
 - [2.3 Accesses by index](#23-accesses-by-index)
 - [2.4 Int](#24-int)
 - [2.5 Expressions](#25-expressions)
@@ -74,6 +75,42 @@ Int n = 1, m = n + 1;
 ### 2.2.2 Names
 
 `Agu`, `Staging`, `Transfer` and `Int` share one set of names: a name is declared once, whatever its type. A variable is declared before the statement that uses it, in the kernel or in the block where it is used.
+
+### 2.2.3 The @declare block
+
+`@declare { ... }` declares variables once for several kernels and calls.
+
+```c
+@declare
+{
+  Int stride = 8;
+  Agu top = { count: 3, step: stride };
+}
+
+.kernel a direct
+{
+  .pe0 { .top = top; .spad = top0 + top0; }
+}
+
+.kernel b direct
+{
+  .pe2 { .top = top; .spad = top2 + top2; }
+}
+```
+
+**Explanation of the code above:**
+
+- `stride` and `top` are declared once. `a` and `b` both use `top`, and each one gets its own copy: `vme_pe0(agu_top(COUNT), agu_step(8), 3);` in `a`, `vme_pe2(agu_top(COUNT), agu_step(8), 3);` in `b`.
+- The block is removed from the output.
+
+**Rules:**
+
+- The block holds `Agu`, `Staging`, `Transfer` and `Int` variables, declared as in a kernel ([2.2](#22-variables)). Anything else is refused ([2.9](#29-errors)).
+- It is written at the level of the file, in a function, or in an `@emulate` block ([13.1](emulation.md#131-the-emulate-mark)).
+- It gives its variables to the kernels and the blocks `@kernel name config | exec { }` that are written after it, inside the braces that contain it. A block at the level of the file serves the whole file after it.
+- The names follow [2.2.2](#222-names). A name declared in a `@declare` cannot be declared again in a kernel or a block it serves, nor in another `@declare` it serves.
+- A function has its own `@declare`: the one of a function is not seen by the other functions.
+- A `Transfer` of a `@declare` is also a C variable shared by the kernels ([9.1.1](transfers.md#911-a-transfer-of-a-declare)).
 
 ## 2.3 Accesses by index
 
@@ -216,6 +253,11 @@ The block form `@context name config { }` inside a function is currently not sup
 | [2.2.2](#222-names) | `the Agu variable 'x' is declared twice` | a name declared twice with the same type (the message names the type) |
 | [2.2.2](#222-names) | `'x' is already declared as an Agu variable` | a name declared again with another type |
 | [2.2.2](#222-names) | `unknown Agu variable 't'` | a variable used before its declaration or where it is not visible (the message names the type) |
+| [2.2.3](#223-the-declare-block) | `@declare is followed by a block { ... }` | `@declare` not followed by braces |
+| [2.2.3](#223-the-declare-block) | `unterminated @declare block` | the braces of the block are not closed |
+| [2.2.3](#223-the-declare-block) | `only Agu, Staging, Transfer and Int variables are accepted in @declare` | another statement in the block |
+| [2.2.3](#223-the-declare-block) | `'x' is already declared in a @declare, at line 2` | the same name twice in a `@declare` |
+| [2.2.3](#223-the-declare-block) | `'x' is defined twice` | an `Int` of a kernel or of a block with the name of an `Int` of a `@declare` that serves it |
 | [2.3](#23-accesses-by-index) | `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 |
 | [2.3](#23-accesses-by-index) | `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 |
 | [2.4](#24-int) | `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
