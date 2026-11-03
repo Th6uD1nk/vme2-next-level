@@ -649,3 +649,19 @@ void probeAgu4CopyI4s1RepRun(void) {
 @kernel probeAgu4CopyI1s2Rep config | exec
 void probeAgu4CopyI1s2RepRun(void) {
 }
+
+@emulate "agu4-copy-i3s2-rep"
+.kernel probeAgu4CopyI3s2Rep direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base1 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 3, step: 2 }, repeat: true };
+  Agu readBase = { count: 7, inner0: { count: 3, step: 2 }, repeat: true };
+  Agu writeTop = { count: 23, cyc: auto };
+  Agu writeBase = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .write = writeTop; .spad = top0 | top0; }
+  .pe1 { .base = readBase; .write = writeBase; .spad = base1 | base1; }
+}
+
+@kernel probeAgu4CopyI3s2Rep config | exec
+void probeAgu4CopyI3s2RepRun(void) {
+}
