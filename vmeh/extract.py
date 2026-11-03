@@ -191,6 +191,12 @@ def applicable_uses(text, identifier, others, uses):
   return [pair for pair in uses if pair[0] in names]
 
 
+def check_uses(entries, uses):
+  for replaced, used in uses:
+    if not any(replaced in pointer_names(*entry) for entry in entries):
+      raise ValueError(f"--use {replaced}={used}: {replaced} is not a pointer that the @emulate reads or writes, vmeh gives an array to a pointer only")
+
+
 def pointer_declarations(text, identifier, others, uses=()):
   found, bindings = pointer_bindings(text, identifier, others, uses)
   declared = []
@@ -222,6 +228,7 @@ def emulation_parts(text, identifier, others, uses=()):
 
 def extract_source(text, identifier, others=(), start=0, words=32, uses=()):
   check_window(start, words)
+  check_uses([(text, identifier, others)], uses)
   parts = emulation_parts(text, identifier, others, uses)
   sections = [prologue(words)]
   if parts["macros"]:
@@ -255,6 +262,7 @@ def extract_program(sources, start=0, words=32, uses=()):
   if len(entries) == 1:
     return extract_source(*entries[0], start, words, uses)
   check_window(start, words)
+  check_uses(entries, uses)
   parts = [emulation_parts(*entry, uses) for entry in entries]
   sections = [prologue(words, True)]
   macros = merged_macros(parts)

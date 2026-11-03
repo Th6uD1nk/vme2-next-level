@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 
+from vmee.options import parse_uses
 from vmee.run import choose_source
 from vmeg.unroll import unroll_loops, unroll_marked_loops
 from vmeh.extract import extract_program, extract_source
@@ -14,7 +15,9 @@ def main(argv=None):
   parser.add_argument("-o", "--output", required=True)
   parser.add_argument("--buffers-start", type=int, default=0)
   parser.add_argument("--buffers-words", type=int, default=32)
+  parser.add_argument("--use", action="append", default=[])
   args = parser.parse_args(argv)
+  uses = parse_uses(parser, args.use)
 
   where = ", ".join(args.input)
   try:
@@ -27,9 +30,9 @@ def main(argv=None):
       path, text = choose_source(sources, args.extract)
       where = path
       others = [other for other_path, other in sources if other_path != path]
-      result = extract_source(text, args.extract, others, args.buffers_start, args.buffers_words)
+      result = extract_source(text, args.extract, others, args.buffers_start, args.buffers_words, uses)
     else:
-      result = extract_program(sources, args.buffers_start, args.buffers_words)
+      result = extract_program(sources, args.buffers_start, args.buffers_words, uses)
     where = args.output
     if os.path.dirname(args.output):
       os.makedirs(os.path.dirname(args.output), exist_ok=True)
