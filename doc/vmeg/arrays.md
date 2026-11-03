@@ -218,7 +218,7 @@ void run(void) {
 
 ## 8.6 Errors
 
-The messages start with `line N:`, left out here.
+The messages start with `line N:`, left out here. For a pointer `Buffer*` ([8.1.2](#812-buffer-pointers)), the two messages of [8.4](#84-arrays-in-several-files) about `extern` and `static` say `the pointer` in place of `the array`.
 
 | Section | Message | Cause |
 |---|---|---|
