@@ -23,9 +23,10 @@ class BufferFormatTest(unittest.TestCase):
     self.assertEqual(read("volatile Buffer(Q8.8) x[4];"), ((8, 8), 7))
     self.assertEqual(read("volatile Buffer(Q1.23) x[4];")[0], (1, 23))
     self.assertEqual(read("volatile Buffer(Q12.12) x[4];")[0], (12, 12))
+    self.assertEqual(read('volatile Buffer("Q8.8") x[4];'), ((8, 8), 5))
 
   def test_a_form_other_than_qm_n_an_integer_part_under_1_and_more_than_24_bits_are_refused(self):
-    for form in ("Foo", "Q8", "Q8.", "Q0.8", "Q20.10", "Q1.24"):
+    for form in ("Foo", "Q8", "Q8.", "Q0.8", "Q20.10", "Q1.24", '"Foo"', '"Q8"', '"Q8."', '"Q0.8"', '"Q20.10"'):
       with self.assertRaises(ValueError):
         read(f"volatile Buffer({form}) x;")
 
@@ -54,6 +55,7 @@ class DeclarationTest(unittest.TestCase):
     self.assertEqual(translate_buffer("volatile Buffer x[2] = { -1, 2 };", "T"), "volatile T x[2] = { -1, 2 };")
     self.assertEqual(translate_buffer("volatile Buffer(Q8.8) m[4] = { 0.5, -1.25f, 3, 0x10 };", "T"), "volatile T m[4] = { 0x00000080, 0xfffffec0, 0x00000300, 0x10 };")
     self.assertEqual(translate_buffer("static volatile Buffer(Q1.15) a[1] = { 0.25 }, b[1] = { - 0.5 };", "T"), "static volatile T a[1] = { 0x00002000 }, b[1] = { 0xffffc000 };")
+    self.assertEqual(translate_buffer('volatile Buffer("Q8.8") m[4] = { 0.5, -1.25f };', "T"), "volatile T m[4] = { 0x00000080, 0xfffffec0 };")
     self.assertEqual(translate_buffer("volatile Buffer(Q8.8) g[2][1] = { { 1.0 }, { 0.5 } };", "T"), "volatile T g[2][1] = { { 0x00000100 }, { 0x00000080 } };")
     self.assertEqual(translate_buffer("volatile Buffer(Q8.8) f[3] = { F2Q(1), FOO(a, 2, b), N };", "T"), "volatile T f[3] = { F2Q(1), FOO(a, 2, b), N };")
 
