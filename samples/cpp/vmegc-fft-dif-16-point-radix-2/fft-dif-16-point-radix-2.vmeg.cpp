@@ -214,30 +214,32 @@ volatile Memory lowerLegConfigs[4];
 
   Staging realReal, imagImag, realImag, imagReal;
 
+  for p in 0..3 {
+    pe[p] {
+      .remap = { operator: "*", primary: 0x220 };
+    }
+  }
+
   .pe0 {
     .top = twiddles;
-    .remap = { operator: "*", primary: 0x220 };
     realReal = round(base1 * top0 >> Q_FORMAT);
   }
 
   .pe1 {
     .base = lowerBase;
     .write = lowerWrite;
-    .remap = { operator: "*", primary: 0x220 };
     imagImag = round(base3 * top2 >> Q_FORMAT);
     .spad = round(realReal - imagImag) >> 1;
   }
 
   .pe2 {
     .top = twiddles;
-    .remap = { operator: "*", primary: 0x220 };
     realImag = round(base1 * top2 >> Q_FORMAT);
   }
 
   .pe3 {
     .base = lowerBase;
     .write = lowerWrite;
-    .remap = { operator: "*", primary: 0x220 };
     imagReal = round(base3 * top0 >> Q_FORMAT);
     .spad = round(imagReal + realImag) >> 1;
   }
