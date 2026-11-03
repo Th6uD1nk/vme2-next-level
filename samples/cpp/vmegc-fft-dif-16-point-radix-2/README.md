@@ -28,6 +28,8 @@ The screen shows the counter of the Media Engine, the 16 real parts and the 16 i
 
 - `butterfly` and `lowerLeg` are two memory kernels. Each is built four times, once for each stage, in the arrays `butterflyConfigs` and `lowerLegConfigs`.
 - The block `@emulate "fft-4-stages"` is the loop of the Media Engine. It builds the eight configs, loads the twiddles once, then for each FFT runs the stage 0 and the stages 1 to 3.
+- The block starts with a `@declare` ([2.2.3](../../../doc/vmeg/language.md#223-the-declare-block)) of three `Transfer`: `twiddles` loads a table of twiddles, `stageOut` stores the output of a stage, and `stageIn` is a `Transfer(Words)` that loads the input of the next stage.
+- The loads and stores of the stages use these three with a spread ([9.1.2](../../../doc/vmeg/transfers.md#912-the-spread)): `{ ...twiddles, memory: fftTwiddleImag }` loads the imaginary part with the same fields, and `{ ...stageIn, gap: …, group: { ..., size: …, outer: … } }` changes the `gap` and part of the `group` for each stage.
 - The stages 1 to 3 are a C loop marked `@unroll`: the program has one copy of it, and the emulator plays three ([13.5](../../../doc/vmeg/emulation.md#135-c-loops-marked-unroll)).
 - The output of a stage is stored in the eDRAM, at `0x40000000` for the real parts and `0x40000080` for the imaginary parts, and the next stage loads it from there.
 - Each stage enables the VME in its first call and disables it in its last one, so four times for each FFT. The original sample does it once for each FFT.
