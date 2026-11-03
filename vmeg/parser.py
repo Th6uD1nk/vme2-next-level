@@ -335,7 +335,8 @@ def parse_transfer_declaration(p):
   while True:
     name = p.ident()
     p.expect("=")
-    members.append(("transferdecl", name, parse_params(p), kind))
+    spread = p.peek() is not None and p.peek()[1] == "{" and ellipsis_at(p, 1)
+    members.append(("transferdecl", name, parse_transfer_spread(p) if spread else parse_params(p), kind))
     if not p.accept(","):
       break
   p.expect(";")
@@ -367,9 +368,13 @@ def parse_offsets(p):
   return ("offsets", entries)
 
 
+def ellipsis_at(p, at):
+  toks = p.toks[p.i + at:p.i + at + 3]
+  return len(toks) == 3 and all(tok[0] == "punct" and tok[1] == "." for tok in toks) and toks[0][3] == toks[1][2] and toks[1][3] == toks[2][2]
+
+
 def accept_ellipsis(p):
-  toks = p.toks[p.i:p.i + 3]
-  if len(toks) == 3 and all(tok[0] == "punct" and tok[1] == "." for tok in toks) and toks[0][3] == toks[1][2] and toks[1][3] == toks[2][2]:
+  if ellipsis_at(p, 0):
     p.i += 3
     return True
   return False

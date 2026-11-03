@@ -346,9 +346,26 @@ def transfer_function(name, transfer, direction):
   return f"static inline void {name}(volatile u32* memory, u32 spadOffset{parameters}) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
 
 
-def check_spread(spread, transfer):
+def spread_declaration(statement, transfers, env):
+  name, spread, type_name = statement[1], statement[2], statement[3]
+  base = transfers.get(spread[1])
+  if base is None:
+    raise ValueError(f"unknown Transfer variable '{spread[1]}'")
+  if base["kind"] is not TRANSFER_KINDS[type_name]:
+    raise ValueError(f"Transfer {name} is a {transfer_type_name(type_name)}, its base '{spread[1]}' is a {transfer_type_name(base['type'])}")
+  check_spread(spread, base, False)
+  merged = dict(apply_spread(spread, base, env)[0], type=type_name)
+  merged.pop("declared", None)
+  return merged
+
+
+def transfer_type_name(type_name):
+  return "Transfer" if type_name == "basic" else f"Transfer({type_name})"
+
+
+def check_spread(spread, transfer, declared_only=True):
   _, base, fields = spread
-  if not transfer.get("declared"):
+  if declared_only and not transfer.get("declared"):
     raise ValueError(f"'{base}' is a Transfer of a kernel, only a Transfer of a @declare can be written with ...")
   kind = transfer["kind"]
   for name, value in fields:
@@ -572,7 +589,11 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
     if statement[1] in state["stagings"]:
       raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
-    state["transfers"][statement[1]] = dict(TRANSFER_KINDS[statement[3]].check(statement[1], statement[2], env), type=statement[3])
+    if statement[2][0] == "spread":
+      transfer = spread_declaration(statement, state["transfers"], env)
+    else:
+      transfer = dict(TRANSFER_KINDS[statement[3]].check(statement[1], statement[2], env), type=statement[3])
+    state["transfers"][statement[1]] = transfer
     if kind == "declaredtransfer":
       state["transfers"][statement[1]]["declared"] = transfer_variable(statement[1])
   elif kind == "aguref":
