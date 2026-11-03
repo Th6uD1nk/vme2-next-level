@@ -682,15 +682,57 @@ def build_kernel(text, block, compat):
   return name, options, lines, state
 
 
+TRANSFER_TYPES = {"basic": "VmegTransfer", "Words": "VmegTransferWords"}
+
+TRANSFER_STRUCTS = {
+  "basic": "typedef struct { volatile u32* memory; u32 count; } VmegTransfer;",
+  "Words": "typedef struct { volatile u32* memory; u32 count; u32 gap; u32 step; u32 groupSize; u32 groupOuter; u32 groupInner; } VmegTransferWords;",
+}
+
+
+def transfer_variable(name):
+  return "vmeVar" + name[:1].upper() + name[1:]
+
+
+def transfer_initializer(kind, transfer):
+  group = transfer.get("group", {})
+  fields = [transfer["memory"], transfer["count"]]
+  if kind == "Words":
+    fields += [transfer.get("gap", 0), transfer.get("step", 0), group.get("size", 0), group.get("outer", 0), group.get("inner", 0)]
+  return ", ".join(str(field) for field in fields)
+
+
+def declare_code(text, block):
+  names = {statement[1]: statement[-1] for statement in declared_statements(text, block[1])}
+  own = declare_statements(text, block)
+  for statement in own:
+    if statement[1] in names:
+      raise ValueError(f"line {statement[-1]}: '{statement[1]}' is already declared in a @declare, at line {names[statement[1]]}")
+    names[statement[1]] = statement[-1]
+  macros = known_macros(text, block[1])
+  state = new_state(macros)
+  env = new_env(macros)
+  for statement in declared_statements(text, block[1]) + own:
+    emit(statement, env, [], state)
+  lines = []
+  for statement in own:
+    if statement[0] != "transferdecl":
+      continue
+    if statement[3] not in TRANSFER_TYPES:
+      raise ValueError(f"line {statement[-1]}: Transfer({statement[3]}) is not generated yet (only Transfer and Transfer(Words))")
+    lines.append(f"{TRANSFER_TYPES[statement[3]]} {transfer_variable(statement[1])} = {{ {transfer_initializer(statement[3], state['transfers'][statement[1]])} }};")
+  return "\n".join(lines)
+
+
+def declare_struct_types(text, blocks):
+  kinds = {statement[3] for block in blocks if block[0] == "declare" for statement in declare_statements(text, block) if statement[0] == "transferdecl" and statement[3] in TRANSFER_STRUCTS}
+  return [TRANSFER_STRUCTS[kind] for kind in TRANSFER_STRUCTS if kind in kinds]
+
+
 def generate(text, block, warnings=None, compat=None):
   kind = block[0]
   if kind == "declare":
-    names = {statement[1]: statement[-1] for statement in declared_statements(text, block[1])}
-    for statement in declare_statements(text, block):
-      if statement[1] in names:
-        raise ValueError(f"line {statement[-1]}: '{statement[1]}' is already declared in a @declare, at line {names[statement[1]]}")
-      names[statement[1]] = statement[-1]
-    return ""
+    return declare_code(text, block)
   if kind in ("decorator", "emulate", "emulate-block", "emulate-block-end", "kernel-block", "block-statement"):
     return ""
   if kind == "kernel-block-end":

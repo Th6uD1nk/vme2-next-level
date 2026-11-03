@@ -57,7 +57,19 @@ class DeclareTest(unittest.TestCase):
       translated("@declare { Int stride = 8; }\n.kernel k direct {\n  Int stride = 4;\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n")
     local_transfer = "volatile Buffer a[4];\n.kernel k direct {\n  Transfer in = { memory: a, count: 3 };\n  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
     declared_transfer = "volatile Buffer a[4];\n@declare { Transfer in = { memory: a, count: 3 }; }\n.kernel k direct {\n  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
-    self.assertEqual(re.sub(r"\s+", " ", code(declared_transfer)), re.sub(r"\s+", " ", code(local_transfer)))
+    declared = code(declared_transfer)
+    self.assertIn("typedef struct { volatile u32* memory; u32 count; } VmegTransfer;", declared)
+    self.assertIn("VmegTransfer vmeVarIn = { a, 3 };", declared)
+    load = re.compile(r"static inline void kInLoad.*?\n}", re.S)
+    self.assertEqual(load.search(declared).group(), load.search(code(local_transfer)).group())
+    words = "volatile Buffer a[4];\n@declare {\n  Int last = 3;\n  Transfer(Words) w = { memory: a, count: last, gap: 1, step: 4, group: { size: 3, outer: 16, inner: 1 } };\n  Transfer(Words) z = { memory: a, count: 3 };\n}\n"
+    out = code(words)
+    self.assertIn("typedef struct { volatile u32* memory; u32 count; u32 gap; u32 step; u32 groupSize; u32 groupOuter; u32 groupInner; } VmegTransferWords;", out)
+    self.assertIn("VmegTransferWords vmeVarW = { a, 3, 1, 4, 3, 16, 1 };", out)
+    self.assertIn("VmegTransferWords vmeVarZ = { a, 3, 0, 0, 0, 0, 0 };", out)
+    self.assertNotIn("VmegTransfer;", out)
+    with self.assertRaisesRegex(ValueError, r"line 2: Transfer\(Halves\) is not generated yet"):
+      translated("volatile Buffer a[4];\n@declare { Transfer(Halves) h = { memory: a, count: 3 }; }\n")
 
 
 if __name__ == "__main__":

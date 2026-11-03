@@ -5,7 +5,7 @@ import sys
 
 from vmeg.blocks import find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, is_pointer, build_only, call_edits, check_buffers, check_decorators, check_local_sources, check_params, params_by_kernel, definition_edits, line_indent, memories_by_kernel, memory_edits, on_process_edit, passthrough
-from vmeg.kernel import block_statement_records, build_kernel, generate
+from vmeg.kernel import block_statement_records, build_kernel, declare_struct_types, generate
 from vmeg.listing import kernel_operation_lines
 from vmeg.vmecalls import finish_calls
 from vmeg.names import SUFFIXES
@@ -59,6 +59,11 @@ def extern_edit(text, toks, blocks, quoted, declarations):
   return (at, 0, f'{lines}\n#line {resume} "{quoted}"')
 
 
+def indented(text, block, code):
+  indent = line_indent(text, block[1])
+  return "\n".join(f"{indent}{line}" for line in code.split("\n")) if code else code
+
+
 def statement_code(text, block, records):
   indent = line_indent(text, block[1])
   return "\n".join(f"{indent}{call}" for record in records for call in record["calls"])
@@ -91,7 +96,7 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   found = []
   codes = [generate(text, block, found, compat) for block in blocks]
   records, per_block, call_params, call_memories = block_statement_records(text, blocks)
-  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
+  codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else indented(text, block, code) if block[0] == "declare" else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
   check_decorators(text, blocks, registry)
   assigned = params_by_kernel(text, blocks, call_params)
   check_params(text, blocks, assigned, registry)
@@ -99,7 +104,7 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   check_local_sources(text, blocks, registry, path, per_block)
   calls, started = call_edits(text, blocks, quoted, {on_process[0]} if on_process else set(), registry, assigned, memories)
   edits = []
-  declarations = needed_externs(registry, path) + needed_prototypes(registry, path)
+  declarations = declare_struct_types(text, blocks) + needed_externs(registry, path) + needed_prototypes(registry, path)
   if declarations:
     edits.append(extern_edit(text, toks, blocks, quoted, declarations))
   if on_process and on_process[0] not in started:
