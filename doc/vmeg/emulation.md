@@ -10,7 +10,8 @@ The emulator plays a kernel marked here, or the calls of kernels written in a bl
 - [13.2 The rules of the mark](#132-the-rules-of-the-mark)
 - [13.3 The block form](#133-the-block-form)
 - [13.4 Loops](#134-loops)
-- [13.5 Errors](#135-errors)
+- [13.5 C loops marked @unroll](#135-c-loops-marked-unroll)
+- [13.6 Errors](#136-errors)
 
 ## 13.1 The @emulate mark
 
@@ -111,7 +112,7 @@ void meLibOnProcess(void) {
 - The id has the same characters as in the first form, and it is unique in the file for the two forms together ([13.2](#132-the-rules-of-the-mark)).
 - The two forms can be in the same file. Each one is an emulation: they are listed as different emulations ([VMEE](../VMEE.md)).
 - The arrays that the calls name, `Buffer` and `Memory`, are the ones declared in the file or in the function that holds the block.
-- Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like the `s` of a C `for (int s = 0; …)` in `configs[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `configs[1]`, or the name of a loop of the block, which is replaced by its number ([13.4](#134-loops)).
+- Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like the `s` of a C `for (int s = 0; …)` in `configs[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `configs[1]`, or the name of a loop of the block, which is replaced by its number ([13.4](#134-loops)), or mark the C loop with `@unroll` ([13.5](#135-c-loops-marked-unroll)).
 - Currently not supported: a kernel called in the block that is defined in another file than the block.
 
 ## 13.4 Loops
@@ -170,7 +171,54 @@ emulate "three-steps": kernels reader (lines 10-20)
 - The name of the loop is replaced wherever it is used as a name in the body. It is not replaced after a dot, and a key of `.params` with the same name keeps its name: in `.params = { stride: 8 >> stride }` only the second `stride` is replaced.
 - The lines of the file do not change: the copies are written on the line of the `for`, and the lines that follow stay where they were. An error found in a copy gives the line of the `for`.
 
-## 13.5 Errors
+## 13.5 C loops marked @unroll
+
+`@unroll` written before a C `for` stands for the copies of the calls in its body, for the emulator and for `vmeh` only. `vmegc` keeps the loop.
+
+```c
+volatile Memory configs[3];
+
+.kernel reader memory {
+  .params { int skip; }
+  Agu t = { count: 7, step: skip }, w = { count: 7, cyc: auto };
+  .pe0 { .top = t; .write = w; .spad = top0 + top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "c-steps" {
+    @unroll
+    for (int s = 0; s < 3; s++) {
+      @kernel reader build {
+        .params = { skip: 1 << s };
+        .memory = configs[s];
+      }
+      @kernel reader config | exec {
+        .memory = configs[s];
+      }
+    }
+  }
+}
+```
+
+`vmee --list main.vmeg.cpp` shows the same six calls as the loop of [13.4](#134-loops).
+
+**Explanation of the code above:**
+
+- `@unroll` marks the loop. `vmegc` removes the mark and writes `for (int s = 0; s < 3; s++)` with `configs[s]` and `1 << s` as they are: the program has one copy of the calls, run three times by the C loop.
+- The emulator and `vmeh` play six calls: for each value of `s`, from 0 to 2, `s` is replaced by its number in the body, as in [13.4](#134-loops).
+
+**Rules:**
+
+- `@unroll` is written alone, at the start of a statement, right before `for (`, in an `@emulate "id" { … }` block ([13.3](#133-the-block-form)) at any depth, outside the body of a `@kernel` call. A `for` without the mark is left as it is, by the emulator and by `vmegc`.
+- The header is `for (type name = low; name < high; name++)`. The comparison can be `<` or `<=`, and the step `name++` or `name += n`. The type is the identifiers before the name, like `int` or `unsigned int`.
+- `low`, `high` and `n` are numbers, macros of the file that are defined once before the loop, or expressions made of them. `n` is above 0.
+- The loop runs at most 256 turns.
+- The body holds at least one `@kernel` call. The C statements of the body, like an `if (s == 3)`, stay in the program and are not played by the emulator.
+- The name of the loop is replaced as in [13.4](#134-loops): not after a dot, and a key of `.params` with the same name keeps its name.
+- A loop can hold other marked loops, and loops of [13.4](#134-loops). The loops of [13.4](#134-loops) are unrolled first.
+- The lines of the file do not change, and an error gives the line of the mark.
+
+## 13.6 Errors
 
 The messages start with `line N:`, left out here.
 
@@ -189,3 +237,7 @@ The messages start with `line N:`, left out here.
 | [13.4](#134-loops) | `the for runs from 3 to 1, the first bound must not be above the second` | a first bound above the second |
 | [13.4](#134-loops) | `the for calls no kernel, write at least one @kernel call in it` | a loop of a block whose body has no `@kernel` call |
 | [13.4](#134-loops) | `a preprocessor line cannot be inside a for of an emulate block` | a line starting with `#` in the body of the loop |
+| [13.5](#135-c-loops-marked-unroll) | `@unroll is written before a for loop of an @emulate block, outside the calls` | a mark that is not right before `for (`, not at the start of a statement, outside an `@emulate` block or in the body of a call |
+| [13.5](#135-c-loops-marked-unroll) | `the @unroll loop is not unrolled, the form is for (int name = low; name < high; name++) with bounds and step made of numbers and macros of the file` | a header of another form, or a bound or a step that is not known |
+| [13.5](#135-c-loops-marked-unroll) | `the @unroll loop runs N turns, at most 256 are unrolled` | a loop of more than 256 turns |
+| [13.5](#135-c-loops-marked-unroll) | `the @unroll loop calls no kernel, write at least one @kernel call in it` | a marked loop whose body has no `@kernel` call |
