@@ -1,0 +1,64 @@
+import os
+import re
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from vmeg.blocks import find_blocks
+from vmegc import render
+
+
+def translated(text):
+  return render(text, find_blocks(text), "t.vmeg.cpp")
+
+
+def code(text):
+  return "\n".join(line for line in translated(text).split("\n") if not line.startswith("#line") and line.strip())
+
+
+KERNEL = ".kernel k direct {\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n"
+CALL = "@kernel k config | exec {\n%s}\n"
+
+
+class DeclareTest(unittest.TestCase):
+  def test_a_declare_block_gives_its_variables_to_the_kernels_and_the_calls_of_its_level_and_below(self):
+    places = (
+      "@declare { Int a = 1; }\n"
+      "void f(void) {\n  @declare { Int b = 2; }\n  @emulate \"e\" {\n    @declare { Int c = 3; }\n    @kernel k config | exec { }\n  }\n}\n"
+    )
+    self.assertEqual([kind for kind, _, _, _ in find_blocks(KERNEL + places)], ["kernel", "declare", "declare", "emulate-block", "declare", "kernel-block", "kernel-block-end", "emulate-block-end"])
+    self.assertNotIn("declare", translated(KERNEL + places))
+    errors = {
+      "@declare\nvoid f(void) {}\n": "line 1: @declare is followed by a block { ... }",
+      "@declare {\n  Int x = 1;\n": "line 1: unterminated @declare block",
+      "@declare {\n  Int x = 1;\n  .load { .transfer = t; }\n}\n": "line 3: only Agu, Staging, Transfer and Int variables are accepted in @declare",
+      "@declare {\n  Int x = 1;\n  Int x = 2;\n}\n": "line 3: 'x' is already declared in a @declare, at line 2",
+    }
+    for text, message in errors.items():
+      with self.subTest(text=text):
+        with self.assertRaises(ValueError) as ctx:
+          translated(text)
+        self.assertEqual(str(ctx.exception), message)
+    shared = "@declare { Int stride = 8; Agu top = { count: 3, step: stride }; }\n.kernel a direct {\n  .pe0 { .top = top; .spad = top0 + top0; }\n}\n.kernel b direct {\n  .pe2 { .top = top; .spad = top2 + top2; }\n}\n@kernel a config | exec\nvoid fa(void) {}\n@kernel b config | exec\nvoid fb(void) {}\n"
+    out = code(shared)
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(8), 3);", out)
+    self.assertIn("vme_pe2(agu_top(COUNT), agu_step(8), 3);", out)
+    staging = "@declare { Staging x; Agu top = { count: 3 }, write = { count: 3, cyc: auto }; }\n.kernel a direct {\n  .pe0 { .top = top; .write = write; x = top0 + top0; .spad = x + top0; }\n}\n.kernel b direct {\n  .pe2 { .top = top; .write = write; x = top2 + top2; .spad = x + top2; }\n}\n@kernel a config | exec\nvoid fa(void) {}\n@kernel b config | exec\nvoid fb(void) {}\n"
+    out = code(staging)
+    self.assertIn("vme_mux(STAGING_0, TOP_0)", out)
+    self.assertIn("vme_mux(STAGING_2, TOP_2)", out)
+    scoped = KERNEL + "void f(void) {\n  @declare { Int local = 2; }\n  @kernel k config | exec {\n    Int local = 5;\n  }\n}\n"
+    with self.assertRaisesRegex(ValueError, "line 8: 'local' is defined twice"):
+      translated(scoped)
+    other = KERNEL + "void f(void) {\n  @declare { Int local = 2; }\n  @kernel k config | exec { }\n}\nvoid g(void) {\n  @kernel k config | exec {\n    Int local = 5;\n  }\n}\n"
+    translated(other)
+    with self.assertRaisesRegex(ValueError, "line 3: 'stride' is defined twice"):
+      translated("@declare { Int stride = 8; }\n.kernel k direct {\n  Int stride = 4;\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n")
+    local_transfer = "volatile Buffer a[4];\n.kernel k direct {\n  Transfer in = { memory: a, count: 3 };\n  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
+    declared_transfer = "volatile Buffer a[4];\n@declare { Transfer in = { memory: a, count: 3 }; }\n.kernel k direct {\n  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
+    self.assertEqual(re.sub(r"\s+", " ", code(declared_transfer)), re.sub(r"\s+", " ", code(local_transfer)))
+
+
+if __name__ == "__main__":
+  unittest.main()
