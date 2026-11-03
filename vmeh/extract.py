@@ -182,8 +182,17 @@ def on_process_loop(count):
 }}"""
 
 
-def pointer_declarations(text, identifier, others):
-  found, bindings = pointer_bindings(text, identifier, others)
+def pointer_names(text, identifier, others):
+  return set(pointer_bindings(text, identifier, others)[1])
+
+
+def applicable_uses(text, identifier, others, uses):
+  names = pointer_names(text, identifier, others)
+  return [pair for pair in uses if pair[0] in names]
+
+
+def pointer_declarations(text, identifier, others, uses=()):
+  found, bindings = pointer_bindings(text, identifier, others, uses)
   declared = []
   for declaration in found:
     for name in declaration["names"]:
@@ -196,11 +205,12 @@ def pointer_declarations(text, identifier, others):
   return declared
 
 
-def emulation_parts(text, identifier, others):
+def emulation_parts(text, identifier, others, uses=()):
+  uses = applicable_uses(text, identifier, others, uses)
   blocks = declare_blocks(text, identifier)
-  arrays, macros = declared_parts(text, identifier, others)
+  arrays, macros = declared_parts(text, identifier, others, uses)
   memories = memory_declarations(text, identifier)
-  declared = arrays + memories + pointer_declarations(text, identifier, others)
+  declared = arrays + memories + pointer_declarations(text, identifier, others, uses)
   return {
     "macros": macros,
     "globals": [declaration["text"] for declaration in declared if declaration["where"] == "global"],
@@ -210,9 +220,9 @@ def emulation_parts(text, identifier, others):
   }
 
 
-def extract_source(text, identifier, others=(), start=0, words=32):
+def extract_source(text, identifier, others=(), start=0, words=32, uses=()):
   check_window(start, words)
-  parts = emulation_parts(text, identifier, others)
+  parts = emulation_parts(text, identifier, others, uses)
   sections = [prologue(words)]
   if parts["macros"]:
     sections.append("\n".join(parts["macros"]))
@@ -235,7 +245,7 @@ def merged_macros(parts):
   return list(values.values())
 
 
-def extract_program(sources, start=0, words=32):
+def extract_program(sources, start=0, words=32, uses=()):
   entries = [
     (text, emulation["id"], [other for other_index, (_, other) in enumerate(sources) if other_index != index])
     for index, (_, text) in enumerate(sources) for emulation in emulations(text)
@@ -243,9 +253,9 @@ def extract_program(sources, start=0, words=32):
   if not entries:
     raise ValueError("there is no @emulate in these files")
   if len(entries) == 1:
-    return extract_source(*entries[0], start, words)
+    return extract_source(*entries[0], start, words, uses)
   check_window(start, words)
-  parts = [emulation_parts(*entry) for entry in entries]
+  parts = [emulation_parts(*entry, uses) for entry in entries]
   sections = [prologue(words, True)]
   macros = merged_macros(parts)
   if macros:
