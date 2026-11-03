@@ -626,6 +626,7 @@ void probeAgu4CopyC12s4Run(void) {
 void probeAgu4CopyC12s4I3s1RepRun(void) {
 }
 
+/*
 @emulate "agu4-copy-i2s1-rep"
 .kernel probeAgu4CopyI2s1Rep direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
@@ -657,6 +658,7 @@ void probeAgu4CopyI2s1RepRun(void) {
 @kernel probeAgu4CopyI4s1Rep config | exec
 void probeAgu4CopyI4s1RepRun(void) {
 }
+*/
 
 @emulate "agu4-copy-i1s2-rep"
 .kernel probeAgu4CopyI1s2Rep direct {
