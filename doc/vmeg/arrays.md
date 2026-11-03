@@ -69,21 +69,11 @@ volatile Buffer(Q4.20)* scaled;
 volatile Buffer* stage = (volatile u32*)0x40000000;
 ```
 
-`vmegc` writes them in the C file as:
-
-```c
-volatile u32 __attribute__((aligned(64))) a[32], b[32];
-volatile u32* signal = a;
-volatile u32* const signals[2] = { a, b };
-volatile u32* scaled;
-volatile u32* stage = (volatile u32*)0x40000000;
-```
-
 **Explanation of the code above:**
 
 - `volatile Buffer* signal = a;` declares a pointer to words, set on the array `a`. A pointer is a C variable: it can point to another array later, which a `Transfer` that names it follows ([9.1](transfers.md#91-the-transfer-variable)).
 - `signals` is a table of pointers, with `const` on the pointers, as in C.
-- `Buffer(Q4.20)*` is written like the format of an array. A pointer holds no number to convert, so the format changes nothing: `vmegc` writes `volatile u32*`.
+- `Buffer(Q4.20)*` is written like the format of an array. A pointer holds no number to convert, so the format changes nothing.
 - `stage` points to a fixed address, written in plain C: `0x40000000` is the start of the local eDRAM of the Media Engine, seen without the cache.
 
 **Rules:**

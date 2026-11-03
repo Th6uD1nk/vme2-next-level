@@ -100,8 +100,7 @@ Int n = 1, m = n + 1;
 
 **Explanation of the code above:**
 
-- `stride` and `top` are declared once. `a` and `b` both use `top`, and each one gets its own copy: `vme_pe0(agu_top(COUNT), agu_step(8), 3);` in `a`, `vme_pe2(agu_top(COUNT), agu_step(8), 3);` in `b`.
-- The block is removed from the output.
+- `stride` and `top` are declared once. `a` binds `top` to its pe0 and `b` to its pe2, each kernel with the same `count` and `step`.
 
 **Rules:**
 
@@ -110,7 +109,7 @@ Int n = 1, m = n + 1;
 - It gives its variables to the kernels and the blocks `@kernel name config | exec { }` that are written after it, inside the braces that contain it. A block at the level of the file serves the whole file after it.
 - The names follow [2.2.2](#222-names). A name declared in a `@declare` cannot be declared again in a kernel or a block it serves, nor in another `@declare` it serves.
 - A function has its own `@declare`: the one of a function is not seen by the other functions.
-- A `Transfer` of a `@declare` is also a C variable shared by the kernels ([9.1.1](transfers.md#911-a-transfer-of-a-declare)).
+- A `Transfer` of a `@declare` is shared by the kernels ([9.1.1](transfers.md#911-a-transfer-of-a-declare)).
 
 ## 2.3 Accesses by index
 

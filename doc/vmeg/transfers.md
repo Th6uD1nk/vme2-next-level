@@ -5,6 +5,7 @@
 ## Contents
 
 - [9.1 The Transfer variable](#91-the-transfer-variable)
+  - [9.1.1 A Transfer of a @declare](#911-a-transfer-of-a-declare)
 - [9.2 The extended mode](#92-the-extended-mode)
   - [9.2.1 The fields](#921-the-fields)
   - [9.2.2 Where each field applies](#922-where-each-field-applies)
@@ -46,6 +47,37 @@ Transfer(Words) spread = { memory: input, count: 15, step: 4 };
 - The numbers cannot be negative. They are numbers known at compile time, or a name that is not known yet ([9.5](#95-unknown-names-in-a-transfer)).
 - The name of a `Transfer` is declared once, whatever the type of the variables ([2.2.2](language.md#222-names)).
 - Currently not supported: the `.load` and the `.store` of a `Transfer(Halves)` and of a `Transfer(Bytes)`. The types are read, nothing is generated.
+
+### 9.1.1 A Transfer of a @declare
+
+A `Transfer` written in a `@declare` ([2.2.3](language.md#223-the-declare-block)) is declared once and shared by the kernels and the calls that the block serves.
+
+```c
+volatile Buffer a[16], b[16];
+
+@declare
+{
+  Transfer in = { memory: a, count: 15 };
+  Transfer(Words) spread = { memory: b, count: 15, step: 4 };
+}
+
+.kernel k direct
+{
+  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = spread; .scope = global; .offsets { .top1 = 0; } }
+}
+```
+
+**Explanation of the code above:**
+
+- `in` and `spread` are declared once. Every kernel that names them in a `.load` or a `.store` uses them as they are written here.
+- The kernel `k` does not declare them: it names them, like a `Transfer` of its own.
+
+**Rules:**
+
+- A `Transfer` of a `@declare` is used in a `.load` or a `.store` like a `Transfer` of a kernel ([9.3](#93-load-and-store)).
+- The fields of the type that the declaration leaves out are 0 for every use. A `Transfer` of a kernel leaves them as they are.
+- A `Transfer(Halves)` and a `Transfer(Bytes)` in a `@declare` are refused ([9.6](#96-errors)).
 
 ## 9.2 The extended mode
 
@@ -298,6 +330,7 @@ The messages start with `line N:`, left out here.
 | [9.2.3](#923-the-group) | `Transfer in: group needs at least one field (size, outer, inner)` | `group: {}` |
 | [9.2.3](#923-the-group) | `Transfer in: the field 'inner' of group is needed, outer and inner are one register` | `outer` without `inner`, or `inner` without `outer` |
 | [9.2.3](#923-the-group) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `group` |
+| [9.1.1](#911-a-transfer-of-a-declare) | `Transfer(Halves) is not generated yet` | a `Transfer(Halves)` or a `Transfer(Bytes)` in a `@declare` |
 | [9.3](#93-load-and-store) | `.load needs a .transfer = name;` | a `.load` or a `.store` without `.transfer` |
 | [9.3](#93-load-and-store) | `unknown Transfer variable 'zzz'` | `.transfer = zzz;` with a name that is not a `Transfer` |
 | [9.3](#93-load-and-store) | `unknown attribute '.foo' of .load (.transfer, .scope, .offsets)` | an attribute that does not exist |
