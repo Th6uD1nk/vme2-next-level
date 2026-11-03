@@ -60,3 +60,27 @@ class ProgramTest(unittest.TestCase):
 
 if __name__ == "__main__":
   unittest.main()
+
+
+class UseTest(unittest.TestCase):
+  def test_a_use_gives_an_array_to_a_pointer_only_and_each_use_goes_to_the_emulations_that_read_the_pointer(self):
+    kernel = ".kernel %s direct {\n  Transfer t = { memory: %s, count: 3 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n"
+    text = (
+      "volatile Buffer a[4];\nvolatile Buffer b[4];\nvolatile Buffer* p1 = a;\nvolatile Buffer* p2 = table[1];\n"
+      + kernel % ("k1", "p1") + kernel % ("k2", "p2")
+      + "void meLibOnProcess(void) {\n  @emulate \"first\" {\n    @kernel k1 config | exec {\n    }\n  }\n  @emulate \"second\" {\n    @kernel k2 config | exec {\n    }\n  }\n}\n"
+    )
+    out = extract_source(text, "second", (), 0, 32, [("p2", "b")])
+    self.assertIn("volatile Buffer* p2 = b;", out)
+    self.assertLess(out.index("volatile Buffer b[4];"), out.index("volatile Buffer* p2 = b;"))
+    self.assertNotIn("volatile Buffer a[4];", out)
+    both = extract_program([("t.vmeg.cpp", text)], 0, 32, [("p2", "b")])
+    self.assertEqual(both.count("volatile Buffer* p2 = b;"), 1)
+    self.assertEqual(both.count("volatile Buffer* p1 = a;"), 1)
+    with self.assertRaisesRegex(ValueError, "--use a=b: a is not a pointer that the @emulate reads or writes, vmeh gives an array to a pointer only"):
+      extract_source(text, "second", (), 0, 32, [("a", "b")])
+    with self.assertRaisesRegex(ValueError, "--use zzz=b: zzz is not a pointer"):
+      extract_program([("t.vmeg.cpp", text)], 0, 32, [("zzz", "b")])
+    with self.assertRaisesRegex(ValueError, "the array nothing is defined in no file"):
+      extract_source(text, "second", (), 0, 32, [("p2", "nothing")])
+
