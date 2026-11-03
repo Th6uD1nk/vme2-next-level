@@ -42,6 +42,7 @@ volatile Buffer table[4] = { 1, 2, 3, 4 };
 ```c
 volatile Buffer(Q8.8) matrix[4] = { 0.5, -1.25, 3, 0x10 };
 volatile Buffer(Q4.20) angle[2] = { 0.7071068f, -2.0 };
+volatile Buffer("Q4.20") other[2] = { 0.7071068f, -2.0 };
 ```
 
 **Explanation of the code above:**
@@ -50,10 +51,11 @@ volatile Buffer(Q4.20) angle[2] = { 0.7071068f, -2.0 };
 - The numbers are the real values. `vmegc` writes them as words: `0.5` is `0x00000080`, `-1.25` is `0xfffffec0` and `3` is `0x00000300`.
 - `0x10` is a hexadecimal number: it stays the word that is written.
 - `Buffer(Q4.20)` has 4 bits of integer part and 20 of fraction, from -8 to 7.999999046325684: `-2.0` is `0xffe00000`.
+- `Buffer("Q4.20")` is the same format written between double quotes.
 
 **Rules:**
 
-- The format is `Qm.n`: `m` is the number of bits of the integer part, sign included, and `n` the number of bits of the fraction. `m` is 1 at least, and `m + n` is 24 at most, the 24 bits of a word of the VME.
+- The format is `Qm.n`, written as is or between double quotes, `Buffer(Q4.20)` or `Buffer("Q4.20")`: `m` is the number of bits of the integer part, sign included, and `n` the number of bits of the fraction. `m` is 1 at least, and `m + n` is 24 at most, the 24 bits of a word of the VME.
 - A decimal number is the real value, with or without a point, an exponent, or the suffix `f`. It is cut toward zero and written on 32 bits, the bit 23 repeated in the 8 high bits.
 - A value outside the range of the format is an error ([8.6](#86-errors)).
 - A hexadecimal number, a macro or an expression stays as it is written, and the C compiler computes it.
@@ -215,7 +217,7 @@ The messages start with `line N:`, left out here. For a pointer `Buffer*` ([8.1.
 | [8.1](#81-the-buffer-keyword) | `Buffer must be volatile (volatile Buffer name[...])` | `Buffer` written without `volatile` |
 | [8.1](#81-the-buffer-keyword) | `Buffer must be followed by a variable name (volatile Buffer name[...])` | `Buffer` with no name after it |
 | [8.1](#81-the-buffer-keyword) | `Buffer only declares a variable, it cannot be used in a parameter or a cast` | `Buffer` in a parameter or in a cast |
-| [8.1.1](#811-the-q-format) | `the format of a Buffer is written Qm.n, for example Buffer(Q8.8)` | a format that is not `Qm.n`, like `Buffer(Q8)` or `Buffer(Foo)` |
+| [8.1.1](#811-the-q-format) | `the format of a Buffer is written Qm.n, for example Buffer(Q8.8) or Buffer("Q8.8")` | a format that is not `Qm.n`, like `Buffer(Q8)`, `Buffer(Foo)` or `Buffer("Q8")` |
 | [8.1.1](#811-the-q-format) | `the integer part of a Q format counts the sign, it is 1 at least` | a format with an integer part of 0, like `Buffer(Q0.8)` |
 | [8.1.1](#811-the-q-format) | `the format Q20.10 has 30 bits, a Buffer holds 24 bits at most` | a format of more than 24 bits (the message gives the format and its bits) |
 | [8.1.1](#811-the-q-format) | `the value 2.0 does not fit the format Q1.15 (from -1 to 0.999969482421875)` | a decimal number outside the range of the format (the message gives the value, the format and the range) |

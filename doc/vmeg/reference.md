@@ -37,7 +37,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 |---|---|
 | `.name { }`, `.name = value;`, `.pe0.top = t;` | [2.1](language.md#21-attributes) |
 | `Agu`, `Staging`, `Transfer`, `Int` | [2.2](language.md#22-variables) |
-| `Agu(2)`, `Transfer(Words)`, `Buffer(Q8.8)` | [2.2](language.md#22-variables) |
+| `Agu(2)`, `Transfer(Words)`, `Buffer(Q8.8)`, `Buffer("Q8.8")` | [2.2](language.md#22-variables) |
 | `a, b` (several declarations at once) | [2.2.1](language.md#221-declaring-several-at-once) |
 | `@declare { }` | [2.2.3](language.md#223-the-declare-block) |
 | `.transfer = { ...name, field: value };` | [9.1.2](transfers.md#912-the-spread) |

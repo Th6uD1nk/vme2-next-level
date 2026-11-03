@@ -51,7 +51,7 @@ A variable has a type and starts with no dot. `Agu`, `Transfer` and `Int` are de
 | `Transfer` | a DMAC transfer | `Transfer in = { memory: a, count: 15 };` |
 | `Int` | a number known at compile time | `Int n = 16 - 1;` |
 
-`Agu`, `Transfer` and `Buffer` can take a kind in parentheses: `Agu(2) t = { count: 15 };` ([4.1](agu.md#41-declaring-an-agu)), `Transfer(Words) in = { memory: a, count: 15, step: 4 };` ([9.1](transfers.md#91-the-transfer-variable)) and `volatile Buffer(Q8.8) table[4] = { 0.5, -1.25 };` ([8.1.1](arrays.md#811-the-q-format)). The kind of an `Agu` or of a `Transfer` gives it its own fields, the kind of a `Buffer` is the format of its numbers.
+`Agu`, `Transfer` and `Buffer` can take a kind in parentheses: `Agu(2) t = { count: 15 };` ([4.1](agu.md#41-declaring-an-agu)), `Transfer(Words) in = { memory: a, count: 15, step: 4 };` ([9.1](transfers.md#91-the-transfer-variable)) and `volatile Buffer(Q8.8) table[4] = { 0.5, -1.25 };` ([8.1.1](arrays.md#811-the-q-format)), where the format can also be written between double quotes, `Buffer("Q8.8")`. The kind of an `Agu` or of a `Transfer` gives it its own fields, the kind of a `Buffer` is the format of its numbers.
 
 ### 2.2.1 Declaring several at once
 
