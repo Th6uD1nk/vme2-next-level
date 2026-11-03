@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 
 from vmeg.scanner import tokens, walk
 
@@ -160,6 +161,23 @@ def read_declare(text, items, index):
   if index + 2 >= len(items) or items[index + 2][0] != "punct" or items[index + 2][1] != "{":
     raise ValueError(f"line {line}: @declare is followed by a block {{ ... }}")
   return ("declare", start, items[index + 2][2], block_end(text, items, index + 2, start, "@declare block"))
+
+
+@lru_cache(maxsize=4)
+def declare_scopes(text):
+  items = list(walk(text))
+  found = []
+  for i, item in enumerate(items):
+    if item[1] != "@" or i + 2 >= len(items) or items[i + 1][1] != "declare" or items[i + 2][1] != "{" or item[5] not in (";", "}", "{"):
+      continue
+    end = block_end(text, items, i + 2, item[2], "@declare block")
+    limit = next((items[j][2] for j in range(i + 2, len(items)) if items[j][1] == "}" and items[j][4] == item[4]), len(text))
+    found.append((item[2], items[i + 2][2], end, limit))
+  return tuple(found)
+
+
+def visible_declares(text, position):
+  return [("declare", start, opening, end) for start, opening, end, limit in declare_scopes(text) if end <= position < limit]
 
 
 def read_emulate_block(text, items, index, ids):

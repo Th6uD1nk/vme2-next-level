@@ -7,7 +7,7 @@ from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
 from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS, ROOT_OPERATORS
 from vmeg.selector import choose_opcode
-from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, declare_statements, parse_body
+from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, declare_statements, declared_statements, parse_body
 from vmeg.scanner import tokens
 from vmeg.transfers import TRANSFER_KINDS
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -619,6 +619,8 @@ def block_statement_records(text, blocks):
       macros = known_macros(text, block[1])
       state = new_state(macros, owners[block[1]])
       env = new_env(macros)
+      for statement in declared_statements(text, block[1]):
+        emit(statement, env, [], state)
       per_block[block[1]] = state["sequence"]
       call_params[block[1]] = []
       call_memories[block[1]] = []
@@ -662,7 +664,7 @@ def build_kernel(text, block, compat):
       raise ValueError(f"line {line}: a kernel is either direct or memory, not both")
     options.append(word)
   toks, limit = body_tokens(text, block)
-  statements = parse_body(Parser(text, toks, limit))
+  statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
   lines, state = run_statements(statements, known_macros(text, start), name, compat)
@@ -683,7 +685,11 @@ def build_kernel(text, block, compat):
 def generate(text, block, warnings=None, compat=None):
   kind = block[0]
   if kind == "declare":
-    declare_statements(text, block)
+    names = {statement[1]: statement[-1] for statement in declared_statements(text, block[1])}
+    for statement in declare_statements(text, block):
+      if statement[1] in names:
+        raise ValueError(f"line {statement[-1]}: '{statement[1]}' is already declared in a @declare, at line {names[statement[1]]}")
+      names[statement[1]] = statement[-1]
     return ""
   if kind in ("decorator", "emulate", "emulate-block", "emulate-block-end", "kernel-block", "block-statement"):
     return ""

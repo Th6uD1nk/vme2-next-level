@@ -1,6 +1,6 @@
 import re
 
-from vmeg.blocks import body_tokens
+from vmeg.blocks import body_tokens, visible_declares
 
 ICN_NAMES = {
   "xpcr": "XPCR",
@@ -662,9 +662,13 @@ def declare_statements(text, block):
   return statements
 
 
+def declared_statements(text, position):
+  return [statement for block in visible_declares(text, position) for statement in declare_statements(text, block)]
+
+
 def kernel_statements(text, block, cache):
   statements = cache.get(block[1])
   if statements is None:
     body, limit = body_tokens(text, block)
-    statements = cache[block[1]] = parse_body(Parser(text, body, limit))
+    statements = cache[block[1]] = declared_statements(text, block[1]) + parse_body(Parser(text, body, limit))
   return statements
