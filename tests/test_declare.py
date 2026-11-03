@@ -81,6 +81,13 @@ class DeclareTest(unittest.TestCase):
     self.assertIn("vmeTransferLoad(&vmeVarIn, VME_TOP_BUFF2_WOFF + 4);", out)
     self.assertIn("vmeTransferLoadWords(&vmeVarW, VME_TOP_BUFF1_WOFF);", out)
     self.assertIn("vmeTransferStore(&vmeVarIn, VME_BASE_BUFF0_WOFF);", out)
+    waits = "volatile Buffer a[16], b[16];\n@declare {\n  Transfer in = { memory: a, count: 15 };\n  Transfer other = { memory: b, count: 7 };\n}\n.kernel k direct {\n  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = %s; .scope = global; .offsets { .top1 = 0; } }\n  Agu t = { count: 15 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
+    self.assertEqual(code(waits % "in").count("meCoreDMACPrimWaitTransferFinish();"), 1)
+    spread = "volatile Buffer a[16], b[16];\n@declare {\n  Int last = 7;\n  Transfer(Words) w = { memory: a, count: 15, step: 4, group: { size: 3, outer: 16, inner: 1 } };\n}\n.kernel k direct {\n  .load { .transfer = { ...w, memory: b, count: last, group: { ..., outer: 8 } }; .scope = global; .offsets { .top0 = 0; .top1 = 4; } }\n  .store { .transfer = { ...w, group: { size: 1, outer: 2, inner: 3 } }; .scope = global; .offsets { .base0 = 0; } }\n  Agu t = { count: 15 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
+    out = code(spread)
+    for line in ("VmegTransferWords vmeCopyVar = vmeVarW;", "vmeCopyVar.memory = b;", "vmeCopyVar.count = 7;", "vmeCopyVar.groupOuter = 8;", "vmeTransferLoadWords(&vmeCopyVar, VME_TOP_BUFF0_WOFF);", "vmeTransferLoadWords(&vmeCopyVar, VME_TOP_BUFF1_WOFF + 4);", "vmeCopyVar.groupSize = 1;", "vmeCopyVar.groupInner = 3;", "vmeTransferStoreWords(&vmeCopyVar, VME_BASE_BUFF0_WOFF);"):
+      self.assertIn(line, out)
+    self.assertNotIn("vmeCopyVar.groupSize = 3", out)
     with self.assertRaisesRegex(ValueError, r"line 2: Transfer\(Halves\) is not generated yet"):
       translated("volatile Buffer a[4];\n@declare { Transfer(Halves) h = { memory: a, count: 3 }; }\n")
 

@@ -384,8 +384,39 @@ def shared_transfer_function(type_name, direction):
   return f"static inline void {shared_transfer_name(type_name, direction)}(const {TRANSFER_TYPES[type_name]}* transfer, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in lines) + "}"
 
 
-def shared_transfer_calls(name, variable, targets):
-  return [line for destination in transfer_destinations(targets) for line in (f"{name}(&{variable}, {destination});", wait_marker(name))]
+def spread_value(item, env):
+  folded = full_value(item, env)
+  return str(folded[1]) if folded[0] == "num" else to_c(folded)
+
+
+def apply_spread(spread, transfer, env):
+  _, base, fields = spread
+  kind = transfer["kind"]
+  merged = dict(transfer)
+  assignments = []
+  for name, value in fields:
+    if name in kind.nested:
+      names = [field for register in kind.nested[name] for field in register]
+      given = {field: spread_value(item, env) for field, item in value[1]}
+      group = dict(transfer.get(name, {})) if value[2] else {}
+      group.update(given)
+      for field in (given if value[2] else names):
+        group.setdefault(field, "0")
+        assignments.append(f"{name}{field.capitalize()} = {group[field]}")
+      merged[name] = group
+    else:
+      merged[name] = spread_value(value, env)
+      assignments.append(f"{name} = {merged[name]}")
+  return merged, assignments
+
+
+def shared_transfer_calls(name, variable, targets, type_name=None, assignments=None):
+  if not assignments:
+    return [line for destination in transfer_destinations(targets) for line in (f"{name}(&{variable}, {destination});", wait_marker(name))]
+  copy = "vmeCopyVar"
+  lines = ["{", f"  {TRANSFER_TYPES[type_name]} {copy} = {variable};"] + [f"  {copy}.{assignment};" for assignment in assignments]
+  lines += [line for destination in transfer_destinations(targets) for line in (f"  {name}(&{copy}, {destination});", f"  {wait_marker(name)}")]
+  return lines + ["}"]
 
 
 def transfer_calls(name, transfer, targets):
@@ -522,14 +553,15 @@ def emit_statement(statement, env, lines, state):
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
+    assignments = None
     if items["transfer"][0] == "spread":
       check_spread(items["transfer"], transfer)
-      raise ValueError("a Transfer written with ... in .transfer is not generated yet")
+      transfer, assignments = apply_spread(items["transfer"], transfer, env)
     transfer["kind"].ensure_generated(kind)
     shared = transfer.get("declared")
     function = shared_transfer_name(transfer["type"], kind) if shared else camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
     definition = shared_transfer_function(transfer["type"], kind) if shared else transfer_function(function, transfer, kind) if function else None
-    calls = shared_transfer_calls(function, shared, targets) if shared else transfer_calls(function, transfer, targets) if function else None
+    calls = shared_transfer_calls(function, shared, targets, transfer["type"], assignments) if shared else transfer_calls(function, transfer, targets) if function else None
     record = {"function": function, "definition": definition, "calls": calls, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
     state[kind + "s"].append(record)
     state["sequence"].append(record)
