@@ -23,6 +23,7 @@ When the last call is over, the program writes the base buffers in the file `log
 
 - The calls of a block are played in the order written, with their `.params` and `.memory`.
 - The vmeg statements written in the body of a call (`.load`, `.store`) are done before the buffers are written, and follow the same rules as in `vmee` ([1.2](running.md#12-running-a-kernel)).
+- The `@declare` blocks ([2.2.3](../vmeg/language.md#223-the-declare-block)) that serve the calls of the emulation are in the program, so the `Transfer` of a `@declare` and its spreads are played as in `vmee`.
 - The program is a vmeg file, translated by `vmegc` like any other.
 
 ### 3.1.1 Pointers

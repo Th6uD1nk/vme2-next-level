@@ -112,6 +112,7 @@ void meLibOnProcess(void) {
 - The id has the same characters as in the first form, and it is unique in the file for the two forms together ([13.2](#132-the-rules-of-the-mark)).
 - The two forms can be in the same file. Each one is an emulation: they are listed as different emulations ([VMEE](../VMEE.md)).
 - The arrays that the calls name, `Buffer` and `Memory`, are the ones declared in the file or in the function that holds the block.
+- A `@declare` ([2.2.3](language.md#223-the-declare-block)) written in the block, in the function that holds it, or in the file, serves the calls that come after it. The emulator plays the `Transfer` of a `@declare` with the values it declares, and a spread of it ([9.1.2](transfers.md#912-the-spread)) with the fields it changes.
 - Currently not supported: a value of `.params` or `.memory` that uses a variable of the function, like the `s` of a C `for (int s = 0; …)` in `configs[s]` or `8 >> s`. The emulator plays the calls, not the code of the function around them: write a number or a constant, like `configs[1]`, or the name of a loop of the block, which is replaced by its number ([13.4](#134-loops)), or mark the C loop with `@unroll` ([13.5](#135-c-loops-marked-unroll)).
 - Currently not supported: a kernel called in the block that is defined in another file than the block.
 
