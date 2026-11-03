@@ -3,7 +3,7 @@ import re
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_lines, memory_edits
-from vmeg.kernel import declare_transfers, generate
+from vmeg.kernel import TRANSFER_STRUCTS, TRANSFER_TYPES, declare_transfers, generate, transfer_initializer
 from vmeg.qformat import translate_buffer
 from vmeg.registry import declarations, project_registry, split_declarators
 from vmeg.parser import declare_statements
@@ -182,6 +182,19 @@ def declared_memories(text, identifier):
   return [transfer["memory"] for block in declare_blocks(text, identifier) for _, _, transfer in declare_transfers(text, block)]
 
 
+def declared_transfer_parts(text, emulation):
+  used = set(emulation["variables"])
+  found = [item for block in find_blocks(text) if block[0] == "declare" for item in declare_transfers(text, block) if item[0] in used]
+  kinds = {type_name for _, type_name, _ in found}
+  parts = [TRANSFER_STRUCTS[kind] for kind in TRANSFER_STRUCTS if kind in kinds]
+  parts += [f"{TRANSFER_TYPES[type_name]} {variable};" for variable, type_name, _ in found]
+  starts = "".join(
+    f"  {variable} = {TRANSFER_TYPES[type_name]}{{ {transfer_initializer(type_name, transfer)} }};\n"
+    for variable, type_name, transfer in found
+  )
+  return parts + [f"static void vmegInitTransfers(void) {{\n{starts}}}"] if found else []
+
+
 def host_source(text, identifier, others=(), compat=None, uses=()):
   arrays, parts = declared_parts(text, identifier, others, uses)
   _, bindings = pointer_bindings(text, identifier, others, uses)
@@ -190,6 +203,7 @@ def host_source(text, identifier, others=(), compat=None, uses=()):
   declared = {name for declaration in arrays for name in declaration["names"]}
   parts += [buffer_text(declaration) for declaration in arrays]
   parts += [f"volatile u32* {name};" for name in sorted(bindings)]
+  parts += declared_transfer_parts(text, emulation)
   unbound = sorted(name for name, target in bindings.items() if not target)
   if unbound:
     parts.append("volatile u32 __attribute__((aligned(64))) vmegEmpty[2048];")
@@ -266,6 +280,7 @@ def host_main(text, identifier):
     "  const bool all = step < 0;\n"
     "  vmegFixArrays();\n"
     "  vmegBindPointers();\n"
+    + ("  vmegInitTransfers();\n" if emulation["variables"] else "") +
     "  if (argc > 2) {\n    vmegLoadArrays(argv[2]);\n  }\n"
     "  hwTraceMuted() = step > 0;\n"
     "  vmeLibEnable();\n  vmeLibWipe();\n"
