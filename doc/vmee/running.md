@@ -80,6 +80,7 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 - A call does the `.load` of its kernel first and its `.store` last, whatever the actions are, and the vmeg statements written in the body of the call (`.load`, `.store`) come after its actions, the way `vmegc` generates them ([10.5](../vmeg/calling.md#105-uploads-and-downloads-around-the-run), [11.3](../vmeg/blocks.md#113-the-vmeg-statements-of-a-block)). The arrays they use must be declared in the files ([1.3](#13-several-files)).
 - The VME is reset once, before the first call. A call starts from the state that the previous one left in the scratchpad, and the arrays that a `.store` has written are what the `.load` of the next calls read.
 - Only the four base buffers are shown. A `.store` does not show its array: read the result in the buffer it comes from.
+- The RAM starts as an image of zeros. A word that no array and no earlier `.store` has written reads 0. The local eDRAM of the Media Engine is the first 4 MB of the addresses (2 MB on the phat, 4 MB on the slim, the larger size is used): the words never written there are read with no message, and above `0x400000` with the warning of [1.9](#19-errors). An address is taken on its 29 low bits, so `0x40000000` and `0x0` are the same word.
 - The kernel is built into a small host program with `g++ -m32` and the library of the submodule `me-core-mapper`. `--run` needs `g++` with 32 bit support, and the submodule must not be empty (`git submodule update --init me-core-mapper`).
 - The host program is run once for each call, and the events it writes are played by the emulator, one call after the other. Each run is stopped after 60 seconds.
 
@@ -318,5 +319,6 @@ The errors of the command line are printed as `vmeemu: error: message`, with the
 | [1.8](#18---list) | `--run does not go with --list` | the two options together |
 | [1.8](#18---list) | `no @emulate on the kernel 'k' (a, b)` | `--kernel` with a kernel that no emulation uses; the message lists the kernels that are used |
 | [1.8](#18---list) | `the kernel q of the @emulate "far" is not defined in this file` | a block that calls a kernel defined in another file |
+| [1.2](#12-running-a-kernel) | `warning: N words never written are read as 0 outside the eDRAM, the first at 0xA` | a transfer reads words that nothing wrote, from the address `0x400000` up |
 | [1.8](#18---list) | `warning: there is no @emulate in this file` | the file has no `@emulate`; the listing is still written |
 | [1.8](#18---list) | `warning: emulate "x": the kernel k has no buffer` | the kernel has no `.load` and no `.store`; the message names all the kernels of a block |

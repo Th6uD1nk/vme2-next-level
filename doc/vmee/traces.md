@@ -36,6 +36,7 @@ W 0x440ff008 0x40
 - The numbers are hexadecimal, with or without `0x`.
 - Everything after a `#` is a comment, and the empty lines are skipped.
 - The events are played in the order of the file.
+- A word of the RAM that the DMAC reads and that no `M` event has put is 0. Below `0x400000`, the 4 MB of the local eDRAM ([1.2](running.md#12-running-a-kernel)), it is read with no message, and above with the warning of [1.9](running.md#19-errors).
 - `--trace` of `--run` writes a file in this format ([1.5](running.md#15---trace)).
 
 ## 2.2 Playing a trace
