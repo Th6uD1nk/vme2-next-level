@@ -291,11 +291,24 @@ void meLibOnProcess(void) {
     @kernel lowerLeg config {
       .memory = lowerLegConfigs[0];
 
-      Transfer realTwiddles = { memory: fftTwiddleReal, count: FFT_TWIDDLE_COUNT - 1 };
-      Transfer imagTwiddles = { memory: fftTwiddleImag, count: FFT_TWIDDLE_COUNT - 1 };
+      .load {
+        .transfer = twiddles;
+        .scope = global;
+        .offsets {
+          .top0 = FFT_TWIDDLE_BASE_OFFSET;
+        }
+      }
 
-      .load { .transfer = realTwiddles; .scope = global; .offsets { .top0 = FFT_TWIDDLE_BASE_OFFSET; } }
-      .load { .transfer = imagTwiddles; .scope = global; .offsets { .top2 = FFT_TWIDDLE_BASE_OFFSET; } }
+      .load {
+        .transfer = {
+          ...twiddles,
+          memory: fftTwiddleImag
+        };
+        .scope = global;
+        .offsets {
+          .top2 = FFT_TWIDDLE_BASE_OFFSET;
+        }
+      }
     }
 
     while (1) {
