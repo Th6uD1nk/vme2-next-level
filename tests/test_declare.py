@@ -60,14 +60,27 @@ class DeclareTest(unittest.TestCase):
     declared = code(declared_transfer)
     self.assertIn("typedef struct { volatile u32* memory; u32 count; } VmegTransfer;", declared)
     self.assertIn("VmegTransfer vmeVarIn = { a, 3 };", declared)
-    load = re.compile(r"static inline void kInLoad.*?\n}", re.S)
-    self.assertEqual(load.search(declared).group(), load.search(code(local_transfer)).group())
+    self.assertIn("vmeTransferLoad(&vmeVarIn, VME_TOP_BUFF0_WOFF);", declared)
+    self.assertIn("static inline void vmeTransferLoad(const VmegTransfer* transfer, u32 spadOffset) {", declared)
+    self.assertIn("vme_dma(ITERATION, DIMS, transfer->count);", declared)
+    self.assertNotIn("kInLoad", declared)
+    self.assertIn("kInLoad(a, VME_TOP_BUFF0_WOFF);", code(local_transfer))
     words = "volatile Buffer a[4];\n@declare {\n  Int last = 3;\n  Transfer(Words) w = { memory: a, count: last, gap: 1, step: 4, group: { size: 3, outer: 16, inner: 1 } };\n  Transfer(Words) z = { memory: a, count: 3 };\n}\n"
     out = code(words)
     self.assertIn("typedef struct { volatile u32* memory; u32 count; u32 gap; u32 step; u32 groupSize; u32 groupOuter; u32 groupInner; } VmegTransferWords;", out)
     self.assertIn("VmegTransferWords vmeVarW = { a, 3, 1, 4, 3, 16, 1 };", out)
     self.assertIn("VmegTransferWords vmeVarZ = { a, 3, 0, 0, 0, 0, 0 };", out)
     self.assertNotIn("VmegTransfer;", out)
+    used = "volatile Buffer a[16], b[16];\n@declare {\n  Transfer in = { memory: a, count: 15 };\n  Transfer(Words) w = { memory: b, count: 15, step: 4 };\n}\n.kernel k direct {\n  .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = w; .scope = global; .offsets { .top1 = 0; } }\n  .store { .transfer = in; .scope = global; .offsets { .base0 = 0; } }\n  Agu t = { count: 15 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\nvoid g(void) {\n  @kernel k config | exec {\n    .load { .transfer = in; .scope = global; .offsets { .top2 = 4; } }\n  }\n}\n"
+    out = code(used)
+    for name in ("vmeTransferLoad", "vmeTransferLoadWords", "vmeTransferStore"):
+      self.assertEqual(out.count(f"static inline void {name}("), 1)
+    self.assertIn("vme_dma(ITERATION, DIMS, transfer->count, transfer->gap);", out)
+    self.assertIn("vme_dma(CTRL, VALUE, 0x58);", code(used.replace(".load { .transfer = w;", ".store { .transfer = w;")))
+    self.assertEqual(out.count("vmeTransferLoad(&vmeVarIn, VME_TOP_BUFF0_WOFF);"), 2)
+    self.assertIn("vmeTransferLoad(&vmeVarIn, VME_TOP_BUFF2_WOFF + 4);", out)
+    self.assertIn("vmeTransferLoadWords(&vmeVarW, VME_TOP_BUFF1_WOFF);", out)
+    self.assertIn("vmeTransferStore(&vmeVarIn, VME_BASE_BUFF0_WOFF);", out)
     with self.assertRaisesRegex(ValueError, r"line 2: Transfer\(Halves\) is not generated yet"):
       translated("volatile Buffer a[4];\n@declare { Transfer(Halves) h = { memory: a, count: 3 }; }\n")
 

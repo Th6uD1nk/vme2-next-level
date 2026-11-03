@@ -359,6 +359,10 @@ def shared_transfer_function(type_name, direction):
   return f"static inline void {shared_transfer_name(type_name, direction)}(const {TRANSFER_TYPES[type_name]}* transfer, u32 spadOffset) {{\n" + "".join(f"  {line}\n" for line in lines) + "}"
 
 
+def shared_transfer_calls(name, variable, targets):
+  return [line for destination in transfer_destinations(targets) for line in (f"{name}(&{variable}, {destination});", wait_marker(name))]
+
+
 def transfer_calls(name, transfer, targets):
   arguments = "".join(f", {original}" for original in transfer_names(transfer))
   return [line for destination in transfer_destinations(targets) for line in (f"{name}({transfer['memory']}, {destination}{arguments});", wait_marker(name))]
@@ -494,8 +498,11 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
     transfer["kind"].ensure_generated(kind)
-    function = camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
-    record = {"function": function, "definition": transfer_function(function, transfer, kind) if function else None, "calls": transfer_calls(function, transfer, targets) if function else None, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
+    shared = transfer.get("declared")
+    function = shared_transfer_name(transfer["type"], kind) if shared else camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
+    definition = shared_transfer_function(transfer["type"], kind) if shared else transfer_function(function, transfer, kind) if function else None
+    calls = shared_transfer_calls(function, shared, targets) if shared else transfer_calls(function, transfer, targets) if function else None
+    record = {"function": function, "definition": definition, "calls": calls, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
     state[kind + "s"].append(record)
     state["sequence"].append(record)
   elif kind in ("transferdecl", "declaredtransfer"):
