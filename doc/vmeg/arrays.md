@@ -6,6 +6,7 @@
 
 - [8.1 The Buffer keyword](#81-the-buffer-keyword)
   - [8.1.1 The Q format](#811-the-q-format)
+  - [8.1.2 Buffer pointers](#812-buffer-pointers)
 - [8.2 Global arrays](#82-global-arrays)
 - [8.3 Local arrays](#83-local-arrays)
 - [8.4 Arrays in several files](#84-arrays-in-several-files)
@@ -57,6 +58,40 @@ volatile Buffer(Q4.20) angle[2] = { 0.7071068f, -2.0 };
 - A value outside the range of the format is an error ([8.6](#86-errors)).
 - A hexadecimal number, a macro or an expression stays as it is written, and the C compiler computes it.
 - The array is a `Buffer` like the others, with the same size and the same alignment ([8.1](#81-the-buffer-keyword)). Without a format, the numbers of the initializer stay as they are written.
+
+### 8.1.2 Buffer pointers
+
+```c
+volatile Buffer a[32], b[32];
+volatile Buffer* signal = a;
+volatile Buffer* const signals[2] = { a, b };
+volatile Buffer(Q4.20)* scaled;
+volatile Buffer* stage = (volatile u32*)0x40000000;
+```
+
+`vmegc` writes them in the C file as:
+
+```c
+volatile u32 __attribute__((aligned(64))) a[32], b[32];
+volatile u32* signal = a;
+volatile u32* const signals[2] = { a, b };
+volatile u32* scaled;
+volatile u32* stage = (volatile u32*)0x40000000;
+```
+
+**Explanation of the code above:**
+
+- `volatile Buffer* signal = a;` declares a pointer to words, set on the array `a`. A pointer is a C variable: it can point to another array later, which a `Transfer` that names it follows ([9.1](transfers.md#91-the-transfer-variable)).
+- `signals` is a table of pointers, with `const` on the pointers, as in C.
+- `Buffer(Q4.20)*` is written like the format of an array. A pointer holds no number to convert, so the format changes nothing: `vmegc` writes `volatile u32*`.
+- `stage` points to a fixed address, written in plain C: `0x40000000` is the start of the local eDRAM of the Media Engine, seen without the cache.
+
+**Rules:**
+
+- The initializer is plain C: an array name, an element of a table, a cast of an address, or an expression. `vmegc` copies it.
+- A pointer has no `aligned` attribute: the alignment is the one of what it points to.
+- `static`, `extern` and `const` are written as for an array ([8.4](#84-arrays-in-several-files)). A pointer is global ([8.2](#82-global-arrays)) or local ([8.3](#83-local-arrays)), and a local pointer can be declared in a block of the function, before the call that uses it.
+- As for an array, `Buffer*` cannot be used in a parameter or in a cast ([8.6](#86-errors)): write `volatile u32*` there.
 
 ## 8.2 Global arrays
 
