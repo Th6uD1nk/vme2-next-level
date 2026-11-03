@@ -309,11 +309,12 @@ void probeAgu4C7I7AccRun(void) {
 @emulate "agu4-c7-i7-rep-add"
 .kernel probeAgu4C7I7RepAdd direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 + base0; }
+  .pe0 { .top = readA; .write = write; .spad = top0 + top1; }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7I7RepAdd config | exec
@@ -323,11 +324,12 @@ void probeAgu4C7I7RepAddRun(void) {
 @emulate "agu4-c7-i7-rep-sub"
 .kernel probeAgu4C7I7RepSub direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 - base0; }
+  .pe0 { .top = readA; .write = write; .spad = top0 - top1; }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7I7RepSub config | exec
@@ -337,11 +339,12 @@ void probeAgu4C7I7RepSubRun(void) {
 @emulate "agu4-c7-i7-rep-mul"
 .kernel probeAgu4C7I7RepMul direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 * base0; }
+  .pe0 { .top = readA; .write = write; .spad = top0 * top1; }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7I7RepMul config | exec
@@ -351,11 +354,12 @@ void probeAgu4C7I7RepMulRun(void) {
 @emulate "agu4-c7-i7-rep-mac"
 .kernel probeAgu4C7I7RepMac direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = mac(top0, base0); }
+  .pe0 { .top = readA; .write = write; .spad = mac(top0, top1); }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7I7RepMac config | exec
@@ -365,9 +369,9 @@ void probeAgu4C7I7RepMacRun(void) {
 @emulate "agu4-c7-i7-rep-acc"
 .kernel probeAgu4C7I7RepAcc direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu readA = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .write = write; .spad = acc(top0); }
+  .pe0 { .top = readA; .write = write; .spad = acc(top0); }
 }
 
 @kernel probeAgu4C7I7RepAcc config | exec
@@ -377,11 +381,12 @@ void probeAgu4C7I7RepAccRun(void) {
 @emulate "agu4-c7-r4-rep-add"
 .kernel probeAgu4C7R4RepAdd direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 + base0; }
+  .pe0 { .top = readA; .write = write; .spad = top0 + top1; }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7R4RepAdd config | exec
@@ -391,11 +396,12 @@ void probeAgu4C7R4RepAddRun(void) {
 @emulate "agu4-c7-r4-rep-sub"
 .kernel probeAgu4C7R4RepSub direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 - base0; }
+  .pe0 { .top = readA; .write = write; .spad = top0 - top1; }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7R4RepSub config | exec
@@ -405,11 +411,12 @@ void probeAgu4C7R4RepSubRun(void) {
 @emulate "agu4-c7-r4-rep-mul"
 .kernel probeAgu4C7R4RepMul direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 * base0; }
+  .pe0 { .top = readA; .write = write; .spad = top0 * top1; }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7R4RepMul config | exec
@@ -419,11 +426,12 @@ void probeAgu4C7R4RepMulRun(void) {
 @emulate "agu4-c7-r4-rep-mac"
 .kernel probeAgu4C7R4RepMac direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
-  Agu readBase = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  .load { .transfer = tableB; .scope = global; .offsets { .top1 = 0; } }
+  Agu readA = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu readB = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = mac(top0, base0); }
+  .pe0 { .top = readA; .write = write; .spad = mac(top0, top1); }
+  .pe1 { .top = readB; }
 }
 
 @kernel probeAgu4C7R4RepMac config | exec
@@ -433,9 +441,9 @@ void probeAgu4C7R4RepMacRun(void) {
 @emulate "agu4-c7-r4-rep-acc"
 .kernel probeAgu4C7R4RepAcc direct {
   .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
-  Agu readTop = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
+  Agu readA = { count: 7, inner0: { count: 3, step: 1 }, repeat: true };
   Agu write = { count: 23, cyc: auto };
-  .pe0 { .top = readTop; .write = write; .spad = acc(top0); }
+  .pe0 { .top = readA; .write = write; .spad = acc(top0); }
 }
 
 @kernel probeAgu4C7R4RepAcc config | exec
