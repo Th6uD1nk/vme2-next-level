@@ -5,6 +5,7 @@
 ## Contents
 
 - [3.1 Principle](#31-principle)
+  - [3.1.1 Pointers](#311-pointers)
 - [3.2 Building](#32-building)
 - [3.3 Several emulations](#33-several-emulations)
 - [3.4 The window of the buffers](#34-the-window-of-the-buffers)
@@ -23,6 +24,45 @@ When the last call is over, the program writes the base buffers in the file `log
 - The calls of a block are played in the order written, with their `.params` and `.memory`.
 - The vmeg statements written in the body of a call (`.load`, `.store`) are done before the buffers are written, and follow the same rules as in `vmee` ([1.2](running.md#12-running-a-kernel)).
 - The program is a vmeg file, translated by `vmegc` like any other.
+
+### 3.1.1 Pointers
+
+A `Buffer*` pointer ([8.1.2](../vmeg/arrays.md#812-buffer-pointers)) that a `.load` or a `.store` of the emulation names is written in the program with its target.
+
+```c
+volatile Buffer two[4] = { 10, 20, 30, 40 };
+volatile Buffer* stage = (volatile u32*)0x40000000;
+
+.kernel doubler direct {
+  Agu top = { count: 3 }, write = { count: 3, cyc: auto };
+  .pe0 { .top = top; .write = write; .spad = top0 + top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "pick" {
+    volatile Buffer* signal = two;
+    @kernel doubler config {
+      Transfer in = { memory: signal, count: 3 };
+      .load { .transfer = in; .scope = local; .offsets { .top0 = 0; } }
+    }
+    @kernel doubler exec {
+      Transfer out = { memory: stage, count: 3 };
+      .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }
+    }
+  }
+}
+```
+
+**Explanation of the code above:**
+
+- `vmeh` writes `volatile Buffer* signal = two;` in the function of the program, and `volatile Buffer* stage = (volatile u32*)0x40000000;` among the globals. The program on the PSP uses the pointers as they are.
+- `stage` is a fixed address of the PSP: the `.store` writes there, in the local eDRAM of the Media Engine.
+
+**Rules:**
+
+- The target of a pointer is, as in `vmee` ([1.7.1](running.md#171-pointers)): the array that its initializer names alone, or an address made of numbers, operators, words of types and macros of the files. `vmeh` has no `--use`.
+- A pointer whose initializer is neither one nor the other, like `volatile Buffer* signal = table[index];`, stops `vmeh` with `the pointer signal of the @emulate "pick" is initialised with an expression that vmeh cannot write, give it the name of an array`.
+- The pointers that the emulation does not name are not written in the program.
 
 ## 3.2 Building
 
