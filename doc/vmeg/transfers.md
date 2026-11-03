@@ -35,12 +35,13 @@ Transfer(Words) spread = { memory: input, count: 15, step: 4 };
 
 - `Transfer in` copies a run of consecutive words.
 - `Transfer(Words) spread` turns on the AGUs of the DMAC: it takes the fields `gap`, `step` and `group` too.
-- `memory: input` is the array that is copied.
+- `memory: input` is the array that is copied. It can also be a pointer `Buffer*` ([8.1.2](arrays.md#812-buffer-pointers)): the copy then reads or writes the array that the pointer points to when the call runs.
 - `count: 15` is the number of words minus one: both `Transfer` copy 16 words.
 
 **Rules:**
 
 - `memory` and `count` are needed, whatever the type.
+- `memory` names an array or a pointer `Buffer*`, global or local ([8](arrays.md)).
 - Each type has its own fields: a field that is not in the type is refused ([9.6](#96-errors)).
 - The numbers cannot be negative. They are numbers known at compile time, or a name that is not known yet ([9.5](#95-unknown-names-in-a-transfer)).
 - The name of a `Transfer` is declared once, whatever the type of the variables ([2.2.2](language.md#222-names)).
@@ -171,7 +172,7 @@ volatile Buffer result[16];
 | Attribute | Value |
 |---|---|
 | `.transfer` | the `Transfer` that describes the copy |
-| `.scope` | `global` or `local`, the scope of the array ([8](arrays.md)). `local` when it is left out |
+| `.scope` | `global` or `local`, the scope of the array or of the pointer ([8](arrays.md)). `local` when it is left out |
 | `.offsets` | the buffers and the place in each of them ([9.4](#94-the-offsets)) |
 
 **Explanation of the code above:**
@@ -187,7 +188,30 @@ volatile Buffer result[16];
 - A buffer is written once in `.offsets`. The copy is done once for each buffer that `.offsets` lists.
 - Without `.offsets` the copy uses the scratchpad from its offset 0.
 - Several `.load` and `.store` can use the same `Transfer`.
+- With a pointer, the generated function of the copy receives the value of the pointer at the call. A local pointer is declared in the function that holds the call, in a block that contains it and before it ([8.1.2](arrays.md#812-buffer-pointers)).
 - The copies are done when the kernel is called: the `.load` first and the `.store` last ([10.5](calling.md#105-uploads-and-downloads-around-the-run)).
+
+With a pointer, the same `.load` copies the array that the pointer points to when the call runs:
+
+```c
+volatile Buffer a[16], b[16];
+
+.kernel k direct {
+  Transfer in = { memory: source, count: 15 };
+  .load { .transfer = in; .scope = local; .offsets { .top0 = 0; } }
+}
+
+void run(int which) {
+  volatile Buffer* source = which ? b : a;
+  @kernel k config | exec {
+  }
+}
+```
+
+**Explanation of the code above:**
+
+- `source` is a local pointer of `run`. `.scope = local` says that `memory: source` is declared in the function that calls the kernel.
+- The call loads `b` when `which` is not 0, and `a` otherwise: the pointer is read when the call runs.
 
 ## 9.4 The offsets
 
@@ -251,7 +275,7 @@ void run(int skipped) {
 - A name is one parameter, however many times it is used in the fields. The parameters follow the order of the fields: `count`, `gap`, `step`, then `group`.
 - A name has to be known where the kernel is called: a macro that the file includes, or a variable of the function.
 - The part of an expression that `vmegc` knows is replaced by its value ([2.6](language.md#26-numbers-macros-and-unknown-names)).
-- `memory` is not a number: it names an array ([8](arrays.md)).
+- `memory` is not a number: it names an array or a pointer ([8](arrays.md)).
 
 ## 9.6 Errors
 
@@ -265,7 +289,7 @@ The messages start with `line N:`, left out here.
 | [9.1](#91-the-transfer-variable) | `Transfer in: unknown field 'foo' (memory, count)` | a field that is not in the type, the message lists the ones that are |
 | [9.1](#91-the-transfer-variable) | `Transfer in: duplicate field 'count'` | the same field written twice |
 | [9.1](#91-the-transfer-variable) | `Transfer in: the field 'count' is needed` | a `Transfer` without `memory` or without `count` |
-| [9.1](#91-the-transfer-variable) | `Transfer in: 'memory' takes a name` | `memory` with something else than the name of an array |
+| [9.1](#91-the-transfer-variable) | `Transfer in: 'memory' takes a name` | `memory` with something else than the name of an array or of a pointer |
 | [9.1](#91-the-transfer-variable) | `Transfer in: 'count' takes a value, not a list of fields` | braces given to a field that takes a value |
 | [9.1](#91-the-transfer-variable) | `Transfer in: count cannot be negative` | a negative number in a field |
 | [9.2.3](#923-the-group) | `Transfer in: 'group' takes a list of fields` | `group` with a value |
