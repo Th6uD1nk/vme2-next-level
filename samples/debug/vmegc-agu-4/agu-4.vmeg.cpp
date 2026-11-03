@@ -113,3 +113,31 @@ void probeAgu4C7R4AddRun(void) {
 @kernel probeAgu4C7R4Sub config | exec
 void probeAgu4C7R4SubRun(void) {
 }
+
+@emulate "agu4-c7-r4-mul"
+.kernel probeAgu4C7R4Mul direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 3, step: 1 } };
+  Agu readBase = { count: 7, inner0: { count: 3, step: 1 } };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 * base0; }
+}
+
+@kernel probeAgu4C7R4Mul config | exec
+void probeAgu4C7R4MulRun(void) {
+}
+
+@emulate "agu4-c7-r4-mac"
+.kernel probeAgu4C7R4Mac direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 3, step: 1 } };
+  Agu readBase = { count: 7, inner0: { count: 3, step: 1 } };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = mac(top0, base0); }
+}
+
+@kernel probeAgu4C7R4Mac config | exec
+void probeAgu4C7R4MacRun(void) {
+}
