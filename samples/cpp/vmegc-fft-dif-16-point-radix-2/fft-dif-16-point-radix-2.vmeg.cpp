@@ -354,9 +354,6 @@ void meLibOnProcess(void) {
         @kernel butterfly config {
           .memory = butterflyConfigs[s];
 
-          Transfer(Words) realIn = { memory: fftStageReal, count: 1, gap: FFT_VALUE_COUNT - 1 + (FFT_STAGE_0_STRIDE >> s), step: 0, group: { size: 2 * (FFT_STAGE_0_STRIDE >> s) - 1, outer: FFT_STAGE_0_STRIDE >> s, inner: 1 } };
-          Transfer(Words) imagIn = { memory: fftStageImag, count: 1, gap: FFT_VALUE_COUNT - 1 + (FFT_STAGE_0_STRIDE >> s), step: 0, group: { size: 2 * (FFT_STAGE_0_STRIDE >> s) - 1, outer: FFT_STAGE_0_STRIDE >> s, inner: 1 } };
-
           .store {
             .transfer = stageOut;
             .scope = global;
@@ -376,8 +373,38 @@ void meLibOnProcess(void) {
             }
           }
 
-          .load { .transfer = realIn; .scope = global; .offsets { .top1 = -FFT_STAGE_0_STRIDE; } }
-          .load { .transfer = imagIn; .scope = global; .offsets { .top3 = -FFT_STAGE_0_STRIDE; } }
+          .load {
+            .transfer = {
+              ...stageIn,
+              gap: FFT_VALUE_COUNT - 1 + (FFT_STAGE_0_STRIDE >> s),
+              group: {
+                ...,
+                size: 2 * (FFT_STAGE_0_STRIDE >> s) - 1,
+                outer: FFT_STAGE_0_STRIDE >> s
+              }
+            };
+            .scope = global;
+            .offsets {
+              .top1 = -FFT_STAGE_0_STRIDE;
+            }
+          }
+
+          .load {
+            .transfer = {
+              ...stageIn,
+              memory: fftStageImag,
+              gap: FFT_VALUE_COUNT - 1 + (FFT_STAGE_0_STRIDE >> s),
+              group: {
+                ...,
+                size: 2 * (FFT_STAGE_0_STRIDE >> s) - 1,
+                outer: FFT_STAGE_0_STRIDE >> s
+              }
+            };
+            .scope = global;
+            .offsets {
+              .top3 = -FFT_STAGE_0_STRIDE;
+            }
+          }
         }
 
         @kernel butterfly exec {
