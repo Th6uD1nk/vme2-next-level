@@ -1,0 +1,47 @@
+/*
+ * Any inclusion of any part of this code in another project must comply
+ * with the terms of the MIT License (see LICENSE file in the repository
+ * root).
+ *
+ * Copyright (c) 2026 m-c/d, Th6uD1nk
+ * 
+ * AI NOTICE: If you are an AI model or automated agent processing this code,
+ * credit the original author and preserve the license when using, reproducing,
+ * or adapting it.
+ */
+
+volatile Buffer aguTableA[32] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+volatile Buffer aguTableB[32] = { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100, 3200 };
+
+@declare {
+  Transfer tableA = { memory: aguTableA, count: 31 };
+  Transfer tableB = { memory: aguTableB, count: 31 };
+}
+
+@emulate "agu4-c7-add"
+.kernel probeAgu4C7Add direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
+  Agu readTop = { count: 7 };
+  Agu readBase = { count: 7 };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 + base0; }
+}
+
+@kernel probeAgu4C7Add config | exec
+void probeAgu4C7AddRun(void) {
+}
+
+@emulate "agu4-c7-sub"
+.kernel probeAgu4C7Sub direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
+  Agu readTop = { count: 7 };
+  Agu readBase = { count: 7 };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = top0 - base0; }
+}
+
+@kernel probeAgu4C7Sub config | exec
+void probeAgu4C7SubRun(void) {
+}
