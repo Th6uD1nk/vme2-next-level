@@ -93,6 +93,18 @@ class DeclareTest(unittest.TestCase):
     entry = emulations(listed)[0]
     self.assertEqual([(link[0], link[1], link[3], link[5]) for link in entry["global"]], [("TOP_0", 16, "one", False), ("TOP_1", 8, "two", False), ("TOP_2", 8, "one", True)])
     self.assertEqual([(link[0], link[1], link[3]) for link in entry["stores"]["global"]], [("BASE_0", 4, "two")])
+    named = "volatile Buffer a[16], b[16];\n@declare {\n  Transfer in = { memory: a, count: 15 };\n  Transfer(Words) w = { memory: a, count: 15, step: 4, group: { size: 3, outer: 16, inner: 1 } };\n  Transfer second = { ...in, memory: b };\n  Transfer(Words) w2 = { ...w, count: 7, group: { ..., outer: 8 } };\n}\n.kernel k direct {\n  Transfer(Words) local = { ...w, count: 3 };\n  .load { .transfer = second; .scope = global; .offsets { .top0 = 0; } }\n  .load { .transfer = w2; .scope = global; .offsets { .top1 = 0; } }\n  .load { .transfer = local; .scope = global; .offsets { .top2 = 0; } }\n  Agu t = { count: 15 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\n@kernel k config | exec\nvoid f(void) {}\n"
+    out = code(named)
+    self.assertIn("VmegTransfer vmeVarSecond = { b, 15 };", out)
+    self.assertIn("VmegTransferWords vmeVarW2 = { a, 7, 0, 4, 3, 8, 1 };", out)
+    self.assertIn("vmeTransferLoad(&vmeVarSecond, VME_TOP_BUFF0_WOFF);", out)
+    self.assertIn("vmeTransferLoadWords(&vmeVarW2, VME_TOP_BUFF1_WOFF);", out)
+    self.assertIn("static inline void kLocalLoad(volatile u32* memory, u32 spadOffset) {", out)
+    self.assertIn("vme_dma(ITERATION, DIMS, 3, 0);", out)
+    for declaration, message in (("Transfer x = { ...nope, memory: b };", "line 5: unknown Transfer variable 'nope'"), ("Transfer(Words) x = { ...in, memory: b };", "line 5: Transfer x is a Transfer(Words), its base 'in' is a Transfer")):
+      with self.assertRaises(ValueError) as ctx:
+        translated("volatile Buffer a[16], b[16];\n@declare {\n  Transfer in = { memory: a, count: 15 };\n  Transfer(Words) w = { memory: a, count: 15 };\n  " + declaration + "\n}\n")
+      self.assertEqual(str(ctx.exception), message)
     with self.assertRaisesRegex(ValueError, r"line 2: Transfer\(Halves\) is not generated yet"):
       translated("volatile Buffer a[4];\n@declare { Transfer(Halves) h = { memory: a, count: 3 }; }\n")
 
