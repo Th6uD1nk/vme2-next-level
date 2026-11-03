@@ -140,3 +140,75 @@ count: 4
 
 - The window has the limits of [1.4](running.md#14-the-window-of-the-buffers): `start + words` is 2048 at most, and the number of words is 1 or more. `cmake` stops with an error if the values it gets are out of these limits ([3.7](#37-errors)). The values of `config.txt` are not checked.
 - With one `@emulate`, only the options of `cmake` apply: the program does not read `config.txt`.
+
+## 3.5 The command vmeh
+
+`vmeh` writes the vmeg file of the program. `cmake` runs it ([3.2](#32-building)); it can also be run alone.
+
+```
+vmeh --extract pick -o hw.vmeg.cpp --buffers-words 4 --use signal=two main.vmeg.cpp
+```
+
+**Explanation of the code above:**
+
+- `--extract pick` keeps the `@emulate` with the id `pick`. Without it, the program has all the emulations of the files ([3.3](#33-several-emulations)).
+- `-o hw.vmeg.cpp` is the file written. It is needed.
+- `--buffers-start` and `--buffers-words` choose the window of the buffers ([3.4](#34-the-window-of-the-buffers)).
+- `--use signal=two` gives the array `two` to the pointer `signal` ([3.1.1](#311-pointers)).
+- `main.vmeg.cpp` is the file with the `@emulate`. Several files can be given, as for `vmee` ([1.3](running.md#13-several-files)).
+
+| `cmake` | `vmeh` |
+|---|---|
+| `-DVMEH_SOURCE=file` | the input file, a path relative to the root of the project |
+| `-DVMEH_ID=id` | `--extract id` |
+| `-DVMEH_USE="p=a;q=b"` | `--use p=a --use q=b` |
+| `-DVMEH_BUFFERS_START=n` | `--buffers-start n` |
+| `-DVMEH_BUFFERS_WORDS=n` | `--buffers-words n` |
+
+**Rules:**
+
+- `vmeh` chooses the emulation by its id and reads the files, the window and `--use` like `vmee` ([1](running.md)), with these differences: `--use` gives an array to a pointer only ([3.1.1](#311-pointers)), and there is no `--list`, `--trace`, `--compat` or `--run`.
+- `vmeh` writes a program and does not run it. The program is built with `cmake` and `make` ([3.2](#32-building)) and run on the PSP.
+
+## 3.6 Comparing with vmee
+
+The program writes the base buffers in `log.txt` as `vmee --run` shows them ([1.2](running.md#12-running-a-kernel)): `Buffer: BASE n`, then the words, four per line, each one as `0x%08x`. Both results are read the same way.
+
+```
+vmee --run pick main.vmeg.cpp --use signal=two --buffers-words 4
+```
+
+```
+cmake -DVMEH_SOURCE=main.vmeg.cpp -DVMEH_ID=pick -DVMEH_USE="signal=two" -DVMEH_BUFFERS_WORDS=4 ..
+```
+
+**Explanation of the code above:**
+
+- The first command plays the emulation `pick` in `vmee`. The second builds the program for the PSP with the same id, the same array for `signal` and the same window.
+- The program is run on the PSP. The `Buffer: BASE n` lines of its `log.txt` are compared with the ones that `vmee` shows.
+
+**Rules:**
+
+- The id, the window and the arrays of `--use` are the same on both sides.
+- With several emulations, `log.txt` holds the current one only, and its first line is `Kernel: 001 - id` ([3.3](#33-several-emulations)): that line is not in the output of `vmee`.
+
+## 3.7 Errors
+
+The errors of `cmake` stop the configuration. The errors of `vmeh` are printed as `file: message`, with the exit code 1, and the errors of its command line as `vmeh: error: message`, with the exit code 2. The errors of a kernel or of an array come from `vmegc` ([14](../VMEG.md#14-errors)).
+
+| Section | Message | Cause |
+|---|---|---|
+| [3.2](#32-building) | `give the vmeg file that has the @emulate, for example: cmake -DVMEH_SOURCE=path/to/file.vmeg.cpp ..` | `cmake` without `-DVMEH_SOURCE` |
+| [3.5](#35-the-command-vmeh) | `vmeh: error: the following arguments are required: -o/--output` | `vmeh` without `-o` |
+| [3.5](#35-the-command-vmeh) | `file: no such file or directory` | an input file that cannot be read |
+| [3.5](#35-the-command-vmeh) | `there is no @emulate in these files` | no `@emulate` in the files |
+| [3.5](#35-the-command-vmeh) | `no @emulate with the id 'x' (a, b)` | an id that no mark has; the message lists the ids of the files |
+| [3.5](#35-the-command-vmeh) | `the @emulate "id" is in a and b` | the mark is in two of the files |
+| [3.5](#35-the-command-vmeh) | `the macro N has two different values in the files of the @emulate` | a `#define` with two values in the files that supply the arrays |
+| [3.4](#34-the-window-of-the-buffers) | `the first word of the buffers cannot be negative` | `--buffers-start` below 0 |
+| [3.4](#34-the-window-of-the-buffers) | `the number of words of the buffers must be 1 or more` | `--buffers-words` below 1 |
+| [3.4](#34-the-window-of-the-buffers) | `the window of the buffers goes past the end of a buffer (2048 words)` | `start + words` above 2048 |
+| [3.1.1](#311-pointers) | `the pointer signal of the @emulate "id" is initialised with an expression that vmeh cannot write, give it the name of an array` | a pointer set by an expression, with no `--use` |
+| [3.1.1](#311-pointers) | `--use signal=two: signal is not a pointer that the @emulate reads or writes, vmeh gives an array to a pointer only` | a `--use` whose name is not a pointer that the emulation names |
+| [3.1.1](#311-pointers) | `vmeh: error: --use takes NAME=NAME, for example --use input=other (got 'x')` | a `--use` that is not two names with `=` between them |
+| [3.1.1](#311-pointers) | `vmeh: error: --use: the array a is replaced twice` | two `--use` with the same name before the `=` |
