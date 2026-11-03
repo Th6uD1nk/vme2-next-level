@@ -11,6 +11,7 @@
 - [1.5 --trace](#15---trace)
 - [1.6 --compat](#16---compat)
 - [1.7 --use](#17---use)
+  - [1.7.1 Pointers](#171-pointers)
 - [1.8 --list](#18---list)
 - [1.9 Errors](#19-errors)
 
@@ -203,11 +204,71 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 **Rules:**
 
 - `--use A=B` can be written several times, one for each array to replace. An array is replaced once.
-- `A` is an array that a `.load` or a `.store` of the emulation names. Everywhere the emulation names `A`, in a load or in a store, it reads or writes `B`.
+- `A` is an array or a pointer `Buffer*` ([1.7.1](#171-pointers)) that a `.load` or a `.store` of the emulation names. Everywhere the emulation names `A`, in a load or in a store, it reads or writes `B`.
 - `B` is an array defined in the files of the command ([1.3](#13-several-files)). It has the same size as `A`.
 - The array `A` is not read nor written by the run.
 - In an emulation with several calls ([1.2](#12-running-a-kernel)), a store to `A` goes to `B`, and a later load of `A` reads it there.
 - `--use` goes with `--run`. It does not change the kernel, the file or the program for the PSP.
+
+### 1.7.1 Pointers
+
+A `Buffer*` pointer ([8.1.2](../vmeg/arrays.md#812-buffer-pointers)) that a `.load` or a `.store` of the emulation names is given an array before the first call.
+
+```c
+volatile Buffer one[4] = { 1, 2, 3, 4 };
+volatile Buffer two[4] = { 10, 20, 30, 40 };
+volatile Buffer* table[2] = { one, two };
+volatile Buffer* stage = (volatile u32*)0x40000000;
+
+.kernel doubler direct {
+  Agu top = { count: 3 }, write = { count: 3, cyc: auto };
+  .pe0 { .top = top; .write = write; .spad = top0 + top0; }
+}
+
+void meLibOnProcess(void) {
+  @emulate "pick" {
+    while (1) {
+      volatile Buffer* signal = table[index];
+      @kernel doubler config {
+        Transfer in = { memory: signal, count: 3 };
+        .load { .transfer = in; .scope = local; .offsets { .top0 = 0; } }
+      }
+      @kernel doubler exec {
+        Transfer out = { memory: stage, count: 3 };
+        .store { .transfer = out; .scope = global; .offsets { .base0 = 0; } }
+      }
+    }
+  }
+}
+```
+
+```
+vmee --run pick main.vmeg.cpp --use signal=two --buffers-words 4
+```
+
+shows:
+
+```
+Buffer: BASE 0
+0x00000014, 0x00000028, 0x0000003c, 0x00000050,
+```
+
+followed by the same lines for `BASE 1` to `BASE 3`.
+
+**Explanation of the code above:**
+
+- `signal` is set from a table with `index`, a value that the emulator does not know. `--use signal=two` gives it the array `two`, so the kernel doubles 10, 20, 30, 40.
+- Without `--use` the pointer reads zeros: the command writes `warning: the pointer signal is not bound to an array, it reads zeros: give it one with --use signal=array`, and the buffer shows zeros.
+- `stage` is set on a fixed address. The `.store` that names it writes the RAM at that address, with no `--use` and no warning.
+
+**Rules:**
+
+- The pointers that the emulation names are the ones that get an array. A pointer that it does not name is left alone.
+- A pointer is looked for in the files ([1.3](#13-several-files)) and in the function that holds the block, in the block or in a block that contains it.
+- The array of a pointer is, in this order: the array of `--use`; the array that its initializer names alone, as in `volatile Buffer* p = a;`; otherwise none.
+- An initializer that is an address is kept as the address of the pointer: it is made of numbers, the operators `( ) + - * / | & ^ ~ % < >`, the words of types (`u8` to `u64`, `s8` to `s64`, `int`, `unsigned`, `signed`, `long`, `short`, `char`, `void`, `volatile`, `const`), and macros of the files, with at least one number or one macro.
+- A pointer with no array and no address reads zeros, and a store to it goes to an internal array of 2048 words, the same for all of these pointers. The warning is written once for each pointer.
+- The address is the one of the RAM image of the emulator ([1.2](#12-running-a-kernel)): `0x40000000` is the start of the local eDRAM.
 
 ## 1.8 --list
 
@@ -320,5 +381,6 @@ The errors of the command line are printed as `vmeemu: error: message`, with the
 | [1.8](#18---list) | `no @emulate on the kernel 'k' (a, b)` | `--kernel` with a kernel that no emulation uses; the message lists the kernels that are used |
 | [1.8](#18---list) | `the kernel q of the @emulate "far" is not defined in this file` | a block that calls a kernel defined in another file |
 | [1.2](#12-running-a-kernel) | `warning: N words never written are read as 0 outside the eDRAM, the first at 0xA` | a transfer reads words that nothing wrote, from the address `0x400000` up |
+| [1.7.1](#171-pointers) | `warning: the pointer p is not bound to an array, it reads zeros: give it one with --use p=array` | a pointer that the emulation names, with no `--use`, no array in its initializer and no address |
 | [1.8](#18---list) | `warning: there is no @emulate in this file` | the file has no `@emulate`; the listing is still written |
 | [1.8](#18---list) | `warning: emulate "x": the kernel k has no buffer` | the kernel has no `.load` and no `.store`; the message names all the kernels of a block |
