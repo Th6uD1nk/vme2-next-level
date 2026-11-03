@@ -176,6 +176,10 @@ def declare_scopes(text):
   return tuple(found)
 
 
+def declare_is_global(text, block):
+  return any(start == block[1] and limit == len(text) for start, _, _, limit in declare_scopes(text))
+
+
 def visible_declares(text, position):
   return [("declare", start, opening, end) for start, opening, end, limit in declare_scopes(text) if end <= position < limit]
 

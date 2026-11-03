@@ -1,7 +1,7 @@
 from vmee.extract import chosen_emulation, declare_blocks, declared_parts, memory_declarations, pointer_bindings
 from vmee.listing import emulations
 from vmee.memory import check_window
-from vmeg.blocks import find_blocks, kernel_name
+from vmeg.blocks import declare_is_global, find_blocks, kernel_name
 
 
 def prologue(words, commands=False):
@@ -197,14 +197,15 @@ def pointer_declarations(text, identifier, others):
 
 
 def emulation_parts(text, identifier, others):
+  blocks = declare_blocks(text, identifier)
   arrays, macros = declared_parts(text, identifier, others)
   memories = memory_declarations(text, identifier)
   declared = arrays + memories + pointer_declarations(text, identifier, others)
   return {
     "macros": macros,
     "globals": [declaration["text"] for declaration in declared if declaration["where"] == "global"],
-    "locals": [declaration for declaration in declared if declaration["where"] == "local"],
-    "declares": [text[block[1]:block[3]] for block in declare_blocks(text, identifier)],
+    "locals": [declaration for declaration in declared if declaration["where"] == "local"] + [{"text": text[block[1]:block[3]]} for block in blocks if not declare_is_global(text, block)],
+    "declares": [text[block[1]:block[3]] for block in blocks if declare_is_global(text, block)],
     "kernels": kernel_texts(text, identifier),
   }
 
