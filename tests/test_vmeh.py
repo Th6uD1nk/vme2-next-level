@@ -4,6 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from vmeg.blocks import find_blocks
+from vmegc import render
 from vmeh.extract import extract_program, extract_source
 
 KERNELS = (
@@ -84,3 +86,26 @@ class UseTest(unittest.TestCase):
     with self.assertRaisesRegex(ValueError, "the array nothing is defined in no file"):
       extract_source(text, "second", (), 0, 32, [("p2", "nothing")])
 
+
+class DeclareTest(unittest.TestCase):
+  def test_a_declare_of_the_file_goes_before_the_kernels_and_a_declare_of_a_function_stays_in_the_function(self):
+    kernel = ".kernel k direct {\n  Agu %s = { count: 3 }, w = { count: 3, cyc: auto };\n  .pe0 { .top = %s; .write = w; .spad = top0 + top0; }\n%s}\n"
+    load = "  .load { .transfer = shared; .scope = global; .offsets { .top0 = 0; } }\n"
+    declare = "@declare {\n  Transfer shared = { memory: a, count: 3 };\n}\n"
+    call = "void meLibOnProcess(void) {\n  @emulate \"e\" {\n%s    @kernel k config | exec {\n%s    }\n  }\n}\n"
+    whole = "volatile Buffer a[4];\nvolatile Buffer b[4];\n" + declare + kernel % ("t", "t", load) + call % ("", "")
+    out = extract_source(whole, "e")
+    self.assertLess(out.index("@declare {"), out.index(".kernel k direct"))
+    self.assertLess(out.index("volatile Buffer a[4];"), out.index("@declare {"))
+    self.assertEqual(out.count("@declare {"), 1)
+    render(out, find_blocks(out), "t.vmeg.cpp")
+    local = "volatile Buffer a[4];\n" + kernel % ("shared", "shared", "") + call % (declare, "      .load { .transfer = shared; .scope = global; .offsets { .top0 = 0; } }\n")
+    out = extract_source(local, "e")
+    self.assertLess(out.index(".kernel k direct"), out.index("void meLibOnProcess(void) {"))
+    self.assertLess(out.index("void meLibOnProcess(void) {"), out.index("@declare {"))
+    render(out, find_blocks(out), "t.vmeg.cpp")
+    spread = local.replace("Transfer shared = { memory: a, count: 3 };", "Transfer shared = { memory: a, count: 3 };\n  Transfer other = { ...shared, memory: b };").replace("volatile Buffer a[4];", "volatile Buffer a[4];\nvolatile Buffer b[4];").replace(".transfer = shared; .scope = global; .offsets { .top0 = 0; } }\n    }", ".transfer = other; .scope = global; .offsets { .top0 = 0; } }\n    }")
+    out = extract_source(spread, "e")
+    self.assertIn("volatile Buffer a[4];", out)
+    self.assertIn("volatile Buffer b[4];", out)
+    render(out, find_blocks(out), "t.vmeg.cpp")
