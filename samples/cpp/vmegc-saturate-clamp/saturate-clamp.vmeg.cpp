@@ -74,15 +74,48 @@ volatile Buffer sharedBase0[16] = {
   Transfer top3Transfer = { memory: sharedTop3, count };
   Transfer base0Transfer = { memory: sharedBase0, count };
 
-  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
-  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
-  .load { .transfer = top2Transfer; .scope = global; .offsets { .top2 = 0; } }
-  .load { .transfer = top3Transfer; .scope = global; .offsets { .top3 = 0; } }
-  .load { .transfer = base0Transfer; .scope = global; .offsets { .base0 = SHARED_BASE_0_INPUT_OFFSET; } }
+  .load {
+    .transfer = top0Transfer;
+    .scope = global;
+    .offsets {
+      .top0 = 0;
+    }
+  }
 
-  
-  Agu top   = { count };
-  Agu base  = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
+  .load {
+    .transfer = top1Transfer;
+    .scope = global;
+    .offsets {
+      .top1 = 0;
+    }
+  }
+
+  .load {
+    .transfer = top2Transfer;
+    .scope = global;
+    .offsets {
+      .top2 = 0;
+    }
+  }
+
+  .load {
+    .transfer = top3Transfer;
+    .scope = global;
+    .offsets {
+      .top3 = 0;
+    }
+  }
+
+  .load {
+    .transfer = base0Transfer;
+    .scope = global;
+    .offsets {
+      .base0 = SHARED_BASE_0_INPUT_OFFSET;
+    }
+  }
+
+  Agu top = { count };
+  Agu base = { count, offset: SHARED_BASE_0_INPUT_OFFSET };
   Agu write = { count, cyc: auto };
 
   for p in 0..3 {
@@ -93,7 +126,9 @@ volatile Buffer sharedBase0[16] = {
     }
   }
 
-  .pe0 { .base = base; }
+  .pe0 {
+    .base = base;
+  }
 }
 
 void meLibOnProcess(void) {
