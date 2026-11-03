@@ -245,6 +245,30 @@ volatile Memory lowerLegConfigs[4];
 
 void meLibOnProcess(void) {
   @emulate "fft-4-stages" {
+    @declare {
+      Transfer twiddles = {
+        memory: fftTwiddleReal,
+        count: FFT_TWIDDLE_COUNT - 1
+      };
+
+      Transfer stageOut = {
+        memory: fftStageReal,
+        count: FFT_VALUE_COUNT - 1
+      };
+
+      Transfer(Words) stageIn = {
+        memory: fftStageReal,
+        count: 1,
+        gap: FFT_VALUE_COUNT - 1 + FFT_STAGE_0_STRIDE,
+        step: 0,
+        group: {
+          size: 2 * FFT_STAGE_0_STRIDE - 1,
+          outer: FFT_STAGE_0_STRIDE,
+          inner: 1
+        }
+      };
+    }
+
     for s in 0..3 {
       @kernel butterfly build {
         .params = { stride: FFT_STAGE_0_STRIDE >> s };
