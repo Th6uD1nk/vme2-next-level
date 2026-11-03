@@ -367,6 +367,54 @@ def parse_offsets(p):
   return ("offsets", entries)
 
 
+def accept_ellipsis(p):
+  toks = p.toks[p.i:p.i + 3]
+  if len(toks) == 3 and all(tok[0] == "punct" and tok[1] == "." for tok in toks) and toks[0][3] == toks[1][2] and toks[1][3] == toks[2][2]:
+    p.i += 3
+    return True
+  return False
+
+
+def parse_spread_fields(p, items, group):
+  while True:
+    token = p.peek()
+    name = p.ident()
+    p.expect(":")
+    if any(name == existing for existing, _ in items):
+      p.error(f"duplicate field '{name}'", token)
+    following = p.peek()
+    items.append((name, parse_spread_group(p) if following is not None and following[1] == "{" and not group else parse_expr(p)))
+    if not p.accept(","):
+      return
+
+
+def parse_spread_group(p):
+  p.expect("{")
+  merge = accept_ellipsis(p)
+  items = []
+  if merge and p.accept("}"):
+    return ("spreadparams", items, merge)
+  if merge:
+    p.expect(",")
+  if not p.accept("}"):
+    parse_spread_fields(p, items, True)
+    p.expect("}")
+  return ("spreadparams", items, merge)
+
+
+def parse_transfer_spread(p):
+  start = p.peek()
+  p.expect("{")
+  if not accept_ellipsis(p):
+    p.error("a Transfer written in .transfer starts with ... and the name of a Transfer: .transfer = { ...name, field: value };", start)
+  base = p.ident()
+  items = []
+  if p.accept(","):
+    parse_spread_fields(p, items, False)
+  p.expect("}")
+  return ("spread", base, items)
+
+
 def parse_transfer_use(p):
   direction = p.ident()
   p.expect("{")
@@ -387,6 +435,10 @@ def parse_transfer_use(p):
       continue
     p.expect("=")
     value = p.peek()
+    if name == "transfer" and value is not None and value[1] == "{":
+      items.append((name, parse_transfer_spread(p)))
+      p.expect(";")
+      continue
     items.append((name, ("name", p.ident())))
     if name == "scope" and value[1] not in TRANSFER_SCOPES:
       p.error(f".scope must be {' or '.join(TRANSFER_SCOPES)}", value)

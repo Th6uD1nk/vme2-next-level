@@ -346,6 +346,31 @@ def transfer_function(name, transfer, direction):
   return f"static inline void {name}(volatile u32* memory, u32 spadOffset{parameters}) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
 
 
+def check_spread(spread, transfer):
+  _, base, fields = spread
+  if not transfer.get("declared"):
+    raise ValueError(f"'{base}' is a Transfer of a kernel, only a Transfer of a @declare can be written with ...")
+  kind = transfer["kind"]
+  for name, value in fields:
+    if name not in kind.fields:
+      raise ValueError(f"Transfer {base}: unknown field '{name}' ({', '.join(kind.fields)})")
+    if name in kind.nested:
+      if value[0] != "spreadparams":
+        raise ValueError(f"Transfer {base}: '{name}' takes a list of fields")
+      allowed = [field for register in kind.nested[name] for field in register]
+      for field, _ in value[1]:
+        if field not in allowed:
+          raise ValueError(f"Transfer {base}: unknown field '{field}' of {name} ({', '.join(allowed)})")
+      if not value[2]:
+        for register in kind.nested[name]:
+          given = [field for field in register if any(field == item for item, _ in value[1])]
+          if 0 < len(given) < len(register):
+            missing = next(field for field in register if field not in given)
+            raise ValueError(f"Transfer {base}: the field '{missing}' of {name} is needed, {' and '.join(register)} are one register")
+    elif value[0] == "spreadparams":
+      raise ValueError(f"Transfer {base}: '{name}' takes a value, not a list of fields")
+
+
 def shared_transfer_name(type_name, direction):
   return f"vmeTransfer{direction.capitalize()}{'Words' if type_name == 'Words' else ''}"
 
@@ -497,6 +522,9 @@ def emit_statement(statement, env, lines, state):
     if items["transfer"][1] not in state["transfers"]:
       raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
     transfer = state["transfers"][items["transfer"][1]]
+    if items["transfer"][0] == "spread":
+      check_spread(items["transfer"], transfer)
+      raise ValueError("a Transfer written with ... in .transfer is not generated yet")
     transfer["kind"].ensure_generated(kind)
     shared = transfer.get("declared")
     function = shared_transfer_name(transfer["type"], kind) if shared else camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
