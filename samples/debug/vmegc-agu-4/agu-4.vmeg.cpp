@@ -489,3 +489,35 @@ void probeAgu4CopyI1s1RepRun(void) {
 @kernel probeAgu4CopyI3s1Rep config | exec
 void probeAgu4CopyI3s1RepRun(void) {
 }
+
+@emulate "agu4-copy-i5s1-rep"
+.kernel probeAgu4CopyI5s1Rep direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base1 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 5, step: 1 }, repeat: true };
+  Agu readBase = { count: 7, inner0: { count: 5, step: 1 }, repeat: true };
+  Agu writeTop = { count: 23, cyc: auto };
+  Agu writeBase = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .write = writeTop; .spad = top0 | top0; }
+  .pe1 { .base = readBase; .write = writeBase; .spad = base1 | base1; }
+}
+
+@kernel probeAgu4CopyI5s1Rep config | exec
+void probeAgu4CopyI5s1RepRun(void) {
+}
+
+@emulate "agu4-copy-i7s1-rep"
+.kernel probeAgu4CopyI7s1Rep direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base1 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu readBase = { count: 7, inner0: { count: 7, step: 1 }, repeat: true };
+  Agu writeTop = { count: 23, cyc: auto };
+  Agu writeBase = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .write = writeTop; .spad = top0 | top0; }
+  .pe1 { .base = readBase; .write = writeBase; .spad = base1 | base1; }
+}
+
+@kernel probeAgu4CopyI7s1Rep config | exec
+void probeAgu4CopyI7s1RepRun(void) {
+}
