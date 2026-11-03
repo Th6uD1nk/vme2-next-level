@@ -6,6 +6,7 @@
 
 - [9.1 The Transfer variable](#91-the-transfer-variable)
   - [9.1.1 A Transfer of a @declare](#911-a-transfer-of-a-declare)
+  - [9.1.2 The spread](#912-the-spread)
 - [9.2 The extended mode](#92-the-extended-mode)
   - [9.2.1 The fields](#921-the-fields)
   - [9.2.2 Where each field applies](#922-where-each-field-applies)
@@ -78,6 +79,43 @@ volatile Buffer a[16], b[16];
 - A `Transfer` of a `@declare` is used in a `.load` or a `.store` like a `Transfer` of a kernel ([9.3](#93-load-and-store)).
 - The fields of the type that the declaration leaves out are 0 for every use. A `Transfer` of a kernel leaves them as they are.
 - A `Transfer(Halves)` and a `Transfer(Bytes)` in a `@declare` are refused ([9.6](#96-errors)).
+
+### 9.1.2 The spread
+
+`...name` takes the fields of a `Transfer` of a `@declare`, and the fields written after it replace the ones it took.
+
+```c
+volatile Buffer a[16], b[16];
+
+@declare
+{
+  Transfer(Words) w = { memory: a, count: 15, step: 4, group: { size: 3, outer: 16, inner: 1 } };
+  Transfer(Words) w2 = { ...w, memory: b, group: { ..., outer: 8 } };
+}
+
+.kernel k direct
+{
+  .load { .transfer = { ...w, memory: b, count: 7 }; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = { ...w, group: { size: 1, outer: 2, inner: 3 } }; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = w2; .scope = global; .offsets { .top2 = 0; } }
+}
+```
+
+**Explanation of the code above:**
+
+- The first `.load` copies `b` with `count: 7`, and keeps the `step` and the `group` of `w`.
+- The second `.load` keeps `memory`, `count` and `step` of `w`. Its `group` is the one written: `size: 1, outer: 2, inner: 3`.
+- `w2` is a `Transfer` declared from `w`: it has the `step` of `w`, the array `b`, and a `group` with `size: 3` and `inner: 1` of `w`, and `outer: 8`. A `Transfer` declared this way is used like the others, as in the third `.load`.
+
+**Rules:**
+
+- A spread is written in the `.transfer` of a `.load` or of a `.store`, or as the initializer of a `Transfer` in a `@declare`. It starts with `...` and the name of the `Transfer`, then the fields, separated with `,`.
+- In a `.load` or a `.store`, the name is the one of a `Transfer` of a `@declare`. In a `@declare`, it can be the name of any `Transfer` that is visible there, and the type of both must be the same: a `Transfer(Words)` is not written from a `Transfer`.
+- The fields are the ones of the type ([9.1](#91-the-transfer-variable)). Their values follow the rules of [9.1](#91-the-transfer-variable): a number, an `Int`, an expression or a name that is not known yet ([9.5](#95-unknown-names-in-a-transfer)).
+- A field that holds a list, like `group`, is written in one of two ways:
+  - `group: { size: 1, outer: 2, inner: 3 }` replaces the list. The fields that are not written are 0, and `outer` and `inner` are written together.
+  - `group: { ..., outer: 8 }` starts with a bare `...`: the fields of the list that are written replace the ones of the base, and the others stay.
+- The spread changes nothing in the `Transfer` it takes.
 
 ## 9.2 The extended mode
 
@@ -330,6 +368,15 @@ The messages start with `line N:`, left out here.
 | [9.2.3](#923-the-group) | `Transfer in: group needs at least one field (size, outer, inner)` | `group: {}` |
 | [9.2.3](#923-the-group) | `Transfer in: the field 'inner' of group is needed, outer and inner are one register` | `outer` without `inner`, or `inner` without `outer` |
 | [9.2.3](#923-the-group) | `braces cannot be nested more than one level inside the parameters` | braces inside the braces of `group` |
+| [9.1.2](#912-the-spread) | `a Transfer written in .transfer starts with ... and the name of a Transfer: .transfer = { ...name, field: value };` | a `.transfer = { }` that does not start with `...` and a name |
+| [9.1.2](#912-the-spread) | `unknown Transfer variable 'nope'` | the name after `...` is not a `Transfer` |
+| [9.1.2](#912-the-spread) | `'w' is a Transfer of a kernel, only a Transfer of a @declare can be written with ...` | `...w` in a `.load` or a `.store`, with a `Transfer` declared in the kernel |
+| [9.1.2](#912-the-spread) | `Transfer w: unknown field 'foo' (memory, count, gap, step, group)` | a field that is not in the type of the base, the message lists the ones that are |
+| [9.1.2](#912-the-spread) | `Transfer w: 'count' takes a value, not a list of fields` | braces given to a field that takes a value |
+| [9.1.2](#912-the-spread) | `Transfer w: 'group' takes a list of fields` | `group` with a value |
+| [9.1.2](#912-the-spread) | `Transfer w: unknown field 'foo' of group (size, outer, inner)` | a field of `group` that does not exist |
+| [9.1.2](#912-the-spread) | `Transfer w: the field 'inner' of group is needed, outer and inner are one register` | `outer` without `inner`, or `inner` without `outer`, in a `group` that does not start with `...` |
+| [9.1.2](#912-the-spread) | `Transfer x is a Transfer(Words), its base 'in' is a Transfer` | a `Transfer` declared from a base of another type |
 | [9.1.1](#911-a-transfer-of-a-declare) | `Transfer(Halves) is not generated yet` | a `Transfer(Halves)` or a `Transfer(Bytes)` in a `@declare` |
 | [9.3](#93-load-and-store) | `.load needs a .transfer = name;` | a `.load` or a `.store` without `.transfer` |
 | [9.3](#93-load-and-store) | `unknown Transfer variable 'zzz'` | `.transfer = zzz;` with a name that is not a `Transfer` |
