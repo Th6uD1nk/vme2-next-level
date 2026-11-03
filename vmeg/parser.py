@@ -650,6 +650,18 @@ def parse_body(p):
   return statements
 
 
+DECLARE_KINDS = ("agudecl", "transferdecl", "int", "stagingdecl")
+
+
+def declare_statements(text, block):
+  body, limit = body_tokens(text, block)
+  statements = parse_body(Parser(text, body, limit))
+  for statement in statements:
+    if statement[0] not in DECLARE_KINDS:
+      raise ValueError(f"line {statement[-1]}: only Agu, Staging, Transfer and Int variables are accepted in @declare")
+  return statements
+
+
 def kernel_statements(text, block, cache):
   statements = cache.get(block[1])
   if statements is None:

@@ -154,6 +154,14 @@ def read_emulate(text, items, index):
   return ("emulate", start, end, end), items[index + 2][1][1:-1], line, items[index + 3][2]
 
 
+def read_declare(text, items, index):
+  start = items[index][2]
+  line = text.count("\n", 0, start) + 1
+  if index + 2 >= len(items) or items[index + 2][0] != "punct" or items[index + 2][1] != "{":
+    raise ValueError(f"line {line}: @declare is followed by a block {{ ... }}")
+  return ("declare", start, items[index + 2][2], block_end(text, items, index + 2, start, "@declare block"))
+
+
 def read_emulate_block(text, items, index, ids):
   start = items[index][2]
   line = text.count("\n", 0, start) + 1
@@ -208,6 +216,11 @@ def find_blocks(text):
         blocks.extend(read_kernel_block(text, items, i))
         nested = True
         continue
+      if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "declare":
+        blocks.append(read_declare(text, items, i))
+        skip = blocks[-1][3]
+        nested = True
+        continue
       if prev in (";", "}", "{") and i + 1 < len(items) and items[i + 1][1] == "emulate":
         blocks.extend(read_emulate_block(text, items, i, ids))
         nested = True
@@ -215,6 +228,10 @@ def find_blocks(text):
       line = text.count("\n", 0, start) + 1
       raise ValueError(f"line {line}: inside a function only '@kernel name {{ ... }}' is accepted")
     if kind == "punct" and value == "@" and depth == 0 and prev in (";", "}"):
+      if i + 1 < len(items) and items[i + 1][1] == "declare":
+        blocks.append(read_declare(text, items, i))
+        skip = blocks[-1][3]
+        continue
       if i + 1 < len(items) and items[i + 1][1] == "emulate":
         block, name, line, kernel_start = read_emulate(text, items, i)
         if name in ids:

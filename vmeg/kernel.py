@@ -7,7 +7,7 @@ from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
 from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS, ROOT_OPERATORS
 from vmeg.selector import choose_opcode
-from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, parse_body
+from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, declare_statements, parse_body
 from vmeg.scanner import tokens
 from vmeg.transfers import TRANSFER_KINDS
 from vmeg.vmecalls import DISABLE, wait_marker
@@ -682,6 +682,9 @@ def build_kernel(text, block, compat):
 
 def generate(text, block, warnings=None, compat=None):
   kind = block[0]
+  if kind == "declare":
+    declare_statements(text, block)
+    return ""
   if kind in ("decorator", "emulate", "emulate-block", "emulate-block-end", "kernel-block", "block-statement"):
     return ""
   if kind == "kernel-block-end":
