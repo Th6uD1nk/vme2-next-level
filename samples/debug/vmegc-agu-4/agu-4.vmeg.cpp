@@ -263,3 +263,29 @@ void probeAgu4C7I7SubRun(void) {
 @kernel probeAgu4C7I7Mul config | exec
 void probeAgu4C7I7MulRun(void) {
 }
+
+@emulate "agu4-c7-i7-mac"
+.kernel probeAgu4C7I7Mac direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tableB; .scope = global; .offsets { .base0 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 7, step: 1 } };
+  Agu readBase = { count: 7, inner0: { count: 7, step: 1 } };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .base = readBase; .write = write; .spad = mac(top0, base0); }
+}
+
+@kernel probeAgu4C7I7Mac config | exec
+void probeAgu4C7I7MacRun(void) {
+}
+
+@emulate "agu4-c7-i7-acc"
+.kernel probeAgu4C7I7Acc direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  Agu readTop = { count: 7, inner0: { count: 7, step: 1 } };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .write = write; .spad = acc(top0); }
+}
+
+@kernel probeAgu4C7I7Acc config | exec
+void probeAgu4C7I7AccRun(void) {
+}
