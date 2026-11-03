@@ -386,7 +386,7 @@ def shared_transfer_function(type_name, direction):
 
 def spread_value(item, env):
   folded = full_value(item, env)
-  return str(folded[1]) if folded[0] == "num" else to_c(folded)
+  return folded[1] if folded[0] == "num" else to_c(folded)
 
 
 def apply_spread(spread, transfer, env):
@@ -401,7 +401,7 @@ def apply_spread(spread, transfer, env):
       group = dict(transfer.get(name, {})) if value[2] else {}
       group.update(given)
       for field in (given if value[2] else names):
-        group.setdefault(field, "0")
+        group.setdefault(field, 0)
         assignments.append(f"{name}{field.capitalize()} = {group[field]}")
       merged[name] = group
     else:

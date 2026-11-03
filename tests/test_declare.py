@@ -5,6 +5,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from vmee.listing import emulations
 from vmeg.blocks import find_blocks
 from vmegc import render
 
@@ -88,6 +89,10 @@ class DeclareTest(unittest.TestCase):
     for line in ("VmegTransferWords vmeCopyVar = vmeVarW;", "vmeCopyVar.memory = b;", "vmeCopyVar.count = 7;", "vmeCopyVar.groupOuter = 8;", "vmeTransferLoadWords(&vmeCopyVar, VME_TOP_BUFF0_WOFF);", "vmeTransferLoadWords(&vmeCopyVar, VME_TOP_BUFF1_WOFF + 4);", "vmeCopyVar.groupSize = 1;", "vmeCopyVar.groupInner = 3;", "vmeTransferStoreWords(&vmeCopyVar, VME_BASE_BUFF0_WOFF);"):
       self.assertIn(line, out)
     self.assertNotIn("vmeCopyVar.groupSize = 3", out)
+    listed = "volatile Buffer one[16], two[16];\n@declare {\n  Int last = 7;\n  Transfer in = { memory: one, count: 15 };\n  Transfer(Words) w = { memory: one, count: 15, step: 4, group: { size: 3, outer: 16, inner: 1 } };\n}\n.kernel d direct {\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 + top0; }\n}\nvoid meLibOnProcess(void) {\n  @emulate \"e\" {\n    @kernel d config {\n      .load { .transfer = in; .scope = global; .offsets { .top0 = 0; } }\n      .load { .transfer = { ...in, memory: two, count: last }; .scope = global; .offsets { .top1 = 0; } }\n      .load { .transfer = { ...w, count: last, group: { ..., outer: 8 } }; .scope = global; .offsets { .top2 = 0; } }\n    }\n    @kernel d exec {\n      .store { .transfer = { ...in, memory: two, count: 3 }; .scope = global; .offsets { .base0 = 0; } }\n    }\n  }\n}\n"
+    entry = emulations(listed)[0]
+    self.assertEqual([(link[0], link[1], link[3], link[5]) for link in entry["global"]], [("TOP_0", 16, "one", False), ("TOP_1", 8, "two", False), ("TOP_2", 8, "one", True)])
+    self.assertEqual([(link[0], link[1], link[3]) for link in entry["stores"]["global"]], [("BASE_0", 4, "two")])
     with self.assertRaisesRegex(ValueError, r"line 2: Transfer\(Halves\) is not generated yet"):
       translated("volatile Buffer a[4];\n@declare { Transfer(Halves) h = { memory: a, count: 3 }; }\n")
 
