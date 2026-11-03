@@ -42,21 +42,21 @@ meLibSetSharedUncached32(10);
 #define FFT_TWIDDLE_COUNT (FFT_VALUE_COUNT - 1)
 #define FFT_TWIDDLE_BASE_OFFSET (128)
 
-volatile Buffer(Q4.20) fftTwiddleReal[15] = {
+volatile Buffer("Q4.20") fftTwiddleReal[15] = {
   1.0f, 0.9238795f, 0.7071068f, 0.3826834f,
   0.0f, -0.3826834f, -0.7071068f, -0.9238795f,
   1.0f, 0.7071068f, 0.0f, -0.7071068f,
   1.0f, 0.0f, 1.0f,
 };
 
-volatile Buffer(Q4.20) fftTwiddleImag[15] = {
+volatile Buffer("Q4.20") fftTwiddleImag[15] = {
   0.0f, -0.3826834f, -0.7071068f, -0.9238795f,
   -1.0f, -0.9238795f, -0.7071068f, -0.3826834f,
   0.0f, -0.7071068f, -1.0f, -0.7071068f,
   0.0f, -1.0f, 0.0f,
 };
 
-volatile Buffer(Q4.20) fftReal0[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal0[SAMPLE_SIZE] = {
   1.0f, 1.0f, 1.0f, 1.0f,
   1.0f, 1.0f, 1.0f, 1.0f,
   1.0f, 1.0f, 1.0f, 1.0f,
@@ -67,7 +67,7 @@ volatile Buffer(Q4.20) fftReal0[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal1[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal1[SAMPLE_SIZE] = {
   1.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
@@ -78,7 +78,7 @@ volatile Buffer(Q4.20) fftReal1[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal2[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal2[SAMPLE_SIZE] = {
   0.0f, 0.0f, 0.0f, 0.0f,
   1.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
@@ -89,7 +89,7 @@ volatile Buffer(Q4.20) fftReal2[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal3[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal3[SAMPLE_SIZE] = {
   1.000000f, 0.923880f, 0.707107f, 0.382683f,
   0.000000f, -0.382683f, -0.707107f, -0.923880f,
   -1.000000f, -0.923880f, -0.707107f, -0.382683f,
@@ -100,7 +100,7 @@ volatile Buffer(Q4.20) fftReal3[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal4[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal4[SAMPLE_SIZE] = {
   1.0f, 0.7071f, 0.0f, -0.7071f,
   -1.0f, -0.7071f, 0.0f, 0.7071f,
   1.0f, 0.7071f, 0.0f, -0.7071f,
@@ -111,7 +111,7 @@ volatile Buffer(Q4.20) fftReal4[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal5[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal5[SAMPLE_SIZE] = {
   1.0f, -1.0f, 1.0f, -1.0f,
   1.0f, -1.0f, 1.0f, -1.0f,
   1.0f, -1.0f, 1.0f, -1.0f,
@@ -122,7 +122,7 @@ volatile Buffer(Q4.20) fftReal5[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal6[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal6[SAMPLE_SIZE] = {
   0.000000f, 0.382683f, 0.707107f, 0.923880f,
   1.000000f, 0.923880f, 0.707107f, 0.382683f,
   0.000000f, -0.382683f, -0.707107f, -0.923880f,
@@ -133,7 +133,7 @@ volatile Buffer(Q4.20) fftReal6[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftReal7[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftReal7[SAMPLE_SIZE] = {
   2.000000f, 1.306563f, 0.000000f, -0.541196f,
   0.000000f, 0.541196f, 0.000000f, -1.306563f,
   -2.000000f, -1.306563f, 0.000000f, 0.541196f,
@@ -144,7 +144,7 @@ volatile Buffer(Q4.20) fftReal7[SAMPLE_SIZE] = {
   0, 0, 0, 0,
 };
 
-volatile Buffer(Q4.20) fftImag[SAMPLE_SIZE] = {
+volatile Buffer("Q4.20") fftImag[SAMPLE_SIZE] = {
   0.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
   0.0f, 0.0f, 0.0f, 0.0f,
