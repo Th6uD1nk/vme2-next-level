@@ -388,6 +388,7 @@ class ListingTest(unittest.TestCase):
       "id": "first", "kernel": "k", "kernels": ["k"], "steps": [("k", ("config", "exec"))], "pairs": [[]], "memories": [None], "after": [[]], "bodies": [[]], "modes": {"k": "direct"}, "form": "mark", "mode": "direct", "first": 7, "last": 12, "local": [], "declared": {"global": {"a"}, "local": set()},
       "global": [("TOP_0", 4, "", "a", 10, False), ("BASE_2", 2, "OFFSET", "a", 11, False)],
       "definitions": [function("kT0Load", 3), function("kT1Load", 1)],
+      "variables": [],
       "stores": {"global": [], "local": []},
     }])
 

@@ -75,6 +75,7 @@ def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, me
     "global": load_links(loads, "global"),
     "local": load_links(loads, "local"),
     "definitions": list(dict.fromkeys(record["definition"] for record in loads + stores)),
+    "variables": sorted({variable for record in loads + stores for line in record["calls"] or [] for variable in re.findall(r"\bvmeVar\w+", line)}),
     "stores": {"global": load_links(stores, "global"), "local": load_links(stores, "local")},
     "declared": {"global": file_buffer_names(list(tokens(text))), "local": local},
   }

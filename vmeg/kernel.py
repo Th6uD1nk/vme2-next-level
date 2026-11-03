@@ -784,7 +784,7 @@ def transfer_initializer(kind, transfer):
   return ", ".join(str(field) for field in fields)
 
 
-def declare_code(text, block):
+def declare_transfers(text, block):
   names = {statement[1]: statement[-1] for statement in declared_statements(text, block[1])}
   own = declare_statements(text, block)
   for statement in own:
@@ -796,14 +796,18 @@ def declare_code(text, block):
   env = new_env(macros)
   for statement in declared_statements(text, block[1]) + own:
     emit(statement, env, [], state)
-  lines = []
+  found = []
   for statement in own:
     if statement[0] != "transferdecl":
       continue
     if statement[3] not in TRANSFER_TYPES:
       raise ValueError(f"line {statement[-1]}: Transfer({statement[3]}) is not generated yet (only Transfer and Transfer(Words))")
-    lines.append(f"{TRANSFER_TYPES[statement[3]]} {transfer_variable(statement[1])} = {{ {transfer_initializer(statement[3], state['transfers'][statement[1]])} }};")
-  return "\n".join(lines)
+    found.append((transfer_variable(statement[1]), statement[3], state["transfers"][statement[1]]))
+  return found
+
+
+def declare_code(text, block):
+  return "\n".join(f"{TRANSFER_TYPES[type_name]} {variable} = {{ {transfer_initializer(type_name, transfer)} }};" for variable, type_name, transfer in declare_transfers(text, block))
 
 
 def declare_struct_types(text, blocks):

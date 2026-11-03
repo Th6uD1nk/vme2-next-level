@@ -3,9 +3,10 @@ import re
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_lines, memory_edits
-from vmeg.kernel import generate
+from vmeg.kernel import declare_transfers, generate
 from vmeg.qformat import translate_buffer
 from vmeg.registry import declarations, project_registry, split_declarators
+from vmeg.parser import declare_statements
 from vmeg.scanner import tokens
 from vmeg.vmecalls import finish_calls
 
@@ -124,7 +125,7 @@ def memory_text(declaration):
 
 def declared_parts(text, identifier, others=(), uses=()):
   _, bindings = pointer_bindings(text, identifier, others, uses)
-  arrays = array_declarations(text, identifier, others, [pair for pair in uses if pair[0] not in bindings], False, binding_arrays(bindings))
+  arrays = array_declarations(text, identifier, others, [pair for pair in uses if pair[0] not in bindings], False, binding_arrays(bindings) + declared_memories(text, identifier))
   for declaration in arrays:
     if declaration["extern"]:
       raise ValueError(f"the array {', '.join(declaration['names'])} of the @emulate \"{identifier}\" is declared extern and no file defines it")
@@ -158,6 +159,27 @@ def buffer_text(declaration):
     return translate_buffer(declaration["text"], BUFFER_TYPE)
   except ValueError as e:
     raise ValueError(f"line {declaration['line']}: {e}") from None
+
+
+def declare_blocks(text, identifier):
+  emulation = chosen_emulation(text, identifier)
+  searched = [text[block[1]:block[3]] for block in find_blocks(text) if block[0] == "kernel" and kernel_name(text, block) in emulation["kernels"]] + [statement for statements in emulation["bodies"] for statement in statements]
+  blocks = [(block, {statement[1] for statement in declare_statements(text, block)}) for block in find_blocks(text) if block[0] == "declare"]
+  found = []
+  grown = True
+  while grown:
+    grown = False
+    words = set(re.findall(r"\w+", " ".join(searched)))
+    for block, names in blocks:
+      if block not in found and names & words:
+        found.append(block)
+        searched.append(text[block[1]:block[3]])
+        grown = True
+  return sorted(found)
+
+
+def declared_memories(text, identifier):
+  return [transfer["memory"] for block in declare_blocks(text, identifier) for _, _, transfer in declare_transfers(text, block)]
 
 
 def host_source(text, identifier, others=(), compat=None, uses=()):
