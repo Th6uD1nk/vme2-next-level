@@ -1,4 +1,4 @@
-from vmee.extract import chosen_emulation, declared_parts, memory_declarations, pointer_bindings
+from vmee.extract import chosen_emulation, declare_blocks, declared_parts, memory_declarations, pointer_bindings
 from vmee.listing import emulations
 from vmee.memory import check_window
 from vmeg.blocks import find_blocks, kernel_name
@@ -204,6 +204,7 @@ def emulation_parts(text, identifier, others):
     "macros": macros,
     "globals": [declaration["text"] for declaration in declared if declaration["where"] == "global"],
     "locals": [declaration for declaration in declared if declaration["where"] == "local"],
+    "declares": [text[block[1]:block[3]] for block in declare_blocks(text, identifier)],
     "kernels": kernel_texts(text, identifier),
   }
 
@@ -216,6 +217,8 @@ def extract_source(text, identifier, others=(), start=0, words=32):
     sections.append("\n".join(parts["macros"]))
   if parts["globals"]:
     sections.append("\n\n".join(parts["globals"]))
+  if parts["declares"]:
+    sections.append("\n\n".join(parts["declares"]))
   sections.append("\n\n".join(kernel for _, kernel in parts["kernels"]))
   sections.append(process_function(text, identifier, parts["locals"], start))
   sections.append(MAIN)
@@ -249,6 +252,9 @@ def extract_program(sources, start=0, words=32):
   globals_ = list(dict.fromkeys(declaration for part in parts for declaration in part["globals"]))
   if globals_:
     sections.append("\n\n".join(globals_))
+  declares = list(dict.fromkeys(declare for part in parts for declare in part["declares"]))
+  if declares:
+    sections.append("\n\n".join(declares))
   sections.append("\n\n".join(dict(kernel for part in parts for kernel in part["kernels"]).values()))
   for index, ((text, identifier, _), part) in enumerate(zip(entries, parts), 1):
     sections.append(process_function(text, identifier, part["locals"], start, f"vmehRun{index}", False))
