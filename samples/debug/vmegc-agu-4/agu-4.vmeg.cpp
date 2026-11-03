@@ -73,3 +73,15 @@ void probeAgu4C7MulRun(void) {
 @kernel probeAgu4C7Mac config | exec
 void probeAgu4C7MacRun(void) {
 }
+
+@emulate "agu4-c7-acc"
+.kernel probeAgu4C7Acc direct {
+  .load { .transfer = tableA; .scope = global; .offsets { .top0 = 0; } }
+  Agu readTop = { count: 7 };
+  Agu write = { count: 23, cyc: auto };
+  .pe0 { .top = readTop; .write = write; .spad = acc(top0); }
+}
+
+@kernel probeAgu4C7Acc config | exec
+void probeAgu4C7AccRun(void) {
+}
