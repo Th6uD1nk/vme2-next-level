@@ -102,7 +102,7 @@ class RoundTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       kernel_lines(".spad = round(round(top0 + base0));", None)
     with self.assertRaises(ValueError):
-      kernel_lines(".spad = round(top0);", None)
+      kernel_lines(".spad = round(5);", None)
 
 
 class KnownMacrosInAKernelTest(unittest.TestCase):

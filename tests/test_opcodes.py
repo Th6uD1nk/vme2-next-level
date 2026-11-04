@@ -95,8 +95,8 @@ class ComplementTest(unittest.TestCase):
   def test_a_complement_of_what_no_opcode_covers_is_refused(self):
     with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       codes(".spad = ~(top0 + base0 + top1);")
-    with self.assertRaisesRegex(ValueError, "sat must wrap an operation"):
-      codes(".spad = ~sat(top0, 8);")
+    with self.assertRaisesRegex(ValueError, "an operation is expected"):
+      codes(".spad = ~sat(8, 8);")
 
 
 class ShiftTest(unittest.TestCase):

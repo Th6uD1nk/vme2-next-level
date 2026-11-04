@@ -56,6 +56,13 @@ def split_source(expr, stagings, compat):
   return None, flatten(expr, stagings, compat)
 
 
+def operations_of(expr, stagings, compat):
+  source, operations = split_source(expr, stagings, compat)
+  if source is not None:
+    return [{"kind": "pass", "source": source, "numbers": {}, "sat": None}]
+  return operations
+
+
 def check_arguments(name, args):
   names = [argument for argument, _ in OPERATIONS[FUNCTIONS[name]]["arguments"]]
   if len(args) != len(names):
@@ -92,9 +99,7 @@ def flatten(expr, stagings, compat):
       bits = constant(args[1], "sat bits")
       if not 0 <= bits <= 31:
         raise ValueError("sat bits out of range (0 to 31)")
-      _, operations = split_source(args[0], stagings, compat)
-      if not operations:
-        raise ValueError("sat must wrap an operation")
+      operations = operations_of(args[0], stagings, compat)
       if operations[-1]["sat"] is not None:
         raise ValueError("an operation takes only one sat")
       if operations[-1].get("shift") is not None:
@@ -104,9 +109,7 @@ def flatten(expr, stagings, compat):
     if name == "round":
       if len(args) != 1:
         raise ValueError("round takes 1 argument (value)")
-      _, operations = split_source(args[0], stagings, compat)
-      if not operations:
-        raise ValueError("round must wrap an operation")
+      operations = operations_of(args[0], stagings, compat)
       if operations[-1].get("round"):
         raise ValueError("an operation takes only one round")
       operations[-1]["round"] = True
@@ -123,9 +126,7 @@ def flatten(expr, stagings, compat):
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
     if expr[1] in (">>", "<<"):
-      _, operations = split_source(expr[2], stagings, compat)
-      if not operations:
-        raise ValueError("a shift must wrap an operation")
+      operations = operations_of(expr[2], stagings, compat)
       amount = constant(expr[3], "the shift")
       if not 0 <= amount <= 63:
         raise ValueError("the shift must be 0 to 63")
@@ -140,6 +141,8 @@ def flatten(expr, stagings, compat):
       raise ValueError("no opcode covers this expression")
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+  if source_ref(expr, stagings) is not None:
+    return operations_of(expr, stagings, compat)
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
