@@ -1,6 +1,7 @@
 import itertools
 
 from vmeg.blocks import read_kernel_list
+from vmeg.macros import evaluate, known_macros
 from vmeg.scanner import walk
 from vmeg.unroll import closing, flatten
 
@@ -191,6 +192,27 @@ def definition_edit(text, items, definition, used):
       names = {variable: str(value) for (variable, _, _), value in zip(variables, values)}
       copies.append(flatten(replaced(text, items, first, close, definition["removed"], names, (definition["name_at"], name))).strip())
   return (begin, end, " ".join(copies) + "\n" * text.count("\n", begin, end))
+
+
+def variant_name(text, items, at, definition, selection):
+  line = line_of(text, items[at][2])
+  alias, expressions = selection
+  variables = definition["variables"]
+  if alias != definition["alias"][0]:
+    raise ValueError(f"line {line}: the .as names '{alias}' but the kernel '{definition['name']}' declares '{definition['alias'][0]}'")
+  if len(expressions) != len(variables):
+    raise ValueError(f"line {line}: the .as of '{definition['name']}' gives {len(expressions)} indexes, the kernel has {len(variables)} variables")
+  macros = known_macros(text, items[at][2])
+  values = {}
+  for variable, expression in zip(definition["alias"][1], expressions):
+    value = evaluate(expression, macros.get)
+    if value is None:
+      raise ValueError(f"line {line}: the index '{expression}' must be known at compile time")
+    low, high = next((low, high) for name, low, high in variables if name == variable)
+    if not low <= value <= high:
+      raise ValueError(f"line {line}: the index {value} of '{variable}' is not in {low}..{high}")
+    values[variable] = value
+  return f"{definition['name']}_kernel{variant_number(variables, [values[name] for name, _, _ in variables])}"
 
 
 def expand_variants(text):
