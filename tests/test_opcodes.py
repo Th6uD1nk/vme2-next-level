@@ -216,8 +216,8 @@ class RemapTest(unittest.TestCase):
     self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x030 }; .spad = top0 + base0;"), [])
     with self.assertRaisesRegex(ValueError, "the opcode 0x220 of .remap primary has no operator '\\+'"):
       kernel_lines(".remap = { operator: \"+\", primary: 0x220 }; .spad = top0 + base0;", None)
-    with self.assertRaisesRegex(ValueError, "the opcode 0x999 of .remap primary is not in the table"):
-      kernel_lines(".remap = { operator: \"+\", primary: 0x999 }; .spad = top0 + base0;", None)
+    with self.assertRaisesRegex(ValueError, "takes an opcode from 0x000 to 0xfff"):
+      kernel_lines(".remap = { operator: \"+\", primary: 0x1000 }; .spad = top0 + base0;", None)
 
 
 if __name__ == "__main__":

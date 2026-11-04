@@ -492,7 +492,10 @@ def place(state, lines, pe, operations, line):
     remap = state["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
     if specification["units"] == "primary" and number != 0 and unit.lower() not in remap:
       warn(state, line, f"{operation['kind']} is the second operation of pe{pe}, it is not known to run in the second unit")
-    encoding = OPERATIONS[remap[unit.lower()]] if unit.lower() in remap else specification
+    encoding = specification
+    if unit.lower() in remap:
+      chosen = remap[unit.lower()]
+      encoding = OPERATIONS[chosen] if isinstance(chosen, str) else {"opcode": chosen, "code": f"fu_code(0x{chosen:03x})", "registers": specification["registers"]}
     code = encoding["code"]
     if len(specification["operands"]) == 2:
       mux = f"vme_mux({operation['front']}, {operation['back']})"
@@ -646,7 +649,11 @@ def emit_statement(statement, env, lines, state):
         raise ValueError(f".remap {unit} takes a number")
       target = OPCODE_KINDS.get(number[1])
       if target is None:
-        raise ValueError(f"the opcode 0x{number[1]:03x} of .remap {unit} is not in the table (vmegc --ops)")
+        if not 0 <= number[1] <= 0xfff:
+          raise ValueError(f".remap {unit} takes an opcode from 0x000 to 0xfff")
+        warn(state, statement[-1], f"the opcode 0x{number[1]:03x} of .remap {unit} is not in the table (vmegc --ops), it is written as it is with the registers of the operation it replaces")
+        units[unit] = number[1]
+        continue
       if operator not in PATTERN_OPERATORS[target]:
         raise ValueError(f"the opcode 0x{number[1]:03x} of .remap {unit} has no operator '{operator}'")
       units[unit] = target
