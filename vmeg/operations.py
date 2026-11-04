@@ -3,6 +3,16 @@ import textwrap
 from vmeg.pattern import check_patterns, children, parse_pattern
 
 OPERATIONS = {
+  "pass": {
+    "opcode": 0x004,
+    "pattern": "x",
+    "arguments": (("x", "source"),),
+    "registers": {},
+    "code": "fu_code(OP_BAK)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "x as it is, a buffer or a Staging variable, alone or with the sat, the round and the shift that wrap it",
+  },
   "add": {
     "opcode": 0x010,
     "not_portable": True,
@@ -289,6 +299,8 @@ def operators_of(operations):
 
 def pattern_operators(specification):
   found = set()
+  if parse_pattern(specification["pattern"])[0] == "name":
+    found.add("pass")
 
   def walk(tree):
     if tree[0] == "bin":
@@ -303,6 +315,8 @@ def pattern_operators(specification):
 
 def root_operator(specification):
   tree = parse_pattern(specification["pattern"])
+  if tree[0] == "name":
+    return "pass"
   return tree[1] if tree[0] == "bin" else None
 
 
