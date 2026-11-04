@@ -22,6 +22,11 @@ def chain(rows):
 
 
 class KnownValueTest(unittest.TestCase):
+  def test_the_division_and_the_modulo_follow_c(self):
+    self.assertEqual([evaluate(text, {})[1] for text in ("7 / 2", "-7 / 2", "7 % 3", "-7 % 3", "7 % -3")], [3, -3, 1, -1, 1])
+    with self.assertRaises(ValueError):
+      evaluate("1 / 0", {})
+
   def test_a_calculation_of_numbers_gives_a_number(self):
     results = [evaluate(text, {}) for text in ["2", "3 + 2 * 4", "(1 << 4) & 0xff", "0 - 3"]]
     self.assertEqual(results, [("num", 2), ("num", 11), ("num", 16), ("num", -3)])
