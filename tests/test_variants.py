@@ -4,6 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from vmee.listing import emulations
+from vmee.run import variant_id
 from vmeg.variants import expand_variants
 
 KERNEL = (
@@ -47,6 +49,28 @@ class VariantsTest(unittest.TestCase):
   def test_a_with_that_makes_too_many_copies_is_refused(self):
     with self.assertRaisesRegex(ValueError, "makes 1000 copies, at most 256"):
       expand_variants(call("@kernel shifted config | exec { .as row[0][0]; .with a in 0..9, b in 0..9, c in 0..9; }"))
+
+
+class EmulationTest(unittest.TestCase):
+  def sources(self, mark='@emulate "sh"\n', kernel=KERNEL):
+    return [("t.vmeg.cpp", expand_variants(mark + kernel, True))]
+
+  def test_a_marked_kernel_gives_one_emulation_per_variant_even_if_nothing_calls_it(self):
+    ids = [emulation["id"] for _, text in self.sources() for emulation in emulations(text)]
+    self.assertEqual(len(ids), 8)
+    self.assertIn("sh_3_1", ids)
+    self.assertIn("sh_0_0", ids)
+
+  def test_the_index_chooses_the_variant_and_the_wrong_ones_are_refused(self):
+    sources = self.sources()
+    self.assertEqual(variant_id(sources, "sh", "3,1"), "sh_3_1")
+    with self.assertRaisesRegex(ValueError, "give --index"):
+      variant_id(sources, "sh", None)
+    with self.assertRaisesRegex(ValueError, "has no variant 9,9"):
+      variant_id(sources, "sh", "9,9")
+    plain = self.sources(kernel=".kernel k direct\n{\n  Agu t = { count: 3 };\n  .pe0 { .top = t; .spad = top0 | top0; }\n}\n")
+    with self.assertRaisesRegex(ValueError, "has no variants"):
+      variant_id(plain, "sh", "0")
 
 
 if __name__ == "__main__":
