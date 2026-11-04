@@ -694,6 +694,28 @@ volatile Buffer mulTop1[16] = {
 void checkMulRun(void) {
 }
 
+@emulate "mul_cst"
+.kernel checkMulCst direct {
+  Int count = 16 - 1;
+  Int three = 3;
+
+  Transfer top0Transfer = { memory: mulTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 * 3; }
+  .pe1 { .write = write; .spad = 3 * top0; }
+  .pe2 { .write = write; .spad = top0 * 0x3; }
+  .pe3 { .write = write; .spad = top0 * three; }
+}
+
+@kernel checkMulCst config | exec
+void checkMulCstRun(void) {
+}
+
 volatile Buffer mulShrTop0[16] = {
   16, 15, 0xfffffff0, 0xfffffff1,
   100, 0xffffff9c, 3, 0xfffffffd,
