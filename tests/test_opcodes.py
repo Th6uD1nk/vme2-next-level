@@ -18,6 +18,7 @@ def used(body, compat=None):
 
 
 WRITTEN = [
+  (".spad = top1;", None, "fu_code(OP_BAK)", []),
   (".spad = top0 + base0;", None, "fu_code(OP_ADD)", []),
   (".spad = top1 + top2;", None, "fu_code(OP_ADD)", []),
   (".spad = top0 + base0;", "fat", "fu_code(OP_ADD_OFA)", [("A", "0")]),
@@ -97,6 +98,13 @@ class ComplementTest(unittest.TestCase):
       codes(".spad = ~(top0 + base0 + top1);")
     with self.assertRaisesRegex(ValueError, "an operation is expected"):
       codes(".spad = ~sat(8, 8);")
+
+
+class PassthroughTest(unittest.TestCase):
+  def test_a_buffer_alone_is_the_passthrough_and_the_shift_wraps_it(self):
+    self.assertEqual(codes(".spad = top1;"), ["OP_BAK"])
+    self.assertEqual(codes(".spad = top1 >> 3;"), ["OP_BAK"])
+    self.assertEqual(codes(".spad = sat(top1, 9);"), ["OP_BAK"])
 
 
 class ShiftTest(unittest.TestCase):
