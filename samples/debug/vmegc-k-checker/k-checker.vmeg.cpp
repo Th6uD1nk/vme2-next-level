@@ -626,3 +626,172 @@ volatile Buffer xnorCstTop0[16] = {
 void checkXnorCstRun(void) {
 }
 
+volatile Buffer clampTop0[16] = {
+  0xfffffc18, 0xffffff9b, 0xffffff9c, 0xffffff9d,
+  0xffffffff, 0, 1, 99,
+  100, 101, 1000, 0x7fffff,
+  0xff800000, 0x7fff, 0xffff8000, 50,
+};
+
+@emulate "clamp"
+.kernel checkClamp direct {
+  Int count = 16 - 1;
+  Int low = -100;
+  Int high = 100;
+
+  Transfer top0Transfer = { memory: clampTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (clamp(top0, -100, 100)) >> 1; }
+  .pe1 { .write = writeTwo; .spad = (clamp(top0, -100, 100)) >> 24; }
+  .pe2 { .write = writeTwo; .spad = (clamp(top0, -100, 100)) >> 32; }
+  .pe3 { .write = writeTwo; .spad = (clamp(top0, -100, 100)) >> 56; }
+}
+
+@kernel checkClamp config | exec
+void checkClampRun(void) {
+}
+
+volatile Buffer mulTop0[16] = {
+  0, 1, 0xffffffff, 2,
+  0xfffffffd, 100, 0xffffff9c, 0x1000,
+  0x10000, 0x7fffff, 0xff800000, 0x7fffff,
+  0x555555, 0xffaaaaaa, 0xff, 0xffffff00,
+};
+
+volatile Buffer mulTop1[16] = {
+  5, 1, 0xffffffff, 0xfffffffe,
+  0xfffffffd, 100, 100, 0x1000,
+  0x10000, 2, 0xffffffff, 0x7fffff,
+  2, 3, 0xff, 0x100,
+};
+
+@emulate "mul"
+.kernel checkMul direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: mulTop0, count };
+  Transfer top1Transfer = { memory: mulTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 * top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (top0 * top1) >> 24; }
+  .pe2 { .write = write; .spad = (top0 * top1) >> 32; }
+  .pe3 { .write = write; .spad = (top0 * top1) >> 56; }
+}
+
+@kernel checkMul config | exec
+void checkMulRun(void) {
+}
+
+@emulate "mul_cst"
+.kernel checkMulCst direct {
+  Int count = 16 - 1;
+  Int three = 3;
+
+  Transfer top0Transfer = { memory: mulTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 * 3) >> 1; }
+  .pe1 { .write = write; .spad = (top0 * 3) >> 24; }
+  .pe2 { .write = write; .spad = (top0 * 3) >> 32; }
+  .pe3 { .write = write; .spad = (top0 * 3) >> 56; }
+}
+
+@kernel checkMulCst config | exec
+void checkMulCstRun(void) {
+}
+
+volatile Buffer mulShrTop0[16] = {
+  16, 15, 0xfffffff0, 0xfffffff1,
+  100, 0xffffff9c, 3, 0xfffffffd,
+  0x1000, 0x10000, 0x7fffff, 0xff800000,
+  0x555555, 0xffaaaaaa, 0xffff, 0xffffffff,
+};
+
+volatile Buffer mulShrTop1[16] = {
+  16, 1, 16, 1,
+  100, 100, 5, 5,
+  0x1000, 0x10000, 0x7fffff, 0x10,
+  0x10, 0x10, 0xffff, 0xffffffff,
+};
+
+
+volatile Buffer macTop0[16] = {
+  1, 2, 3, 4,
+  0xffffffff, 0xfffffffe, 0xfffffffd, 0xfffffffc,
+  100, 200, 300, 400,
+  0x1000, 0x1000, 0xfffff000, 0x7fffff,
+};
+
+volatile Buffer macTop1[16] = {
+  1, 1, 1, 1,
+  1, 1, 1, 1,
+  3, 0xfffffffd, 3, 0xfffffffd,
+  0x1000, 0xfffff000, 0x1000, 2,
+};
+
+@emulate "mac"
+.kernel checkMac direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: macTop0, count };
+  Transfer top1Transfer = { memory: macTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (mac(top0, top1)) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (mac(top0, top1)) >> 24; }
+  .pe2 { .write = write; .spad = (mac(top0, top1)) >> 32; }
+  .pe3 { .write = write; .spad = (mac(top0, top1)) >> 56; }
+}
+
+@kernel checkMac config | exec
+void checkMacRun(void) {
+}
+
+volatile Buffer accTop0[16] = {
+  1, 2, 3, 4,
+  0xffffffff, 0xfffffffe, 0xfffffffd, 0xfffffffc,
+  100, 0xffffff9c, 0x1000, 0xfffff000,
+  0x7ffff0, 0x20, 0xff800010, 0x800,
+};
+
+@emulate "acc"
+.kernel checkAcc direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: accTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (acc(top0)) >> 1; }
+  .pe1 { .write = write; .spad = (acc(top0)) >> 24; }
+  .pe2 { .write = write; .spad = (acc(top0)) >> 32; }
+  .pe3 { .write = write; .spad = (acc(top0)) >> 56; }
+}
+
+@kernel checkAcc config | exec
+void checkAccRun(void) {
+}
