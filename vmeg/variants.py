@@ -63,3 +63,37 @@ def read_as(text, items, at, tokens):
       raise ValueError(f"line {line}: expected '.as alias[variable]...;', for example .as row[buffer][slot];")
     indexes.append(shape[k + 1])
   return shape[0], indexes
+
+
+def kernel_members(text, items, opening, close):
+  depth = items[opening][4] + 1
+  found = {}
+  for k in range(opening + 1, close):
+    token = items[k]
+    if token[1] != "." or token[4] != depth or token[5] not in STARTS or items[k + 1][1] not in ("with", "as"):
+      continue
+    name = items[k + 1][1]
+    if name in found:
+      raise ValueError(f"line {line_of(text, token[2])}: a kernel has one .{name}")
+    tokens, last = member_end(text, items, k)
+    found[name] = (k, last, tokens)
+  return found
+
+
+def replaced(text, items, first, last, removed, names, rename=None):
+  start = items[first][2]
+  edits = [(items[a][2], items[b][3], "\n" * text.count("\n", items[a][2], items[b][3])) for a, b in removed]
+  hidden = set(k for a, b in removed for k in range(a, b + 1))
+  if rename is not None:
+    edits.append((items[rename[0]][2], items[rename[0]][3], rename[1]))
+  for k in range(first, last + 1):
+    kind, token, begin, end, _, previous = items[k]
+    if k in hidden or kind != "ident" or token not in names or previous == ".":
+      continue
+    if previous in ("{", ",") and k + 1 < len(items) and items[k + 1][1] == ":":
+      continue
+    edits.append((begin, end, names[token]))
+  body = text[start:items[last][3]]
+  for begin, end, new in sorted(edits, reverse=True):
+    body = body[:begin - start] + new + body[end - start:]
+  return body
