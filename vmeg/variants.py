@@ -3,7 +3,7 @@ import itertools
 from vmeg.blocks import read_kernel_list
 from vmeg.macros import evaluate, known_macros
 from vmeg.scanner import walk
-from vmeg.unroll import closing, flatten
+from vmeg.unroll import MAX_COPIES, closing, flatten
 
 STARTS = (";", "}", "{")
 
@@ -56,6 +56,11 @@ def read_with(text, items, at, tokens):
     if any(shape[0] == name for name, _, _ in variables):
       raise ValueError(f"line {line}: the variable '{shape[0]}' is declared twice in the .with")
     variables.append((shape[0], low, high))
+  count = 1
+  for _, low, high in variables:
+    count *= high - low + 1
+  if count > MAX_COPIES:
+    raise ValueError(f"line {line}: the .with makes {count} copies, at most {MAX_COPIES} are made")
   return variables
 
 
@@ -77,9 +82,11 @@ def kernel_members(text, items, opening, close):
   found = {}
   for k in range(opening + 1, close):
     token = items[k]
-    if token[1] != "." or token[4] != depth or token[5] not in STARTS or items[k + 1][1] not in ("with", "as"):
+    if token[1] != "." or token[5] not in STARTS or items[k + 1][1] not in ("with", "as"):
       continue
     name = items[k + 1][1]
+    if token[4] != depth:
+      raise ValueError(f"line {line_of(text, token[2])}: the .{name} of a kernel is written directly in the kernel, not in a block of it")
     if name in found:
       raise ValueError(f"line {line_of(text, token[2])}: a kernel has one .{name}")
     tokens, last = member_end(text, items, k)
@@ -191,6 +198,8 @@ def definition_edit(text, items, definition, used):
     if name in used:
       names = {variable: str(value) for (variable, _, _), value in zip(variables, values)}
       copies.append(flatten(replaced(text, items, first, close, definition["removed"], names, (definition["name_at"], name))).strip())
+  if not copies:
+    raise ValueError(f"line {line_of(text, begin)}: kernel '{definition['name']}' is never called, add a block @kernel {definition['name']} config | exec {{ .as {definition['alias'][0]}[...]; }}")
   return (begin, end, " ".join(copies) + "\n" * text.count("\n", begin, end))
 
 
