@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 
 from vmee.extract import chosen_emulation, host_program
@@ -18,6 +19,24 @@ def choose_source(sources, identifier):
     chosen_emulation(sources[0][1], identifier)
   known = ", ".join(emulation["id"] for _, text in sources for emulation in emulations(text))
   raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in these files'})")
+
+
+def variant_id(sources, identifier, index):
+  ids = [emulation["id"] for _, text in sources for emulation in emulations(text)]
+  suffix = re.compile(re.escape(identifier) + r"((?:_\d+)+)")
+  variants = [match.group(1)[1:].replace("_", ",") for match in (suffix.fullmatch(other) for other in ids) if match]
+  if identifier in ids:
+    if index is not None:
+      raise ValueError(f"the @emulate \"{identifier}\" has no variants, --index does not go with it")
+    return identifier
+  if not variants:
+    return identifier
+  if index is None:
+    raise ValueError(f"the @emulate \"{identifier}\" is a kernel with variants, give --index=n,m... ({'; '.join(variants)})")
+  chosen = index.replace(" ", "")
+  if chosen not in variants:
+    raise ValueError(f"the @emulate \"{identifier}\" has no variant {chosen} ({'; '.join(variants)})")
+  return identifier + "_" + chosen.replace(",", "_")
 
 
 def unbound_pointers(trace):

@@ -5,7 +5,7 @@ from vmee.listing import defines, emulations, format_listing
 from vmee.machine import Emulator
 from vmee.memory import dump_base_buffers
 from vmee.options import parse_uses
-from vmee.run import choose_source, run_emulation
+from vmee.run import choose_source, run_emulation, variant_id
 from vmee.trace import replay
 from vmeg.unroll import unroll_loops, unroll_marked_loops
 from vmeg.variants import expand_variants
@@ -36,6 +36,7 @@ def main(argv=None):
   parser.add_argument("--kernel")
   parser.add_argument("--full", action="store_true")
   parser.add_argument("--run")
+  parser.add_argument("--index")
   parser.add_argument("--trace")
   parser.add_argument("--compat", choices=["fat"])
   parser.add_argument("--use", action="append", default=[])
@@ -44,6 +45,8 @@ def main(argv=None):
     parser.error("--kernel and --full go with --list")
   if args.run is not None and args.list:
     parser.error("--run does not go with --list")
+  if args.index is not None and args.run is None:
+    parser.error("--index goes with --run")
   if args.trace is not None and args.run is None:
     parser.error("--trace goes with --run")
   if args.compat is not None and args.run is None:
@@ -64,7 +67,7 @@ def main(argv=None):
       unrolled = []
       for path, text in sources:
         where = path
-        unrolled.append((path, expand_variants(unroll_marked_loops(unroll_loops(text)))))
+        unrolled.append((path, expand_variants(unroll_marked_loops(unroll_loops(text)), True)))
       sources = unrolled
       where = ", ".join(args.input)
     text = sources[0][1]
@@ -72,6 +75,7 @@ def main(argv=None):
       list_emulations(text, args.kernel, args.full)
       return 0
     if args.run is not None:
+      args.run = variant_id(sources, args.run, args.index)
       path, text = choose_source(sources, args.run)
       where = path
       others = [other for other_path, other in sources if other_path != path]
