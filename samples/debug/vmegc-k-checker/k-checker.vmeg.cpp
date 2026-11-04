@@ -418,3 +418,211 @@ volatile Buffer norTop1[16] = {
 void checkNorRun(void) {
 }
 
+volatile Buffer notTop0[16] = {
+  0, 0xffffffff, 1, 0xfffffffe,
+  0x555555, 0xffaaaaaa, 0x0f0f0f, 0xfff0f0f0,
+  0x7fffff, 0xff800000, 0x7ffffe, 0xff800001,
+  0xff, 0xffffff00, 0x123456, 0xffedcba9,
+};
+
+@emulate "not"
+.kernel checkNot direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: notTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (~top0) >> 1; }
+  .pe1 { .write = write; .spad = (~top0) >> 24; }
+  .pe2 { .write = write; .spad = (~top0) >> 32; }
+  .pe3 { .write = write; .spad = (~top0) >> 56; }
+}
+
+@kernel checkNot config | exec
+void checkNotRun(void) {
+}
+
+volatile Buffer andCstTop0[16] = {
+  0, 0xffffffff, 0xff, 0x100,
+  0x1ff, 0x123456, 0x7fffff, 0xff800000,
+  0xffffff00, 0xfffffeff, 0x555555, 0xffaaaaaa,
+  0x80, 0x7f, 0xffffff80, 0xffffff7f,
+};
+
+@emulate "and_cst"
+.kernel checkAndCst direct {
+  Int count = 16 - 1;
+  Int mask = 255;
+
+  Transfer top0Transfer = { memory: andCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 0xff) >> 1; }
+  .pe1 { .write = write; .spad = (top0 & 0xff) >> 24; }
+  .pe2 { .write = write; .spad = (top0 & 0xff) >> 32; }
+  .pe3 { .write = write; .spad = (top0 & 0xff) >> 56; }
+}
+
+@kernel checkAndCst config | exec
+void checkAndCstRun(void) {
+}
+
+volatile Buffer orCstTop0[16] = {
+  0, 0xffffffff, 0x80, 0x7f,
+  0xff, 0x100, 0x180, 0x555555,
+  0xffaaaaaa, 0xffffff7f, 0xffffff80, 0xffffff00,
+  0x7fffff, 0xff800000, 1, 0xfffffffe,
+};
+
+@emulate "or_cst"
+.kernel checkOrCst direct {
+  Int count = 16 - 1;
+  Int bit = 128;
+
+  Transfer top0Transfer = { memory: orCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 | 0x80) >> 1; }
+  .pe1 { .write = write; .spad = (top0 | 0x80) >> 24; }
+  .pe2 { .write = write; .spad = (top0 | 0x80) >> 32; }
+  .pe3 { .write = write; .spad = (top0 | 0x80) >> 56; }
+}
+
+@kernel checkOrCst config | exec
+void checkOrCstRun(void) {
+}
+
+volatile Buffer xorCstTop0[16] = {
+  0, 0xffffffff, 0x55, 0xaa,
+  0xff, 0x555555, 0xffaaaaaa, 0x7fffff,
+  0xff800000, 1, 0xfffffffe, 0x100,
+  0x155, 0xffffffaa, 0x123456, 0xffedcba9,
+};
+
+@emulate "xor_cst"
+.kernel checkXorCst direct {
+  Int count = 16 - 1;
+  Int pattern = 0x55;
+
+  Transfer top0Transfer = { memory: xorCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 ^ 0x55) >> 1; }
+  .pe1 { .write = write; .spad = (top0 ^ 0x55) >> 24; }
+  .pe2 { .write = write; .spad = (top0 ^ 0x55) >> 32; }
+  .pe3 { .write = write; .spad = (top0 ^ 0x55) >> 56; }
+}
+
+@kernel checkXorCst config | exec
+void checkXorCstRun(void) {
+}
+
+volatile Buffer nandCstTop0[16] = {
+  0, 0xffffffff, 0xff, 0x100,
+  0x1ff, 0x80, 0x7f, 0x7fffff,
+  0xff800000, 0xffffff00, 0xfffffeff, 0x555555,
+  0xffaaaaaa, 0x0f0f0f, 0xfff0f0f0, 1,
+};
+
+@emulate "nand_cst"
+.kernel checkNandCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: nandCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Staging s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (~(top0 & 0xff)) >> 1; }
+  .pe1 { .write = write; .spad = (~(top0 & 0xff)) >> 24; }
+  .pe2 { .write = write; .spad = (~(top0 & 0xff)) >> 32; }
+  .pe3 { .write = writeTwo; s3 = top0 & 0xff; .spad = (~(top0 & 0xff)) >> 56; }
+}
+
+@kernel checkNandCst config | exec
+void checkNandCstRun(void) {
+}
+
+volatile Buffer norCstTop0[16] = {
+  0, 0xffffffff, 0xf, 0x10,
+  0xf0, 0xff, 0x100, 0x1f,
+  0x7fffff, 0xff800000, 0xfffffff0, 0xffffffef,
+  0x555555, 0xffaaaaaa, 0x123450, 0xffedcbaf,
+};
+
+@emulate "nor_cst"
+.kernel checkNorCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: norCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Staging s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (~(top0 | 0x0f)) >> 1; }
+  .pe1 { .write = write; .spad = (~(top0 | 0x0f)) >> 24; }
+  .pe2 { .write = write; .spad = (~(top0 | 0x0f)) >> 32; }
+  .pe3 { .write = writeTwo; s3 = top0 | 0x0f; .spad = (~(top0 | 0x0f)) >> 56; }
+}
+
+@kernel checkNorCst config | exec
+void checkNorCstRun(void) {
+}
+
+volatile Buffer xnorCstTop0[16] = {
+  0, 0xffffffff, 0x55, 0xaa,
+  0xff, 0x100, 0x155, 0x555555,
+  0xffaaaaaa, 0x7fffff, 0xff800000, 1,
+  0xfffffffe, 0xffffffaa, 0x123456, 0xffedcba9,
+};
+
+@emulate "xnor_cst"
+.kernel checkXnorCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: xnorCstTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Staging s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (~(top0 ^ 0x55)) >> 1; }
+  .pe1 { .write = write; .spad = (~(top0 ^ 0x55)) >> 24; }
+  .pe2 { .write = write; .spad = (~(top0 ^ 0x55)) >> 32; }
+  .pe3 { .write = writeTwo; s3 = top0 ^ 0x55; .spad = (~(top0 ^ 0x55)) >> 56; }
+}
+
+@kernel checkXnorCst config | exec
+void checkXnorCstRun(void) {
+}
+
