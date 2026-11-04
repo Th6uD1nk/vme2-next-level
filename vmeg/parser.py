@@ -130,9 +130,16 @@ def parse_primary(p):
 
 def parse_term(p):
   left = parse_primary(p)
-  while p.accept("*"):
-    left = ("bin", "*", left, parse_primary(p))
-  return left
+  while True:
+    if p.accept("*"):
+      op = "*"
+    elif p.accept("/"):
+      op = "/"
+    elif p.accept("%"):
+      op = "%"
+    else:
+      return left
+    left = ("bin", op, left, parse_primary(p))
 
 
 def parse_additive(p):

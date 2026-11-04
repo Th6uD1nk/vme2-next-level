@@ -70,7 +70,10 @@ def evaluate(body, resolve):
       return None
   except ValueError:
     return None
-  folded = fold(expr, env)
+  try:
+    folded = fold(expr, env)
+  except ValueError:
+    return None
   return folded[1] if folded[0] == "num" else None
 
 
