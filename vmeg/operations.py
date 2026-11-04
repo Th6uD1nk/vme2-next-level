@@ -6,6 +6,7 @@ OPERATIONS = {
   "pass": {
     "opcode": 0x004,
     "pattern": "x",
+    "aliases": ("pass(x)",),
     "arguments": (("x", "source"),),
     "registers": {},
     "code": "fu_code(OP_BAK)",
