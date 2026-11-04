@@ -230,6 +230,10 @@ class RemapTest(unittest.TestCase):
     self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x220 }; .spad = top0 + base0;"), [
       "the operator '+' is not in the pattern of the opcode 0x220 of .remap primary, it is written as it is",
     ])
+    self.assertEqual(kernel_lines(".remap = { operator: \"pass\", primary: 0x024 }; .spad = pass(top0) << 16;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_ADD_CST), 48);",
+      "vme_pe0(fu_reg(PRIMARY, B), 0);",
+    ])
     with self.assertRaisesRegex(ValueError, "takes an opcode from 0x000 to 0xfff"):
       kernel_lines(".remap = { operator: \"+\", primary: 0x1000 }; .spad = top0 + base0;", None)
 
