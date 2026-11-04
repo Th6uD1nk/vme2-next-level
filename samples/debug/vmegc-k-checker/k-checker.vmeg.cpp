@@ -227,3 +227,194 @@ volatile Buffer subShrTop1[16] = {
 void checkSubShrRun(void) {
 }
 
+volatile Buffer andTop0[16] = {
+  0, 0xffffffff, 0x555555, 0xffaaaaaa,
+  0x0f0f0f, 0xfff0f0f0, 0x7fffff, 0xff800000,
+  1, 0xfffffffe, 0x123456, 0xffedcba9,
+  0xffff, 0xffff0000, 0xff, 0xffffff00,
+};
+
+volatile Buffer andTop1[16] = {
+  0, 0xffffffff, 0x555555, 0x555555,
+  0xfff0f0f0, 0xfff0f0f0, 0x7fffff, 0xff800000,
+  0xffffffff, 0xfffffffe, 0xff00, 0xff00,
+  0xffffff00, 0xff, 0xff, 0xf,
+};
+
+@emulate "and"
+.kernel checkAnd direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: andTop0, count };
+  Transfer top1Transfer = { memory: andTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (top0 & top1) >> 24; }
+  .pe2 { .write = write; .spad = (top0 & top1) >> 32; }
+  .pe3 { .write = write; .spad = (top0 & top1) >> 56; }
+}
+
+@kernel checkAnd config | exec
+void checkAndRun(void) {
+}
+
+volatile Buffer orTop0[16] = {
+  0, 0xffffffff, 0x555555, 0xffaaaaaa,
+  0x0f0f0f, 0xfff0f0f0, 0x7fffff, 0xff800000,
+  1, 0xfffffffe, 0x123456, 0xffedcba9,
+  0xff00, 0xffff0000, 0xf, 0xffffff00,
+};
+
+volatile Buffer orTop1[16] = {
+  0, 0, 0x2aaaaa, 0x555555,
+  0xf0f0, 0xf0f0, 0, 1,
+  2, 1, 0xff0000, 0xff,
+  0xff, 0xffff, 0xfffffff0, 0xff,
+};
+
+@emulate "or"
+.kernel checkOr direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: orTop0, count };
+  Transfer top1Transfer = { memory: orTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 | top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (top0 | top1) >> 24; }
+  .pe2 { .write = write; .spad = (top0 | top1) >> 32; }
+  .pe3 { .write = write; .spad = (top0 | top1) >> 56; }
+}
+
+@kernel checkOr config | exec
+void checkOrRun(void) {
+}
+
+volatile Buffer xorTop0[16] = {
+  0, 0xffffffff, 0x555555, 0xffaaaaaa,
+  0x0f0f0f, 0xfff0f0f0, 0x7fffff, 0xff800000,
+  1, 0xfffffffe, 0x123456, 0xffedcba9,
+  0xffff, 0xffff0000, 0x555555, 0xffffffff,
+};
+
+volatile Buffer xorTop1[16] = {
+  0, 0xffffffff, 0x555555, 0x555555,
+  0x0f0f0f, 0x0f0f0f, 0x7fffff, 0x7fffff,
+  0xffffffff, 1, 0xffffff, 0xff000000,
+  0xffff, 0xffff, 0xffaaaaaa, 0xffaaaaaa,
+};
+
+@emulate "xor"
+.kernel checkXor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: xorTop0, count };
+  Transfer top1Transfer = { memory: xorTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 ^ top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (top0 ^ top1) >> 24; }
+  .pe2 { .write = write; .spad = (top0 ^ top1) >> 32; }
+  .pe3 { .write = write; .spad = (top0 ^ top1) >> 56; }
+}
+
+@kernel checkXor config | exec
+void checkXorRun(void) {
+}
+
+volatile Buffer nandTop0[16] = {
+  0, 0xffffffff, 0x555555, 0xffaaaaaa,
+  0x0f0f0f, 0xfff0f0f0, 0x7fffff, 0xff800000,
+  1, 0xfffffffe, 0x123456, 0xffedcba9,
+  0xffff, 0xffff0000, 0xff, 0xffffff00,
+};
+
+volatile Buffer nandTop1[16] = {
+  0, 0xffffffff, 0x555555, 0x555555,
+  0xfff0f0f0, 0x0f0f0f, 0xffffffff, 0xffffffff,
+  0xffffffff, 0x7fffff, 0xff00, 0xff00,
+  0xffffff00, 0xff, 0xff, 0xf,
+};
+
+@emulate "nand"
+.kernel checkNand direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: nandTop0, count };
+  Transfer top1Transfer = { memory: nandTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Staging s2, s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (~(top0 & top1)) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (~(top0 & top1)) >> 24; }
+  .pe2 { .write = writeTwo; s2 = top0 & top1; .spad = (~(top0 & top1)) >> 32; }
+  .pe3 { .write = writeTwo; s3 = top1 & top0; .spad = (~(top0 & top1)) >> 56; }
+}
+
+@kernel checkNand config | exec
+void checkNandRun(void) {
+}
+
+volatile Buffer norTop0[16] = {
+  0, 0xffffffff, 0x555555, 0xffaaaaaa,
+  0x0f0f0f, 0xfff0f0f0, 0x7fffff, 0xff800000,
+  1, 0xfffffffe, 0x123456, 0xffedcba9,
+  0xff00, 0xffff0000, 0xf, 0xffffff00,
+};
+
+volatile Buffer norTop1[16] = {
+  0, 0, 0x2aaaaa, 0x555555,
+  0xf0f0, 0xf0f0, 0, 1,
+  2, 1, 0xff0000, 0xff,
+  0xff, 0xffff, 0xfffffff0, 0xff,
+};
+
+@emulate "nor"
+.kernel checkNor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: norTop0, count };
+  Transfer top1Transfer = { memory: norTop1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Staging s2, s3;
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+  Agu writeTwo = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (~(top0 | top1)) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = (~(top0 | top1)) >> 24; }
+  .pe2 { .write = writeTwo; s2 = top0 | top1; .spad = (~(top0 | top1)) >> 32; }
+  .pe3 { .write = writeTwo; s3 = top1 | top0; .spad = (~(top0 | top1)) >> 56; }
+}
+
+@kernel checkNor config | exec
+void checkNorRun(void) {
+}
+
