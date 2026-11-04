@@ -48,10 +48,11 @@ class WrittenExpressionTest(unittest.TestCase):
   def test_the_constant_can_be_written_before_the_operand(self):
     self.assertEqual(used(".spad = 255 & top1;"), ("fu_code(OP_AND_CST)", [("B", "0xff")]))
     self.assertEqual(used(".spad = 1 + top1;"), ("fu_code(OP_ADD_CST)", [("B", "1")]))
+    self.assertEqual(used(".spad = 3 * top1;"), ("VME_FU_OPCODE_MUL_CONST_RSHIFT_0", [("B", "3")]))
     self.assertEqual(used(".spad = 5 + (top0 + base0);"), ("fu_code(OP_ADD_OFA)", [("A", "5")]))
 
   def test_an_expression_that_no_opcode_covers_is_refused(self):
-    for body in [".spad = top0 * 5;", ".spad = top0 + base0 + top1;", ".spad = 5 + top0 + base0;"]:
+    for body in [".spad = top0 * base0 * top1;", ".spad = top0 + base0 + top1;", ".spad = 5 + top0 + base0;"]:
       with self.subTest(body=body):
         with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
           used(body)
@@ -93,7 +94,7 @@ class ComplementTest(unittest.TestCase):
 
   def test_a_complement_of_what_no_opcode_covers_is_refused(self):
     with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
-      codes(".spad = ~(top0 * 5);")
+      codes(".spad = ~(top0 + base0 + top1);")
     with self.assertRaisesRegex(ValueError, "sat must wrap an operation"):
       codes(".spad = ~sat(top0, 8);")
 

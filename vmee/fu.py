@@ -95,6 +95,10 @@ def op_mul_rshift(back, front, fu, a, b, previous, state):
   return shifted(back * front, fu)
 
 
+def op_mul_cst(back, front, fu, a, b, previous, state):
+  return shifted(back * b, fu)
+
+
 def shift_right(value, amount):
   return value >> amount if amount >= 0 else value << -amount
 
@@ -132,6 +136,7 @@ HANDLERS = {
   "subshr": op_subshr,
   "shrsub": op_shrsub,
   "mul": op_mul_rshift,
+  "mul_cst": op_mul_cst,
   "mul_vec": op_mul_rshift,
   "and": op_and,
   "and_cst": op_and_cst,
@@ -155,7 +160,7 @@ if sorted(HANDLERS) != sorted(OPERATIONS):
 
 OPCODES = {specification["opcode"]: (HANDLERS[kind], specification["operands"]) for kind, specification in OPERATIONS.items()}
 
-ROUNDED = {OPERATIONS[kind]["opcode"] for kind in ("add", "sub", "mul", "mul_vec", "subacst", "subshr", "shrsub")}
+ROUNDED = {OPERATIONS[kind]["opcode"] for kind in ("add", "sub", "mul", "mul_cst", "mul_vec", "subacst", "subshr", "shrsub")}
 
 if len(OPCODES) != len(OPERATIONS):
   raise ValueError("two operations of the table have the same opcode")
