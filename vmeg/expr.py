@@ -1,7 +1,20 @@
+def divide(a, b):
+  if b == 0:
+    raise ValueError("division by zero in an expression")
+  quotient = abs(a) // abs(b)
+  return -quotient if (a < 0) != (b < 0) else quotient
+
+
+def modulo(a, b):
+  return a - b * divide(a, b)
+
+
 OPERATORS = {
   "+": lambda a, b: a + b,
   "-": lambda a, b: a - b,
   "*": lambda a, b: a * b,
+  "/": divide,
+  "%": modulo,
   ">>": lambda a, b: a >> b,
   "<<": lambda a, b: a << b,
   "&": lambda a, b: a & b,
