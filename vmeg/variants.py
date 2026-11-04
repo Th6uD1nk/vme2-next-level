@@ -1,5 +1,6 @@
 import itertools
 
+from vmeg.blocks import read_kernel_list
 from vmeg.scanner import walk
 from vmeg.unroll import closing, flatten
 
@@ -145,15 +146,13 @@ def kernel_names(items, first, last):
   return names
 
 
-def expand_variants(text):
-  items = list(walk(text))
-  groups = []
+def kernel_definitions(text, items):
+  found = []
   for i, item in enumerate(items):
     if item[1] != "." or item[4] != 0 or item[5] not in STARTS or i + 4 >= len(items) or items[i + 1][1] != "kernel" or items[i + 4][1] != "{":
       continue
-    opening = i + 4
-    close = closing(items, opening)
-    members = kernel_members(text, items, opening, close)
+    close = closing(items, i + 4)
+    members = kernel_members(text, items, i + 4, close)
     if not members:
       continue
     line = line_of(text, item[2])
@@ -163,21 +162,44 @@ def expand_variants(text):
       raise ValueError(f"line {line}: a kernel with a .with needs a .as, for example .as row[buffer][slot];")
     if alias is not None and not variables:
       raise ValueError(f"line {line}: a .as needs a .with")
-    if alias is not None:
-      if sorted(alias[1]) != sorted(name for name, _, _ in variables):
-        raise ValueError(f"line {line}: the .as must name each variable of the .with once")
+    if alias is not None and sorted(alias[1]) != sorted(name for name, _, _ in variables):
+      raise ValueError(f"line {line}: the .as must name each variable of the .with once")
     removed = [(members[name][0], members[name][1]) for name in members]
-    name_at = i + 2
-    if not variables:
-      groups.append((item[2], items[close][3], replaced(text, items, i, close, removed, {})))
-      continue
-    copies = []
-    ranges = [range(low, high + 1) for _, low, high in variables]
-    for number, values in enumerate(itertools.product(*ranges), 1):
-      names = {name: str(value) for (name, _, _), value in zip(variables, values)}
-      copies.append(flatten(replaced(text, items, i, close, removed, names, (name_at, f"{items[name_at][1]}_kernel{number}"))).strip())
-    statement = text[item[2]:items[close][3]]
-    groups.append((item[2], items[close][3], " ".join(copies) + "\n" * statement.count("\n")))
-  for begin, end, new in reversed(groups):
+    found.append({"first": i, "close": close, "name": items[i + 2][1], "name_at": i + 2, "variables": variables, "alias": alias, "removed": removed})
+  return found
+
+
+def called_names(text, items):
+  names = set()
+  for k, item in enumerate(items):
+    if item[1] == "@" and k + 1 < len(items) and items[k + 1][1] == "kernel":
+      last = read_kernel_list(items, k + 1, line_of(text, items[k][2]))
+      names.update(items[at][1] for at in kernel_names(items, k + 2, last))
+  return names
+
+
+def definition_edit(text, items, definition, used):
+  first, close, variables = definition["first"], definition["close"], definition["variables"]
+  begin, end = items[first][2], items[close][3]
+  if not variables:
+    return (begin, end, replaced(text, items, first, close, definition["removed"], {}))
+  copies = []
+  ranges = [range(low, high + 1) for _, low, high in variables]
+  for number, values in enumerate(itertools.product(*ranges), 1):
+    name = f"{definition['name']}_kernel{number}"
+    if name in used:
+      names = {variable: str(value) for (variable, _, _), value in zip(variables, values)}
+      copies.append(flatten(replaced(text, items, first, close, definition["removed"], names, (definition["name_at"], name))).strip())
+  return (begin, end, " ".join(copies) + "\n" * text.count("\n", begin, end))
+
+
+def expand_variants(text):
+  items = list(walk(text))
+  definitions = kernel_definitions(text, items)
+  if not definitions:
+    return text
+  used = called_names(text, items)
+  edits = [definition_edit(text, items, definition, used) for definition in definitions]
+  for begin, end, new in sorted(edits, reverse=True):
     text = text[:begin] + new + text[end:]
   return text
