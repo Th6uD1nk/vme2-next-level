@@ -122,6 +122,14 @@ class ShiftTest(unittest.TestCase):
       with self.subTest(body=body):
         self.assertEqual(used(body), ("fu_code(OP_SUB_OFB)", [("B", "-1")]))
 
+  def test_a_shift_to_the_left_of_a_source_alone_is_the_opcode_of_the_shift(self):
+    self.assertEqual(used(".spad = top1 << 16;"), ("fu_code(OP_SHL_CST)", [("B", "0x10")]))
+    self.assertEqual(codes("Staging s; s = top0 + base0; .spad = s << 16;"), ["OP_ADD", "OP_SHL_CST"])
+
+  def test_a_shift_to_the_left_around_an_operation_stays_in_the_shift_of_the_opcode(self):
+    self.assertEqual(kernel_lines(".spad = (top1 + top0) << 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_ADD), 61);"])
+    self.assertEqual(kernel_lines(".spad = top1 + top0 << 3;", None), kernel_lines(".spad = (top1 + top0) << 3;", None))
+
 
 class NestedTest(unittest.TestCase):
   def test_an_operation_inside_a_clamp_is_chosen_like_alone(self):
