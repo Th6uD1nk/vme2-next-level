@@ -215,13 +215,48 @@ def variant_name(text, items, at, definition, selection):
   return f"{definition['name']}_kernel{variant_number(variables, [values[name] for name, _, _ in variables])}"
 
 
+def select_calls(text, items, definitions):
+  variants = {definition["name"]: definition for definition in definitions if definition["variables"]}
+  edits = []
+  used = called_names(text, items)
+  for k, item in enumerate(items):
+    if item[1] != "@" or k + 1 >= len(items) or items[k + 1][1] != "kernel":
+      continue
+    last = read_kernel_list(items, k + 1, line_of(text, item[2]))
+    names = kernel_names(items, k + 2, last)
+    selections = []
+    if last + 1 < len(items) and items[last + 1][1] == "{":
+      opening = last + 1
+      depth = items[opening][4] + 1
+      for m in range(opening + 1, closing(items, opening)):
+        if items[m][1] == "." and items[m][4] == depth and items[m][5] in STARTS and items[m + 1][1] == "as":
+          tokens, end = member_end(text, items, m)
+          selections.append(read_call_as(text, items, m, tokens))
+          edits.append((items[m][2], items[end][3], "\n" * text.count("\n", items[m][2], items[end][3])))
+    line = line_of(text, item[2])
+    if len(selections) > len(names):
+      raise ValueError(f"line {line}: the call has {len(selections)} .as for {len(names)} kernels")
+    for position, at in enumerate(names):
+      selection = selections[position] if position < len(selections) else None
+      definition = variants.get(items[at][1])
+      if definition is not None:
+        if selection is None:
+          raise ValueError(f"line {line_of(text, items[at][2])}: the kernel '{items[at][1]}' has variants, choose one with .as {definition['alias'][0]}[...] in the block of the call")
+        name = variant_name(text, items, at, definition, selection)
+        edits.append((items[at][2], items[at][3], name))
+        used.add(name)
+      elif selection is not None:
+        raise ValueError(f"line {line_of(text, items[at][2])}: the kernel '{items[at][1]}' has no variants, its .as must be empty")
+  return edits, used
+
+
 def expand_variants(text):
   items = list(walk(text))
   definitions = kernel_definitions(text, items)
   if not definitions:
     return text
-  used = called_names(text, items)
-  edits = [definition_edit(text, items, definition, used) for definition in definitions]
+  edits, used = select_calls(text, items, definitions)
+  edits.extend(definition_edit(text, items, definition, used) for definition in definitions)
   for begin, end, new in sorted(edits, reverse=True):
     text = text[:begin] + new + text[end:]
   return text
