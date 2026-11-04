@@ -113,11 +113,8 @@ def replaced(text, items, first, last, removed, names, rename=None):
   return body
 
 
-def variant_number(variables, values):
-  number = 0
-  for (_, low, high), value in zip(variables, values):
-    number = number * (high - low + 1) + value - low
-  return number + 1
+def variant_called(name, order, values):
+  return "_".join([name] + [str(values[variable]) for variable in order])
 
 
 def read_call_as(text, items, at, tokens):
@@ -193,10 +190,10 @@ def definition_edit(text, items, definition, used):
     return (begin, end, replaced(text, items, first, close, definition["removed"], {}))
   copies = []
   ranges = [range(low, high + 1) for _, low, high in variables]
-  for number, values in enumerate(itertools.product(*ranges), 1):
-    name = f"{definition['name']}_kernel{number}"
+  for values in itertools.product(*ranges):
+    names = {variable: str(value) for (variable, _, _), value in zip(variables, values)}
+    name = variant_called(definition["name"], definition["alias"][1], names)
     if name in used:
-      names = {variable: str(value) for (variable, _, _), value in zip(variables, values)}
       copies.append(flatten(replaced(text, items, first, close, definition["removed"], names, (definition["name_at"], name))).strip())
   if not copies:
     raise ValueError(f"line {line_of(text, begin)}: kernel '{definition['name']}' is never called, add a block @kernel {definition['name']} config | exec {{ .as {definition['alias'][0]}[...]; }}")
@@ -221,7 +218,7 @@ def variant_name(text, items, at, definition, selection):
     if not low <= value <= high:
       raise ValueError(f"line {line}: the index {value} of '{variable}' is not in {low}..{high}")
     values[variable] = value
-  return f"{definition['name']}_kernel{variant_number(variables, [values[name] for name, _, _ in variables])}"
+  return variant_called(definition["name"], definition["alias"][1], values)
 
 
 def select_calls(text, items, definitions):
