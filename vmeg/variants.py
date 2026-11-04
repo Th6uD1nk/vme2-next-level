@@ -104,6 +104,47 @@ def replaced(text, items, first, last, removed, names, rename=None):
   return body
 
 
+def variant_number(variables, values):
+  number = 0
+  for (_, low, high), value in zip(variables, values):
+    number = number * (high - low + 1) + value - low
+  return number + 1
+
+
+def read_call_as(text, items, at, tokens):
+  line = line_of(text, items[at][2])
+  if not tokens:
+    return None
+  message = f"line {line}: expected '.as alias[index]...;', for example .as row[1][2];"
+  if tokens[0][0] != "ident" or len(tokens) < 4 or tokens[1][1] != "[":
+    raise ValueError(message)
+  indexes = []
+  k = 1
+  while k < len(tokens):
+    if tokens[k][1] != "[":
+      raise ValueError(message)
+    depth = 0
+    end = k
+    while end < len(tokens):
+      depth += (tokens[end][1] == "[") - (tokens[end][1] == "]")
+      if depth == 0:
+        break
+      end += 1
+    if end >= len(tokens) or end == k + 1:
+      raise ValueError(message)
+    indexes.append(text[tokens[k + 1][2]:tokens[end - 1][3]])
+    k = end + 1
+  return tokens[0][1], indexes
+
+
+def kernel_names(items, first, last):
+  names = [first]
+  for k in range(first, last):
+    if items[k][1] == "," and items[k + 1][0] == "ident":
+      names.append(k + 1)
+  return names
+
+
 def expand_variants(text):
   items = list(walk(text))
   groups = []
