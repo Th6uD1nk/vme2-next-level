@@ -1,3 +1,8 @@
+import itertools
+
+from vmeg.scanner import walk
+from vmeg.unroll import closing, flatten
+
 STARTS = (";", "}", "{")
 
 
@@ -97,3 +102,41 @@ def replaced(text, items, first, last, removed, names, rename=None):
   for begin, end, new in sorted(edits, reverse=True):
     body = body[:begin - start] + new + body[end - start:]
   return body
+
+
+def expand_variants(text):
+  items = list(walk(text))
+  groups = []
+  for i, item in enumerate(items):
+    if item[1] != "." or item[4] != 0 or item[5] not in STARTS or i + 4 >= len(items) or items[i + 1][1] != "kernel" or items[i + 4][1] != "{":
+      continue
+    opening = i + 4
+    close = closing(items, opening)
+    members = kernel_members(text, items, opening, close)
+    if not members:
+      continue
+    line = line_of(text, item[2])
+    variables = read_with(text, items, members["with"][0], members["with"][2]) if "with" in members and members["with"][2] else []
+    alias = read_as(text, items, members["as"][0], members["as"][2]) if "as" in members and members["as"][2] else None
+    if variables and alias is None:
+      raise ValueError(f"line {line}: a kernel with a .with needs a .as, for example .as row[buffer][slot];")
+    if alias is not None and not variables:
+      raise ValueError(f"line {line}: a .as needs a .with")
+    if alias is not None:
+      if sorted(alias[1]) != sorted(name for name, _, _ in variables):
+        raise ValueError(f"line {line}: the .as must name each variable of the .with once")
+    removed = [(members[name][0], members[name][1]) for name in members]
+    name_at = i + 2
+    if not variables:
+      groups.append((item[2], items[close][3], replaced(text, items, i, close, removed, {})))
+      continue
+    copies = []
+    ranges = [range(low, high + 1) for _, low, high in variables]
+    for number, values in enumerate(itertools.product(*ranges), 1):
+      names = {name: str(value) for (name, _, _), value in zip(variables, values)}
+      copies.append(flatten(replaced(text, items, i, close, removed, names, (name_at, f"{items[name_at][1]}_kernel{number}"))).strip())
+    statement = text[item[2]:items[close][3]]
+    groups.append((item[2], items[close][3], " ".join(copies) + "\n" * statement.count("\n")))
+  for begin, end, new in reversed(groups):
+    text = text[:begin] + new + text[end:]
+  return text
