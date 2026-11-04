@@ -6,7 +6,7 @@ from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
 from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS, ROOT_OPERATORS
-from vmeg.selector import choose_opcode
+from vmeg.selector import OPERATION_NODES, choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, declare_statements, declared_statements, parse_body
 from vmeg.scanner import tokens
 from vmeg.transfers import TRANSFER_KINDS
@@ -125,6 +125,11 @@ def flatten(expr, stagings, compat):
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
+    if expr[1] == "<<" and expr[2][0] not in OPERATION_NODES:
+      found = choose_opcode(expr, compat)
+      if found is not None:
+        kind, bound, _ = found
+        return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
     if expr[1] in (">>", "<<"):
       operations = operations_of(expr[2], stagings, compat)
       amount = constant(expr[3], "the shift")
