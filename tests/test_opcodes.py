@@ -219,6 +219,13 @@ class RemapTest(unittest.TestCase):
     with self.assertRaisesRegex(ValueError, "takes an opcode from 0x000 to 0xfff"):
       kernel_lines(".remap = { operator: \"+\", primary: 0x1000 }; .spad = top0 + base0;", None)
 
+  def test_a_remap_writes_a_free_opcode_with_a_warning(self):
+    text = ".kernel k direct {\n  .pe0 { .remap = { operator: \"pass\", primary: 0x005 }; .spad = top0 >> 1; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    found = []
+    code = generate(text, find_blocks(text)[0], found, None)
+    self.assertTrue(found[0][1].startswith("the opcode 0x005 of .remap primary is not in the table"))
+    self.assertIn("fu_code(0x005), 1);", code)
+
 
 if __name__ == "__main__":
   unittest.main()
