@@ -250,7 +250,44 @@ def select_calls(text, items, definitions):
   return edits, used
 
 
+def repeat_calls(text):
+  items = list(walk(text))
+  edits = []
+  for k, item in enumerate(items):
+    if item[1] != "@" or k + 1 >= len(items) or items[k + 1][1] != "kernel":
+      continue
+    last = read_kernel_list(items, k + 1, line_of(text, item[2]))
+    if last + 1 >= len(items) or items[last + 1][1] != "{":
+      continue
+    opening = last + 1
+    close = closing(items, opening)
+    depth = items[opening][4] + 1
+    members = [m for m in range(opening + 1, close) if items[m][1] == "." and items[m][4] == depth and items[m][5] in STARTS and items[m + 1][1] == "with"]
+    if not members:
+      continue
+    if len(members) > 1:
+      raise ValueError(f"line {line_of(text, items[members[1]][2])}: a call has one .with")
+    tokens, end = member_end(text, items, members[0])
+    removed = [(members[0], end)]
+    begin, stop = item[2], items[close][3]
+    if not tokens:
+      edits.append((begin, stop, replaced(text, items, k, close, removed, {})))
+      continue
+    if any(items[m][0] == "pp" for m in range(k, close + 1)):
+      raise ValueError(f"line {line_of(text, item[2])}: a preprocessor line cannot be inside a call that has a .with")
+    variables = read_with(text, items, members[0], tokens)
+    copies = []
+    for values in itertools.product(*[range(low, high + 1) for _, low, high in variables]):
+      names = {name: str(value) for (name, _, _), value in zip(variables, values)}
+      copies.append(flatten(replaced(text, items, k, close, removed, names)).strip())
+    edits.append((begin, stop, " ".join(copies) + "\n" * text.count("\n", begin, stop)))
+  for begin, end, new in sorted(edits, reverse=True):
+    text = text[:begin] + new + text[end:]
+  return text
+
+
 def expand_variants(text):
+  text = repeat_calls(text)
   items = list(walk(text))
   definitions = kernel_definitions(text, items)
   if not definitions:
