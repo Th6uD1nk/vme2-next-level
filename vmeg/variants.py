@@ -170,7 +170,9 @@ def kernel_definitions(text, items):
     if alias is not None and sorted(alias[1]) != sorted(name for name, _, _ in variables):
       raise ValueError(f"line {line}: the .as must name each variable of the .with once")
     removed = [(members[name][0], members[name][1]) for name in members]
-    found.append({"first": i, "close": close, "name": items[i + 2][1], "name_at": i + 2, "variables": variables, "alias": alias, "removed": removed})
+    marked = i >= 3 and items[i - 1][0] == "str" and items[i - 2][1] == "emulate" and items[i - 3][1] == "@"
+    mark = (i - 3, items[i - 1][1]) if marked else None
+    found.append({"first": i, "close": close, "name": items[i + 2][1], "name_at": i + 2, "variables": variables, "alias": alias, "removed": removed, "mark": mark})
   return found
 
 
@@ -183,18 +185,26 @@ def called_names(text, items):
   return names
 
 
-def definition_edit(text, items, definition, used):
+def mark_text(mark, names, order):
+  return f'@emulate "{variant_called(mark[1][1:-1], order, names)}" '
+
+
+def definition_edit(text, items, definition, used, emulating=False):
   first, close, variables = definition["first"], definition["close"], definition["variables"]
   begin, end = items[first][2], items[close][3]
   if not variables:
     return (begin, end, replaced(text, items, first, close, definition["removed"], {}))
+  mark = definition["mark"] if emulating else None
+  if mark is not None:
+    begin = items[mark[0]][2]
   copies = []
   ranges = [range(low, high + 1) for _, low, high in variables]
   for values in itertools.product(*ranges):
     names = {variable: str(value) for (variable, _, _), value in zip(variables, values)}
     name = variant_called(definition["name"], definition["alias"][1], names)
-    if name in used:
-      copies.append(flatten(replaced(text, items, first, close, definition["removed"], names, (definition["name_at"], name))).strip())
+    if name in used or mark is not None:
+      copy = flatten(replaced(text, items, first, close, definition["removed"], names, (definition["name_at"], name))).strip()
+      copies.append((mark_text(mark, names, definition["alias"][1]) if mark is not None else "") + copy)
   if not copies:
     raise ValueError(f"line {line_of(text, begin)}: kernel '{definition['name']}' is never called, add a block @kernel {definition['name']} config | exec {{ .as {definition['alias'][0]}[...]; }}")
   return (begin, end, " ".join(copies) + "\n" * text.count("\n", begin, end))
@@ -292,14 +302,14 @@ def repeat_calls(text):
   return text
 
 
-def expand_variants(text):
+def expand_variants(text, emulating=False):
   text = repeat_calls(text)
   items = list(walk(text))
   definitions = kernel_definitions(text, items)
   if not definitions:
     return text
   edits, used = select_calls(text, items, definitions)
-  edits.extend(definition_edit(text, items, definition, used) for definition in definitions)
+  edits.extend(definition_edit(text, items, definition, used, emulating) for definition in definitions)
   for begin, end, new in sorted(edits, reverse=True):
     text = text[:begin] + new + text[end:]
   return text
