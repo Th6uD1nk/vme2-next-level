@@ -8,6 +8,7 @@ from vmee.options import parse_uses
 from vmee.run import choose_source, run_emulation
 from vmee.trace import replay
 from vmeg.unroll import unroll_loops, unroll_marked_loops
+from vmeg.variants import expand_variants
 
 
 def list_emulations(text, kernel, full):
@@ -63,7 +64,7 @@ def main(argv=None):
       unrolled = []
       for path, text in sources:
         where = path
-        unrolled.append((path, unroll_marked_loops(unroll_loops(text))))
+        unrolled.append((path, expand_variants(unroll_marked_loops(unroll_loops(text)))))
       sources = unrolled
       where = ", ".join(args.input)
     text = sources[0][1]

@@ -157,7 +157,7 @@ def kernel_names(items, first, last):
 def kernel_definitions(text, items):
   found = []
   for i, item in enumerate(items):
-    if item[1] != "." or item[4] != 0 or item[5] not in STARTS or i + 4 >= len(items) or items[i + 1][1] != "kernel" or items[i + 4][1] != "{":
+    if item[1] != "." or item[4] != 0 or (item[5] not in STARTS and not item[5].startswith(chr(34))) or i + 4 >= len(items) or items[i + 1][1] != "kernel" or items[i + 4][1] != "{":
       continue
     close = closing(items, i + 4)
     members = kernel_members(text, items, i + 4, close)
