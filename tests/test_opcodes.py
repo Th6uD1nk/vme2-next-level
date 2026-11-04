@@ -106,6 +106,11 @@ class PassthroughTest(unittest.TestCase):
     self.assertEqual(codes(".spad = top1 >> 3;"), ["OP_BAK"])
     self.assertEqual(codes(".spad = sat(top1, 9);"), ["OP_BAK"])
 
+  def test_the_function_pass_is_the_passthrough_and_keeps_the_shift_around_it_in_the_k(self):
+    self.assertEqual(codes(".spad = pass(top1);"), ["OP_BAK"])
+    self.assertEqual(kernel_lines(".spad = pass(top1) << 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_BAK), 61);"])
+    self.assertEqual(kernel_lines(".spad = pass(top1) >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_BAK), 3);"])
+
 
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
