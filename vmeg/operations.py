@@ -117,6 +117,16 @@ OPERATIONS = {
     "units": "primary",
     "note": "the product of a and b, shifted by the `>> n` after it",
   },
+  "shl_cst": {
+    "opcode": 0x0a4,
+    "pattern": "x << c",
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_SHL_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "x shifted to the left by c, c is a signed number of 6 bits and a negative c shifts to the right",
+  },
   "and": {
     "opcode": 0x0c0,
     "pattern": "a & b",

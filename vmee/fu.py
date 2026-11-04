@@ -107,6 +107,13 @@ def shift_right(value, amount):
   return value >> amount if amount >= 0 else value << -amount
 
 
+def op_shl_cst(back, front, fu, a, b, previous, state):
+  amount = b & 63
+  if amount >= 32:
+    amount -= 64
+  return back << amount if amount >= 0 else back >> -amount
+
+
 def op_subshr(back, front, fu, a, b, previous, state):
   return front - shift_right(back, b)
 
@@ -142,6 +149,7 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "mul_cst": op_mul_cst,
+  "shl_cst": op_shl_cst,
   "mul_vec": op_mul_rshift,
   "and": op_and,
   "and_cst": op_and_cst,
