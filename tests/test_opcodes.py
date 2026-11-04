@@ -217,7 +217,7 @@ class RemapTest(unittest.TestCase):
       "vme_pe0(vme_fu(SECONDARY), vme_mux(STAGING_0, TOP_1), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
     ])
 
-  def test_a_remap_warns_for_a_value_without_register_and_refuses_an_opcode_without_the_operator(self):
+  def test_a_remap_warns_for_a_value_without_register_and_for_an_opcode_without_the_operator(self):
     def warnings_of(body):
       text = ".kernel k direct {\n  .pe0 { " + body + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
       found = []
@@ -227,8 +227,9 @@ class RemapTest(unittest.TestCase):
       "the value of 'c' is not written, the opcode 0x010 of .remap primary has no register for it",
     ])
     self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x030 }; .spad = top0 + base0;"), [])
-    with self.assertRaisesRegex(ValueError, "the opcode 0x220 of .remap primary has no operator '\\+'"):
-      kernel_lines(".remap = { operator: \"+\", primary: 0x220 }; .spad = top0 + base0;", None)
+    self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x220 }; .spad = top0 + base0;"), [
+      "the operator '+' is not in the pattern of the opcode 0x220 of .remap primary, it is written as it is",
+    ])
     with self.assertRaisesRegex(ValueError, "takes an opcode from 0x000 to 0xfff"):
       kernel_lines(".remap = { operator: \"+\", primary: 0x1000 }; .spad = top0 + base0;", None)
 

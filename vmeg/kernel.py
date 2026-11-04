@@ -660,7 +660,7 @@ def emit_statement(statement, env, lines, state):
         units[unit] = number[1]
         continue
       if operator not in PATTERN_OPERATORS[target]:
-        raise ValueError(f"the opcode 0x{number[1]:03x} of .remap {unit} has no operator '{operator}'")
+        warn(state, statement[-1], f"the operator '{operator}' is not in the pattern of the opcode 0x{number[1]:03x} of .remap {unit}, it is written as it is")
       units[unit] = target
     remaps[operator] = units
   elif kind == "stageset":
