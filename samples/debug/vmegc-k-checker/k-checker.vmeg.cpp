@@ -10,6 +10,34 @@
  * or adapting it.
  */
 
+volatile Buffer passTop0[16] = {
+  0, 1, 2, 0xf,
+  0xff, 0x7fff, 0x8000, 0x7fffff,
+  0xffffffff, 0xfffffffe, 0xffff8000, 0xff800000,
+  0x555555, 0x2aaaaa, 100, 0xffffff9c,
+};
+
+@emulate "pass"
+.kernel checkPass direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: passTop0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0) >> 1; }
+  .pe1 { .write = write; .spad = (top0) >> 24; }
+  .pe2 { .write = write; .spad = (top0) >> 32; }
+  .pe3 { .write = write; .spad = (top0) >> 56; }
+}
+
+@kernel checkPass config | exec
+void checkPassRun(void) {
+}
+
 volatile Buffer addTop0[16] = {
   0, 1, 2, 0xf,
   0xff, 0x7fff, 0x8000, 0x7fffff,
