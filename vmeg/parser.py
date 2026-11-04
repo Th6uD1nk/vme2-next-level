@@ -576,6 +576,8 @@ def parse_for(p):
 
 
 def parse_params_definition(p):
+  if p.accept(";"):
+    return ("paramsdef", [])
   p.expect("{")
   items = []
   while not p.accept("}"):
@@ -632,6 +634,8 @@ def parse_params_use(p):
       p.error(f"the parameter '{name}' is given twice", token)
     pairs.append((name, value))
 
+  if p.accept(";"):
+    return ("paramsuse", pairs)
   if p.accept("="):
     p.expect("{")
     if not p.accept("}"):

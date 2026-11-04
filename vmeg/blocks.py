@@ -98,6 +98,8 @@ def read_block_statements(text, items, open_index, close):
       while items[k][3] < block_end(text, items, j + 2, start, f".{items[j + 1][1]}"):
         k += 1
       stop = k
+    elif kind == "punct" and value == "." and j + 2 < len(items) and items[j + 1][1] == "params" and items[j + 2][1] == ";":
+      stop = j + 2
     elif kind == "punct" and value == "." and j + 2 < len(items) and items[j + 1][1] == "params" and items[j + 2][1] in ("{", "="):
       k = j + 2 if items[j + 2][1] == "{" else j + 3
       if items[k][1] != "{":
