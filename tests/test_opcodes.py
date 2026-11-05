@@ -141,6 +141,16 @@ class ShiftedOperandTest(unittest.TestCase):
     self.assertEqual(used(".spad = top0 + base0;", "fat"), ("fu_code(OP_ADD_OFA)", [("A", "0")]))
 
 
+class ByteLowTest(unittest.TestCase):
+  def test_the_low_bytes_sum_is_found_from_its_equation_in_any_order_and_the_high_bytes_sum_is_a_function(self):
+    self.assertEqual(kernel_lines(".spad = (top0 & 255) + (top1 & 0xff);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_ADD_LOB));"])
+    self.assertEqual(kernel_lines(".spad = (top1 & 255) + (top0 & 255);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_ADD_LOB));"])
+    self.assertEqual(kernel_lines(".spad = addhib(top0, top1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_ADD_HIB));"])
+
+  def test_a_shifted_operand_minus_a_number_keeps_the_number_in_a_and_the_amount_in_b(self):
+    self.assertEqual(kernel_lines(".spad = (top0 >> 3) - 5;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_OFS));", "vme_pe0(fu_reg(PRIMARY, A), 5);", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
