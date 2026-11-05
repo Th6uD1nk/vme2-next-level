@@ -99,6 +99,10 @@ def op_bak_shr(back, front, fu, a, b, previous, state):
   return shifted(back, fu)
 
 
+def op_neg_ofb(back, front, fu, a, b, previous, state):
+  return shifted(b - back, fu)
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -157,6 +161,7 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "neg_ofb": op_neg_ofb,
   "bak_shr": op_bak_shr,
   "mul_cst": op_mul_cst,
   "shl_cst": op_shl_cst,

@@ -36,6 +36,16 @@ OPERATIONS = {
     "units": "any",
     "note": "x shifted to the right by n, as the k of the opcode (an arithmetic shift of the exact value), x is a buffer or a Staging variable",
   },
+  "neg_ofb": {
+    "opcode": 0x02c,
+    "pattern": "c - x",
+    "arguments": (("c", "number"), ("x", "source")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_NEG_OFB)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the number c minus x, x is a buffer or a Staging variable, the shift of the operation is kept",
+  },
   "add": {
     "opcode": 0x010,
     "not_portable": True,
