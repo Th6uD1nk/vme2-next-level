@@ -83,8 +83,18 @@ def closing_codes(text, blocks, codes):
 
 
 def directive_break(out):
-  written = next((piece for piece in reversed(out) if piece), "")
-  return "" if written.endswith("\n") else "\n"
+  tail = ""
+  while out and not out[-1].strip():
+    tail = out.pop() + tail
+  if out:
+    kept = out[-1].rstrip(" \t\n")
+    if len(kept) != len(out[-1]):
+      tail = out[-1][len(kept):] + tail
+      out[-1] = kept
+  if not out:
+    return ""
+  out.append("\n\n" if tail.count("\n") >= 2 else tail)
+  return "" if out[-1].endswith("\n") else "\n"
 
 
 def translate(text, blocks, path, registry=None, warnings=None, compat=None):
