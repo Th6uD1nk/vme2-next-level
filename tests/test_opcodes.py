@@ -125,6 +125,12 @@ class ReverseSubtractionTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = (5 - top0) >> 2;", None)[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_NEG_OFB), 2);")
 
 
+class ByteArithmeticTest(unittest.TestCase):
+  def test_addbyt_and_subbyt_are_the_byte_opcodes_with_the_first_operand_in_front(self):
+    self.assertEqual(kernel_lines(".spad = addbyt(top0, top1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(0x038));"])
+    self.assertEqual(kernel_lines(".spad = subbyt(top0, base1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_1), fu_code(0x03c));"])
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
