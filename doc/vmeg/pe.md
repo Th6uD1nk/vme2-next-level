@@ -134,6 +134,7 @@ Staging s;
 - The opcode must be in the table of `vmegc`, and it must have the operator of the `.remap`. `vmegc --ops` lists, under each opcode, the opcodes it can be remapped with ([1.5](running.md#15---ops)).
 - The selector is not changed: it chooses the opcode from the way the operation is written, then the `.remap` replaces it. The registers (`A`, `B`) are those of the new opcode: a register that the new opcode has and the expression does not give is 0.
 - A warning is given when the expression gives a value that the new opcode has no register for. It is not given in the other direction.
+- A warning is given when the opcode is in the table but has not the operator of the `.remap`: the code is written as it is, with the registers of the new opcode. `.remap = { operator: "pass", primary: 0x024 }` is written with the opcode `0x024` and its register B at 0.
 - A `.remap` that names a unit gives no warning for a `mul`, `mac` or `acc` in this unit ([5.3](#53-operations-in-a-pe)).
 
 ## 5.5 Errors
@@ -157,4 +158,3 @@ The messages start with `line N:`, left out here.
 | [5.4](#54-remapping-an-opcode) | `unknown operator '%' in .remap` | an operator that no opcode of the table has (the message names it) |
 | [5.4](#54-remapping-an-opcode) | `the operator '*' is remapped twice in pe0` | two `.remap` of the same operator in a pe |
 | [5.4](#54-remapping-an-opcode) | `the opcode 0x999 of .remap primary is not in the table (vmegc --ops)` | an opcode that is not in the table (the message names the unit) |
-| [5.4](#54-remapping-an-opcode) | `the opcode 0x220 of .remap primary has no operator '+'` | an opcode that has not the operator of the `.remap` |
