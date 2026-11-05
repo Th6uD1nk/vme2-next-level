@@ -101,7 +101,7 @@ class ComplementTest(unittest.TestCase):
 class PassthroughTest(unittest.TestCase):
   def test_a_buffer_alone_is_the_passthrough_and_the_shift_wraps_it(self):
     self.assertEqual(codes(".spad = top1;"), ["OP_BAK"])
-    self.assertEqual(codes(".spad = top1 >> 3;"), ["OP_BAK"])
+    self.assertEqual(kernel_lines(".spad = top1 >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(0x014), 3);"])
     self.assertEqual(codes(".spad = sat(top1, 9);"), ["OP_BAK"])
 
   def test_the_function_pass_is_the_passthrough_and_keeps_the_shift_around_it_in_the_k(self):
@@ -258,7 +258,7 @@ class RemapTest(unittest.TestCase):
       kernel_lines(".remap = { operator: \"+\", primary: 0x1000 }; .spad = top0 + base0;", None)
 
   def test_a_remap_writes_a_free_opcode_with_a_warning(self):
-    text = ".kernel k direct {\n  .pe0 { .remap = { operator: \"pass\", primary: 0x005 }; .spad = top0 >> 1; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    text = ".kernel k direct {\n  .pe0 { .remap = { operator: \"pass\", primary: 0x005 }; .spad = pass(top0) >> 1; }\n}\n@kernel k config | exec\nvoid f() { }\n"
     found = []
     code = generate(text, find_blocks(text)[0], found, None)
     self.assertTrue(found[0][1].startswith("the opcode 0x005 of .remap primary is not in the table"))
