@@ -146,7 +146,8 @@ class UnrollMarkTest(unittest.TestCase):
         unroll_marked_loops(around("    " + block))
     marked = LOOP.replace("for s in 0..2 {", "@unroll\n    for (int s = 0; s < 3; s++) {")
     code, _, err, written = in_files([("main.vmeg.cpp", marked)], lambda paths, folder: vmegc_main([paths[0], "-o", os.path.join(folder, "out.cpp")]), ["out.cpp"])
-    self.assertEqual((code, err), (0, ""))
+    self.assertEqual(code, 0)
+    self.assertRegex(err, r"^vmegc: kernel bump transpiled \(\d+ ms\)\n$")
     self.assertIn("for (int s = 0; s < 3; s++)", written[0])
     self.assertNotIn("unroll", written[0])
 
@@ -156,7 +157,8 @@ class UnrollToolsTest(unittest.TestCase):
     outputs = []
     for text in (LOOP, MANUAL):
       code, _, err, written = in_files([("main.vmeg.cpp", text)], lambda paths, folder: vmegc_main([paths[0], "-o", os.path.join(folder, "out.cpp")]), ["out.cpp"])
-      self.assertEqual((code, err), (0, ""))
+      self.assertEqual(code, 0)
+      self.assertRegex(err, r"^vmegc: kernel bump transpiled \(\d+ ms\)\n$")
       outputs.append(squeezed(written[0]))
     self.assertEqual(outputs[0], outputs[1])
     self.assertEqual(outputs[0].count("twice") + outputs[0].count("bump("), outputs[1].count("twice") + outputs[1].count("bump("))

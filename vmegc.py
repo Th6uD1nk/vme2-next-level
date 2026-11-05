@@ -2,6 +2,7 @@ import argparse
 import os
 import re
 import sys
+import time
 
 from vmeg.blocks import find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, is_pointer, build_only, call_edits, check_buffers, check_decorators, check_local_sources, check_params, params_by_kernel, definition_edits, line_indent, memories_by_kernel, memory_edits, on_process_edit, passthrough
@@ -105,7 +106,12 @@ def translate(text, blocks, path, registry=None, warnings=None, compat=None):
   out = [f'#line 1 "{quoted}"\n']
   check_buffers(text, toks, blocks)
   found = []
-  codes = [generate(text, block, found, compat) for block in blocks]
+  codes = []
+  for block in blocks:
+    began = time.perf_counter()
+    codes.append(generate(text, block, found, compat))
+    if block[0] == "kernel":
+      print(f"vmegc: kernel {kernel_name(text, block)} transpiled ({(time.perf_counter() - began) * 1000:.0f} ms)", file=sys.stderr, flush=True)
   records, per_block, call_params, call_memories = block_statement_records(text, blocks)
   codes = [statement_code(text, block, records[block[1]]) if block[0] == "block-statement" else f"{line_indent(text, block[1])}  {code}" if block[0] == "kernel-block-end" and code else indented(text, block, code) if block[0] == "declare" else code for block, code in zip(blocks, closing_codes(text, blocks, codes))]
   check_decorators(text, blocks, registry)
