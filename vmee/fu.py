@@ -103,6 +103,14 @@ def op_neg_ofb(back, front, fu, a, b, previous, state):
   return shifted(b - back, fu)
 
 
+def op_add_byt(back, front, fu, a, b, previous, state):
+  return (front & 0xff) + (back & 0xff) + (((front & 0xff00) + (back & 0xff00)) >> 8)
+
+
+def op_sub_byt(back, front, fu, a, b, previous, state):
+  return ((front & 0xff) - (back & 0xff)) + (((front & 0xff00) - (back & 0xff00)) >> 8)
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -161,6 +169,8 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "add_byt": op_add_byt,
+  "sub_byt": op_sub_byt,
   "neg_ofb": op_neg_ofb,
   "bak_shr": op_bak_shr,
   "mul_cst": op_mul_cst,
