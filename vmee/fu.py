@@ -191,6 +191,24 @@ def shift_right(value, amount):
   return value >> amount if amount >= 0 else value << -amount
 
 
+def signed24(value):
+  value &= 0xffffff
+  return value - 0x1000000 if value & 0x800000 else value
+
+
+def signed_amount(register):
+  amount = register & 63
+  return amount - 64 if amount >= 32 else amount
+
+
+def op_shl_dyn(back, front, fu, a, b, previous, state):
+  return shift_right(signed24(b), -signed_amount(back))
+
+
+def op_shr_dyn(back, front, fu, a, b, previous, state):
+  return shift_right(signed24(b), signed_amount(back))
+
+
 def shift_by_register(value, b):
   amount = b & 63
   return shift_right(value, amount - 64 if amount >= 32 else amount)
@@ -238,6 +256,8 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "shl_dyn": op_shl_dyn,
+  "shr_dyn": op_shr_dyn,
   "mul_clp": op_mul_clp,
   "mul_clp_neg": op_mul_clp_neg,
   "sel_cst_zer": op_sel_cst_zer,
