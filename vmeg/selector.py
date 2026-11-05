@@ -4,7 +4,7 @@ from itertools import combinations
 from vmeg.operations import OPERATIONS, slots
 from vmeg.pattern import ZERO, match, parse_pattern, without
 
-OPERATION_NODES = ("bin", "not", "neg", "call")
+OPERATION_NODES = ("bin", "not", "neg", "call", "cond")
 
 
 @lru_cache(maxsize=None)

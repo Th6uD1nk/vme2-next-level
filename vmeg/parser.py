@@ -227,11 +227,20 @@ def parse_xor(p):
   return left
 
 
-def parse_expr(p):
+def parse_bitor(p):
   left = parse_xor(p)
   while accept_single(p, "|"):
     left = ("bin", "|", left, parse_xor(p))
   return left
+
+
+def parse_expr(p):
+  condition = parse_bitor(p)
+  if not p.accept("?"):
+    return condition
+  taken = parse_expr(p)
+  p.expect(":")
+  return ("cond", condition, taken, parse_expr(p))
 
 
 def parse_pe_index(p):

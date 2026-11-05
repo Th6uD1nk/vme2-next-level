@@ -39,6 +39,11 @@ def fold(expr, env):
     if left[0] == "num" and right[0] == "num":
       return ("num", OPERATORS[expr[1]](left[1], right[1]))
     return ("bin", expr[1], left, right)
+  if kind == "cond":
+    condition = fold(expr[1], env)
+    if condition[0] == "num":
+      return fold(expr[2] if condition[1] else expr[3], env)
+    return ("cond", condition, fold(expr[2], env), fold(expr[3], env))
   if kind == "index":
     return ("index", expr[1], fold(expr[2], env))
   if kind == "call":
@@ -101,6 +106,8 @@ def copy_text(expr, env):
     return f"(~{copy_text(expr[1], env)})"
   if kind == "bin":
     return f"({copy_text(expr[2], env)} {expr[1]} {copy_text(expr[3], env)})"
+  if kind == "cond":
+    return f"({copy_text(expr[1], env)} ? {copy_text(expr[2], env)} : {copy_text(expr[3], env)})"
   raise ValueError(f"'{kind}' expression not supported here")
 
 
@@ -123,4 +130,6 @@ def to_c(expr):
     return f"(~{to_c(expr[1])})"
   if kind == "bin":
     return f"({to_c(expr[2])} {expr[1]} {to_c(expr[3])})"
+  if kind == "cond":
+    return f"({to_c(expr[1])} ? {to_c(expr[2])} : {to_c(expr[3])})"
   raise ValueError(f"'{kind}' expression not supported here")

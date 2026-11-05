@@ -37,6 +37,8 @@ def bind(pattern, expr, constants, found):
     if expr[1] != pattern[1] or len(expr[2]) != len(pattern[2]):
       return None
     return bind_all(pattern[2], expr[2], constants, found)
+  if kind == "cond":
+    return bind_all(pattern[1:], expr[1:], constants, found)
   return bind(pattern[1], expr[1], constants, found)
 
 
@@ -65,6 +67,8 @@ def rebuild(tree, change):
     return ("bin", tree[1], change(tree[2]), change(tree[3]))
   if kind in ("not", "neg"):
     return (kind, change(tree[1]))
+  if kind == "cond":
+    return ("cond", change(tree[1]), change(tree[2]), change(tree[3]))
   if kind == "call":
     return ("call", tree[1], [change(argument) for argument in tree[2]])
   return tree
@@ -103,6 +107,8 @@ def children(tree):
     return [tree[2], tree[3]]
   if kind in ("not", "neg"):
     return [tree[1]]
+  if kind == "cond":
+    return [tree[1], tree[2], tree[3]]
   if kind == "call":
     return tree[2]
   return []

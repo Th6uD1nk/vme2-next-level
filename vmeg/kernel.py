@@ -153,6 +153,12 @@ def flatten(expr, stagings, compat):
       raise ValueError("no opcode covers this expression")
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+  if kind == "cond":
+    found = choose_opcode(expr, compat)
+    if found is None:
+      raise ValueError("no opcode covers this expression")
+    kind, bound, _ = found
+    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "num":
     return table_operation("cst", "cst", [expr], stagings, compat)
   if source_ref(expr, stagings) is not None:
