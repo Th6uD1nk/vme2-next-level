@@ -59,6 +59,8 @@ def substitute(statement, env):
   line = statement[-1]
   if kind == "icn":
     return ("icn", [(name, fold(value, env)) for name, value in statement[1]], line)
+  if kind == "regs":
+    return ("regs", [(name, fold(value, env)) for name, value in statement[1]], line)
   if kind == "int":
     return ("int", statement[1], fold(statement[2], env), line)
   if kind == "agu":

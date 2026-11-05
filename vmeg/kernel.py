@@ -536,6 +536,18 @@ def emit_statement(statement, env, lines, state):
     if statement[1] in env and statement[1] not in state["macros"]:
       raise ValueError(f"'{statement[1]}' is defined twice")
     env[statement[1]] = full_value(statement[2], env)
+  elif kind == "regs":
+    for name, value in statement[1]:
+      if value[0] != "num":
+        raise ValueError(f".{name} takes a number")
+      limit = 0xf if name == "swen" else 0xffff
+      if not 0 <= value[1] <= limit:
+        raise ValueError(f".{name} takes a number from 0 to 0x{limit:x}")
+      if name == "swen":
+        state["secondary"] = {pe for pe in range(4) if value[1] >> (3 - pe) & 1}
+        state["swen_raw"] = True
+      else:
+        state["routing"][name] = [value[1] >> 4 * pe & 0xf for pe in range(4)]
   elif kind == "icn":
     for icn, value in statement[1]:
       if icn in state["icn"]:
@@ -633,6 +645,8 @@ def emit_statement(statement, env, lines, state):
     state["depths"][pe] = depth
     if last == 1:
       state["secondary"].add(pe)
+    else:
+      state["secondary"].discard(pe)
   elif kind == "paramsdef":
     if state["params"] is not None:
       raise ValueError("the parameters of the kernel are declared twice")
@@ -685,7 +699,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None}
 
 
 def new_env(macros=None):
@@ -795,7 +809,7 @@ def build_kernel(text, block, compat):
       warn(state, line, f"pe{pe} has an operation but no .write is bound in this kernel")
   for slot, nibbles in state["routing"].items():
     lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
-  if state["secondary"]:
+  if state["secondary"] or state["swen_raw"]:
     lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
   return name, options, lines, state
 

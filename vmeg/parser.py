@@ -9,6 +9,8 @@ ICN_NAMES = {
 
 AGU_KINDS = ("top", "base", "write")
 
+RAW_ICN = ("swen", "top", "base", "write")
+
 AGU_PARAMS = {
   4: {
     "top": ("count", "offset", "step", "inner0", "reverse", "repeat"),
@@ -97,6 +99,32 @@ def parse_icn(p):
       break
   p.expect(";")
   return ("icn", items)
+
+
+def parse_regs(p):
+  p.expect("{")
+  items = []
+  while not p.accept("}"):
+    p.expect(".")
+    token = p.peek()
+    group = p.ident()
+    if group != "icn":
+      p.error(f"unknown group of registers '{group}' (icn)", token)
+    p.expect("{")
+    done = []
+    while not p.accept("}"):
+      p.expect(".")
+      token = p.peek()
+      name = p.ident()
+      if name not in RAW_ICN:
+        p.error(f"unknown interconnect register '{name}' ({', '.join(RAW_ICN)})", token)
+      if name in done:
+        p.error(f"the register '{name}' is written twice in the block", token)
+      done.append(name)
+      p.expect("=")
+      items.append((name, parse_expr(p)))
+      p.expect(";")
+  return ("regs", items)
 
 
 def parse_primary(p):
@@ -697,6 +725,9 @@ def parse_statement(p):
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
       p.i += 1
       return parse_pe_statement(p) + (line,)
+    if following is not None and following[0] == "ident" and following[1] == "regs" and not p.in_call:
+      p.i += 2
+      return parse_regs(p) + (line,)
     if following is not None and following[0] == "ident" and following[1] in ("load", "store"):
       p.i += 1
       return parse_transfer_use(p) + (line,)
