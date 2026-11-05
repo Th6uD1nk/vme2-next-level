@@ -151,6 +151,14 @@ def op_sel_cst_ofb(back, front, fu, a, b, previous, state):
   return back if front & a else b
 
 
+def op_sel_ads(back, front, fu, a, b, previous, state):
+  return (back << (fu["k"] == 1)) - b if back & a else (back << (fu["k"] == 1)) + b
+
+
+def op_sel_ads_inv(back, front, fu, a, b, previous, state):
+  return (back << (fu["k"] == 1)) + b if back & a else (back << (fu["k"] == 1)) - b
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -214,6 +222,8 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "sel_ads": op_sel_ads,
+  "sel_ads_inv": op_sel_ads_inv,
   "sel_neg": op_sel_neg,
   "sel_neg_slf": op_sel_neg_slf,
   "sel_cst": op_sel_cst,
