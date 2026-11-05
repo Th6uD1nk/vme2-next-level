@@ -88,7 +88,12 @@ def table_operation(kind, label, args, stagings, compat):
     if argument_kind == "number":
       numbers[argument] = constant(expr_argument, f"{label} {argument}")
   operands, operations = table_operands(label, specification, args, stagings, compat)
-  return operations + [{"kind": kind, **operands, "numbers": numbers, "sat": None}]
+  operation = {"kind": kind, **operands, "numbers": numbers, "sat": None}
+  if "shift" in specification:
+    if not 0 <= numbers[specification["shift"]] <= 63:
+      raise ValueError("the shift must be 0 to 63")
+    operation["shift"] = numbers[specification["shift"]]
+  return operations + [operation]
 
 
 def flatten(expr, stagings, compat):
@@ -127,7 +132,7 @@ def flatten(expr, stagings, compat):
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
-    if expr[1] == "<<" and expr[2][0] not in OPERATION_NODES:
+    if expr[1] in (">>", "<<") and expr[2][0] not in OPERATION_NODES:
       found = choose_opcode(expr, compat)
       if found is not None:
         kind, bound, _ = found

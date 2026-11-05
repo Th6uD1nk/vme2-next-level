@@ -25,6 +25,17 @@ OPERATIONS = {
     "units": "any",
     "note": "the number c, whatever the operands are, alone or with the sat, the round and the shift that wrap it",
   },
+  "bak_shr": {
+    "opcode": 0x014,
+    "pattern": "x >> n",
+    "arguments": (("x", "source"), ("n", "number")),
+    "registers": {},
+    "shift": "n",
+    "code": "fu_code(0x014)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "x shifted to the right by n, as the k of the opcode (an arithmetic shift of the exact value), x is a buffer or a Staging variable",
+  },
   "add": {
     "opcode": 0x010,
     "not_portable": True,
