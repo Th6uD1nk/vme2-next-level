@@ -196,6 +196,20 @@ class SecondUnitTest(unittest.TestCase):
     self.assertEqual(result_of(".spad = top0 * base0;")[1], [])
 
 
+class RawRegistersTest(unittest.TestCase):
+  def test_a_regs_block_sets_the_icn_registers_and_the_last_statement_in_the_source_order_wins(self):
+    def icn(body):
+      text = ".kernel k direct {\n" + body + "\n}\n@kernel k config | exec\nvoid f() { }\n"
+      code = generate(text, find_blocks(text)[0], [], None)
+      return [line.strip() for line in code.splitlines() if "vme_icn" in line]
+    pe = ".pe0 { .spad = top0 + base0; }"
+    self.assertEqual(icn(pe), ["vme_icn(AGU_TOP, 0x4444);", "vme_icn(AGU_BASE, 0x4444);", "vme_icn(AGU_WRITE, 0x4444);"])
+    self.assertEqual(icn(".regs { .icn { .top = 0x3210; } }\n" + pe)[0], "vme_icn(AGU_TOP, 0x3210);")
+    self.assertEqual(icn(".regs { .icn { .swen = 0b1111; } }\n" + pe)[-1], "vme_icn(SWEN, fu_on(0b0111));")
+    self.assertEqual(icn(pe + "\n.regs { .icn { .swen = 0b1111; } }")[-1], "vme_icn(SWEN, fu_on(0b1111));")
+    self.assertEqual(icn(".regs { .icn { .swen = 0b1000; } }\n.regs { .icn { .swen = 0b0100; } }\n" + pe)[-1], "vme_icn(SWEN, fu_on(0b0100));")
+
+
 class RemapTest(unittest.TestCase):
   def test_a_remap_gives_the_opcode_and_the_registers_of_its_unit(self):
     self.assertEqual(kernel_lines(".remap = { operator: \"*\", primary: 0x220 }; .spad = top0 * base0;", None), [
