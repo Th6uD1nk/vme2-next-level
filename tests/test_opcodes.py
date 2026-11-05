@@ -131,6 +131,16 @@ class ByteArithmeticTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = subbyt(top0, base1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_1), fu_code(0x03c));"])
 
 
+class ShiftedOperandTest(unittest.TestCase):
+  def test_a_shifted_operand_with_a_register_amount_is_found_in_the_sum_and_with_a_number(self):
+    self.assertEqual(kernel_lines(".spad = top1 + (top0 >> 3);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_ADD_SHF));", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+    self.assertEqual(kernel_lines(".spad = (top0 >> 3) + 5;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 5);", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+    self.assertEqual(kernel_lines(".spad = 5 - (top0 >> 3);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_NEG_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 5);", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+
+  def test_a_tie_between_two_opcodes_takes_the_lowest_one(self):
+    self.assertEqual(used(".spad = top0 + base0;", "fat"), ("fu_code(OP_ADD_OFA)", [("A", "0")]))
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
