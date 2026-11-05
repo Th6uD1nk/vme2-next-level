@@ -142,7 +142,7 @@ def check_patterns(operations):
         raise ValueError(f"the pattern of '{kind}' must use its arguments ({', '.join(names)})")
       if specification.get("auxiliary"):
         continue
-      key = repr(canonical(tree))
+      key = repr(canonical(tree)) + repr(sorted(specification.get("where", {}).items()))
       if key in seen:
         raise ValueError(f"'{kind}' and '{seen[key]}' have the same pattern")
       seen[key] = kind

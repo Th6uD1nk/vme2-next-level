@@ -24,6 +24,10 @@ def operands_ok(bound, roles):
   return True
 
 
+def in_ranges(bound, ranges):
+  return all(low <= bound[name][1] <= high for name, (low, high) in ranges.items())
+
+
 def bind_entry(tree, specification):
   roles = dict(specification["arguments"])
   constants = tuple(name for name, role in roles.items() if role == "number")
@@ -35,7 +39,9 @@ def bind_entry(tree, specification):
         continue
       bound = match(pattern, tree, set(constants) - set(zeroed))
       if bound is not None and operands_ok(bound, roles):
-        return {**bound, **{name: ZERO for name in zeroed}}
+        found = {**bound, **{name: ZERO for name in zeroed}}
+        if in_ranges(found, specification.get("where", {})):
+          return found
   return None
 
 

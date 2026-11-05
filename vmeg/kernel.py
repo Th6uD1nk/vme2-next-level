@@ -138,6 +138,8 @@ def flatten(expr, stagings, compat):
         kind, bound, _ = found
         return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
     if expr[1] in (">>", "<<"):
+      if expr[2][0] == "num" and expr[3][0] != "num":
+        raise ValueError("no opcode covers this expression: a number shifted by a buffer must be from -0x800000 to 0xffffff")
       operations = operations_of(expr[2], stagings, compat)
       amount = constant(expr[3], "the shift")
       if not 0 <= amount <= 63:
