@@ -151,6 +151,19 @@ class ByteLowTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = (top0 >> 3) - 5;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_OFS));", "vme_pe0(fu_reg(PRIMARY, A), 5);", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
 
 
+class SelectTest(unittest.TestCase):
+  def test_a_ternary_on_a_mask_test_is_one_of_the_four_select_opcodes(self):
+    front_back = "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(%s));"
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? -top1 : top1;", None), [front_back % "OP_SEL_NEG", "vme_pe0(fu_reg(PRIMARY, A), 4);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? top1 : -top1;", None), [front_back % "OP_SEL_NEG_SLF", "vme_pe0(fu_reg(PRIMARY, A), 4);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 7 : top1;", None), [front_back % "OP_SEL_CST", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 7);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? top1 : 7;", None), [front_back % "OP_SEL_CST_OFB", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 7);"])
+
+  def test_a_ternary_that_no_opcode_covers_is_refused(self):
+    with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
+      kernel_lines(".spad = (top0 & 4) ? top1 : base0;", None)
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])

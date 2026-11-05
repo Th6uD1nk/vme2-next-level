@@ -35,6 +35,10 @@ class KnownValueTest(unittest.TestCase):
     results = [evaluate(text, {}) for text in ["1 | 6 & 3", "5 ^ 3 & 1", "1 | 4 ^ 5", "1 << 2 | 1", "~5 & 0xff"]]
     self.assertEqual(results, [("num", 3), ("num", 4), ("num", 1), ("num", 5), ("num", 250)])
 
+  def test_the_ternary_picks_its_branch_and_nests_to_the_right(self):
+    results = [evaluate(text, {}) for text in ["1 ? 2 : 3", "0 ? 2 : 3", "0 ? 1 : 0 ? 4 : 5", "(3 & 4) ? 7 : 8", "1 + 1 ? 2 : 3"]]
+    self.assertEqual(results, [("num", 2), ("num", 3), ("num", 5), ("num", 8), ("num", 2)])
+
   def test_a_chain_of_assignments_is_evaluated_from_the_previous_ones(self):
     env = chain([("a", "2"), ("b", "a * 3"), ("c", "b + a"), ("d", "(c - a) * b")])
     self.assertEqual(env, {"a": ("num", 2), "b": ("num", 6), "c": ("num", 8), "d": ("num", 36)})
