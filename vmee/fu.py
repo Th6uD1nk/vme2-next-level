@@ -167,6 +167,14 @@ def op_sel_cst_zer_inv(back, front, fu, a, b, previous, state):
   return b if back & a else 0
 
 
+def op_mul_clp(back, front, fu, a, b, previous, state):
+  return back * front if -2 <= front <= 2 else 0
+
+
+def op_mul_clp_neg(back, front, fu, a, b, previous, state):
+  return -(back * front) if -2 <= front <= 2 else 0
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -230,6 +238,8 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "mul_clp": op_mul_clp,
+  "mul_clp_neg": op_mul_clp_neg,
   "sel_cst_zer": op_sel_cst_zer,
   "sel_cst_zer_inv": op_sel_cst_zer_inv,
   "sel_ads": op_sel_ads,
