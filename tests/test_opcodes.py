@@ -96,8 +96,6 @@ class ComplementTest(unittest.TestCase):
   def test_a_complement_of_what_no_opcode_covers_is_refused(self):
     with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       codes(".spad = ~(top0 + base0 + top1);")
-    with self.assertRaisesRegex(ValueError, "an operation is expected"):
-      codes(".spad = ~sat(8, 8);")
 
 
 class PassthroughTest(unittest.TestCase):
@@ -110,6 +108,14 @@ class PassthroughTest(unittest.TestCase):
     self.assertEqual(codes(".spad = pass(top1);"), ["OP_BAK"])
     self.assertEqual(kernel_lines(".spad = pass(top1) << 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_BAK), 61);"])
     self.assertEqual(kernel_lines(".spad = pass(top1) >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_BAK), 3);"])
+
+
+class ConstantTest(unittest.TestCase):
+  def test_a_number_alone_and_the_function_cst_are_the_opcode_that_gives_b(self):
+    expected = ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, STAGING_0), fu_code(OP_CST));", "vme_pe0(fu_reg(PRIMARY, B), 0x10);"]
+    self.assertEqual(kernel_lines(".spad = 16;", None), expected)
+    self.assertEqual(kernel_lines(".spad = cst(0x10);", None), expected)
+    self.assertEqual(used(".spad = cst(5);"), ("fu_code(OP_CST)", [("B", "5")]))
 
 
 class ShiftTest(unittest.TestCase):

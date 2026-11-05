@@ -101,8 +101,10 @@ class RoundTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = round(top0 + base0 >> 1);", None), marked)
     with self.assertRaises(ValueError):
       kernel_lines(".spad = round(round(top0 + base0));", None)
-    with self.assertRaises(ValueError):
-      kernel_lines(".spad = round(5);", None)
+    self.assertEqual(kernel_lines(".spad = round(5);", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, STAGING_0), fu_code(OP_CST), (1 << 6));",
+      "vme_pe0(fu_reg(PRIMARY, B), 5);",
+    ])
 
 
 class KnownMacrosInAKernelTest(unittest.TestCase):
