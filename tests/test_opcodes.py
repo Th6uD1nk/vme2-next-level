@@ -186,6 +186,19 @@ class DynamicShiftTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = 5 >> top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_SHL_CST_DYN_ZER));", "vme_pe0(fu_reg(PRIMARY, B), 5);"])
 
 
+class DynamicShiftRangeTest(unittest.TestCase):
+  def test_the_value_of_the_number_picks_the_signed_or_the_unsigned_shift(self):
+    def code(body):
+      return re.search(r"fu_code\((\w+)\)", kernel_lines(body, None)[0]).group(1)
+    self.assertEqual([code(".spad = 0x7fffff << top1;"), code(".spad = 0x800000 << top1;"), code(".spad = -1 << top1;"), code(".spad = 0xffffff << top1;")], ["OP_SHL_CST_DYN", "OP_SHF_CST_M24", "OP_SHL_CST_DYN", "OP_SHF_CST_M24"])
+    self.assertEqual([code(".spad = 0x7fffff >> top1;"), code(".spad = 0x800000 >> top1;"), code(".spad = -0x800000 >> top1;")], ["OP_SHL_CST_DYN_ZER", "0x09c", "OP_SHL_CST_DYN_ZER"])
+
+  def test_a_number_that_does_not_fit_the_24_bits_is_refused(self):
+    for body in (".spad = 0x1000000 >> top1;", ".spad = -0x800001 << top1;"):
+      with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
+        kernel_lines(body, None)
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
