@@ -159,6 +159,12 @@ class SelectTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 7 : top1;", None), [front_back % "OP_SEL_CST", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 7);"])
     self.assertEqual(kernel_lines(".spad = (top0 & 4) ? top1 : 7;", None), [front_back % "OP_SEL_CST_OFB", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 7);"])
 
+  def test_a_ternary_that_adds_or_subtracts_a_number_on_one_operand_is_the_add_or_sub_select(self):
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? top0 - 7 : top0 + 7;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SEL_ADS));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 7);"])
+    self.assertEqual(kernel_lines(".spad = (top1 & 4) ? top1 + 7 : top1 - 7;", None)[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_SEL_ADS_INV));")
+    with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
+      kernel_lines(".spad = (top0 & 4) ? top0 - 7 : top0 + 8;", None)
+
   def test_a_ternary_that_no_opcode_covers_is_refused(self):
     with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       kernel_lines(".spad = (top0 & 4) ? top1 : base0;", None)
