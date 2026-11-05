@@ -165,6 +165,10 @@ class SelectTest(unittest.TestCase):
     with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       kernel_lines(".spad = (top0 & 4) ? top0 - 7 : top0 + 8;", None)
 
+  def test_a_ternary_between_zero_and_a_number_on_a_mask_test_of_one_operand_is_the_zero_select(self):
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 0 : 9;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SEL_CST_ZER));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 9 : 0;", None)[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SEL_CST_ZER_INV));")
+
   def test_a_ternary_that_no_opcode_covers_is_refused(self):
     with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
       kernel_lines(".spad = (top0 & 4) ? top1 : base0;", None)
