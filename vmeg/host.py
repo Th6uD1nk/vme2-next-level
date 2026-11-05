@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from vmeg.qformat import buffer_format
 from vmeg.blocks import decorator_calls, decorator_names
 from vmeg.scanner import tokens
@@ -379,10 +381,12 @@ def line_indent(text, position):
   return before if not before.strip() else ""
 
 
-def function_start(text, position, floor):
-  boundary = floor
+@lru_cache(maxsize=8)
+def top_level_groups(text):
+  boundary = 0
   depth = 0
   begin = None
+  groups = []
   for kind, value, start, end in tokens(text):
     if kind == "punct" and value == "{":
       if depth == 0:
@@ -391,11 +395,19 @@ def function_start(text, position, floor):
     elif kind == "punct" and value == "}":
       depth -= 1
       if depth == 0:
-        if begin is not None and begin <= position < end:
-          return begin
+        if begin is not None:
+          groups.append((begin, end))
         boundary = max(boundary, end)
     elif depth == 0 and (kind == "pp" or (kind == "punct" and value == ";")):
       boundary = max(boundary, end)
+  return tuple(groups)
+
+
+def function_start(text, position, floor):
+  for begin, end in top_level_groups(text):
+    begin = max(begin, floor)
+    if begin <= position < end:
+      return begin
   return None
 
 
