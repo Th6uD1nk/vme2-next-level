@@ -95,6 +95,10 @@ def op_mul_rshift(back, front, fu, a, b, previous, state):
   return shifted(back * front, fu)
 
 
+def op_cst(back, front, fu, a, b, previous, state):
+  return b
+
+
 def op_pass(back, front, fu, a, b, previous, state):
   return shifted(back, fu)
 
@@ -148,6 +152,7 @@ HANDLERS = {
   "shrsub": op_shrsub,
   "mul": op_mul_rshift,
   "pass": op_pass,
+  "cst": op_cst,
   "mul_cst": op_mul_cst,
   "shl_cst": op_shl_cst,
   "mul_vec": op_mul_rshift,

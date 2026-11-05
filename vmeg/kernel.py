@@ -71,6 +71,8 @@ def check_arguments(name, args):
 
 def table_operands(label, specification, args, stagings, compat):
   given = [(kind, expr) for (_, kind), expr in zip(specification["arguments"], args) if kind != "number"]
+  if not given:
+    return {"source": None}, []
   if len(specification["operands"]) == 2:
     return {slot: operand(expr, stagings) for slot, (_, expr) in zip(specification["operands"], given)}, []
   source, operations = split_source(given[0][1], stagings, compat)
@@ -146,6 +148,8 @@ def flatten(expr, stagings, compat):
       raise ValueError("no opcode covers this expression")
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+  if kind == "num":
+    return table_operation("cst", "cst", [expr], stagings, compat)
   if source_ref(expr, stagings) is not None:
     return operations_of(expr, stagings, compat)
   raise ValueError("an operation is expected (an addition, sat or clamp)")

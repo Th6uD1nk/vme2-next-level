@@ -14,6 +14,17 @@ OPERATIONS = {
     "units": "any",
     "note": "x as it is, a buffer or a Staging variable, alone or with the sat, the round and the shift that wrap it",
   },
+  "cst": {
+    "opcode": 0x00c,
+    "pattern": "c",
+    "aliases": ("cst(c)",),
+    "arguments": (("c", "number"),),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "the number c, whatever the operands are, alone or with the sat, the round and the shift that wrap it",
+  },
   "add": {
     "opcode": 0x010,
     "not_portable": True,
@@ -308,10 +319,14 @@ def operators_of(operations):
   return found
 
 
+def name_operator(specification):
+  return "cst" if dict(specification["arguments"])[parse_pattern(specification["pattern"])[1]] == "number" else "pass"
+
+
 def pattern_operators(specification):
   found = set()
   if parse_pattern(specification["pattern"])[0] == "name":
-    found.add("pass")
+    found.add(name_operator(specification))
 
   def walk(tree):
     if tree[0] == "bin":
@@ -327,7 +342,7 @@ def pattern_operators(specification):
 def root_operator(specification):
   tree = parse_pattern(specification["pattern"])
   if tree[0] == "name":
-    return "pass"
+    return name_operator(specification)
   return tree[1] if tree[0] == "bin" else None
 
 
