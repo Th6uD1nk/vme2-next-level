@@ -180,6 +180,12 @@ class LimitedProductTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = mulclpneg(top0, base1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_1), fu_code(OP_MUL_CLP_NEG));"])
 
 
+class DynamicShiftTest(unittest.TestCase):
+  def test_a_number_shifted_by_a_buffer_is_the_opcode_that_shifts_b_by_the_amount_read(self):
+    self.assertEqual(kernel_lines(".spad = 5 << top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_SHL_CST_DYN));", "vme_pe0(fu_reg(PRIMARY, B), 5);"])
+    self.assertEqual(kernel_lines(".spad = 5 >> top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_1), fu_code(OP_SHL_CST_DYN_ZER));", "vme_pe0(fu_reg(PRIMARY, B), 5);"])
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
