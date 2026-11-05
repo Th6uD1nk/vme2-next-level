@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 
 from vmeg.expr import fold
 from vmeg.parser import Parser, parse_expr
@@ -11,6 +12,11 @@ OPENING = ("if", "ifdef", "ifndef")
 
 
 def macro_events(text):
+  return [dict(event) for event in scanned_events(text)]
+
+
+@lru_cache(maxsize=8)
+def scanned_events(text):
   events = []
   depth = 0
   for kind, value, start, _ in tokens(text):
@@ -33,13 +39,13 @@ def macro_events(text):
       target = rest.split()
       if target:
         events.append({"kind": "undef", "name": target[0], "params": None, "body": "", "start": start, "conditional": depth > 0})
-  return events
+  return tuple(events)
 
 
 def trusted_macros(text, position):
   defined = {}
   undone = set()
-  for event in macro_events(text):
+  for event in scanned_events(text):
     if event["kind"] == "define":
       defined.setdefault(event["name"], []).append(event)
     else:
