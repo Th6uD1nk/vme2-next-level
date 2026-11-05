@@ -135,6 +135,22 @@ def op_add_lob(back, front, fu, a, b, previous, state):
   return ((front & 0xff) + (back & 0xff)) << (fu["k"] == 1)
 
 
+def op_sel_neg(back, front, fu, a, b, previous, state):
+  return -back if front & a else back
+
+
+def op_sel_neg_slf(back, front, fu, a, b, previous, state):
+  return back if front & a else -back
+
+
+def op_sel_cst(back, front, fu, a, b, previous, state):
+  return b if front & a else back
+
+
+def op_sel_cst_ofb(back, front, fu, a, b, previous, state):
+  return back if front & a else b
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -198,6 +214,10 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "sel_neg": op_sel_neg,
+  "sel_neg_slf": op_sel_neg_slf,
+  "sel_cst": op_sel_cst,
+  "sel_cst_ofb": op_sel_cst_ofb,
   "shr_cst_ofs": op_shr_cst_ofs,
   "add_hib": op_add_hib,
   "add_lob": op_add_lob,
