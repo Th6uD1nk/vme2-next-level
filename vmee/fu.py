@@ -127,6 +127,11 @@ def shift_right(value, amount):
   return value >> amount if amount >= 0 else value << -amount
 
 
+def shift_by_register(value, b):
+  amount = b & 63
+  return shift_right(value, amount - 64 if amount >= 32 else amount)
+
+
 def op_shl_cst(back, front, fu, a, b, previous, state):
   amount = b & 63
   if amount >= 32:
@@ -135,11 +140,11 @@ def op_shl_cst(back, front, fu, a, b, previous, state):
 
 
 def op_subshr(back, front, fu, a, b, previous, state):
-  return front - shift_right(back, b)
+  return front - shift_by_register(back, b)
 
 
 def op_shrsub(back, front, fu, a, b, previous, state):
-  return shift_right(back, b) - front
+  return shift_by_register(back, b) - front
 
 
 def op_add_ofa(back, front, fu, a, b, previous, state):
