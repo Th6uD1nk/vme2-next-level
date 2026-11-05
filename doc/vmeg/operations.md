@@ -18,6 +18,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.4 mac](#634-mac)
   - [6.3.5 acc](#635-acc)
   - [6.3.6 and, or and xor](#636-and-or-and-xor)
+  - [6.3.7 pass](#637-pass)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 
@@ -33,6 +34,8 @@ An operation reads buffers (`top0` to `top3`, `base0` to `base3`) or `Staging` v
 | `a + b` | `0x010` | two operands | `a + b` |
 | `a + b + c` | `0x030` | two operands and a number | `(a + b) + c` |
 | `x + c` | `0x024` | one operand and a number | `x + c` |
+| `x`, `pass(x)` | `0x004` | one operand | `x` as it is ([6.3.7](#637-pass)) |
+| `x << c` | `0x0a4` | one operand and a number | `x` shifted to the left by `c` ([6.2.2](#622-operators-with-a-number)) |
 | `a - b` | `0x018` | two operands | `a - b` |
 | `a - b + c`, `subacst(a, b, c)` | `0x034` | two operands and a number | `(a - b) + c` |
 | `b - (a >> n)`, `subshr(a, b, n)` | `0x048` | two operands and a number | `b - (a >> n)` |
@@ -154,6 +157,7 @@ Some operators take a number besides their operands. The operation holds the num
 | `a - b + c` | `subacst(a, b, c)` ([6.3.2](#632-subacst)) |
 | `b - (a >> n)` | `subshr(a, b, n)` ([6.3.3](#633-subshr)) |
 | `(a >> n) - b` | |
+| `x << c` | |
 | `x & c` | `and(x, c)` ([6.3.6](#636-and-or-and-xor)) |
 | `x \| c` | `or(x, c)` |
 | `x ^ c` | `xor(x, c)` |
@@ -167,7 +171,8 @@ Some operators take a number besides their operands. The operation holds the num
 - `x` is a buffer, a `Staging` variable or an operation. `a` and `b` are buffers or `Staging` variables.
 - The number can be written on either side of `+`, `&`, `|` and `^`: `255 & top1` is the same as `top1 & 255`, and `5 + (top0 + base0)` the same as `(top0 + base0) + 5`.
 - The grouping is the one written: `5 + top0 + base0` is `(5 + top0) + base0` and is refused. Write `5 + (top0 + base0)`.
-- A number with a single operand is covered for the sum only: `top0 + 1` is `x + c`. `top0 * 5` and `top0 - 1` are refused, no operation of the table takes a single operand and a number for them.
+- `x << c` shifts `x` to the left by `c`, a signed number of 6 bits: a negative `c` shifts to the right. It is this opcode when `x` is a buffer or a `Staging` variable (`top1 << 16`). When `x` is an operation, `(a + b) << n` is the shift of the result of this operation ([6.4](#64-sat-and-the-shifts)).
+- A number with a single operand is covered for the sum and the left shift only: `top0 + 1` is `x + c`. `top0 * 5` and `top0 - 1` are refused, no operation of the table takes a single operand and a number for them.
 
 ### 6.2.3 How the opcode is chosen
 
@@ -275,6 +280,24 @@ Staging s;
 
 - The number is known at compile time, like the numbers of the other functions.
 - The complement of these functions is one operation: `~and(x, c)`, `~or(x, c)` and `~xor(x, c)`, or `~(x & c)`, `~(x | c)` and `~(x ^ c)` ([6.2.1](#621-the-complement)).
+
+### 6.3.7 pass
+
+`pass(x)` gives `x` as it is. `x` is a buffer or a `Staging` variable. It is also written as `x` alone, as the operation that leaves the pe ([6.1](#61-operands-and-results)).
+
+```c
+.pe0 { .spad = pass(top1) << 3; }
+.pe1 { .spad = pass(top1); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` copies `top1` and shifts the result by 3, as the shift of the operation `pass` (the opcode `0x004`), not as the opcode `x << c`.
+- `pe1` copies `top1`.
+
+**Rules:**
+
+- `pass(x) << n` and `pass(x) >> n` are the shifts of the operation `pass` ([6.4](#64-sat-and-the-shifts)); `x << n` on a buffer alone is the opcode `0x0a4` ([6.2.2](#622-operators-with-a-number)).
 
 ## 6.4 sat and the shifts
 
