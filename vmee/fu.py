@@ -111,6 +111,18 @@ def op_sub_byt(back, front, fu, a, b, previous, state):
   return ((front & 0xff) - (back & 0xff)) + (((front & 0xff00) - (back & 0xff00)) >> 8)
 
 
+def op_add_shf(back, front, fu, a, b, previous, state):
+  return front + shift_by_register(back, b)
+
+
+def op_shr_cst_ofa(back, front, fu, a, b, previous, state):
+  return shift_by_register(back, b) + a
+
+
+def op_shr_cst_neg_ofa(back, front, fu, a, b, previous, state):
+  return a - shift_by_register(back, b)
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -174,6 +186,9 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "add_shf": op_add_shf,
+  "shr_cst_ofa": op_shr_cst_ofa,
+  "shr_cst_neg_ofa": op_shr_cst_neg_ofa,
   "add_byt": op_add_byt,
   "sub_byt": op_sub_byt,
   "neg_ofb": op_neg_ofb,

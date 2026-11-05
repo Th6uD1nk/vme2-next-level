@@ -66,6 +66,36 @@ OPERATIONS = {
     "units": "any",
     "note": "the difference of the byte 0 of a and b plus the difference of their byte 1, no register",
   },
+  "add_shf": {
+    "opcode": 0x040,
+    "pattern": "b + (a >> n)",
+    "arguments": (("a", "operand"), ("b", "operand"), ("n", "number")),
+    "registers": {"B": "n"},
+    "code": "fu_code(OP_ADD_SHF)",
+    "operands": ("back", "front"),
+    "units": "any",
+    "note": "b plus a shifted to the right by n, the shift is on a",
+  },
+  "shr_cst_ofa": {
+    "opcode": 0x044,
+    "pattern": "(x >> n) + c",
+    "arguments": (("x", "source"), ("n", "number"), ("c", "number")),
+    "registers": {"A": "c", "B": "n"},
+    "code": "fu_code(OP_SHR_CST_OFA)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "x shifted to the right by n, plus c",
+  },
+  "shr_cst_neg_ofa": {
+    "opcode": 0x04c,
+    "pattern": "c - (x >> n)",
+    "arguments": (("x", "source"), ("n", "number"), ("c", "number")),
+    "registers": {"A": "c", "B": "n"},
+    "code": "fu_code(OP_SHR_CST_NEG_OFA)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "c minus x shifted to the right by n",
+  },
   "add": {
     "opcode": 0x010,
     "not_portable": True,
@@ -337,6 +367,8 @@ OPERATIONS = {
     "note": "running sum, x is a buffer or a Staging variable",
   },
 }
+
+OPERATIONS = dict(sorted(OPERATIONS.items(), key=lambda entry: entry[1]["opcode"]))
 
 check_patterns(OPERATIONS)
 
