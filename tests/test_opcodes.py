@@ -118,6 +118,13 @@ class ConstantTest(unittest.TestCase):
     self.assertEqual(used(".spad = cst(5);"), ("fu_code(OP_CST)", [("B", "5")]))
 
 
+class ReverseSubtractionTest(unittest.TestCase):
+  def test_a_number_minus_a_buffer_is_the_opcode_that_gives_b_minus_the_operand_and_keeps_the_shift(self):
+    self.assertEqual(kernel_lines(".spad = 5 - top0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_NEG_OFB));", "vme_pe0(fu_reg(PRIMARY, B), 5);"])
+    self.assertEqual(used(".spad = 0 - top1;"), ("fu_code(OP_NEG_OFB)", [("B", "0")]))
+    self.assertEqual(kernel_lines(".spad = (5 - top0) >> 2;", None)[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_NEG_OFB), 2);")
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
