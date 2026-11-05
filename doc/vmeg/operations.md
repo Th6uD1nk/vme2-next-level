@@ -301,7 +301,7 @@ Staging s;
 
 ## 6.4 sat and the shifts
 
-`sat`, `round` and the shifts are not operations of their own: they set the saturation, the rounding and the shift of the operation they wrap.
+`sat`, `round` and the shifts are not operations of their own: they set the saturation, the rounding and the shift of the operation they wrap. On a buffer or a `Staging` variable alone the operation is `pass` ([6.3.7](#637-pass)); `x << c` on a source alone is the opcode `0x0a4` ([6.2.2](#622-operators-with-a-number)).
 
 ```c
 .pe0 { .spad = sat(top0 + base0, 7); }
@@ -315,9 +315,9 @@ Staging s;
 | `sat(op, bits)` | limits the result of `op` to `bits` bits, signed: from `-2^(bits-1)` to `2^(bits-1)-1`. `bits` is from 0 to 31, and 0 means no saturation |
 | `round(op)` | rounds the shift of `op` to the nearest, a half goes up, instead of rounding down. It acts on the shift of an addition, of `a - b` and of a product. It does nothing on `subacst`, `subshr` and `(a >> n) - b` |
 | `op >> n` | shifts the result of `op` to the right by `n`, from 0 to 63 |
-| `op << n` | the rotary shift by `n`, from 0 to 63 |
+| `op << n` | the rotary shift of the result by `n`, from 0 to 63. On a buffer or a `Staging` variable alone, `x << c` is the opcode `0x0a4` instead |
 
-- `sat`, `round` and the shifts wrap an operation: `sat(top0, 7)`, `round(top0)` and `top0 >> 2` are refused.
+- `sat(top0, 7)`, `round(top0)` and `top0 >> 2` wrap a buffer: the operation is `pass` with the `sat`, the `round` or the shift.
 - An operation takes one `sat`, one `round` and one shift. When `sat` and a shift are used, the shift goes after the `sat`: `sat(x, 7) >> 2`.
 - `round` can be written around the operation or around the shift: `round(a + b) >> 1` and `round(a + b >> 1)` are the same.
 - A shift after a product, `a * b >> 8`, is the shift of the product ([6.2](#62-operators)).
@@ -349,12 +349,9 @@ The messages start with `line N:`, left out here.
 | [6.3](#63-functions) | `unknown operation 'foo' (sat, round, subacst, subshr, and, or, xor, clamp, mac, acc)` | a function that does not exist |
 | [6.4](#64-sat-and-the-shifts) | `sat takes 2 arguments (value, bits)` | `sat` with another number of arguments |
 | [6.4](#64-sat-and-the-shifts) | `sat bits out of range (0 to 31)` | `bits` above 31 |
-| [6.4](#64-sat-and-the-shifts) | `sat must wrap an operation` | `sat` on a buffer or a `Staging` variable |
 | [6.4](#64-sat-and-the-shifts) | `an operation takes only one sat` | two `sat` on the same operation |
 | [6.4](#64-sat-and-the-shifts) | `round takes 1 argument (value)` | `round` with another number of arguments |
-| [6.4](#64-sat-and-the-shifts) | `round must wrap an operation` | `round` on a buffer or a `Staging` variable |
 | [6.4](#64-sat-and-the-shifts) | `an operation takes only one round` | two `round` on the same operation |
 | [6.4](#64-sat-and-the-shifts) | `the shift goes after the sat: sat(x, n) >> k` | a shift inside the `sat` |
-| [6.4](#64-sat-and-the-shifts) | `a shift must wrap an operation` | `>>` or `<<` on a buffer or a `Staging` variable |
 | [6.4](#64-sat-and-the-shifts) | `the shift must be 0 to 63` | a shift above 63 |
 | [6.4](#64-sat-and-the-shifts) | `an operation takes only one shift` | two shifts on the same operation |
