@@ -174,6 +174,12 @@ class SelectTest(unittest.TestCase):
       kernel_lines(".spad = (top0 & 4) ? top1 : base0;", None)
 
 
+class LimitedProductTest(unittest.TestCase):
+  def test_mulclp_and_mulclpneg_are_the_limited_product_opcodes_with_the_limited_operand_in_front(self):
+    self.assertEqual(kernel_lines(".spad = mulclp(top0, top1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_MUL_CLP));"])
+    self.assertEqual(kernel_lines(".spad = mulclpneg(top0, base1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_1), fu_code(OP_MUL_CLP_NEG));"])
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
