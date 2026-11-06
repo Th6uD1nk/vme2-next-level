@@ -226,7 +226,7 @@ class LogicalShiftTest(unittest.TestCase):
 
 class XnorTest(unittest.TestCase):
   def test_the_complement_of_an_exclusive_or_of_two_buffers_is_one_opcode(self):
-    self.assertEqual(kernel_lines(".spad = ~(top0 ^ top1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_XNR));"])
+    self.assertEqual(kernel_lines(".spad = ~(top0 ^ top1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(0x0e8));"])
     self.assertEqual(codes(".spad = ~(top0 ^ 5);"), ["OP_XOR_CST_NOT"])
 
 

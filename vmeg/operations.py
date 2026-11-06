@@ -597,7 +597,7 @@ OPERATIONS = {
     "pattern": "~(a ^ b)",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
-    "code": "fu_code(OP_XNR)",
+    "code": "fu_code(0x0e8)",
     "operands": ("front", "back"),
     "units": "any",
     "note": "the complement of the bitwise exclusive or of a and b, one operation",
