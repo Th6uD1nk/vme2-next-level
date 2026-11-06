@@ -2068,12 +2068,127 @@ void checkSelNeg6Run(void) {
 
   .pe0 { .top = top; .write = write; .spad = (top0 & 4) ? top1 : -top1; }
   .pe1 { .top = top; .write = write; .spad = (4 & top0) ? top1 : -top1; }
-  .pe2 { .write = write; .spad = (top0 & 0x4) ? top1 : (-top1); }
+  .pe2 { .write = write; .spad = (top0 & 4) ? top1 : (-top1); }
   .pe3 { .write = write; .spad = ((top0 & 4)) ? (top1) : -top1; }
 }
 
 @kernel checkSelNegSlf config | exec
 void checkSelNegSlfRun(void) {
+}
+
+@emulate "sel_neg_slf_2"
+.kernel checkSelNegSlf2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 0) ? top1 : -top1; }
+  .pe1 { .top = top; .write = write; .spad = (0 & top0) ? top1 : -top1; }
+  .pe2 { .write = write; .spad = (top0 & 0) ? top1 : (-top1); }
+  .pe3 { .write = write; .spad = ((top0 & 0)) ? (top1) : -top1; }
+}
+
+@kernel checkSelNegSlf2 config | exec
+void checkSelNegSlf2Run(void) {
+}
+
+@emulate "sel_neg_slf_3"
+.kernel checkSelNegSlf3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 1) ? top1 : -top1; }
+  .pe1 { .top = top; .write = write; .spad = (1 & top0) ? top1 : -top1; }
+  .pe2 { .write = write; .spad = (top0 & 1) ? top1 : (-top1); }
+  .pe3 { .write = write; .spad = ((top0 & 1)) ? (top1) : -top1; }
+}
+
+@kernel checkSelNegSlf3 config | exec
+void checkSelNegSlf3Run(void) {
+}
+
+@emulate "sel_neg_slf_4"
+.kernel checkSelNegSlf4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 8388608) ? top1 : -top1; }
+  .pe1 { .top = top; .write = write; .spad = (8388608 & top0) ? top1 : -top1; }
+  .pe2 { .write = write; .spad = (top0 & 8388608) ? top1 : (-top1); }
+  .pe3 { .write = write; .spad = ((top0 & 8388608)) ? (top1) : -top1; }
+}
+
+@kernel checkSelNegSlf4 config | exec
+void checkSelNegSlf4Run(void) {
+}
+
+@emulate "sel_neg_slf_5"
+.kernel checkSelNegSlf5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & -1) ? top1 : -top1; }
+  .pe1 { .top = top; .write = write; .spad = (-1 & top0) ? top1 : -top1; }
+  .pe2 { .write = write; .spad = (top0 & -1) ? top1 : (-top1); }
+  .pe3 { .write = write; .spad = ((top0 & -1)) ? (top1) : -top1; }
+}
+
+@kernel checkSelNegSlf5 config | exec
+void checkSelNegSlf5Run(void) {
+}
+
+@emulate "sel_neg_slf_6"
+.kernel checkSelNegSlf6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 5592405) ? top1 : -top1; }
+  .pe1 { .top = top; .write = write; .spad = (5592405 & top0) ? top1 : -top1; }
+  .pe2 { .write = write; .spad = (top0 & 5592405) ? top1 : (-top1); }
+  .pe3 { .write = write; .spad = ((top0 & 5592405)) ? (top1) : -top1; }
+}
+
+@kernel checkSelNegSlf6 config | exec
+void checkSelNegSlf6Run(void) {
 }
 
 @emulate "sel_cst"
