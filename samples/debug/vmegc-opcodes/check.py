@@ -52,6 +52,10 @@ def check(module, source, entry, log=None):
 
 
 def main(arguments):
+  name = DEFAULT
+  if arguments[:1] == ["--range"]:
+    name = arguments[1]
+    arguments = arguments[2:]
   log = None
   if arguments[:1] == ["--log"]:
     with open(arguments[1], encoding="utf-8") as f:
@@ -60,8 +64,8 @@ def main(arguments):
     if len(arguments) != 1:
       print("--log goes with one kernel id")
       return 2
-  module = load(DEFAULT)
-  source = os.path.join(HERE, f"opcodes-{DEFAULT}.vmeg.cpp")
+  module = load(name)
+  source = os.path.join(HERE, f"opcodes-{name}.vmeg.cpp")
   chosen = [entry for entry in module.SPECS if not arguments or entry["id"] in arguments]
   with ThreadPoolExecutor(os.cpu_count()) as pool:
     problems = list(pool.map(lambda entry: check(module, source, entry, log), chosen))
