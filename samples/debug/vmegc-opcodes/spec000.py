@@ -54,4 +54,8 @@ SPECS = [
   dict(id="mul_clp_neg", opcode=0x084, lot=9, writings=["mulclpneg(top0, top1)", "(mulclpneg(top0, top1))", "mulclpneg( top0 , top1 )", "mulclpneg(top0,top1)"], expected=lambda f, b: -(b * f) if -2 <= f <= 2 else 0),
   dict(id="sel_cst_zer", opcode=0x088, lot=9, writings=["(top1 & 4) ? 0 : 9", "(4 & top1) ? 0 : 9", "(top1 & 0x4) ? 0 : (3 * 3)", "((top1 & 4)) ? 0 : 9"], expected=lambda f, b: 0 if b & 4 else 9),
   dict(id="sel_cst_zer_inv", opcode=0x08c, lot=9, writings=["(top1 & 4) ? 9 : 0", "(4 & top1) ? 9 : 0", "(top1 & 0x4) ? (3 * 3) : 0", "((top1 & 4)) ? 9 : 0"], expected=lambda f, b: 9 if b & 4 else 0),
+  dict(id="shl_dyn", opcode=0x090, lot=10, writings=["-5 << top1", "(-5) << top1", "(0 - 5) << top1", "(-5) << (top1)"], expected=lambda f, b: shift_left(-5, amount(b))),
+  dict(id="shr_dyn", opcode=0x094, lot=10, writings=["-5 >> top1", "(-5) >> top1", "(0 - 5) >> top1", "(-5) >> (top1)"], expected=lambda f, b: shift_left(-5, -amount(b))),
+  dict(id="shl_dyn_u", opcode=0x098, lot=10, writings=["0xc00000 << top1", "(0xc00000) << top1", "(0x800000 + 0x400000) << top1", "(0xc00000) << (top1)"], expected=lambda f, b: shift_left(0xc00000, amount(b))),
+  dict(id="shr_dyn_u", opcode=0x09c, lot=10, writings=["0xc00000 >> top1", "(0xc00000) >> top1", "(0x800000 + 0x400000) >> top1", "(0xc00000) >> (top1)"], expected=lambda f, b: shift_left(0xc00000, -amount(b))),
 ]

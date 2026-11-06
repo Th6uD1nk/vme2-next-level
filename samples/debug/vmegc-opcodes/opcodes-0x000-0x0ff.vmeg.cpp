@@ -713,3 +713,95 @@ void checkSelCstZerRun(void) {
 @kernel checkSelCstZerInv config | exec
 void checkSelCstZerInvRun(void) {
 }
+
+@emulate "shl_dyn"
+.kernel checkShlDyn direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -5 << top1; }
+  .pe1 { .top = top; .write = write; .spad = (-5) << top1; }
+  .pe2 { .write = write; .spad = (0 - 5) << top1; }
+  .pe3 { .write = write; .spad = (-5) << (top1); }
+}
+
+@kernel checkShlDyn config | exec
+void checkShlDynRun(void) {
+}
+
+@emulate "shr_dyn"
+.kernel checkShrDyn direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -5 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (-5) >> top1; }
+  .pe2 { .write = write; .spad = (0 - 5) >> top1; }
+  .pe3 { .write = write; .spad = (-5) >> (top1); }
+}
+
+@kernel checkShrDyn config | exec
+void checkShrDynRun(void) {
+}
+
+@emulate "shl_dyn_u"
+.kernel checkShlDynU direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 0xc00000 << top1; }
+  .pe1 { .top = top; .write = write; .spad = (0xc00000) << top1; }
+  .pe2 { .write = write; .spad = (0x800000 + 0x400000) << top1; }
+  .pe3 { .write = write; .spad = (0xc00000) << (top1); }
+}
+
+@kernel checkShlDynU config | exec
+void checkShlDynURun(void) {
+}
+
+@emulate "shr_dyn_u"
+.kernel checkShrDynU direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 0xc00000 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (0xc00000) >> top1; }
+  .pe2 { .write = write; .spad = (0x800000 + 0x400000) >> top1; }
+  .pe3 { .write = write; .spad = (0xc00000) >> (top1); }
+}
+
+@kernel checkShrDynU config | exec
+void checkShrDynURun(void) {
+}
