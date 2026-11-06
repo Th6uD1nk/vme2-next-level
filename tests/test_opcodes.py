@@ -230,6 +230,18 @@ class XnorTest(unittest.TestCase):
     self.assertEqual(codes(".spad = ~(top0 ^ 5);"), ["OP_XOR_CST_NOT"])
 
 
+class TestOpcodesTest(unittest.TestCase):
+  def test_the_comparisons_with_minus_one_and_zero_and_the_parity_are_the_test_opcodes(self):
+    self.assertEqual(kernel_lines(".spad = top0 == -1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_TST_EM1));"])
+    self.assertEqual(kernel_lines(".spad = top0 == 0xffffff;", None), kernel_lines(".spad = top0 == -1;", None))
+    self.assertEqual(kernel_lines(".spad = top0 != 0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_TST_NNZ));"])
+    self.assertEqual(kernel_lines(".spad = parity(top0);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_TST_PAR));"])
+
+  def test_a_comparison_with_another_number_is_refused(self):
+    with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
+      kernel_lines(".spad = top0 != 1;", None)
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
