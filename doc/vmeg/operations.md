@@ -23,6 +23,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.9 shrcst](#639-shrcst)
   - [6.3.10 addbyt, subbyt and addhib](#6310-addbyt-subbyt-and-addhib)
   - [6.3.11 mulclp and mulclpneg](#6311-mulclp-and-mulclpneg)
+  - [6.3.12 parity](#6312-parity)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 - [6.6 The opcodes by range](#66-the-opcodes-by-range)
@@ -387,6 +388,22 @@ Staging s;
 **Rules:**
 
 - The shift written after one of these functions is not applied ([6.6.10](opcodes-0x000-0x0ff.md#6610-lot-9-0x080-to-0x08f)).
+
+### 6.3.12 parity
+
+`parity(x)` gives 1 when the number of bits at 1 in the 24 bits of `x` is odd, and 0 when it is even. `x` is a buffer or a `Staging` variable.
+
+```c
+.pe0 { .spad = parity(top1); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` writes 1 for the words of `top1` that have an odd number of bits at 1, and 0 for the others.
+
+**Rules:**
+
+- The shift written after `parity(x)` is not applied ([6.6.17](opcodes-0x000-0x0ff.md#6617-lot-16-0x0f0-to-0x0ff)).
 
 ## 6.4 sat and the shifts
 
