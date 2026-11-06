@@ -69,3 +69,72 @@ void checkPassRun(void) {
 @kernel checkCst config | exec
 void checkCstRun(void) {
 }
+
+@emulate "add"
+.kernel checkAdd direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 + top0; }
+  .pe2 { .write = write; .spad = (top0 + top1); }
+  .pe3 { .write = write; .spad = top0 + (top1); }
+}
+
+@kernel checkAdd config | exec
+void checkAddRun(void) {
+}
+
+@emulate "bak_shr"
+.kernel checkBakShr direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 >> 3; }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> 3); }
+  .pe2 { .write = write; .spad = top1 >> (1 + 2); }
+  .pe3 { .write = write; .spad = (top1) >> 3; }
+}
+
+@kernel checkBakShr config | exec
+void checkBakShrRun(void) {
+}
+
+@emulate "sub"
+.kernel checkSub direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - top1; }
+  .pe1 { .top = top; .write = write; .spad = (top0 - top1); }
+  .pe2 { .write = write; .spad = top0 - (top1); }
+  .pe3 { .write = write; .spad = (top0) - (top1); }
+}
+
+@kernel checkSub config | exec
+void checkSubRun(void) {
+}
