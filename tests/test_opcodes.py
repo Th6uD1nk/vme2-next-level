@@ -193,10 +193,18 @@ class DynamicShiftRangeTest(unittest.TestCase):
     self.assertEqual([code(".spad = 0x7fffff << top1;"), code(".spad = 0x800000 << top1;"), code(".spad = -1 << top1;"), code(".spad = 0xffffff << top1;")], ["OP_SHL_CST_DYN", "OP_SHF_CST_M24", "OP_SHL_CST_DYN", "OP_SHF_CST_M24"])
     self.assertEqual([code(".spad = 0x7fffff >> top1;"), code(".spad = 0x800000 >> top1;"), code(".spad = -0x800000 >> top1;")], ["OP_SHL_CST_DYN_ZER", "0x09c", "OP_SHL_CST_DYN_ZER"])
 
-  def test_a_number_that_does_not_fit_the_24_bits_is_refused(self):
-    for body in (".spad = 0x1000000 >> top1;", ".spad = -0x800001 << top1;"):
-      with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
-        kernel_lines(body, None)
+  def test_a_number_beyond_the_24_bits_takes_the_nearest_shift_and_a_warning(self):
+    def code(body):
+      return re.search(r"fu_code\((\w+)\)", kernel_lines(body, None)[0]).group(1)
+    self.assertEqual([code(".spad = 0x1000000 >> top1;"), code(".spad = 0xfffffffe << top1;"), code(".spad = -0x800001 << top1;"), code(".spad = -0x80000000 >> top1;")], ["0x09c", "OP_SHF_CST_M24", "OP_SHL_CST_DYN", "OP_SHL_CST_DYN_ZER"])
+
+
+  def test_a_number_beyond_the_24_bits_is_written_as_it_is_with_a_warning(self):
+    text = ".kernel k direct {\n  .pe0 { .spad = 0xfffffffe >> top1; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    found = []
+    generate(text, find_blocks(text)[0], found, None)
+    self.assertEqual([message for _, message in found if "24 bits" in message], ["the number 0xfffffffe of 'c' does not fit in 24 bits, it is written as it is in the register B"])
+    self.assertIn("0xfffffffe", "\n".join(kernel_lines(".spad = 0xfffffffe >> top1;", None)))
 
 
 class BufferShiftTest(unittest.TestCase):
