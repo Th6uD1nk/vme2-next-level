@@ -17,17 +17,17 @@ def word(value):
   return (value - 0x1000000 if value & 0x800000 else value) & 0xffffffff
 
 
-def parse(text):
+def parse(text, count):
   found = {}
   for block in text.split("\n\n"):
     match = re.match(r"Buffer: BASE ([0-3])\n", block)
     if match:
-      found[int(match.group(1))] = [int(w, 16) for w in re.findall(r"0x[0-9a-f]{8}", block)][:16]
+      found[int(match.group(1))] = [int(w, 16) for w in re.findall(r"0x[0-9a-f]{8}", block)][:count]
   return found
 
 
-def emulate(source, identifier):
-  run = subprocess.run([sys.executable, os.path.join(ROOT, "vmeemu.py"), "--run", identifier, source], capture_output=True, text=True)
+def emulate(source, identifier, count):
+  run = subprocess.run([sys.executable, os.path.join(ROOT, "vmeemu.py"), "--run", identifier, source, "--buffers-words", str(count)], capture_output=True, text=True)
   return None if run.returncode else run.stdout, run.stderr.strip()
 
 
@@ -59,15 +59,16 @@ def check(module, source, entry, log=None):
     problem = check_opcodes(source, entry)
     if problem:
       return problem
-  text, error = emulate(source, identifier)
+  size = len(module.IN0)
+  text, error = emulate(source, identifier, size)
   if text is None:
     return f"{identifier}: {error}"
-  emulated = parse(text)
+  emulated = parse(text, size)
   if log is None:
     expected = [word(entry["expected"](f, b)) for f, b in zip(module.IN0, module.IN1)]
     found, reference, names = emulated, {pe: expected for pe in range(4)}, ("got", "expected")
   else:
-    found, reference, names = parse(log), emulated, ("PSP", "emulator")
+    found, reference, names = parse(log, size), emulated, ("PSP", "emulator")
   if len(found) < 4 or len(reference) < 4:
     return f"{identifier}: 4 buffers BASE are needed ({len(found)} in the log, {len(reference)} in the reference)"
   for pe in range(4):
