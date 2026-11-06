@@ -4780,14 +4780,129 @@ void checkOrRun(void) {
   Agu top = { count };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .write = write; .spad = top1 | 0x80; }
-  .pe1 { .top = top; .write = write; .spad = or(top1, 0x80); }
-  .pe2 { .write = write; .spad = 0x80 | top1; }
+  .pe0 { .top = top; .write = write; .spad = top1 | 128; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 128); }
+  .pe2 { .write = write; .spad = 128 | top1; }
   .pe3 { .write = write; .spad = (top1 | 128); }
 }
 
 @kernel checkOrCst config | exec
 void checkOrCstRun(void) {
+}
+
+@emulate "or_cst_2"
+.kernel checkOrCst2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 0; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 0); }
+  .pe2 { .write = write; .spad = 0 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 0); }
+}
+
+@kernel checkOrCst2 config | exec
+void checkOrCst2Run(void) {
+}
+
+@emulate "or_cst_3"
+.kernel checkOrCst3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | -1; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, -1); }
+  .pe2 { .write = write; .spad = -1 | top1; }
+  .pe3 { .write = write; .spad = (top1 | -1); }
+}
+
+@kernel checkOrCst3 config | exec
+void checkOrCst3Run(void) {
+}
+
+@emulate "or_cst_4"
+.kernel checkOrCst4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 8388607; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 8388607); }
+  .pe2 { .write = write; .spad = 8388607 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 8388607); }
+}
+
+@kernel checkOrCst4 config | exec
+void checkOrCst4Run(void) {
+}
+
+@emulate "or_cst_5"
+.kernel checkOrCst5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 8388608; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 8388608); }
+  .pe2 { .write = write; .spad = 8388608 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 8388608); }
+}
+
+@kernel checkOrCst5 config | exec
+void checkOrCst5Run(void) {
+}
+
+@emulate "or_cst_6"
+.kernel checkOrCst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 5592405; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 5592405); }
+  .pe2 { .write = write; .spad = 5592405 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 5592405); }
+}
+
+@kernel checkOrCst6 config | exec
+void checkOrCst6Run(void) {
 }
 
 @emulate "nor"
