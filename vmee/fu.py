@@ -179,6 +179,18 @@ def op_mul_clp_neg(back, front, fu, a, b, previous, state):
   return -(back * front) if -2 <= front <= 2 else 0
 
 
+def op_tst_em1(back, front, fu, a, b, previous, state):
+  return 1 if back & 0xffffff == 0xffffff else 0
+
+
+def op_tst_nnz(back, front, fu, a, b, previous, state):
+  return 1 if back & 0xffffff else 0
+
+
+def op_tst_par(back, front, fu, a, b, previous, state):
+  return bin(back & 0xffffff).count("1") & 1
+
+
 def op_cst(back, front, fu, a, b, previous, state):
   return b
 
@@ -296,6 +308,9 @@ HANDLERS = {
   "mul": op_mul_rshift,
   "pass": op_pass,
   "cst": op_cst,
+  "tst_em1": op_tst_em1,
+  "tst_nnz": op_tst_nnz,
+  "tst_par": op_tst_par,
   "shl_dyn": op_shl_dyn,
   "shr_dyn": op_shr_dyn,
   "shl_reg": op_shl_reg,
