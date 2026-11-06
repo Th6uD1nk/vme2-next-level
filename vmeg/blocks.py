@@ -224,7 +224,8 @@ def kernel_opening(items, i):
   return None
 
 
-def find_blocks(text):
+@lru_cache(maxsize=8)
+def scanned_blocks(text):
   items = list(walk(text))
   blocks = []
   skip = 0
@@ -283,8 +284,11 @@ def find_blocks(text):
   if nested:
     blocks.sort(key=lambda block: block[1])
   check_emulate(blocks, ids, kernels)
-  return blocks
+  return tuple(blocks)
 
+
+def find_blocks(text):
+  return list(scanned_blocks(text))
 
 def block_end(text, items, open_index, start, name="block"):
   level = 0
