@@ -23,6 +23,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.15 Lot 14: 0x0d0 to 0x0df](#6615-lot-14-0x0d0-to-0x0df)
 - [6.6.16 Lot 15: 0x0e0 to 0x0ef](#6616-lot-15-0x0e0-to-0x0ef)
 - [6.6.17 Lot 16: 0x0f0 to 0x0ff](#6617-lot-16-0x0f0-to-0x0ff)
+- [6.6.18 The shift written after an operation](#6618-the-shift-written-after-an-operation)
 
 ## 6.6.1 How to read the tables
 
@@ -495,4 +496,19 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - The comparison gives the number 1 when it is true and the number 0 when it is false.
 - The complement `~x` is also described in [6.2.1](operations.md#621-the-complement).
 - The shift written after one of these operations is not applied.
+
+## 6.6.18 The shift written after an operation
+
+The shift `op >> n` written after an operation is the shift `k` of its opcode ([6.4](operations.md#64-sat-and-the-shifts)). The opcodes of this page treat it in three ways. The column `k` of each table gives the treatment of its rows.
+
+| Treatment | Opcodes | Effect of `>> n` |
+|---|---|---|
+| kept | 0x010, 0x014, 0x018, 0x024, 0x02c | the exact result is shifted to the right by `n`, with the sign kept, before its 24 low bits are kept |
+| doubled by 1 | 0x058, 0x05c, 0x070, 0x074 | `n` equal to 1 doubles the result. For 0x070 and 0x074 it doubles `x` before `b` is added or subtracted. The other values of `n` are not applied |
+| ignored | all the other opcodes of the range | the words are the same for every `n` |
+
+**Rules:**
+
+- A duplicate of an opcode that keeps the shift keeps it too: 0x01c, 0x020 and 0x028.
+- `pass(x) >> n` ignores the shift, and `x >> n` is the opcode 0x014 which keeps it, with its own amount `n` ([6.6.3](#663-lot-2-0x010-to-0x01f)).
 
