@@ -561,6 +561,16 @@ OPERATIONS = {
     "units": "any",
     "note": "the bitwise exclusive or of x and c",
   },
+  "xnor": {
+    "opcode": 0x0e8,
+    "pattern": "~(a ^ b)",
+    "arguments": (("a", "operand"), ("b", "operand")),
+    "registers": {},
+    "code": "fu_code(OP_XNR)",
+    "operands": ("front", "back"),
+    "units": "any",
+    "note": "the complement of the bitwise exclusive or of a and b, one operation",
+  },
   "xnor_cst": {
     "opcode": 0x0ec,
     "pattern": "~(x ^ c)",
