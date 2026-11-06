@@ -1265,3 +1265,95 @@ void checkXnorRun(void) {
 @kernel checkXnorCst config | exec
 void checkXnorCstRun(void) {
 }
+
+@emulate "tst_em1"
+.kernel checkTstEm1 direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 == -1; }
+  .pe1 { .top = top; .write = write; .spad = top1 == 0xffffff; }
+  .pe2 { .write = write; .spad = (top1 == -1); }
+  .pe3 { .write = write; .spad = (top1) == -1; }
+}
+
+@kernel checkTstEm1 config | exec
+void checkTstEm1Run(void) {
+}
+
+@emulate "tst_nnz"
+.kernel checkTstNnz direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 != 0; }
+  .pe1 { .top = top; .write = write; .spad = (top1 != 0); }
+  .pe2 { .write = write; .spad = (top1) != 0; }
+  .pe3 { .write = write; .spad = top1 != (0); }
+}
+
+@kernel checkTstNnz config | exec
+void checkTstNnzRun(void) {
+}
+
+@emulate "tst_par"
+.kernel checkTstPar direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = parity(top1); }
+  .pe1 { .top = top; .write = write; .spad = (parity(top1)); }
+  .pe2 { .write = write; .spad = parity( top1 ); }
+  .pe3 { .write = write; .spad = parity((top1)); }
+}
+
+@kernel checkTstPar config | exec
+void checkTstParRun(void) {
+}
+
+@emulate "not"
+.kernel checkNot direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~top1; }
+  .pe1 { .top = top; .write = write; .spad = (~top1); }
+  .pe2 { .write = write; .spad = ~(top1); }
+  .pe3 { .write = write; .spad = (~(top1)); }
+}
+
+@kernel checkNot config | exec
+void checkNotRun(void) {
+}
