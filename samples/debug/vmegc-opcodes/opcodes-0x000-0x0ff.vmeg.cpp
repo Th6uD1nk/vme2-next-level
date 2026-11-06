@@ -23,3 +23,49 @@ volatile Buffer in1[16] = {
   0xffffffff, 0x1, 0x234, 0x2aaaaa,
   0x555555, 0x5, 0x100, 0xfffffffb,
 };
+
+@emulate "pass"
+.kernel checkPass direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1; }
+  .pe1 { .top = top; .write = write; .spad = (top1); }
+  .pe2 { .write = write; .spad = pass(top1); }
+  .pe3 { .write = write; .spad = sat(top1, 31); }
+}
+
+@kernel checkPass config | exec
+void checkPassRun(void) {
+}
+
+@emulate "cst"
+.kernel checkCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 5; }
+  .pe1 { .top = top; .write = write; .spad = cst(5); }
+  .pe2 { .write = write; .spad = 10 - 5; }
+  .pe3 { .write = write; .spad = (1 << 2) | 1; }
+}
+
+@kernel checkCst config | exec
+void checkCstRun(void) {
+}

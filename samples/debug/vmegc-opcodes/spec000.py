@@ -24,4 +24,6 @@ def byte1(v):
 
 
 SPECS = [
+  dict(id="pass", opcode=0x004, lot=1, writings=["top1", "(top1)", "pass(top1)", "sat(top1, 31)"], expected=lambda f, b: b),
+  dict(id="cst", opcode=0x00c, lot=1, writings=["5", "cst(5)", "10 - 5", "(1 << 2) | 1"], expected=lambda f, b: 5),
 ]
