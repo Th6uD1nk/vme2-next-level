@@ -178,7 +178,7 @@ Some operators take a number besides their operands. The operation holds the num
 - The number can be written on either side of `+`, `&`, `|` and `^`: `255 & top1` is the same as `top1 & 255`, and `5 + (top0 + base0)` the same as `(top0 + base0) + 5`.
 - The grouping is the one written: `5 + top0 + base0` is `(5 + top0) + base0` and is refused. Write `5 + (top0 + base0)`.
 - `x << c` shifts `x` to the left by `c`, a signed number of 6 bits: a negative `c` shifts to the right. It is this opcode when `x` is a buffer or a `Staging` variable (`top1 << 16`). When `x` is an operation, `(a + b) << n` is the shift of the result of this operation ([6.4](#64-sat-and-the-shifts)).
-- A number with a single operand is covered for the sum and the left shift only: `top0 + 1` is `x + c`. `top0 * 5` and `top0 - 1` are refused, no operation of the table takes a single operand and a number for them.
+- A number with a single operand is covered by the operators `+`, `-`, `*`, `&`, `|` and `^` and by the shifts: `top0 + 1`, `top0 - 1`, `1 - top0`, `top0 * 5` and `top0 & 255` are one operation each. The division and the modulo are not operations of a pe.
 
 ### 6.2.3 How the opcode is chosen
 
@@ -440,10 +440,11 @@ The messages start with `line N:`, left out here.
 | Section | Message | Cause |
 |---|---|---|
 | [6.1](#61-operands-and-results) | `an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable` | an operand of a function that is a number or another operation, as in `mac(top0 + base0, base1)` or `subacst(5, base0, 1)` |
-| [6.2.3](#623-how-the-opcode-is-chosen) | `no opcode covers this expression` | an expression with operators that no opcode covers: an operand that is another operation, as in `top0 + base0 + top1`, or a number with a single operand outside the sum, as in `top0 * 5` or `top0 - 1` ([6.2.2](#622-operators-with-a-number)) |
+| [6.2.3](#623-how-the-opcode-is-chosen) | `no opcode covers this expression` | an expression that no opcode covers: an operand that is another operation, as in `top0 + base0 + top1`, a choice or a comparison that no opcode writes, as in `(top0 & 4) ? top1 : base0` or `top0 != 1`, or a number outside the range of the opcode ([6.2.3](#623-how-the-opcode-is-chosen)) |
 | [6.1](#61-operands-and-results) | `the Staging variable 's' is read before it is set` | a `Staging` variable read before the statement that sets it |
 | [6.1](#61-operands-and-results) | `clamp low must be a number` | a bound, a constant or a shift that is not a number known at compile time. The message names it: `clamp high`, `subacst c`, `subshr n`, `and c`, `or c`, `xor c`, `sat bits`, `the shift` |
-| [6.2](#62-operators) | `expected ';'` | an operator that is not supported, such as `/` |
+| [6.2](#62-operators) | `unsupported operator '/'` | an operator that a pe does not write, such as `/` or `%`. The message lists the operators that it writes |
+| [6.2](#62-operators) | `expected ';'` | a comparison that is not supported: `<`, `>`, `<=` or `>=` |
 | [6.2](#62-operators) | `an operation is expected (an addition, sat or clamp)` | a statement that leaves, with a buffer alone instead of an operation |
 | [6.3.1](#631-clamp) | `clamp takes 3 arguments (x, low, high)` | `clamp` with another number of arguments |
 | [6.3.2](#632-subacst) | `subacst takes 3 arguments (a, b, c)` | `subacst` with another number of arguments |
