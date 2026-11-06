@@ -154,6 +154,7 @@ An expression between numbers uses these operators, from the strongest to the we
 | 5 | `&` |
 | 6 | `^` |
 | 7 | `\|` |
+| 8 | `c ? x : y` |
 
 | Written | Value |
 |---|---|
@@ -168,7 +169,12 @@ An expression between numbers uses these operators, from the strongest to the we
 | `1 \| 6 & 3` | `3` |
 | `5 ^ 3 & 1` | `4` |
 | `~5` | `-6` |
+| `1 ? 2 : 3` | `2` |
+| `0 ? 2 : 3 ? 4 : 5` | `4` |
+| `(3 & 4) ? 7 : 8` | `8` |
 | `0xff & ~0xf` | `240` |
+
+The choice `c ? x : y` gives `x` when `c` is not zero and `y` otherwise. It groups from the right: `a ? b : c ? d : e` is `a ? b : (c ? d : e)`. In a pe, a choice between buffers and numbers whose condition is a test of a mask, `(f & a) ? x : y`, is an operation ([6.6.8](opcodes-0x000-0x0ff.md#668-lot-7-0x060-to-0x06f)).
 
 The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numbers-macros-and-unknown-names)). A number is written in decimal (`15`), in hexadecimal (`0x0f`) or in binary (`0b1111`). `true` is `1` and `false` is `0`.
 
