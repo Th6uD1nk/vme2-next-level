@@ -16,6 +16,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.8 Lot 7: 0x060 to 0x06f](#668-lot-7-0x060-to-0x06f)
 - [6.6.9 Lot 8: 0x070 to 0x07f](#669-lot-8-0x070-to-0x07f)
 - [6.6.10 Lot 9: 0x080 to 0x08f](#6610-lot-9-0x080-to-0x08f)
+- [6.6.11 Lot 10: 0x090 to 0x09f](#6611-lot-10-0x090-to-0x09f)
 
 ## 6.6.1 How to read the tables
 
@@ -286,5 +287,34 @@ Each lot of 16 opcodes has its table. A row is one operation.
 
 - `f` and `x` are buffers or `Staging` variables, `f` is the first operand and `x` the second. The numbers `a` and `b` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - The mask of 0x088 and 0x08c is tested on `x` itself, and the zero of the writing is the number 0. Another combination gives the error `no opcode covers this expression`.
+- The shift written after one of these operations is not applied.
+
+## 6.6.11 Lot 10: 0x090 to 0x09f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x090 | `c << x`, with `c` from -0x800000 to 0x7fffff | the number `c` shifted to the left by `x`, the sign is kept when it shifts to the right | ignored |
+| 0x094 | `c >> x`, with `c` from -0x800000 to 0x7fffff | the number `c` shifted to the right by `x`, the sign is kept | ignored |
+| 0x098 | `c << x`, with `c` from 0x800000 to 0xffffff | the number `c` as an unsigned number of 24 bits shifted to the left by `x`, without the sign when it shifts to the right | ignored |
+| 0x09c | `c >> x`, with `c` from 0x800000 to 0xffffff | the number `c` as an unsigned number of 24 bits shifted to the right by `x`, without the sign | ignored |
+
+```c
+.pe0 { .spad = -5 << top1; }
+.pe1 { .spad = -5 >> top1; }
+.pe2 { .spad = 0xc00000 << top1; }
+.pe3 { .spad = 0xc00000 >> top1; }
+```
+
+**Explanation of the code above:**
+
+- The number is shifted by the words of `top1`: each word gives the amount of the shift for the word written.
+- `pe0` and `pe1` shift the number -5, `pe2` and `pe3` shift the number 0xc00000.
+
+**Rules:**
+
+- The amount `x` is a buffer or a `Staging` variable read as a signed number of 6 bits: from 0 to 31 the shift goes in the direction of the operator, from -32 to -1 it goes the other way. Only the 6 low bits of the word count.
+- The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). `vmegc` takes the opcode from its value: from -0x800000 to 0x7fffff it is 0x090 or 0x094, from 0x800000 to 0xffffff it is 0x098 or 0x09c.
+- The two forms give the same word for a left shift. They differ for a right shift of a number whose bit 23 is set: the first form keeps the sign, the second one does not.
+- Another value of `c` gives the error `no opcode covers this expression: a number shifted by a buffer must be from -0x800000 to 0xffffff`.
 - The shift written after one of these operations is not applied.
 
