@@ -19,6 +19,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.11 Lot 10: 0x090 to 0x09f](#6611-lot-10-0x090-to-0x09f)
 - [6.6.12 Lot 11: 0x0a0 to 0x0af](#6612-lot-11-0x0a0-to-0x0af)
 - [6.6.13 Lot 12: 0x0b0 to 0x0bf](#6613-lot-12-0x0b0-to-0x0bf)
+- [6.6.14 Lot 13: 0x0c0 to 0x0cf](#6614-lot-13-0x0c0-to-0x0cf)
 
 ## 6.6.1 How to read the tables
 
@@ -376,5 +377,33 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). With two operands, the second one is the amount of the shift.
 - The amount is read as a signed number of 6 bits: from 0 to 31 the shift goes in the direction of the operator, from -32 to -1 it goes the other way. Only the 6 low bits of a word count.
 - A number `c` outside the range -32 to 31 gives the error `no opcode covers this expression`.
+- The shift written after one of these operations is not applied.
+
+## 6.6.14 Lot 13: 0x0c0 to 0x0cf
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x0c0 | `a & b` | the bitwise and of `a` and `b` | ignored |
+| 0x0c4 | `x & c`, `and(x, c)` | the bitwise and of `x` and `c` | ignored |
+| 0x0c8 | `~(a & b)` | the complement of the bitwise and of `a` and `b` | ignored |
+| 0x0cc | `~(x & c)`, `~and(x, c)` | the complement of the bitwise and of `x` and `c` | ignored |
+
+```c
+.pe0 { .spad = top0 & top1; }
+.pe1 { .spad = top1 & 0xff; }
+.pe2 { .spad = ~(top0 & top1); }
+.pe3 { .spad = ~(top1 & 0xff); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` keeps the bits that are set in both `top0` and `top1`.
+- `pe1` keeps the low byte of `top1`.
+- `pe2` and `pe3` give the complement of the result of `pe0` and `pe1`, in one operation.
+
+**Rules:**
+
+- `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). The number can be written on either side: `0xff & top1` is the same operation.
+- The complement written around the and is one operation, not two ([6.2.1](operations.md#621-the-complement)).
 - The shift written after one of these operations is not applied.
 
