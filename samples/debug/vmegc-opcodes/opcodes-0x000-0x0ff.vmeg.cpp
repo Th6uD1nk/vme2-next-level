@@ -621,3 +621,95 @@ void checkSelAdsInvRun(void) {
 @kernel checkClamp config | exec
 void checkClampRun(void) {
 }
+
+@emulate "mul_clp"
+.kernel checkMulClp direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = mulclp(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = (mulclp(top0, top1)); }
+  .pe2 { .write = write; .spad = mulclp( top0 , top1 ); }
+  .pe3 { .write = write; .spad = mulclp(top0,top1); }
+}
+
+@kernel checkMulClp config | exec
+void checkMulClpRun(void) {
+}
+
+@emulate "mul_clp_neg"
+.kernel checkMulClpNeg direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = mulclpneg(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = (mulclpneg(top0, top1)); }
+  .pe2 { .write = write; .spad = mulclpneg( top0 , top1 ); }
+  .pe3 { .write = write; .spad = mulclpneg(top0,top1); }
+}
+
+@kernel checkMulClpNeg config | exec
+void checkMulClpNegRun(void) {
+}
+
+@emulate "sel_cst_zer"
+.kernel checkSelCstZer direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4) ? 0 : 9; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top1) ? 0 : 9; }
+  .pe2 { .write = write; .spad = (top1 & 0x4) ? 0 : (3 * 3); }
+  .pe3 { .write = write; .spad = ((top1 & 4)) ? 0 : 9; }
+}
+
+@kernel checkSelCstZer config | exec
+void checkSelCstZerRun(void) {
+}
+
+@emulate "sel_cst_zer_inv"
+.kernel checkSelCstZerInv direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4) ? 9 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top1) ? 9 : 0; }
+  .pe2 { .write = write; .spad = (top1 & 0x4) ? (3 * 3) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & 4)) ? 9 : 0; }
+}
+
+@kernel checkSelCstZerInv config | exec
+void checkSelCstZerInvRun(void) {
+}

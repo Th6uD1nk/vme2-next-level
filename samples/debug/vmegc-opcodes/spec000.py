@@ -50,4 +50,8 @@ SPECS = [
   dict(id="sel_ads", opcode=0x070, lot=8, writings=["(top1 & 4) ? top1 - 7 : top1 + 7", "(4 & top1) ? top1 - 7 : top1 + 7", "(top1 & 0x4) ? (top1 - 7) : (top1 + 7)", "((top1 & 4)) ? top1 - (3 + 4) : top1 + 7"], expected=lambda f, b: b - 7 if b & 4 else b + 7),
   dict(id="sel_ads_inv", opcode=0x074, lot=8, writings=["(top1 & 4) ? top1 + 7 : top1 - 7", "(4 & top1) ? top1 + 7 : top1 - 7", "(top1 & 0x4) ? (top1 + 7) : (top1 - 7)", "((top1 & 4)) ? top1 + (3 + 4) : top1 - 7"], expected=lambda f, b: b + 7 if b & 4 else b - 7),
   dict(id="clamp", opcode=0x07c, lot=8, writings=["clamp(top1, -100, 100)", "clamp(top1,-100,100)", "clamp((top1), -100, 100)", "clamp(top1, 0 - 100, 50 + 50)"], expected=lambda f, b: max(-100, min(100, b))),
+  dict(id="mul_clp", opcode=0x080, lot=9, writings=["mulclp(top0, top1)", "(mulclp(top0, top1))", "mulclp( top0 , top1 )", "mulclp(top0,top1)"], expected=lambda f, b: b * f if -2 <= f <= 2 else 0),
+  dict(id="mul_clp_neg", opcode=0x084, lot=9, writings=["mulclpneg(top0, top1)", "(mulclpneg(top0, top1))", "mulclpneg( top0 , top1 )", "mulclpneg(top0,top1)"], expected=lambda f, b: -(b * f) if -2 <= f <= 2 else 0),
+  dict(id="sel_cst_zer", opcode=0x088, lot=9, writings=["(top1 & 4) ? 0 : 9", "(4 & top1) ? 0 : 9", "(top1 & 0x4) ? 0 : (3 * 3)", "((top1 & 4)) ? 0 : 9"], expected=lambda f, b: 0 if b & 4 else 9),
+  dict(id="sel_cst_zer_inv", opcode=0x08c, lot=9, writings=["(top1 & 4) ? 9 : 0", "(4 & top1) ? 9 : 0", "(top1 & 0x4) ? (3 * 3) : 0", "((top1 & 4)) ? 9 : 0"], expected=lambda f, b: 9 if b & 4 else 0),
 ]
