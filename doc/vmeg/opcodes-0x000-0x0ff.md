@@ -9,6 +9,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.1 How to read the tables](#661-how-to-read-the-tables)
 - [6.6.2 Lot 1: 0x000 to 0x00f](#662-lot-1-0x000-to-0x00f)
 - [6.6.3 Lot 2: 0x010 to 0x01f](#663-lot-2-0x010-to-0x01f)
+- [6.6.4 Lot 3: 0x020 to 0x02f](#664-lot-3-0x020-to-0x02f)
 
 ## 6.6.1 How to read the tables
 
@@ -78,4 +79,30 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - With `k` kept, the shift written after the operation is applied to the exact result, before the 24 low bits are kept.
 - `pass(x) >> n` is not the shift of `x`: it is the opcode 0x004, which ignores the shift ([6.6.2](#662-lot-1-0x000-to-0x00f)). `x >> n` on a buffer is the opcode 0x014.
 - With `--compat fat`, `a + b` is written with the opcode 0x030 and its number at 0 ([6.2.3](operations.md#623-how-the-opcode-is-chosen)).
+
+## 6.6.4 Lot 3: 0x020 to 0x02f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x020 | not written | the same word as 0x010 | kept |
+| 0x024 | `x + c` | `x + c` | kept |
+| 0x028 | not written | the same word as 0x018 | kept |
+| 0x02c | `c - x` | `c - x` | kept |
+
+```c
+.pe0 { .spad = top1 + 3; }
+.pe1 { .spad = 7 - top1; }
+.pe2 { .spad = (top1 + 3) >> 1; }
+```
+
+**Explanation of the code above:**
+
+- `pe0` adds the number 3 to `top1`. The number can be written on either side: `3 + top1` is the same operation.
+- `pe1` subtracts `top1` from the number 7. `0 - top1` is the opposite of `top1`.
+- `pe2` adds 3 to `top1`, then shifts the sum to the right by 1.
+
+**Rules:**
+
+- `x` is a buffer or a `Staging` variable. The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- With `k` kept, the shift written after the operation is applied to the exact result, before the 24 low bits are kept.
 
