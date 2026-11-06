@@ -4138,12 +4138,127 @@ void checkShlRegURun(void) {
 
   .pe0 { .top = top; .write = write; .spad = top1 <<< 3; }
   .pe1 { .top = top; .write = write; .spad = (top1 <<< 3); }
-  .pe2 { .write = write; .spad = top1 <<< (1 + 2); }
+  .pe2 { .write = write; .spad = top1 <<< (3 + 0); }
   .pe3 { .write = write; .spad = (top1) <<< 3; }
 }
 
 @kernel checkShlCstU config | exec
 void checkShlCstURun(void) {
+}
+
+@emulate "shl_cst_u_2"
+.kernel checkShlCstU2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 <<< 0; }
+  .pe1 { .top = top; .write = write; .spad = (top1 <<< 0); }
+  .pe2 { .write = write; .spad = top1 <<< (0 + 0); }
+  .pe3 { .write = write; .spad = (top1) <<< 0; }
+}
+
+@kernel checkShlCstU2 config | exec
+void checkShlCstU2Run(void) {
+}
+
+@emulate "shl_cst_u_3"
+.kernel checkShlCstU3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 <<< 1; }
+  .pe1 { .top = top; .write = write; .spad = (top1 <<< 1); }
+  .pe2 { .write = write; .spad = top1 <<< (1 + 0); }
+  .pe3 { .write = write; .spad = (top1) <<< 1; }
+}
+
+@kernel checkShlCstU3 config | exec
+void checkShlCstU3Run(void) {
+}
+
+@emulate "shl_cst_u_4"
+.kernel checkShlCstU4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 <<< 31; }
+  .pe1 { .top = top; .write = write; .spad = (top1 <<< 31); }
+  .pe2 { .write = write; .spad = top1 <<< (31 + 0); }
+  .pe3 { .write = write; .spad = (top1) <<< 31; }
+}
+
+@kernel checkShlCstU4 config | exec
+void checkShlCstU4Run(void) {
+}
+
+@emulate "shl_cst_u_5"
+.kernel checkShlCstU5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 <<< -1; }
+  .pe1 { .top = top; .write = write; .spad = (top1 <<< -1); }
+  .pe2 { .write = write; .spad = top1 <<< (-1 + 0); }
+  .pe3 { .write = write; .spad = (top1) <<< -1; }
+}
+
+@kernel checkShlCstU5 config | exec
+void checkShlCstU5Run(void) {
+}
+
+@emulate "shl_cst_u_6"
+.kernel checkShlCstU6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 <<< -32; }
+  .pe1 { .top = top; .write = write; .spad = (top1 <<< -32); }
+  .pe2 { .write = write; .spad = top1 <<< (-32 + 0); }
+  .pe3 { .write = write; .spad = (top1) <<< -32; }
+}
+
+@kernel checkShlCstU6 config | exec
+void checkShlCstU6Run(void) {
 }
 
 @emulate "shr_reg_u"

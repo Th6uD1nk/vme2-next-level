@@ -92,7 +92,7 @@ SPECS = [
   dict(id="shr_reg", opcode=0x0a8, lot=11, writings=["top1 >> top0", "(top1 >> top0)", "top1 >> (top0)", "(top1) >> (top0)"], expected=lambda f, b: shift_left(b, -amount(f))),
   dict(id="shr_cst", opcode=0x0ac, lot=11, writings=["shrcst(top1, {0})", "(shrcst(top1, {0}))", "shrcst(top1, {0} + 0)", "shrcst((top1), {0})"], values=[(3,), (0,), (1,), (31,), (-1,), (-32,), (40,)], expected=lambda f, b, c: shifted_right(b, c)),
   dict(id="shl_reg_u", opcode=0x0b0, lot=12, writings=["top1 <<< top0", "(top1 <<< top0)", "top1 <<< (top0)", "(top1) <<< (top0)"], expected=lambda f, b: shift_left(unsigned(b), amount(f))),
-  dict(id="shl_cst_u", opcode=0x0b4, lot=12, writings=["top1 <<< 3", "(top1 <<< 3)", "top1 <<< (1 + 2)", "(top1) <<< 3"], expected=lambda f, b: unsigned(b) << 3),
+  dict(id="shl_cst_u", opcode=0x0b4, lot=12, writings=["top1 <<< {0}", "(top1 <<< {0})", "top1 <<< ({0} + 0)", "(top1) <<< {0}"], values=[(3,), (0,), (1,), (31,), (-1,), (-32,)], expected=lambda f, b, c: shift_left(unsigned(b), amount(c))),
   dict(id="shr_reg_u", opcode=0x0b8, lot=12, writings=["top1 >>> top0", "(top1 >>> top0)", "top1 >>> (top0)", "(top1) >>> (top0)"], expected=lambda f, b: shift_left(unsigned(b), -amount(f))),
   dict(id="shr_cst_u", opcode=0x0bc, lot=12, writings=["top1 >>> 3", "(top1 >>> 3)", "top1 >>> (1 + 2)", "(top1) >>> 3"], expected=lambda f, b: unsigned(b) >> 3),
   dict(id="and", opcode=0x0c0, lot=13, writings=["top0 & top1", "top1 & top0", "(top0 & top1)", "top0 & (top1)"], expected=lambda f, b: f & b),
