@@ -21,6 +21,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.13 Lot 12: 0x0b0 to 0x0bf](#6613-lot-12-0x0b0-to-0x0bf)
 - [6.6.14 Lot 13: 0x0c0 to 0x0cf](#6614-lot-13-0x0c0-to-0x0cf)
 - [6.6.15 Lot 14: 0x0d0 to 0x0df](#6615-lot-14-0x0d0-to-0x0df)
+- [6.6.16 Lot 15: 0x0e0 to 0x0ef](#6616-lot-15-0x0e0-to-0x0ef)
 
 ## 6.6.1 How to read the tables
 
@@ -434,5 +435,33 @@ Each lot of 16 opcodes has its table. A row is one operation.
 
 - `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). The number can be written on either side: `0x80 | top1` is the same operation.
 - The complement written around the or is one operation, not two ([6.2.1](operations.md#621-the-complement)).
+- The shift written after one of these operations is not applied.
+
+## 6.6.16 Lot 15: 0x0e0 to 0x0ef
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x0e0 | `a ^ b` | the bitwise exclusive or of `a` and `b` | ignored |
+| 0x0e4 | `x ^ c`, `xor(x, c)` | the bitwise exclusive or of `x` and `c` | ignored |
+| 0x0e8 | `~(a ^ b)` | the complement of the bitwise exclusive or of `a` and `b` | ignored |
+| 0x0ec | `~(x ^ c)`, `~xor(x, c)` | the complement of the bitwise exclusive or of `x` and `c` | ignored |
+
+```c
+.pe0 { .spad = top0 ^ top1; }
+.pe1 { .spad = top1 ^ 0x55; }
+.pe2 { .spad = ~(top0 ^ top1); }
+.pe3 { .spad = ~(top1 ^ 0x55); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` keeps the bits that are set in `top0` or in `top1` but not in both.
+- `pe1` inverts the bits of `top1` that are set in the number 0x55.
+- `pe2` and `pe3` give the complement of the result of `pe0` and `pe1`, in one operation.
+
+**Rules:**
+
+- `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). The number can be written on either side: `0x55 ^ top1` is the same operation.
+- The complement written around the exclusive or is one operation, not two ([6.2.1](operations.md#621-the-complement)).
 - The shift written after one of these operations is not applied.
 
