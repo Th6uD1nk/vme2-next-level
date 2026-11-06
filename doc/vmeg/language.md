@@ -151,10 +151,11 @@ An expression between numbers uses these operators, from the strongest to the we
 | 2 | `*` `/` `%` |
 | 3 | `+` `-` |
 | 4 | `<<` `>>` |
-| 5 | `&` |
-| 6 | `^` |
-| 7 | `\|` |
-| 8 | `c ? x : y` |
+| 5 | `==` `!=` |
+| 6 | `&` |
+| 7 | `^` |
+| 8 | `\|` |
+| 9 | `c ? x : y` |
 
 | Written | Value |
 |---|---|
@@ -169,6 +170,10 @@ An expression between numbers uses these operators, from the strongest to the we
 | `1 \| 6 & 3` | `3` |
 | `5 ^ 3 & 1` | `4` |
 | `~5` | `-6` |
+| `3 == 3` | `1` |
+| `3 != 3` | `0` |
+| `1 + 1 == 2` | `1` |
+| `4 & 2 == 2` | `0` |
 | `1 ? 2 : 3` | `2` |
 | `0 ? 2 : 3 ? 4 : 5` | `4` |
 | `(3 & 4) ? 7 : 8` | `8` |
@@ -180,7 +185,7 @@ The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numb
 
 Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they apply to that result, see [Operations](operations.md).
 
-The division gives the integer part of the quotient, truncated toward zero as in C, and `%` is the remainder of that division. Currently not supported: the comparisons.
+The division gives the integer part of the quotient, truncated toward zero as in C, and `%` is the remainder of that division. The comparisons `==` and `!=` give `1` when they are true and `0` when they are false. They bind weaker than the shifts and stronger than `&`, as in C: `4 & 2 == 2` is `4 & (2 == 2)`. In a pe, `x == -1` and `x != 0` are operations ([6.6.17](opcodes-0x000-0x0ff.md#6617-lot-16-0x0f0-to-0x0ff)). Currently not supported: `<`, `>`, `<=` and `>=`.
 
 ## 2.6 Numbers, macros and unknown names
 
