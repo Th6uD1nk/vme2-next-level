@@ -19,6 +19,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.5 acc](#635-acc)
   - [6.3.6 and, or and xor](#636-and-or-and-xor)
   - [6.3.7 pass](#637-pass)
+  - [6.3.8 cst](#638-cst)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 - [6.6 The opcodes by range](#66-the-opcodes-by-range)
@@ -302,6 +303,24 @@ Staging s;
 **Rules:**
 
 - `pass(x) << n` and `pass(x) >> n` are the shifts of the operation `pass` ([6.4](#64-sat-and-the-shifts)); `x << n` on a buffer alone is the opcode `0x0a4` ([6.2.2](#622-operators-with-a-number)).
+
+### 6.3.8 cst
+
+`cst(c)` gives the number `c`, whatever the operands are. It is also written as the number alone, `c`, as the operation that leaves the pe ([6.1](#61-operands-and-results)).
+
+```c
+.pe0 { .spad = cst(5); }
+.pe1 { .spad = 5; }
+```
+
+**Explanation of the code above:**
+
+- `pe0` and `pe1` write the number 5 for every word of the write.
+
+**Rules:**
+
+- The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). An expression of numbers such as `10 - 5` is a number.
+- The shift written after `cst(c)` is not applied ([6.6.2](opcodes-0x000-0x0ff.md#662-lot-1-0x000-to-0x00f)).
 
 ## 6.4 sat and the shifts
 
