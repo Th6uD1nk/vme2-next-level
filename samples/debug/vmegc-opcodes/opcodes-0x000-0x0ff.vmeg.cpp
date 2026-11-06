@@ -5102,14 +5102,129 @@ void checkXorRun(void) {
   Agu top = { count };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .write = write; .spad = top1 ^ 0x55; }
-  .pe1 { .top = top; .write = write; .spad = xor(top1, 0x55); }
-  .pe2 { .write = write; .spad = 0x55 ^ top1; }
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 85; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 85); }
+  .pe2 { .write = write; .spad = 85 ^ top1; }
   .pe3 { .write = write; .spad = (top1 ^ 85); }
 }
 
 @kernel checkXorCst config | exec
 void checkXorCstRun(void) {
+}
+
+@emulate "xor_cst_2"
+.kernel checkXorCst2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 0; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 0); }
+  .pe2 { .write = write; .spad = 0 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 0); }
+}
+
+@kernel checkXorCst2 config | exec
+void checkXorCst2Run(void) {
+}
+
+@emulate "xor_cst_3"
+.kernel checkXorCst3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ -1; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, -1); }
+  .pe2 { .write = write; .spad = -1 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ -1); }
+}
+
+@kernel checkXorCst3 config | exec
+void checkXorCst3Run(void) {
+}
+
+@emulate "xor_cst_4"
+.kernel checkXorCst4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 8388607; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 8388607); }
+  .pe2 { .write = write; .spad = 8388607 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 8388607); }
+}
+
+@kernel checkXorCst4 config | exec
+void checkXorCst4Run(void) {
+}
+
+@emulate "xor_cst_5"
+.kernel checkXorCst5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 8388608; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 8388608); }
+  .pe2 { .write = write; .spad = 8388608 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 8388608); }
+}
+
+@kernel checkXorCst5 config | exec
+void checkXorCst5Run(void) {
+}
+
+@emulate "xor_cst_6"
+.kernel checkXorCst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 5592405; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 5592405); }
+  .pe2 { .write = write; .spad = 5592405 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 5592405); }
+}
+
+@kernel checkXorCst6 config | exec
+void checkXorCst6Run(void) {
 }
 
 @emulate "xnor"
