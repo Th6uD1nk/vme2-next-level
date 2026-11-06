@@ -18,7 +18,7 @@ def fu_operands(registers, pe, kind):
   if not 0 <= pe <= 3:
     raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
   first = FU_OPERAND_REGISTERS[kind] + 2 * pe
-  return signed32(registers[first]), signed32(registers[first + 1])
+  return signed24(registers[first]), signed24(registers[first + 1])
 
 
 def shifted(value, fu):
