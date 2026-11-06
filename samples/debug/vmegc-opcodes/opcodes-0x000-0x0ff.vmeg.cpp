@@ -3379,12 +3379,127 @@ void checkShlDyn6Run(void) {
 
   .pe0 { .top = top; .write = write; .spad = -5 >> top1; }
   .pe1 { .top = top; .write = write; .spad = (-5) >> top1; }
-  .pe2 { .write = write; .spad = (0 - 5) >> top1; }
+  .pe2 { .write = write; .spad = (-5 + 0) >> top1; }
   .pe3 { .write = write; .spad = (-5) >> (top1); }
 }
 
 @kernel checkShrDyn config | exec
 void checkShrDynRun(void) {
+}
+
+@emulate "shr_dyn_2"
+.kernel checkShrDyn2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 0 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (0) >> top1; }
+  .pe2 { .write = write; .spad = (0 + 0) >> top1; }
+  .pe3 { .write = write; .spad = (0) >> (top1); }
+}
+
+@kernel checkShrDyn2 config | exec
+void checkShrDyn2Run(void) {
+}
+
+@emulate "shr_dyn_3"
+.kernel checkShrDyn3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 1 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (1) >> top1; }
+  .pe2 { .write = write; .spad = (1 + 0) >> top1; }
+  .pe3 { .write = write; .spad = (1) >> (top1); }
+}
+
+@kernel checkShrDyn3 config | exec
+void checkShrDyn3Run(void) {
+}
+
+@emulate "shr_dyn_4"
+.kernel checkShrDyn4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -1 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (-1) >> top1; }
+  .pe2 { .write = write; .spad = (-1 + 0) >> top1; }
+  .pe3 { .write = write; .spad = (-1) >> (top1); }
+}
+
+@kernel checkShrDyn4 config | exec
+void checkShrDyn4Run(void) {
+}
+
+@emulate "shr_dyn_5"
+.kernel checkShrDyn5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 8388607 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (8388607) >> top1; }
+  .pe2 { .write = write; .spad = (8388607 + 0) >> top1; }
+  .pe3 { .write = write; .spad = (8388607) >> (top1); }
+}
+
+@kernel checkShrDyn5 config | exec
+void checkShrDyn5Run(void) {
+}
+
+@emulate "shr_dyn_6"
+.kernel checkShrDyn6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -8388608 >> top1; }
+  .pe1 { .top = top; .write = write; .spad = (-8388608) >> top1; }
+  .pe2 { .write = write; .spad = (-8388608 + 0) >> top1; }
+  .pe3 { .write = write; .spad = (-8388608) >> (top1); }
+}
+
+@kernel checkShrDyn6 config | exec
+void checkShrDyn6Run(void) {
 }
 
 @emulate "shl_dyn_u"
