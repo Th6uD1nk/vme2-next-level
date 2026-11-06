@@ -290,6 +290,16 @@ OPERATIONS = {
     "units": "any",
     "note": "a shifted to the right by b, b is a signed amount of 6 bits and a negative b shifts to the left",
   },
+  "shr_cst": {
+    "opcode": 0x0ac,
+    "pattern": "shrcst(x, c)",
+    "arguments": (("x", "source"), ("c", "number")),
+    "registers": {"B": "c"},
+    "code": "fu_code(OP_SHR_CST)",
+    "operands": ("back",),
+    "units": "any",
+    "note": "x shifted to the right by c, c is a signed amount of 6 bits and a negative c shifts to the left",
+  },
   "add": {
     "opcode": 0x010,
     "not_portable": True,
