@@ -301,10 +301,10 @@ Each lot of 16 opcodes has its table. A row is one operation.
 
 | Opcode | Written | Result | k |
 |---|---|---|---|
-| 0x090 | `c << x`, with `c` from -0x800000 to 0x7fffff | the number `c` shifted to the left by `x`, the sign is kept when it shifts to the right | ignored |
-| 0x094 | `c >> x`, with `c` from -0x800000 to 0x7fffff | the number `c` shifted to the right by `x`, the sign is kept | ignored |
-| 0x098 | `c << x`, with `c` from 0x800000 to 0xffffff | the number `c` as an unsigned number of 24 bits shifted to the left by `x`, without the sign when it shifts to the right | ignored |
-| 0x09c | `c >> x`, with `c` from 0x800000 to 0xffffff | the number `c` as an unsigned number of 24 bits shifted to the right by `x`, without the sign | ignored |
+| 0x090 | `c << x`, with `c` up to 0x7fffff | the number `c` shifted to the left by `x`, the sign is kept when it shifts to the right | ignored |
+| 0x094 | `c >> x`, with `c` up to 0x7fffff | the number `c` shifted to the right by `x`, the sign is kept | ignored |
+| 0x098 | `c << x`, with `c` 0x800000 or more | the number `c` as an unsigned number of 24 bits shifted to the left by `x`, without the sign when it shifts to the right | ignored |
+| 0x09c | `c >> x`, with `c` 0x800000 or more | the number `c` as an unsigned number of 24 bits shifted to the right by `x`, without the sign | ignored |
 
 ```c
 .pe0 { .spad = -5 << top1; }
@@ -321,9 +321,9 @@ Each lot of 16 opcodes has its table. A row is one operation.
 **Rules:**
 
 - The amount `x` is a buffer or a `Staging` variable read as a signed number of 6 bits: from 0 to 31 the shift goes in the direction of the operator, from -32 to -1 it goes the other way. Only the 6 low bits of the word count.
-- The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). `vmegc` takes the opcode from its value: from -0x800000 to 0x7fffff it is 0x090 or 0x094, from 0x800000 to 0xffffff it is 0x098 or 0x09c.
+- The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). `vmegc` takes the opcode from its value: up to 0x7fffff it is 0x090 or 0x094, from 0x800000 it is 0x098 or 0x09c.
 - The two forms give the same word for a left shift. They differ for a right shift of a number whose bit 23 is set: the first form keeps the sign, the second one does not.
-- Another value of `c` gives the error `no opcode covers this expression: a number shifted by a buffer must be from -0x800000 to 0xffffff`.
+- A number that does not fit in 24 bits (above 0xffffff or below -0x800000) is written as it is in the register B, and `vmegc` warns that it does not fit in 24 bits. It takes the opcode of its side: above 0xffffff it is 0x098 or 0x09c, below -0x800000 it is 0x090 or 0x094.
 - The shift written after one of these operations is not applied.
 
 ## 6.6.12 Lot 11: 0x0a0 to 0x0af

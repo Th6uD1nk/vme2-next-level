@@ -190,8 +190,8 @@ An expression can be covered by more than one opcode. `vmegc` reads what is writ
 | `a + 1` | `0x024` | the opcode that takes one operand and a number |
 | `a + b + 5` | `0x030` | one operation, instead of the sum and then the number |
 | `~(a & b)` | `0x0c8` | one operation, instead of the and and then the complement |
-| `5 << x` | `0x090` | the number 5 is in the range of this opcode, from -0x800000 to 0x7fffff |
-| `0xc00000 << x` | `0x098` | the number 0xc00000 is in the range of this opcode, from 0x800000 to 0xffffff |
+| `5 << x` | `0x090` | the number 5 is in the range of this opcode, up to 0x7fffff |
+| `0xc00000 << x` | `0x098` | the number 0xc00000 is in the range of this opcode, 0x800000 or more |
 
 **Rules:**
 
