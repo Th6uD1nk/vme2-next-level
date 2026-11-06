@@ -96,7 +96,16 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `mac` | [6.3.4](operations.md#634-mac) |
 | `acc` | [6.3.5](operations.md#635-acc) |
 | `and`, `or`, `xor` | [6.3.6](operations.md#636-and-or-and-xor) |
+| `pass` | [6.3.7](operations.md#637-pass) |
+| `cst` | [6.3.8](operations.md#638-cst) |
+| `shrcst` | [6.3.9](operations.md#639-shrcst) |
+| `addbyt`, `subbyt`, `addhib` | [6.3.10](operations.md#6310-addbyt-subbyt-and-addhib) |
+| `mulclp`, `mulclpneg` | [6.3.11](operations.md#6311-mulclp-and-mulclpneg) |
+| `parity` | [6.3.12](operations.md#6312-parity) |
 | `sat`, `round`, `>>`, `<<` | [6.4](operations.md#64-sat-and-the-shifts) |
+| `<<<`, `>>>` | [2.5](language.md#25-expressions) |
+| `==`, `!=` | [2.5](language.md#25-expressions) |
+| `c ? x : y` | [2.5](language.md#25-expressions) |
 | the opcodes 0x000 to 0x0ff | [6.6](operations.md#66-the-opcodes-by-range) |
 
 ## 15.7 Staging
