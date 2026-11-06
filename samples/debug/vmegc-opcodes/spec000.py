@@ -58,4 +58,8 @@ SPECS = [
   dict(id="shr_dyn", opcode=0x094, lot=10, writings=["-5 >> top1", "(-5) >> top1", "(0 - 5) >> top1", "(-5) >> (top1)"], expected=lambda f, b: shift_left(-5, -amount(b))),
   dict(id="shl_dyn_u", opcode=0x098, lot=10, writings=["0xc00000 << top1", "(0xc00000) << top1", "(0x800000 + 0x400000) << top1", "(0xc00000) << (top1)"], expected=lambda f, b: shift_left(0xc00000, amount(b))),
   dict(id="shr_dyn_u", opcode=0x09c, lot=10, writings=["0xc00000 >> top1", "(0xc00000) >> top1", "(0x800000 + 0x400000) >> top1", "(0xc00000) >> (top1)"], expected=lambda f, b: shift_left(0xc00000, -amount(b))),
+  dict(id="shl_reg", opcode=0x0a0, lot=11, writings=["top1 << top0", "(top1 << top0)", "top1 << (top0)", "(top1) << (top0)"], expected=lambda f, b: shift_left(b, amount(f))),
+  dict(id="shl_cst", opcode=0x0a4, lot=11, writings=["top1 << 3", "(top1 << 3)", "top1 << (1 + 2)", "(top1) << 3"], expected=lambda f, b: b << 3),
+  dict(id="shr_reg", opcode=0x0a8, lot=11, writings=["top1 >> top0", "(top1 >> top0)", "top1 >> (top0)", "(top1) >> (top0)"], expected=lambda f, b: shift_left(b, -amount(f))),
+  dict(id="shr_cst", opcode=0x0ac, lot=11, writings=["shrcst(top1, 3)", "(shrcst(top1, 3))", "shrcst(top1, 1 + 2)", "shrcst((top1), 3)"], expected=lambda f, b: b >> 3),
 ]
