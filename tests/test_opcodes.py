@@ -209,6 +209,21 @@ class BufferShiftTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = top0 >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(0x014), 3);"])
 
 
+class LogicalShiftTest(unittest.TestCase):
+  def test_the_logical_right_shift_of_a_buffer_by_a_buffer_or_a_number_and_the_two_left_functions(self):
+    self.assertEqual(kernel_lines(".spad = top0 >>> top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_SHF_INV_M24));"])
+    self.assertEqual(kernel_lines(".spad = top0 >>> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_M24));", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+    self.assertEqual(kernel_lines(".spad = top0 <<< top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_SHF_M24));"])
+    self.assertEqual(kernel_lines(".spad = top0 <<< 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHL_CST_M24));", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+    self.assertEqual(kernel_lines(".spad = top0 >>> -3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_M24));", "vme_pe0(fu_reg(PRIMARY, B), -3);"])
+    self.assertEqual(kernel_lines(".spad = top0 <<< -32;", None)[1], "vme_pe0(fu_reg(PRIMARY, B), -32);")
+
+  def test_a_logical_shift_by_a_number_outside_minus_32_to_31_is_refused(self):
+    for body in (".spad = top0 >>> 32;", ".spad = top0 >>> -33;", ".spad = top0 <<< 40;"):
+      with self.assertRaisesRegex(ValueError, "no opcode covers this expression"):
+        kernel_lines(body, None)
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])

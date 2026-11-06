@@ -35,6 +35,10 @@ class KnownValueTest(unittest.TestCase):
     results = [evaluate(text, {}) for text in ["1 | 6 & 3", "5 ^ 3 & 1", "1 | 4 ^ 5", "1 << 2 | 1", "~5 & 0xff"]]
     self.assertEqual(results, [("num", 3), ("num", 4), ("num", 1), ("num", 5), ("num", 250)])
 
+  def test_the_logical_shift_works_on_the_24_bits_without_the_sign(self):
+    results = [evaluate(text, {}) for text in ["0x800000 >>> 3", "-1 >>> 20", "0x10 >>> 2 + 1", "1 << 2 >>> 1", "0x10 >>> -2", "-1 <<< 4", "0x100 <<< -4"]]
+    self.assertEqual(results, [("num", 1048576), ("num", 15), ("num", 2), ("num", 2), ("num", 64), ("num", 0xfffff0), ("num", 16)])
+
   def test_the_ternary_picks_its_branch_and_nests_to_the_right(self):
     results = [evaluate(text, {}) for text in ["1 ? 2 : 3", "0 ? 2 : 3", "0 ? 1 : 0 ? 4 : 5", "(3 & 4) ? 7 : 8", "1 + 1 ? 2 : 3"]]
     self.assertEqual(results, [("num", 2), ("num", 3), ("num", 5), ("num", 8), ("num", 2)])
