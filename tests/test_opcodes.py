@@ -199,6 +199,16 @@ class DynamicShiftRangeTest(unittest.TestCase):
         kernel_lines(body, None)
 
 
+class BufferShiftTest(unittest.TestCase):
+  def test_a_buffer_shifted_by_another_buffer_has_the_value_in_back_and_the_amount_in_front(self):
+    self.assertEqual(kernel_lines(".spad = top0 << top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, TOP_0), fu_code(OP_SHF));"])
+    self.assertEqual(kernel_lines(".spad = base0 >> top1;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_1, BASE_0), fu_code(OP_SHF_INV));"])
+
+  def test_shrcst_is_the_right_shift_by_a_signed_register_and_x_shifted_by_a_number_stays_the_k(self):
+    self.assertEqual(kernel_lines(".spad = shrcst(top0, 3);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST));", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
+    self.assertEqual(kernel_lines(".spad = top0 >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(0x014), 3);"])
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
