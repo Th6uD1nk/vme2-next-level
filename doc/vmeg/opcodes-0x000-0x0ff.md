@@ -14,6 +14,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.6 Lot 5: 0x040 to 0x04f](#666-lot-5-0x040-to-0x04f)
 - [6.6.7 Lot 6: 0x050 to 0x05f](#667-lot-6-0x050-to-0x05f)
 - [6.6.8 Lot 7: 0x060 to 0x06f](#668-lot-7-0x060-to-0x06f)
+- [6.6.9 Lot 8: 0x070 to 0x07f](#669-lot-8-0x070-to-0x07f)
 
 ## 6.6.1 How to read the tables
 
@@ -228,4 +229,33 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - The condition of the choice `c ? y : z` is `f & a`, with a number `a`: it is true when the result is not zero. The mask can be written on either side, `(4 & top0)`. Another condition gives the error `no opcode covers this expression`.
 - `f` and `x` are buffers or `Staging` variables, `f` is the first operand and `x` the second. The numbers `a` and `b` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - The shift written after one of these operations is not applied.
+
+## 6.6.9 Lot 8: 0x070 to 0x07f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x070 | `(x & a) ? x - b : x + b` | `x - b` when `x & a` is not zero, `x + b` otherwise | ignored, except that 1 doubles `x` |
+| 0x074 | `(x & a) ? x + b : x - b` | `x + b` when `x & a` is not zero, `x - b` otherwise | ignored, except that 1 doubles `x` |
+| 0x078 | not written | the first operand when it is negative, the smaller of the two operands otherwise | ignored |
+| 0x07c | `clamp(x, low, high)` | `x` limited between `low` and `high` | ignored |
+
+```c
+.pe0 { .spad = (top1 & 4) ? top1 - 7 : top1 + 7; }
+.pe1 { .spad = (top1 & 4) ? top1 + 7 : top1 - 7; }
+.pe2 { .spad = clamp(top1, -100, 100); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` subtracts 7 from `top1` when the bit 2 of `top1` is set, and adds 7 otherwise.
+- `pe1` does the reverse.
+- `pe2` limits `top1` between -100 and 100.
+
+**Rules:**
+
+- `x` is a buffer or a `Staging` variable, and the numbers `a`, `b`, `low` and `high` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- The mask is tested on `x` itself: the writing has the same operand at the three places, and another combination gives the error `no opcode covers this expression`.
+- A shift of 1 written after 0x070 or 0x074 doubles `x` before `b` is added or subtracted. The other values of the shift are not applied.
+- When `low` is above `high`, `clamp` gives `high`.
+- 0x078 is not written by `vmegc`: what the PSP gives for it is not a plain minimum, and its tests are not finished.
 
