@@ -16,12 +16,17 @@ def defines(text):
   return [(event["name"] + (event["params"] or ""), event["body"]) for event in macro_events(text) if event["kind"] == "define"]
 
 
+@lru_cache(maxsize=8)
+def global_buffer_names(text):
+  return frozenset(file_buffer_names(list(tokens(text))))
+
+
 def declared_names(text, blocks, kernel):
   local = set()
   for block in blocks:
     if block[0] == "decorator" and kernel in decorator_names(text, block):
       local |= function_buffer_names(text, block)
-  return {"global": file_buffer_names(list(tokens(text))), "local": local}
+  return {"global": global_buffer_names(text), "local": local}
 
 
 def load_links(loads, scope):
@@ -77,7 +82,7 @@ def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, me
     "definitions": list(dict.fromkeys(record["definition"] for record in loads + stores)),
     "variables": sorted({variable for record in loads + stores for line in record["calls"] or [] for variable in re.findall(r"\bvmeVar\w+", line)}),
     "stores": {"global": load_links(stores, "global"), "local": load_links(stores, "local")},
-    "declared": {"global": file_buffer_names(list(tokens(text))), "local": local},
+    "declared": {"global": global_buffer_names(text), "local": local},
   }
 
 
