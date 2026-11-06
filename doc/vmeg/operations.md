@@ -20,6 +20,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.6 and, or and xor](#636-and-or-and-xor)
   - [6.3.7 pass](#637-pass)
   - [6.3.8 cst](#638-cst)
+  - [6.3.9 shrcst](#639-shrcst)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 - [6.6 The opcodes by range](#66-the-opcodes-by-range)
@@ -321,6 +322,25 @@ Staging s;
 
 - The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). An expression of numbers such as `10 - 5` is a number.
 - The shift written after `cst(c)` is not applied ([6.6.2](opcodes-0x000-0x0ff.md#662-lot-1-0x000-to-0x00f)).
+
+### 6.3.9 shrcst
+
+`shrcst(x, c)` shifts `x` to the right by the number `c`, keeping the sign. `x` is a buffer or a `Staging` variable.
+
+```c
+.pe0 { .spad = shrcst(top1, 3); }
+.pe1 { .spad = top1 >> 3; }
+```
+
+**Explanation of the code above:**
+
+- `pe0` shifts `top1` to the right by 3 with the function `shrcst`.
+- `pe1` does the same shift with `>>`, which is another opcode ([6.6.3](opcodes-0x000-0x0ff.md#663-lot-2-0x010-to-0x01f)).
+
+**Rules:**
+
+- `shrcst` reads `c` as a signed number of 6 bits: from 0 to 31 it shifts to the right, from -32 to -1 it shifts to the left. With `>>`, the amount goes from 0 to 63.
+- The shift written after `shrcst(x, c)` is not applied ([6.6.12](opcodes-0x000-0x0ff.md#6612-lot-11-0x0a0-to-0x0af)).
 
 ## 6.4 sat and the shifts
 
