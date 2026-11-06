@@ -182,12 +182,127 @@ void checkPassRun(void) {
 
   .pe0 { .top = top; .write = write; .spad = 5; }
   .pe1 { .top = top; .write = write; .spad = cst(5); }
-  .pe2 { .write = write; .spad = 10 - 5; }
-  .pe3 { .write = write; .spad = (1 << 2) | 1; }
+  .pe2 { .write = write; .spad = (5 + 1) - 1; }
+  .pe3 { .write = write; .spad = (5 * 1) | 0; }
 }
 
 @kernel checkCst config | exec
 void checkCstRun(void) {
+}
+
+@emulate "cst_2"
+.kernel checkCst2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 0; }
+  .pe1 { .top = top; .write = write; .spad = cst(0); }
+  .pe2 { .write = write; .spad = (0 + 1) - 1; }
+  .pe3 { .write = write; .spad = (0 * 1) | 0; }
+}
+
+@kernel checkCst2 config | exec
+void checkCst2Run(void) {
+}
+
+@emulate "cst_3"
+.kernel checkCst3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -1; }
+  .pe1 { .top = top; .write = write; .spad = cst(-1); }
+  .pe2 { .write = write; .spad = (-1 + 1) - 1; }
+  .pe3 { .write = write; .spad = (-1 * 1) | 0; }
+}
+
+@kernel checkCst3 config | exec
+void checkCst3Run(void) {
+}
+
+@emulate "cst_4"
+.kernel checkCst4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 8388607; }
+  .pe1 { .top = top; .write = write; .spad = cst(8388607); }
+  .pe2 { .write = write; .spad = (8388607 + 1) - 1; }
+  .pe3 { .write = write; .spad = (8388607 * 1) | 0; }
+}
+
+@kernel checkCst4 config | exec
+void checkCst4Run(void) {
+}
+
+@emulate "cst_5"
+.kernel checkCst5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -8388608; }
+  .pe1 { .top = top; .write = write; .spad = cst(-8388608); }
+  .pe2 { .write = write; .spad = (-8388608 + 1) - 1; }
+  .pe3 { .write = write; .spad = (-8388608 * 1) | 0; }
+}
+
+@kernel checkCst5 config | exec
+void checkCst5Run(void) {
+}
+
+@emulate "cst_6"
+.kernel checkCst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 4660; }
+  .pe1 { .top = top; .write = write; .spad = cst(4660); }
+  .pe2 { .write = write; .spad = (4660 + 1) - 1; }
+  .pe3 { .write = write; .spad = (4660 * 1) | 0; }
+}
+
+@kernel checkCst6 config | exec
+void checkCst6Run(void) {
 }
 
 @emulate "add"

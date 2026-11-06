@@ -50,7 +50,7 @@ def byte1(v):
 
 SPECS = [
   dict(id="pass", opcode=0x004, lot=1, writings=["top1", "(top1)", "pass(top1)", "sat(top1, 31)"], expected=lambda f, b: b),
-  dict(id="cst", opcode=0x00c, lot=1, writings=["5", "cst(5)", "10 - 5", "(1 << 2) | 1"], expected=lambda f, b: 5),
+  dict(id="cst", opcode=0x00c, lot=1, writings=["{0}", "cst({0})", "({0} + 1) - 1", "({0} * 1) | 0"], values=[(5,), (0,), (-1,), (8388607,), (-8388608,), (4660,)], expected=lambda f, b, c: c),
   dict(id="add", opcode=0x010, lot=2, writings=["top0 + top1", "top1 + top0", "(top0 + top1)", "top0 + (top1)"], expected=lambda f, b: f + b),
   dict(id="bak_shr", opcode=0x014, lot=2, writings=["top1 >> 3", "(top1 >> 3)", "top1 >> (1 + 2)", "(top1) >> 3"], expected=lambda f, b: b >> 3),
   dict(id="sub", opcode=0x018, lot=2, writings=["top0 - top1", "(top0 - top1)", "top0 - (top1)", "(top0) - (top1)"], expected=lambda f, b: f - b),
