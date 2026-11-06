@@ -15,6 +15,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.7 Lot 6: 0x050 to 0x05f](#667-lot-6-0x050-to-0x05f)
 - [6.6.8 Lot 7: 0x060 to 0x06f](#668-lot-7-0x060-to-0x06f)
 - [6.6.9 Lot 8: 0x070 to 0x07f](#669-lot-8-0x070-to-0x07f)
+- [6.6.10 Lot 9: 0x080 to 0x08f](#6610-lot-9-0x080-to-0x08f)
 
 ## 6.6.1 How to read the tables
 
@@ -258,4 +259,32 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - A shift of 1 written after 0x070 or 0x074 doubles `x` before `b` is added or subtracted. The other values of the shift are not applied.
 - When `low` is above `high`, `clamp` gives `high`.
 - 0x078 is not written by `vmegc`: what the PSP gives for it is not a plain minimum, and its tests are not finished.
+
+## 6.6.10 Lot 9: 0x080 to 0x08f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x080 | `mulclp(f, x)` | `x * f` when `f` is from -2 to 2, zero otherwise | ignored |
+| 0x084 | `mulclpneg(f, x)` | `-(x * f)` when `f` is from -2 to 2, zero otherwise | ignored |
+| 0x088 | `(x & a) ? 0 : b` | zero when `x & a` is not zero, the number `b` otherwise | ignored |
+| 0x08c | `(x & a) ? b : 0` | the number `b` when `x & a` is not zero, zero otherwise | ignored |
+
+```c
+.pe0 { .spad = mulclp(top0, top1); }
+.pe1 { .spad = mulclpneg(top0, top1); }
+.pe2 { .spad = (top1 & 4) ? 0 : 9; }
+.pe3 { .spad = (top1 & 4) ? 9 : 0; }
+```
+
+**Explanation of the code above:**
+
+- `pe0` multiplies `top1` by `top0` when `top0` is -2, -1, 0, 1 or 2, and gives zero for any other value of `top0`.
+- `pe1` does the same with the opposite of the product.
+- `pe2` gives zero when the bit 2 of `top1` is set, and the number 9 otherwise. `pe3` gives the reverse.
+
+**Rules:**
+
+- `f` and `x` are buffers or `Staging` variables, `f` is the first operand and `x` the second. The numbers `a` and `b` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- The mask of 0x088 and 0x08c is tested on `x` itself, and the zero of the writing is the number 0. Another combination gives the error `no opcode covers this expression`.
+- The shift written after one of these operations is not applied.
 
