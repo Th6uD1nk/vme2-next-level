@@ -3101,14 +3101,129 @@ void checkSelCstZer6Run(void) {
   Agu top = { count };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .write = write; .spad = (top1 & 4) ? 9 : 0; }
-  .pe1 { .top = top; .write = write; .spad = (4 & top1) ? 9 : 0; }
-  .pe2 { .write = write; .spad = (top1 & 0x4) ? (3 * 3) : 0; }
-  .pe3 { .write = write; .spad = ((top1 & 4)) ? 9 : 0; }
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4) ? 7 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top1) ? 7 : 0; }
+  .pe2 { .write = write; .spad = (top1 & 4) ? (7 + 0) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & 4)) ? 7 : 0; }
 }
 
 @kernel checkSelCstZerInv config | exec
 void checkSelCstZerInvRun(void) {
+}
+
+@emulate "sel_cst_zer_inv_2"
+.kernel checkSelCstZerInv2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 0) ? 5 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (0 & top1) ? 5 : 0; }
+  .pe2 { .write = write; .spad = (top1 & 0) ? (5 + 0) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & 0)) ? 5 : 0; }
+}
+
+@kernel checkSelCstZerInv2 config | exec
+void checkSelCstZerInv2Run(void) {
+}
+
+@emulate "sel_cst_zer_inv_3"
+.kernel checkSelCstZerInv3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 1) ? -1 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (1 & top1) ? -1 : 0; }
+  .pe2 { .write = write; .spad = (top1 & 1) ? (-1 + 0) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & 1)) ? -1 : 0; }
+}
+
+@kernel checkSelCstZerInv3 config | exec
+void checkSelCstZerInv3Run(void) {
+}
+
+@emulate "sel_cst_zer_inv_4"
+.kernel checkSelCstZerInv4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 8388608) ? 8388607 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (8388608 & top1) ? 8388607 : 0; }
+  .pe2 { .write = write; .spad = (top1 & 8388608) ? (8388607 + 0) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & 8388608)) ? 8388607 : 0; }
+}
+
+@kernel checkSelCstZerInv4 config | exec
+void checkSelCstZerInv4Run(void) {
+}
+
+@emulate "sel_cst_zer_inv_5"
+.kernel checkSelCstZerInv5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & -1) ? -8388608 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (-1 & top1) ? -8388608 : 0; }
+  .pe2 { .write = write; .spad = (top1 & -1) ? (-8388608 + 0) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & -1)) ? -8388608 : 0; }
+}
+
+@kernel checkSelCstZerInv5 config | exec
+void checkSelCstZerInv5Run(void) {
+}
+
+@emulate "sel_cst_zer_inv_6"
+.kernel checkSelCstZerInv6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 5592405) ? 4660 : 0; }
+  .pe1 { .top = top; .write = write; .spad = (5592405 & top1) ? 4660 : 0; }
+  .pe2 { .write = write; .spad = (top1 & 5592405) ? (4660 + 0) : 0; }
+  .pe3 { .write = write; .spad = ((top1 & 5592405)) ? 4660 : 0; }
+}
+
+@kernel checkSelCstZerInv6 config | exec
+void checkSelCstZerInv6Run(void) {
 }
 
 @emulate "shl_dyn"
