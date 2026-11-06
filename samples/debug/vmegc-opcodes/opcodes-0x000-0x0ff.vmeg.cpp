@@ -552,3 +552,72 @@ void checkSelCstRun(void) {
 @kernel checkSelCstOfb config | exec
 void checkSelCstOfbRun(void) {
 }
+
+@emulate "sel_ads"
+.kernel checkSelAds direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4) ? top1 - 7 : top1 + 7; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top1) ? top1 - 7 : top1 + 7; }
+  .pe2 { .write = write; .spad = (top1 & 0x4) ? (top1 - 7) : (top1 + 7); }
+  .pe3 { .write = write; .spad = ((top1 & 4)) ? top1 - (3 + 4) : top1 + 7; }
+}
+
+@kernel checkSelAds config | exec
+void checkSelAdsRun(void) {
+}
+
+@emulate "sel_ads_inv"
+.kernel checkSelAdsInv direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4) ? top1 + 7 : top1 - 7; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top1) ? top1 + 7 : top1 - 7; }
+  .pe2 { .write = write; .spad = (top1 & 0x4) ? (top1 + 7) : (top1 - 7); }
+  .pe3 { .write = write; .spad = ((top1 & 4)) ? top1 + (3 + 4) : top1 - 7; }
+}
+
+@kernel checkSelAdsInv config | exec
+void checkSelAdsInvRun(void) {
+}
+
+@emulate "clamp"
+.kernel checkClamp direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, -100, 100); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,-100,100); }
+  .pe2 { .write = write; .spad = clamp((top1), -100, 100); }
+  .pe3 { .write = write; .spad = clamp(top1, 0 - 100, 50 + 50); }
+}
+
+@kernel checkClamp config | exec
+void checkClampRun(void) {
+}
