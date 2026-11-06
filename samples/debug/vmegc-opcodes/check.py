@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, HERE)
-from generate import load
+from generate import camel, load
 
 DEFAULT = "0x000-0x0ff"
 
@@ -31,8 +31,34 @@ def emulate(source, identifier):
   return None if run.returncode else run.stdout, run.stderr.strip()
 
 
+def listed(source, entry):
+  run = subprocess.run([sys.executable, os.path.join(ROOT, "vmegc.py"), "--list", "--kernel", "check" + camel(entry["id"]), source], capture_output=True, text=True)
+  if run.returncode:
+    return None, run.stderr.strip()
+  found = {}
+  for line in run.stdout.splitlines():
+    match = re.match(r"\s+pe([0-3])\s+line \d+\s+0x([0-9a-f]+)\s", line)
+    if match:
+      found.setdefault(int(match.group(1)), set()).add(int(match.group(2), 16))
+  return found, ""
+
+
+def check_opcodes(source, entry):
+  found, error = listed(source, entry)
+  if found is None:
+    return f"{entry['id']}: {error}"
+  for pe in range(4):
+    if entry["opcode"] not in found.get(pe, set()):
+      return f"{entry['id']}: pe{pe} does not use the opcode 0x{entry['opcode']:03x} ({sorted(hex(o) for o in found.get(pe, set()))})"
+  return None
+
+
 def check(module, source, entry, log=None):
   identifier = entry["id"]
+  if log is None:
+    problem = check_opcodes(source, entry)
+    if problem:
+      return problem
   text, error = emulate(source, identifier)
   if text is None:
     return f"{identifier}: {error}"
