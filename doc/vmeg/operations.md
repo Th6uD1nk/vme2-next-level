@@ -301,12 +301,12 @@ Staging s;
 
 **Explanation of the code above:**
 
-- `pe0` copies `top1` and shifts the result by 3, as the shift of the operation `pass` (the opcode `0x004`), not as the opcode `x << c`.
-- `pe1` copies `top1`.
+- `pe0` and `pe1` copy `top1`. The shift `<< 3` of `pe0` is written on the operation `pass`, the opcode `0x004`, which does not apply it.
+- `top1 << 3`, written without `pass`, is another opcode, `0x0a4`, which shifts `top1` ([6.2.2](#622-operators-with-a-number)).
 
 **Rules:**
 
-- `pass(x) << n` and `pass(x) >> n` are the shifts of the operation `pass` ([6.4](#64-sat-and-the-shifts)); `x << n` on a buffer alone is the opcode `0x0a4` ([6.2.2](#622-operators-with-a-number)).
+- The opcode `0x004` ignores the shift written after it: `pass(x) << n` and `pass(x) >> n` give the same words as `pass(x)` ([6.6.2](opcodes-0x000-0x0ff.md#662-lot-1-0x000-to-0x00f)). To shift a buffer, write `x >> n` ([6.6.3](opcodes-0x000-0x0ff.md#663-lot-2-0x010-to-0x01f)) or `x << n`.
 
 ### 6.3.8 cst
 
