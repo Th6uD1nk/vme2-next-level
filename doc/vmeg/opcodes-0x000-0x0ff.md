@@ -12,6 +12,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.4 Lot 3: 0x020 to 0x02f](#664-lot-3-0x020-to-0x02f)
 - [6.6.5 Lot 4: 0x030 to 0x03f](#665-lot-4-0x030-to-0x03f)
 - [6.6.6 Lot 5: 0x040 to 0x04f](#666-lot-5-0x040-to-0x04f)
+- [6.6.7 Lot 6: 0x050 to 0x05f](#667-lot-6-0x050-to-0x05f)
 
 ## 6.6.1 How to read the tables
 
@@ -167,4 +168,35 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - The amount `n` is read as a signed number of 6 bits: from 0 to 31 it shifts to the right with the sign kept, from -32 to -1 it shifts to the left. Only the 6 low bits of `n` count.
 - The shift written after one of these operations is not applied.
 - `x >> n` alone is the opcode 0x014 ([6.6.3](#663-lot-2-0x010-to-0x01f)).
+
+## 6.6.7 Lot 6: 0x050 to 0x05f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x050 | `(a >> n) - b` | `(a >> n) - b` | ignored |
+| 0x054 | `(x >> n) - c`, `x - c` | `(x >> n) - c` | ignored |
+| 0x058 | `addhib(a, b)` | the byte 1 of `a` plus the byte 1 of `b` | ignored, except that 1 doubles the result |
+| 0x05c | `(a & 255) + (b & 255)` | the byte 0 of `a` plus the byte 0 of `b` | ignored, except that 1 doubles the result |
+
+```c
+.pe0 { .spad = (top1 >> 3) - top0; }
+.pe1 { .spad = (top1 >> 3) - 5; }
+.pe2 { .spad = addhib(top0, top1); }
+.pe3 { .spad = (top0 & 255) + (top1 & 255); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` subtracts `top0` from `top1` shifted to the right by 3.
+- `pe1` subtracts the number 5 from `top1` shifted to the right by 3.
+- `pe2` adds the byte 1 of `top0` and the byte 1 of `top1`.
+- `pe3` adds the byte 0 of `top0` and the byte 0 of `top1`. The opcode is found from the writing with `& 255` on both operands, `& 0xff` is the same.
+
+**Rules:**
+
+- `a`, `b` and `x` are buffers or `Staging` variables, and the numbers `c` and `n` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- The amount `n` of 0x050 and 0x054 is read as in the lot 5 ([6.6.6](#666-lot-5-0x040-to-0x04f)).
+- `x - c` is written with the opcode 0x054 and its amount `n` at 0: `top1 - 5` and `(top1 >> 0) - 5` are the same operation.
+- The byte 0 and the byte 1 of a word are the ones of the lot 4 ([6.6.5](#665-lot-4-0x030-to-0x03f)).
+- A shift written after 0x050 or 0x054 is not applied. After 0x058 or 0x05c, a shift of 1 doubles the result, and the other values are not applied.
 
