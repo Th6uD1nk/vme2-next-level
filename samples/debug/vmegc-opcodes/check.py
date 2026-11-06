@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, HERE)
-from generate import camel, load
+from generate import camel, entries, load
 
 DEFAULT = "0x000-0x0ff"
 
@@ -93,7 +93,7 @@ def main(arguments):
       return 2
   module = load(name)
   source = os.path.join(HERE, f"opcodes-{name}.vmeg.cpp")
-  chosen = [entry for entry in module.SPECS if not arguments or entry["id"] in arguments]
+  chosen = [entry for entry in entries(module) if not arguments or entry["id"] in arguments]
   with ThreadPoolExecutor(os.cpu_count()) as pool:
     problems = list(pool.map(lambda entry: check(module, source, entry, log), chosen))
   for entry, problem in zip(chosen, problems):

@@ -63,11 +63,28 @@ void {name}Run(void) {{
 """
 
 
+def entries(module):
+  found = []
+  for entry in module.SPECS:
+    values = entry.get("values")
+    if values is None:
+      found.append(entry)
+      continue
+    for index, numbers in enumerate(values):
+      found.append(dict(
+        entry,
+        id=entry["id"] if index == 0 else f"{entry['id']}_{index + 1}",
+        writings=[writing.format(*numbers) for writing in entry["writings"]],
+        expected=lambda f, b, expected=entry["expected"], numbers=numbers: expected(f, b, *numbers),
+      ))
+  return found
+
+
 def source(name):
   module = load(name)
   size = len(module.IN0)
   parts = [HEADER, f"volatile Buffer in0[{size}] = {{\n{words(module.IN0)}\n}};\n", f"volatile Buffer in1[{size}] = {{\n{words(module.IN1)}\n}};\n"]
-  parts.extend(kernel(entry, size) for entry in module.SPECS)
+  parts.extend(kernel(entry, size) for entry in entries(module))
   return "\n".join(parts)
 
 
