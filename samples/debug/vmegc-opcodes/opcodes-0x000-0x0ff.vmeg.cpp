@@ -184,3 +184,95 @@ void checkAddCstRun(void) {
 @kernel checkNegOfb config | exec
 void checkNegOfbRun(void) {
 }
+
+@emulate "add_ofa"
+.kernel checkAddOfa direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + top1 + 5; }
+  .pe1 { .top = top; .write = write; .spad = (top0 + top1) + 5; }
+  .pe2 { .write = write; .spad = 5 + (top0 + top1); }
+  .pe3 { .write = write; .spad = top1 + top0 + 5; }
+}
+
+@kernel checkAddOfa config | exec
+void checkAddOfaRun(void) {
+}
+
+@emulate "subacst"
+.kernel checkSubacst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - top1 + 5; }
+  .pe1 { .top = top; .write = write; .spad = subacst(top0, top1, 5); }
+  .pe2 { .write = write; .spad = (top0 - top1) + 5; }
+  .pe3 { .write = write; .spad = 5 + (top0 - top1); }
+}
+
+@kernel checkSubacst config | exec
+void checkSubacstRun(void) {
+}
+
+@emulate "add_byt"
+.kernel checkAddByt direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = addbyt(top1, top0); }
+  .pe2 { .write = write; .spad = addbyt( top0 , top1 ); }
+  .pe3 { .write = write; .spad = (addbyt(top0, top1)); }
+}
+
+@kernel checkAddByt config | exec
+void checkAddBytRun(void) {
+}
+
+@emulate "sub_byt"
+.kernel checkSubByt direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = (subbyt(top0, top1)); }
+  .pe2 { .write = write; .spad = subbyt( top0 , top1 ); }
+  .pe3 { .write = write; .spad = subbyt(top0,top1); }
+}
+
+@kernel checkSubByt config | exec
+void checkSubBytRun(void) {
+}

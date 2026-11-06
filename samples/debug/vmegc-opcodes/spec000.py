@@ -31,4 +31,8 @@ SPECS = [
   dict(id="sub", opcode=0x018, lot=2, writings=["top0 - top1", "(top0 - top1)", "top0 - (top1)", "(top0) - (top1)"], expected=lambda f, b: f - b),
   dict(id="add_cst", opcode=0x024, lot=3, writings=["top1 + 3", "3 + top1", "(top1) + 3", "(top1 + 3)"], expected=lambda f, b: b + 3),
   dict(id="neg_ofb", opcode=0x02c, lot=3, writings=["7 - top1", "(7 - top1)", "7 - (top1)", "(7) - top1"], expected=lambda f, b: 7 - b),
+  dict(id="add_ofa", opcode=0x030, lot=4, writings=["top0 + top1 + 5", "(top0 + top1) + 5", "5 + (top0 + top1)", "top1 + top0 + 5"], expected=lambda f, b: f + b + 5),
+  dict(id="subacst", opcode=0x034, lot=4, writings=["top0 - top1 + 5", "subacst(top0, top1, 5)", "(top0 - top1) + 5", "5 + (top0 - top1)"], expected=lambda f, b: f - b + 5),
+  dict(id="add_byt", opcode=0x038, lot=4, writings=["addbyt(top0, top1)", "addbyt(top1, top0)", "addbyt( top0 , top1 )", "(addbyt(top0, top1))"], expected=lambda f, b: byte0(f) + byte0(b) + byte1(f) + byte1(b)),
+  dict(id="sub_byt", opcode=0x03c, lot=4, writings=["subbyt(top0, top1)", "(subbyt(top0, top1))", "subbyt( top0 , top1 )", "subbyt(top0,top1)"], expected=lambda f, b: byte0(f) - byte0(b) + byte1(f) - byte1(b)),
 ]
