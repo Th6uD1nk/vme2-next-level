@@ -31,7 +31,7 @@ def op_add(back, front, fu, a, b, previous, state):
 
 
 def op_clp(back, front, fu, a, b, previous, state):
-  return max(b, min(a, back))
+  return min(a, max(b, back))
 
 
 def op_and(back, front, fu, a, b, previous, state):
@@ -196,7 +196,7 @@ def op_cst(back, front, fu, a, b, previous, state):
 
 
 def op_pass(back, front, fu, a, b, previous, state):
-  return shifted(back, fu)
+  return back
 
 
 def op_mul_cst(back, front, fu, a, b, previous, state):
@@ -286,7 +286,7 @@ def op_add_ofa(back, front, fu, a, b, previous, state):
 
 
 def op_add_cst(back, front, fu, a, b, previous, state):
-  return back + b
+  return shifted(back + b, fu)
 
 
 def op_sub(back, front, fu, a, b, previous, state):
