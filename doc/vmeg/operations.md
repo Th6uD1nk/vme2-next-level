@@ -21,6 +21,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.7 pass](#637-pass)
   - [6.3.8 cst](#638-cst)
   - [6.3.9 shrcst](#639-shrcst)
+  - [6.3.10 addbyt, subbyt and addhib](#6310-addbyt-subbyt-and-addhib)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 - [6.6 The opcodes by range](#66-the-opcodes-by-range)
@@ -341,6 +342,32 @@ Staging s;
 
 - `shrcst` reads `c` as a signed number of 6 bits: from 0 to 31 it shifts to the right, from -32 to -1 it shifts to the left. With `>>`, the amount goes from 0 to 63.
 - The shift written after `shrcst(x, c)` is not applied ([6.6.12](opcodes-0x000-0x0ff.md#6612-lot-11-0x0a0-to-0x0af)).
+
+### 6.3.10 addbyt, subbyt and addhib
+
+`addbyt(a, b)`, `subbyt(a, b)` and `addhib(a, b)` work on the bytes of the two operands. The byte 0 of a word is its 8 low bits, the byte 1 is the next 8 bits. `a` and `b` are buffers or `Staging` variables.
+
+| Function | Result |
+|---|---|
+| `addbyt(a, b)` | the byte 0 of `a` plus the byte 0 of `b` plus the byte 1 of `a` plus the byte 1 of `b` |
+| `subbyt(a, b)` | the byte 0 of `a` minus the byte 0 of `b`, plus the byte 1 of `a` minus the byte 1 of `b` |
+| `addhib(a, b)` | the byte 1 of `a` plus the byte 1 of `b` |
+
+```c
+.pe0 { .spad = addbyt(top0, top1); }
+.pe1 { .spad = subbyt(top0, top1); }
+.pe2 { .spad = addhib(top0, top1); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` and `pe1` give the sum and the difference of the two bytes of `top0` and `top1`, added together.
+- `pe2` adds only the bytes 1.
+
+**Rules:**
+
+- The sum of the bytes 0 has no function: it is written `(a & 255) + (b & 255)` ([6.6.7](opcodes-0x000-0x0ff.md#667-lot-6-0x050-to-0x05f)).
+- The shift written after `addbyt` and `subbyt` is not applied. After `addhib`, a shift of 1 doubles the result ([6.6.5](opcodes-0x000-0x0ff.md#665-lot-4-0x030-to-0x03f), [6.6.7](opcodes-0x000-0x0ff.md#667-lot-6-0x050-to-0x05f)).
 
 ## 6.4 sat and the shifts
 
