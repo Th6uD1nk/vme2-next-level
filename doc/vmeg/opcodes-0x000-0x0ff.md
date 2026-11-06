@@ -13,6 +13,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.5 Lot 4: 0x030 to 0x03f](#665-lot-4-0x030-to-0x03f)
 - [6.6.6 Lot 5: 0x040 to 0x04f](#666-lot-5-0x040-to-0x04f)
 - [6.6.7 Lot 6: 0x050 to 0x05f](#667-lot-6-0x050-to-0x05f)
+- [6.6.8 Lot 7: 0x060 to 0x06f](#668-lot-7-0x060-to-0x06f)
 
 ## 6.6.1 How to read the tables
 
@@ -199,4 +200,32 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - `x - c` is written with the opcode 0x054 and its amount `n` at 0: `top1 - 5` and `(top1 >> 0) - 5` are the same operation.
 - The byte 0 and the byte 1 of a word are the ones of the lot 4 ([6.6.5](#665-lot-4-0x030-to-0x03f)).
 - A shift written after 0x050 or 0x054 is not applied. After 0x058 or 0x05c, a shift of 1 doubles the result, and the other values are not applied.
+
+## 6.6.8 Lot 7: 0x060 to 0x06f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x060 | `(f & a) ? -x : x` | `-x` when `f & a` is not zero, `x` otherwise | ignored |
+| 0x064 | `(f & a) ? x : -x` | `x` when `f & a` is not zero, `-x` otherwise | ignored |
+| 0x068 | `(f & a) ? b : x` | the number `b` when `f & a` is not zero, `x` otherwise | ignored |
+| 0x06c | `(f & a) ? x : b` | `x` when `f & a` is not zero, the number `b` otherwise | ignored |
+
+```c
+.pe0 { .spad = (top0 & 4) ? -top1 : top1; }
+.pe1 { .spad = (top0 & 4) ? top1 : -top1; }
+.pe2 { .spad = (top0 & 4) ? 7 : top1; }
+.pe3 { .spad = (top0 & 4) ? top1 : 7; }
+```
+
+**Explanation of the code above:**
+
+- The four writings test the bit 2 of `top0` (the mask 4) and choose between `top1`, its opposite and the number 7.
+- `pe0` gives the opposite of `top1` when the bit is set, `pe1` when it is not set.
+- `pe2` gives 7 when the bit is set and `top1` otherwise, `pe3` the reverse.
+
+**Rules:**
+
+- The condition of the choice `c ? y : z` is `f & a`, with a number `a`: it is true when the result is not zero. The mask can be written on either side, `(4 & top0)`. Another condition gives the error `no opcode covers this expression`.
+- `f` and `x` are buffers or `Staging` variables, `f` is the first operand and `x` the second. The numbers `a` and `b` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- The shift written after one of these operations is not applied.
 
