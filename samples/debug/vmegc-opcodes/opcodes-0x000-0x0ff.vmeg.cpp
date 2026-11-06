@@ -2759,11 +2759,149 @@ void checkSelAdsInv6Run(void) {
   .pe0 { .top = top; .write = write; .spad = clamp(top1, -100, 100); }
   .pe1 { .top = top; .write = write; .spad = clamp(top1,-100,100); }
   .pe2 { .write = write; .spad = clamp((top1), -100, 100); }
-  .pe3 { .write = write; .spad = clamp(top1, 0 - 100, 50 + 50); }
+  .pe3 { .write = write; .spad = clamp(top1, -100 + 0, 100); }
 }
 
 @kernel checkClamp config | exec
 void checkClampRun(void) {
+}
+
+@emulate "clamp_2"
+.kernel checkClamp2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, 0, 0); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,0,0); }
+  .pe2 { .write = write; .spad = clamp((top1), 0, 0); }
+  .pe3 { .write = write; .spad = clamp(top1, 0 + 0, 0); }
+}
+
+@kernel checkClamp2 config | exec
+void checkClamp2Run(void) {
+}
+
+@emulate "clamp_3"
+.kernel checkClamp3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, -1, 1); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,-1,1); }
+  .pe2 { .write = write; .spad = clamp((top1), -1, 1); }
+  .pe3 { .write = write; .spad = clamp(top1, -1 + 0, 1); }
+}
+
+@kernel checkClamp3 config | exec
+void checkClamp3Run(void) {
+}
+
+@emulate "clamp_4"
+.kernel checkClamp4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, 100, -100); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,100,-100); }
+  .pe2 { .write = write; .spad = clamp((top1), 100, -100); }
+  .pe3 { .write = write; .spad = clamp(top1, 100 + 0, -100); }
+}
+
+@kernel checkClamp4 config | exec
+void checkClamp4Run(void) {
+}
+
+@emulate "clamp_5"
+.kernel checkClamp5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, -8388608, 8388607); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,-8388608,8388607); }
+  .pe2 { .write = write; .spad = clamp((top1), -8388608, 8388607); }
+  .pe3 { .write = write; .spad = clamp(top1, -8388608 + 0, 8388607); }
+}
+
+@kernel checkClamp5 config | exec
+void checkClamp5Run(void) {
+}
+
+@emulate "clamp_6"
+.kernel checkClamp6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, 8388607, -8388608); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,8388607,-8388608); }
+  .pe2 { .write = write; .spad = clamp((top1), 8388607, -8388608); }
+  .pe3 { .write = write; .spad = clamp(top1, 8388607 + 0, -8388608); }
+}
+
+@kernel checkClamp6 config | exec
+void checkClamp6Run(void) {
+}
+
+@emulate "clamp_7"
+.kernel checkClamp7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, 5, 5); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,5,5); }
+  .pe2 { .write = write; .spad = clamp((top1), 5, 5); }
+  .pe3 { .write = write; .spad = clamp(top1, 5 + 0, 5); }
+}
+
+@kernel checkClamp7 config | exec
+void checkClamp7Run(void) {
 }
 
 @emulate "mul_clp"
