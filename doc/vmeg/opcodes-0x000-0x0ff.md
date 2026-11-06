@@ -41,6 +41,7 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - A word read or written is a signed number of 24 bits. A result that does not fit in 24 bits keeps its 24 low bits.
 - In a write of two operands, `a` is the first operand and `b` the second: `a - b` subtracts `b` from `a`.
 - A row marked `not written` is an opcode that `vmegc` does not write: the Result column says what it gives.
+- The results of the rows that `vmegc` writes were checked on the PSP and in the emulator with the sample `samples/debug/vmegc-opcodes`: one kernel for each operation, 16 input words, and the shift at 0. The column k comes from measures of the PSP made with other values of the shift.
 - The list shown by `vmegc --ops` has the opcodes that `vmegc` writes, sorted by opcode.
 
 ## 6.6.2 Lot 1: 0x000 to 0x00f
