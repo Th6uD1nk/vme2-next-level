@@ -150,7 +150,7 @@ An expression between numbers uses these operators, from the strongest to the we
 | 1 | `-` (negation), `~` (complement), parentheses |
 | 2 | `*` `/` `%` |
 | 3 | `+` `-` |
-| 4 | `<<` `>>` |
+| 4 | `<<` `>>` `<<<` `>>>` |
 | 5 | `==` `!=` |
 | 6 | `&` |
 | 7 | `^` |
@@ -170,6 +170,10 @@ An expression between numbers uses these operators, from the strongest to the we
 | `1 \| 6 & 3` | `3` |
 | `5 ^ 3 & 1` | `4` |
 | `~5` | `-6` |
+| `0x800000 >>> 3` | `1048576` |
+| `-1 >>> 20` | `15` |
+| `-1 <<< 4` | `16777200` |
+| `0x10 >>> -2` | `64` |
 | `3 == 3` | `1` |
 | `3 != 3` | `0` |
 | `1 + 1 == 2` | `1` |
@@ -184,6 +188,8 @@ The choice `c ? x : y` gives `x` when `c` is not zero and `y` otherwise. It grou
 The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numbers-macros-and-unknown-names)). A number is written in decimal (`15`), in hexadecimal (`0x0f`) or in binary (`0b1111`). `true` is `1` and `false` is `0`.
 
 Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they apply to that result, see [Operations](operations.md).
+
+The shifts `<<<` and `>>>` work on the 24 low bits of the number, taken as an unsigned number: `>>>` shifts to the right without repeating the sign, and `<<<` keeps the 24 low bits of the result. A negative amount shifts the other way: `0x10 >>> -2` is `0x10 <<< 2`. In a pe they are operations ([6.6.13](opcodes-0x000-0x0ff.md#6613-lot-12-0x0b0-to-0x0bf)).
 
 The division gives the integer part of the quotient, truncated toward zero as in C, and `%` is the remainder of that division. The comparisons `==` and `!=` give `1` when they are true and `0` when they are false. They bind weaker than the shifts and stronger than `&`, as in C: `4 & 2 == 2` is `4 & (2 == 2)`. In a pe, `x == -1` and `x != 0` are operations ([6.6.17](opcodes-0x000-0x0ff.md#6617-lot-16-0x0f0-to-0x0ff)). Currently not supported: `<`, `>`, `<=` and `>=`.
 
