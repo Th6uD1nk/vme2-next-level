@@ -43,4 +43,8 @@ SPECS = [
   dict(id="shr_cst_ofs", opcode=0x054, lot=6, writings=["(top1 >> 3) - 5", "((top1 >> 3)) - 5", "(top1 >> 3) - (2 + 3)", "((top1) >> 3) - 5"], expected=lambda f, b: (b >> 3) - 5),
   dict(id="add_hib", opcode=0x058, lot=6, writings=["addhib(top0, top1)", "addhib(top1, top0)", "addhib( top0 , top1 )", "(addhib(top0, top1))"], expected=lambda f, b: byte1(f) + byte1(b)),
   dict(id="add_lob", opcode=0x05c, lot=6, writings=["(top0 & 255) + (top1 & 255)", "(top1 & 0xff) + (top0 & 0xff)", "((top0 & 255)) + ((top1 & 255))", "(255 & top0) + (255 & top1)"], expected=lambda f, b: byte0(f) + byte0(b)),
+  dict(id="sel_neg", opcode=0x060, lot=7, writings=["(top0 & 4) ? -top1 : top1", "(4 & top0) ? -top1 : top1", "(top0 & 0x4) ? (-top1) : top1", "((top0 & 4)) ? -top1 : (top1)"], expected=lambda f, b: -b if f & 4 else b),
+  dict(id="sel_neg_slf", opcode=0x064, lot=7, writings=["(top0 & 4) ? top1 : -top1", "(4 & top0) ? top1 : -top1", "(top0 & 0x4) ? top1 : (-top1)", "((top0 & 4)) ? (top1) : -top1"], expected=lambda f, b: b if f & 4 else -b),
+  dict(id="sel_cst", opcode=0x068, lot=7, writings=["(top0 & 4) ? 7 : top1", "(4 & top0) ? 7 : top1", "(top0 & 0x4) ? (3 + 4) : top1", "((top0 & 4)) ? 7 : (top1)"], expected=lambda f, b: 7 if f & 4 else b),
+  dict(id="sel_cst_ofb", opcode=0x06c, lot=7, writings=["(top0 & 4) ? top1 : 7", "(4 & top0) ? top1 : 7", "(top0 & 0x4) ? top1 : (3 + 4)", "((top0 & 4)) ? (top1) : 7"], expected=lambda f, b: b if f & 4 else 7),
 ]

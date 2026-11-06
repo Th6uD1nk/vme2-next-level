@@ -460,3 +460,95 @@ void checkAddHibRun(void) {
 @kernel checkAddLob config | exec
 void checkAddLobRun(void) {
 }
+
+@emulate "sel_neg"
+.kernel checkSelNeg direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 4) ? -top1 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top0) ? -top1 : top1; }
+  .pe2 { .write = write; .spad = (top0 & 0x4) ? (-top1) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & 4)) ? -top1 : (top1); }
+}
+
+@kernel checkSelNeg config | exec
+void checkSelNegRun(void) {
+}
+
+@emulate "sel_neg_slf"
+.kernel checkSelNegSlf direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 4) ? top1 : -top1; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top0) ? top1 : -top1; }
+  .pe2 { .write = write; .spad = (top0 & 0x4) ? top1 : (-top1); }
+  .pe3 { .write = write; .spad = ((top0 & 4)) ? (top1) : -top1; }
+}
+
+@kernel checkSelNegSlf config | exec
+void checkSelNegSlfRun(void) {
+}
+
+@emulate "sel_cst"
+.kernel checkSelCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 4) ? 7 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top0) ? 7 : top1; }
+  .pe2 { .write = write; .spad = (top0 & 0x4) ? (3 + 4) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & 4)) ? 7 : (top1); }
+}
+
+@kernel checkSelCst config | exec
+void checkSelCstRun(void) {
+}
+
+@emulate "sel_cst_ofb"
+.kernel checkSelCstOfb direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 4) ? top1 : 7; }
+  .pe1 { .top = top; .write = write; .spad = (4 & top0) ? top1 : 7; }
+  .pe2 { .write = write; .spad = (top0 & 0x4) ? top1 : (3 + 4); }
+  .pe3 { .write = write; .spad = ((top0 & 4)) ? (top1) : 7; }
+}
+
+@kernel checkSelCstOfb config | exec
+void checkSelCstOfbRun(void) {
+}
