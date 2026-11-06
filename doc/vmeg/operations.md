@@ -185,12 +185,15 @@ An expression can be covered by more than one opcode. `vmegc` reads what is writ
 | `a + 1` | `0x024` | the opcode that takes one operand and a number |
 | `a + b + 5` | `0x030` | one operation, instead of the sum and then the number |
 | `~(a & b)` | `0x0c8` | one operation, instead of the and and then the complement |
+| `5 << x` | `0x090` | the number 5 is in the range of this opcode, from -0x800000 to 0x7fffff |
+| `0xc00000 << x` | `0x098` | the number 0xc00000 is in the range of this opcode, from 0x800000 to 0xffffff |
 
 **Rules:**
 
 - A number that is not written is 0. The opcode `0x030`, which takes a number with the sum, can do `a + b` with its number at 0.
 - With two opcodes at the same count, the first one in the list given by `--ops` ([1.5](running.md#15---ops)) is taken.
 - The option `--compat fat` ([1.6](running.md#16---compat)) leaves out the opcodes that `--ops` marks `not portable`. `a + b` then uses `0x030`, with its number at 0.
+- An opcode can take only the numbers of a range. `--ops` shows it under the opcode, for example `when c is from -0x800000 to 0x7fffff`, and `vmegc` takes the opcode whose range holds the number. Two opcodes written the same way have ranges that do not overlap. A number that is in no range gives the error `no opcode covers this expression`.
 - The opcodes chosen for a kernel are listed by `--list --kernel` ([1.4](running.md#14---list)).
 
 ## 6.3 Functions
