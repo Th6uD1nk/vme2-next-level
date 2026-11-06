@@ -35,7 +35,7 @@ def words(values):
   return "\n".join(rows)
 
 
-def kernel(entry):
+def kernel(entry, size):
   name = "check" + camel(entry["id"])
   pes = []
   for pe, writing in enumerate(entry["writings"]):
@@ -43,7 +43,7 @@ def kernel(entry):
     pes.append(f"  .pe{pe} {{ {top}.write = write; .spad = {writing}; }}")
   return f"""@emulate "{entry['id']}"
 .kernel {name} direct {{
-  Int count = 16 - 1;
+  Int count = {size} - 1;
 
   Transfer top0Transfer = {{ memory: in0, count }};
   Transfer top1Transfer = {{ memory: in1, count }};
@@ -65,8 +65,9 @@ void {name}Run(void) {{
 
 def source(name):
   module = load(name)
-  parts = [HEADER, f"volatile Buffer in0[16] = {{\n{words(module.IN0)}\n}};\n", f"volatile Buffer in1[16] = {{\n{words(module.IN1)}\n}};\n"]
-  parts.extend(kernel(entry) for entry in module.SPECS)
+  size = len(module.IN0)
+  parts = [HEADER, f"volatile Buffer in0[{size}] = {{\n{words(module.IN0)}\n}};\n", f"volatile Buffer in1[{size}] = {{\n{words(module.IN1)}\n}};\n"]
+  parts.extend(kernel(entry, size) for entry in module.SPECS)
   return "\n".join(parts)
 
 
