@@ -232,7 +232,7 @@ OPERATIONS = {
     "arguments": (("c", "number"), ("x", "source")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_SHL_CST_DYN)",
-    "where": {"c": (-0x800000, 0x7fffff)},
+    "where": {"c": (None, 0x7fffff)},
     "operands": ("back",),
     "units": "any",
     "note": "the number c shifted to the left by x, x is a signed amount of 6 bits and a negative x shifts to the right",
@@ -243,7 +243,7 @@ OPERATIONS = {
     "arguments": (("c", "number"), ("x", "source")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_SHF_CST_M24)",
-    "where": {"c": (0x800000, 0xffffff)},
+    "where": {"c": (0x800000, None)},
     "operands": ("back",),
     "units": "any",
     "note": "the number c shifted to the left by x as an unsigned number of 24 bits, a negative x shifts to the right without extending the sign",
@@ -254,7 +254,7 @@ OPERATIONS = {
     "arguments": (("c", "number"), ("x", "source")),
     "registers": {"B": "c"},
     "code": "fu_code(OP_SHL_CST_DYN_ZER)",
-    "where": {"c": (-0x800000, 0x7fffff)},
+    "where": {"c": (None, 0x7fffff)},
     "operands": ("back",),
     "units": "any",
     "note": "the number c shifted to the right by x, x is a signed amount of 6 bits and a negative x shifts to the left",
@@ -265,7 +265,7 @@ OPERATIONS = {
     "arguments": (("c", "number"), ("x", "source")),
     "registers": {"B": "c"},
     "code": "fu_code(0x09c)",
-    "where": {"c": (0x800000, 0xffffff)},
+    "where": {"c": (0x800000, None)},
     "operands": ("back",),
     "units": "any",
     "note": "the number c shifted to the right by x as an unsigned number of 24 bits, the sign is not extended, a negative x shifts to the left",
@@ -749,7 +749,12 @@ def operation_block(specification):
   if others:
     lines.append(indent + "can be remapped with " + ", ".join(f"0x{opcode:03x}" for opcode in others))
   for name, (low, high) in specification.get("where", {}).items():
-    lines.append(indent + f"when {name} is from {low:#x} to {high:#x}".replace("-0x", "-0x"))
+    if low is None:
+      lines.append(indent + f"when {name} is up to {high:#x}")
+    elif high is None:
+      lines.append(indent + f"when {name} is {low:#x} or more")
+    else:
+      lines.append(indent + f"when {name} is from {low:#x} to {high:#x}")
   if specification.get("auxiliary"):
     lines.append(indent + "only reached by a remap")
   lines.append(indent + ("position first operation of the pe, a warning in the second one" if specification["units"] == "primary" else "position any"))

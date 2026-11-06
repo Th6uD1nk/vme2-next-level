@@ -541,6 +541,9 @@ def place(state, lines, pe, operations, line):
         if argument in operation["numbers"] and argument not in encoding["registers"].values():
           warn(state, line, f"the value of '{argument}' is not written, the opcode 0x{encoding['opcode']:03x} of .remap {unit.lower()} has no register for it")
     for register, argument in encoding["registers"].items():
+      value = operation["numbers"].get(argument, 0)
+      if not -0x800000 <= value <= 0xffffff:
+        warn(state, line, f"the number {hex(value)} of '{argument}' does not fit in 24 bits, it is written as it is in the register {register}")
       lines.append(f"vme_pe{pe}(fu_reg({unit}, {register}), {to_c(('num', operation['numbers'].get(argument, 0)))});")
   return number, depth
 

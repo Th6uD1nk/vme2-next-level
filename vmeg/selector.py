@@ -25,7 +25,7 @@ def operands_ok(bound, roles):
 
 
 def in_ranges(bound, ranges):
-  return all(low <= bound[name][1] <= high for name, (low, high) in ranges.items())
+  return all((low is None or low <= bound[name][1]) and (high is None or bound[name][1] <= high) for name, (low, high) in ranges.items())
 
 
 def bind_entry(tree, specification):
