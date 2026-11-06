@@ -17,6 +17,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.9 Lot 8: 0x070 to 0x07f](#669-lot-8-0x070-to-0x07f)
 - [6.6.10 Lot 9: 0x080 to 0x08f](#6610-lot-9-0x080-to-0x08f)
 - [6.6.11 Lot 10: 0x090 to 0x09f](#6611-lot-10-0x090-to-0x09f)
+- [6.6.12 Lot 11: 0x0a0 to 0x0af](#6612-lot-11-0x0a0-to-0x0af)
 
 ## 6.6.1 How to read the tables
 
@@ -316,5 +317,35 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). `vmegc` takes the opcode from its value: from -0x800000 to 0x7fffff it is 0x090 or 0x094, from 0x800000 to 0xffffff it is 0x098 or 0x09c.
 - The two forms give the same word for a left shift. They differ for a right shift of a number whose bit 23 is set: the first form keeps the sign, the second one does not.
 - Another value of `c` gives the error `no opcode covers this expression: a number shifted by a buffer must be from -0x800000 to 0xffffff`.
+- The shift written after one of these operations is not applied.
+
+## 6.6.12 Lot 11: 0x0a0 to 0x0af
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x0a0 | `a << b` | `a` shifted to the left by `b`, the sign is kept when it shifts to the right | ignored |
+| 0x0a4 | `x << c` | `x` shifted to the left by `c`, the sign is kept when it shifts to the right | ignored |
+| 0x0a8 | `a >> b` | `a` shifted to the right by `b`, the sign is kept | ignored |
+| 0x0ac | `shrcst(x, c)` | `x` shifted to the right by `c`, the sign is kept | ignored |
+
+```c
+.pe0 { .spad = top1 << top0; }
+.pe1 { .spad = top1 << 3; }
+.pe2 { .spad = top1 >> top0; }
+.pe3 { .spad = shrcst(top1, 3); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` shifts `top1` to the left by the words of `top0`: each word of `top0` is the amount of the shift for the word written.
+- `pe1` shifts `top1` to the left by 3.
+- `pe2` shifts `top1` to the right by the words of `top0`.
+- `pe3` shifts `top1` to the right by 3.
+
+**Rules:**
+
+- `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). With two operands, the second one is the amount of the shift.
+- The amount is read as a signed number of 6 bits: from 0 to 31 the shift goes in the direction of the operator, from -32 to -1 it goes the other way. Only the 6 low bits count.
+- `x >> n` written with a number is the opcode 0x014, where the amount `n` goes from 0 to 63 ([6.6.3](#663-lot-2-0x010-to-0x01f)). `shrcst(x, c)` reads `c` as a signed number of 6 bits.
 - The shift written after one of these operations is not applied.
 
