@@ -31,28 +31,40 @@ def emulate(source, identifier):
   return None if run.returncode else run.stdout, run.stderr.strip()
 
 
-def check(module, source, entry):
+def check(module, source, entry, log=None):
   identifier = entry["id"]
   text, error = emulate(source, identifier)
   if text is None:
     return f"{identifier}: {error}"
-  found = parse(text)
-  expected = [word(entry["expected"](f, b)) for f, b in zip(module.IN0, module.IN1)]
-  if len(found) < 4:
-    return f"{identifier}: 4 buffers BASE are needed ({len(found)} in the output)"
+  emulated = parse(text)
+  if log is None:
+    expected = [word(entry["expected"](f, b)) for f, b in zip(module.IN0, module.IN1)]
+    found, reference, names = emulated, {pe: expected for pe in range(4)}, ("got", "expected")
+  else:
+    found, reference, names = parse(log), emulated, ("PSP", "emulator")
+  if len(found) < 4 or len(reference) < 4:
+    return f"{identifier}: 4 buffers BASE are needed ({len(found)} in the log, {len(reference)} in the reference)"
   for pe in range(4):
-    for index, (got, want) in enumerate(zip(found[pe], expected)):
+    for index, (got, want) in enumerate(zip(found[pe], reference[pe])):
       if got != want:
-        return f"{identifier}: BASE_{pe} word {index}: got 0x{got:08x}, expected 0x{want:08x}"
+        return f"{identifier}: BASE_{pe} word {index}: {names[0]} 0x{got:08x}, {names[1]} 0x{want:08x}"
   return None
 
 
 def main(arguments):
+  log = None
+  if arguments[:1] == ["--log"]:
+    with open(arguments[1], encoding="utf-8") as f:
+      log = f.read()
+    arguments = arguments[2:]
+    if len(arguments) != 1:
+      print("--log goes with one kernel id")
+      return 2
   module = load(DEFAULT)
   source = os.path.join(HERE, f"opcodes-{DEFAULT}.vmeg.cpp")
   chosen = [entry for entry in module.SPECS if not arguments or entry["id"] in arguments]
   with ThreadPoolExecutor(os.cpu_count()) as pool:
-    problems = list(pool.map(lambda entry: check(module, source, entry), chosen))
+    problems = list(pool.map(lambda entry: check(module, source, entry, log), chosen))
   for entry, problem in zip(chosen, problems):
     print(problem or f"{entry['id']}: ok")
   return 1 if any(problems) else 0
