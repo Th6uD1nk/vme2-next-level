@@ -10,23 +10,143 @@
  * or adapting it.
  */
 
-volatile Buffer in0[16] = {
-  0x1, 0x2, 0x3, 0x4,
-  0x100, 0x10000, 0x7fffff, 0xffffffff,
-  0xfffffffe, 0xff800000, 0x1234, 0x555555,
-  0xffaaaaaa, 0xff, 0xffffff00, 0x5,
+volatile Buffer in0[256] = {
+  0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0,
+  0x1, 0x1, 0x1, 0x1,
+  0x1, 0x1, 0x1, 0x1,
+  0x1, 0x1, 0x1, 0x1,
+  0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+  0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+  0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+  0x2, 0x2, 0x2, 0x2,
+  0x2, 0x2, 0x2, 0x2,
+  0x2, 0x2, 0x2, 0x2,
+  0xfffffffe, 0xfffffffe, 0xfffffffe, 0xfffffffe,
+  0xfffffffe, 0xfffffffe, 0xfffffffe, 0xfffffffe,
+  0xfffffffe, 0xfffffffe, 0xfffffffe, 0xfffffffe,
+  0x7fffff, 0x7fffff, 0x7fffff, 0x7fffff,
+  0x7fffff, 0x7fffff, 0x7fffff, 0x7fffff,
+  0x7fffff, 0x7fffff, 0x7fffff, 0x7fffff,
+  0xff800000, 0xff800000, 0xff800000, 0xff800000,
+  0xff800000, 0xff800000, 0xff800000, 0xff800000,
+  0xff800000, 0xff800000, 0xff800000, 0xff800000,
+  0x555555, 0x555555, 0x555555, 0x555555,
+  0x555555, 0x555555, 0x555555, 0x555555,
+  0x555555, 0x555555, 0x555555, 0x555555,
+  0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa,
+  0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa,
+  0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa,
+  0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff,
+  0xffffff00, 0xffffff00, 0xffffff00, 0xffffff00,
+  0xffffff00, 0xffffff00, 0xffffff00, 0xffffff00,
+  0xffffff00, 0xffffff00, 0xffffff00, 0xffffff00,
+  0x1234, 0x1234, 0x1234, 0x1234,
+  0x1234, 0x1234, 0x1234, 0x1234,
+  0x1234, 0x1234, 0x1234, 0x1234,
+  0x1f4d40, 0xffdacb41, 0x85982, 0xffb05643,
+  0xff8ab0c4, 0x4c87c5, 0xff8112c6, 0x321807,
+  0xff8429c8, 0x2f3e09, 0xffec7b4a, 0xffb66b0b,
+  0x29fc8c, 0x13da4d, 0xffce2f0e, 0xffba478f,
+  0xf1d10, 0x532c11, 0xfffc8012, 0xff872e93,
+  0x296454, 0xffb94fd5, 0x1dd696, 0x76657,
+  0xffca7098, 0xffe84059, 0x2a875a, 0x16461b,
+  0x1b821c, 0x11add, 0xffe3abde, 0xffcd2c1f,
+  0x7da020, 0x47a121, 0x6b9fa2, 0x59d323,
+  0xff8f70a4, 0xff888e65, 0xff9b15a6, 0xff8f35a7,
+  0xffcd83e8, 0x611d29, 0x64212a, 0x475b6b,
+  0x456e2c, 0xfffbff2d, 0x3fd46e, 0xffacf4ef,
+  0xffa61f70, 0x60e6f1, 0x50ba72, 0xff868f73,
+  0x85f4, 0x469e75, 0xffcc5776, 0xffa2cdf7,
+  0xff86ac38, 0xffae7ab9, 0xffc8807a, 0x50057b,
+  0x75cfbc, 0xffc48a7d, 0xffe147be, 0x5c43bf,
+  0xffe44067, 0xfffa27f3, 0xff89b0d1, 0xffe3d198,
+  0xffc649f0, 0xfff8c78c, 0x260a88, 0xff9d80d3,
+  0x7b9190, 0x71b534, 0x30233f, 0xffa9c314,
+  0xffac26d1, 0xffbe3eaa, 0x49cff, 0xfffb4472,
+  0xffd7fe48, 0xffc04d27, 0xfffea135, 0xffd038f9,
+  0x2f87de, 0x53c934, 0xffd5114e, 0x6328b0,
+  0xffdc0b4a, 0x12fc10, 0xff8136d8, 0x17c3d5,
+  0xffcb0d83, 0x127e7e, 0x6af810, 0x731aa4,
+  0xffdebd57, 0xfffcf84d, 0x561ed7, 0x16d231,
+  0x4dca39, 0x53df3c, 0x360c26, 0xffe1979f,
+  0x540356, 0xffee0d69, 0x2e4048, 0xffcbef3b,
+  0xffbe620d, 0xa6032, 0xff80d334, 0x2343a7,
 };
 
-volatile Buffer in1[16] = {
-  0x0, 0x1, 0x1, 0x2,
-  0x80, 0x100, 0x7ffffe, 0x1,
-  0xffffffff, 0x1, 0x234, 0x2aaaaa,
-  0x555555, 0x5, 0x100, 0xfffffffb,
+volatile Buffer in1[256] = {
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x0, 0x1, 0xffffffff, 0x2,
+  0xfffffffe, 0x7fffff, 0xff800000, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x1234,
+  0x4799cb, 0x4675f0, 0x7d6d5, 0x67f6ba,
+  0x324b1f, 0xff8ef004, 0x6b39a9, 0xff9a628e,
+  0xff9396f3, 0x3ec7d8, 0xff82523d, 0x1176a2,
+  0xfffddd07, 0x760aec, 0xffcc32d1, 0xffede636,
+  0x49771b, 0xff8bed40, 0xff801525, 0x30d04a,
+  0xfff925ef, 0xffc1b594, 0x68b5f9, 0x77c9e,
+  0xff939243, 0xffe38528, 0x4c678d, 0x43f8b2,
+  0x2abed7, 0xff8f857c, 0x1643a1, 0x2bad46,
+  0x300b2b, 0x1a3490, 0x2025b5, 0x6bdf5a,
+  0xffa8bd3f, 0xffc9f864, 0x3b6609, 0x5929ae,
+  0xfff2a193, 0x7b3d38, 0x50cfdd, 0x6482c2,
+  0x2bb6a7, 0x70ddcc, 0xffdd3831, 0xffef7f56,
+  0xffcf223b, 0xffca89a0, 0x1295c5, 0x3251ea,
+  0x53168f, 0xffec7034, 0xffec1b19, 0xffdc0bbe,
+  0xffe9b1a3, 0xfff19b88, 0xff9381ad, 0x7c8dd2,
+  0xffb01f37, 0xffb5715c, 0x76ac81, 0xffcb6866,
+  0x173c4e, 0x403621, 0xe8a83, 0xff858f2c,
+  0x6c219c, 0xffaabed3, 0x6be48b, 0xffa18436,
+  0xffcef905, 0x2fa332, 0x71b156, 0x30911b,
+  0x65e0d2, 0xff8641cd, 0x402cd2, 0xff994d5f,
+  0x62ca86, 0x7f29ff, 0x59d33f, 0xffff6f20,
+  0x7f678d, 0x55740a, 0x500d60, 0x7a865e,
+  0xff9869c6, 0xffb9a9d6, 0xffea3977, 0x568235,
+  0x17c81d, 0xff933af7, 0x7aba31, 0xffad7a4f,
+  0x799c1d, 0xffb72660, 0x12f67d, 0x71c773,
+  0x63523c, 0xffbb79ee, 0x5aa78d, 0xffcac558,
+  0x5a9768, 0x4f2153, 0xffc86441, 0x49e141,
+  0x5fbc51, 0x63e5db, 0xffc1ced7, 0x73091a,
 };
 
 @emulate "pass"
 .kernel checkPass direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -49,7 +169,7 @@ void checkPassRun(void) {
 
 @emulate "cst"
 .kernel checkCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -72,7 +192,7 @@ void checkCstRun(void) {
 
 @emulate "add"
 .kernel checkAdd direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -95,7 +215,7 @@ void checkAddRun(void) {
 
 @emulate "bak_shr"
 .kernel checkBakShr direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -118,7 +238,7 @@ void checkBakShrRun(void) {
 
 @emulate "sub"
 .kernel checkSub direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -141,7 +261,7 @@ void checkSubRun(void) {
 
 @emulate "add_cst"
 .kernel checkAddCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -164,7 +284,7 @@ void checkAddCstRun(void) {
 
 @emulate "neg_ofb"
 .kernel checkNegOfb direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -187,7 +307,7 @@ void checkNegOfbRun(void) {
 
 @emulate "add_ofa"
 .kernel checkAddOfa direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -210,7 +330,7 @@ void checkAddOfaRun(void) {
 
 @emulate "subacst"
 .kernel checkSubacst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -233,7 +353,7 @@ void checkSubacstRun(void) {
 
 @emulate "add_byt"
 .kernel checkAddByt direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -256,7 +376,7 @@ void checkAddBytRun(void) {
 
 @emulate "sub_byt"
 .kernel checkSubByt direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -279,7 +399,7 @@ void checkSubBytRun(void) {
 
 @emulate "add_shf"
 .kernel checkAddShf direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -302,7 +422,7 @@ void checkAddShfRun(void) {
 
 @emulate "shr_cst_ofa"
 .kernel checkShrCstOfa direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -325,7 +445,7 @@ void checkShrCstOfaRun(void) {
 
 @emulate "subshr"
 .kernel checkSubshr direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -348,7 +468,7 @@ void checkSubshrRun(void) {
 
 @emulate "shr_cst_neg_ofa"
 .kernel checkShrCstNegOfa direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -371,7 +491,7 @@ void checkShrCstNegOfaRun(void) {
 
 @emulate "shrsub"
 .kernel checkShrsub direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -394,7 +514,7 @@ void checkShrsubRun(void) {
 
 @emulate "shr_cst_ofs"
 .kernel checkShrCstOfs direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -417,7 +537,7 @@ void checkShrCstOfsRun(void) {
 
 @emulate "add_hib"
 .kernel checkAddHib direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -440,7 +560,7 @@ void checkAddHibRun(void) {
 
 @emulate "add_lob"
 .kernel checkAddLob direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -463,7 +583,7 @@ void checkAddLobRun(void) {
 
 @emulate "sel_neg"
 .kernel checkSelNeg direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -486,7 +606,7 @@ void checkSelNegRun(void) {
 
 @emulate "sel_neg_slf"
 .kernel checkSelNegSlf direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -509,7 +629,7 @@ void checkSelNegSlfRun(void) {
 
 @emulate "sel_cst"
 .kernel checkSelCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -532,7 +652,7 @@ void checkSelCstRun(void) {
 
 @emulate "sel_cst_ofb"
 .kernel checkSelCstOfb direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -555,7 +675,7 @@ void checkSelCstOfbRun(void) {
 
 @emulate "sel_ads"
 .kernel checkSelAds direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -578,7 +698,7 @@ void checkSelAdsRun(void) {
 
 @emulate "sel_ads_inv"
 .kernel checkSelAdsInv direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -601,7 +721,7 @@ void checkSelAdsInvRun(void) {
 
 @emulate "clamp"
 .kernel checkClamp direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -624,7 +744,7 @@ void checkClampRun(void) {
 
 @emulate "mul_clp"
 .kernel checkMulClp direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -647,7 +767,7 @@ void checkMulClpRun(void) {
 
 @emulate "mul_clp_neg"
 .kernel checkMulClpNeg direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -670,7 +790,7 @@ void checkMulClpNegRun(void) {
 
 @emulate "sel_cst_zer"
 .kernel checkSelCstZer direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -693,7 +813,7 @@ void checkSelCstZerRun(void) {
 
 @emulate "sel_cst_zer_inv"
 .kernel checkSelCstZerInv direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -716,7 +836,7 @@ void checkSelCstZerInvRun(void) {
 
 @emulate "shl_dyn"
 .kernel checkShlDyn direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -739,7 +859,7 @@ void checkShlDynRun(void) {
 
 @emulate "shr_dyn"
 .kernel checkShrDyn direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -762,7 +882,7 @@ void checkShrDynRun(void) {
 
 @emulate "shl_dyn_u"
 .kernel checkShlDynU direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -785,7 +905,7 @@ void checkShlDynURun(void) {
 
 @emulate "shr_dyn_u"
 .kernel checkShrDynU direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -808,7 +928,7 @@ void checkShrDynURun(void) {
 
 @emulate "shl_reg"
 .kernel checkShlReg direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -831,7 +951,7 @@ void checkShlRegRun(void) {
 
 @emulate "shl_cst"
 .kernel checkShlCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -854,7 +974,7 @@ void checkShlCstRun(void) {
 
 @emulate "shr_reg"
 .kernel checkShrReg direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -877,7 +997,7 @@ void checkShrRegRun(void) {
 
 @emulate "shr_cst"
 .kernel checkShrCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -900,7 +1020,7 @@ void checkShrCstRun(void) {
 
 @emulate "shl_reg_u"
 .kernel checkShlRegU direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -923,7 +1043,7 @@ void checkShlRegURun(void) {
 
 @emulate "shl_cst_u"
 .kernel checkShlCstU direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -946,7 +1066,7 @@ void checkShlCstURun(void) {
 
 @emulate "shr_reg_u"
 .kernel checkShrRegU direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -969,7 +1089,7 @@ void checkShrRegURun(void) {
 
 @emulate "shr_cst_u"
 .kernel checkShrCstU direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -992,7 +1112,7 @@ void checkShrCstURun(void) {
 
 @emulate "and"
 .kernel checkAnd direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1015,7 +1135,7 @@ void checkAndRun(void) {
 
 @emulate "and_cst"
 .kernel checkAndCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1038,7 +1158,7 @@ void checkAndCstRun(void) {
 
 @emulate "nand"
 .kernel checkNand direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1061,7 +1181,7 @@ void checkNandRun(void) {
 
 @emulate "nand_cst"
 .kernel checkNandCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1084,7 +1204,7 @@ void checkNandCstRun(void) {
 
 @emulate "or"
 .kernel checkOr direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1107,7 +1227,7 @@ void checkOrRun(void) {
 
 @emulate "or_cst"
 .kernel checkOrCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1130,7 +1250,7 @@ void checkOrCstRun(void) {
 
 @emulate "nor"
 .kernel checkNor direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1153,7 +1273,7 @@ void checkNorRun(void) {
 
 @emulate "nor_cst"
 .kernel checkNorCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1176,7 +1296,7 @@ void checkNorCstRun(void) {
 
 @emulate "xor"
 .kernel checkXor direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1199,7 +1319,7 @@ void checkXorRun(void) {
 
 @emulate "xor_cst"
 .kernel checkXorCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1222,7 +1342,7 @@ void checkXorCstRun(void) {
 
 @emulate "xnor"
 .kernel checkXnor direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1245,7 +1365,7 @@ void checkXnorRun(void) {
 
 @emulate "xnor_cst"
 .kernel checkXnorCst direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1268,7 +1388,7 @@ void checkXnorCstRun(void) {
 
 @emulate "tst_em1"
 .kernel checkTstEm1 direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1291,7 +1411,7 @@ void checkTstEm1Run(void) {
 
 @emulate "tst_nnz"
 .kernel checkTstNnz direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1314,7 +1434,7 @@ void checkTstNnzRun(void) {
 
 @emulate "tst_par"
 .kernel checkTstPar direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };
@@ -1337,7 +1457,7 @@ void checkTstParRun(void) {
 
 @emulate "not"
 .kernel checkNot direct {
-  Int count = 16 - 1;
+  Int count = 256 - 1;
 
   Transfer top0Transfer = { memory: in0, count };
   Transfer top1Transfer = { memory: in1, count };

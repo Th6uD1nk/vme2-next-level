@@ -1,5 +1,30 @@
-IN0 = [1, 2, 3, 4, 0x100, 0x10000, 0x7fffff, -1, -2, -0x800000, 0x1234, 0x555555, -0x555556, 255, -256, 5]
-IN1 = [0, 1, 1, 2, 0x80, 0x100, 0x7ffffe, 1, -1, 1, 0x234, 0x2aaaaa, 0x555555, 5, 0x100, -5]
+LIMITS = [0, 1, -1, 2, -2, 0x7fffff, -0x800000, 0x555555, -0x555556, 0xff, -0x100, 0x1234]
+
+
+def signed24(v):
+  v &= 0xffffff
+  return v - 0x1000000 if v & 0x800000 else v
+
+
+def series(seed, count):
+  state = seed
+  values = []
+  for _ in range(count):
+    state ^= (state << 13) & 0xffffffff
+    state ^= state >> 17
+    state ^= (state << 5) & 0xffffffff
+    values.append(signed24(state))
+  return values
+
+
+def with_amount(value, n):
+  return signed24(((value >> 6) << 6) | n)
+
+
+FIRST = series(2463534242, 112)
+SECOND = series(1812433253, 112)
+IN0 = [a for a in LIMITS for b in LIMITS] + [with_amount(v, i) for i, v in enumerate(FIRST[:64])] + FIRST[64:]
+IN1 = [b for a in LIMITS for b in LIMITS] + [with_amount(v, (i * 37 + 11) & 63) for i, v in enumerate(SECOND[:64])] + SECOND[64:]
 
 
 def unsigned(v):
