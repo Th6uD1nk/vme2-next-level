@@ -1081,3 +1081,95 @@ void checkNandRun(void) {
 @kernel checkNandCst config | exec
 void checkNandCstRun(void) {
 }
+
+@emulate "or"
+.kernel checkOr direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 | top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 | top0; }
+  .pe2 { .write = write; .spad = (top0 | top1); }
+  .pe3 { .write = write; .spad = top0 | (top1); }
+}
+
+@kernel checkOr config | exec
+void checkOrRun(void) {
+}
+
+@emulate "or_cst"
+.kernel checkOrCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 0x80; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 0x80); }
+  .pe2 { .write = write; .spad = 0x80 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 128); }
+}
+
+@kernel checkOrCst config | exec
+void checkOrCstRun(void) {
+}
+
+@emulate "nor"
+.kernel checkNor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top0 | top1); }
+  .pe1 { .top = top; .write = write; .spad = ~(top1 | top0); }
+  .pe2 { .write = write; .spad = (~(top0 | top1)); }
+  .pe3 { .write = write; .spad = ~(top0 | (top1)); }
+}
+
+@kernel checkNor config | exec
+void checkNorRun(void) {
+}
+
+@emulate "nor_cst"
+.kernel checkNorCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 | 0x80); }
+  .pe1 { .top = top; .write = write; .spad = ~or(top1, 0x80); }
+  .pe2 { .write = write; .spad = ~(0x80 | top1); }
+  .pe3 { .write = write; .spad = (~(top1 | 128)); }
+}
+
+@kernel checkNorCst config | exec
+void checkNorCstRun(void) {
+}
