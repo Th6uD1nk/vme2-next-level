@@ -188,6 +188,10 @@ def accept_shift(p):
   if tok is None or following is None or tok[0] != "punct" or following[0] != "punct":
     return None
   if tok[1] in ("<", ">") and following[1] == tok[1] and tok[3] == following[2]:
+    third = p.toks[p.i + 2] if p.i + 2 < len(p.toks) else None
+    if third is not None and third[0] == "punct" and third[1] == tok[1] and following[3] == third[2]:
+      p.i += 3
+      return tok[1] * 3
     p.i += 2
     return tok[1] * 2
   return None

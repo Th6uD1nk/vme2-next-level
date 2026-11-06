@@ -132,7 +132,7 @@ def flatten(expr, stagings, compat):
     kind, bound, _ = found
     return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
   if kind == "bin":
-    if expr[1] in (">>", "<<") and expr[2][0] not in OPERATION_NODES:
+    if expr[1] in (">>", "<<", ">>>", "<<<") and expr[2][0] not in OPERATION_NODES:
       found = choose_opcode(expr, compat)
       if found is not None:
         kind, bound, _ = found

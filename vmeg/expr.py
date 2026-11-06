@@ -9,6 +9,11 @@ def modulo(a, b):
   return a - b * divide(a, b)
 
 
+def logical_shift(a, amount):
+  value = a & 0xffffff
+  return (value << amount) & 0xffffff if amount >= 0 else value >> -amount
+
+
 OPERATORS = {
   "+": lambda a, b: a + b,
   "-": lambda a, b: a - b,
@@ -16,6 +21,8 @@ OPERATORS = {
   "/": divide,
   "%": modulo,
   ">>": lambda a, b: a >> b,
+  ">>>": lambda a, b: logical_shift(a, -b),
+  "<<<": lambda a, b: logical_shift(a, b),
   "<<": lambda a, b: a << b,
   "&": lambda a, b: a & b,
   "^": lambda a, b: a ^ b,
