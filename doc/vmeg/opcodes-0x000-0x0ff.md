@@ -11,6 +11,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.3 Lot 2: 0x010 to 0x01f](#663-lot-2-0x010-to-0x01f)
 - [6.6.4 Lot 3: 0x020 to 0x02f](#664-lot-3-0x020-to-0x02f)
 - [6.6.5 Lot 4: 0x030 to 0x03f](#665-lot-4-0x030-to-0x03f)
+- [6.6.6 Lot 5: 0x040 to 0x04f](#666-lot-5-0x040-to-0x04f)
 
 ## 6.6.1 How to read the tables
 
@@ -135,4 +136,35 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - The byte 0 of a word is its 8 low bits, the byte 1 is the next 8 bits. The bits above are not used.
 - `a` and `b` are buffers or `Staging` variables. The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - The shift written after one of these operations is not applied.
+
+## 6.6.6 Lot 5: 0x040 to 0x04f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x040 | `b + (a >> n)` | `b + (a >> n)` | ignored |
+| 0x044 | `(x >> n) + c` | `(x >> n) + c` | ignored |
+| 0x048 | `b - (a >> n)`, `subshr(a, b, n)` | `b - (a >> n)` | ignored |
+| 0x04c | `c - (x >> n)` | `c - (x >> n)` | ignored |
+
+```c
+.pe0 { .spad = top0 + (top1 >> 3); }
+.pe1 { .spad = (top1 >> 3) + 5; }
+.pe2 { .spad = top0 - (top1 >> 3); }
+.pe3 { .spad = 5 - (top1 >> 3); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` adds `top0` and `top1` shifted to the right by 3.
+- `pe1` adds the number 5 to `top1` shifted to the right by 3.
+- `pe2` subtracts `top1` shifted to the right by 3 from `top0`. `subshr(top1, top0, 3)` is the same operation.
+- `pe3` subtracts `top1` shifted to the right by 3 from the number 5.
+
+**Rules:**
+
+- `a`, `b` and `x` are buffers or `Staging` variables, and the numbers `c` and `n` are known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- The shift `>> n` is a part of these operations: `n` is a number written in a register of the pe, and it is not the shift `k` of the operation.
+- The amount `n` is read as a signed number of 6 bits: from 0 to 31 it shifts to the right with the sign kept, from -32 to -1 it shifts to the left. Only the 6 low bits of `n` count.
+- The shift written after one of these operations is not applied.
+- `x >> n` alone is the opcode 0x014 ([6.6.3](#663-lot-2-0x010-to-0x01f)).
 
