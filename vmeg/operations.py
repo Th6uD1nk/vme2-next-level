@@ -720,7 +720,7 @@ FIELDS = (
   ("sat(op, bits)", "fu_sat(bits)", "the saturation of the operation it wraps, bits 0 to 31"),
   ("round(op)", "1 << 6", "the rounding of the shift of the operation it wraps, the bit 6 of its register"),
   ("op >> n", "k = n", "the shift applied to the result of the operation, n 0 to 63"),
-  ("op << n", "k = 64 - n", "the rotary shift, n 0 to 63"),
+  ("op << n", "k = 64 - n", "the shift 64 - n of the operation, n 0 to 63"),
 )
 
 
