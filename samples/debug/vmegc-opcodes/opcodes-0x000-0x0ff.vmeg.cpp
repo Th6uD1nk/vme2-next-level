@@ -2206,12 +2206,127 @@ void checkSelNegSlf6Run(void) {
 
   .pe0 { .top = top; .write = write; .spad = (top0 & 4) ? 7 : top1; }
   .pe1 { .top = top; .write = write; .spad = (4 & top0) ? 7 : top1; }
-  .pe2 { .write = write; .spad = (top0 & 0x4) ? (3 + 4) : top1; }
+  .pe2 { .write = write; .spad = (top0 & 4) ? (7 + 0) : top1; }
   .pe3 { .write = write; .spad = ((top0 & 4)) ? 7 : (top1); }
 }
 
 @kernel checkSelCst config | exec
 void checkSelCstRun(void) {
+}
+
+@emulate "sel_cst_2"
+.kernel checkSelCst2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 0) ? 0 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (0 & top0) ? 0 : top1; }
+  .pe2 { .write = write; .spad = (top0 & 0) ? (0 + 0) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & 0)) ? 0 : (top1); }
+}
+
+@kernel checkSelCst2 config | exec
+void checkSelCst2Run(void) {
+}
+
+@emulate "sel_cst_3"
+.kernel checkSelCst3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 1) ? -1 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (1 & top0) ? -1 : top1; }
+  .pe2 { .write = write; .spad = (top0 & 1) ? (-1 + 0) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & 1)) ? -1 : (top1); }
+}
+
+@kernel checkSelCst3 config | exec
+void checkSelCst3Run(void) {
+}
+
+@emulate "sel_cst_4"
+.kernel checkSelCst4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 8388608) ? 8388607 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (8388608 & top0) ? 8388607 : top1; }
+  .pe2 { .write = write; .spad = (top0 & 8388608) ? (8388607 + 0) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & 8388608)) ? 8388607 : (top1); }
+}
+
+@kernel checkSelCst4 config | exec
+void checkSelCst4Run(void) {
+}
+
+@emulate "sel_cst_5"
+.kernel checkSelCst5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & -1) ? -8388608 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (-1 & top0) ? -8388608 : top1; }
+  .pe2 { .write = write; .spad = (top0 & -1) ? (-8388608 + 0) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & -1)) ? -8388608 : (top1); }
+}
+
+@kernel checkSelCst5 config | exec
+void checkSelCst5Run(void) {
+}
+
+@emulate "sel_cst_6"
+.kernel checkSelCst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 5592405) ? 4660 : top1; }
+  .pe1 { .top = top; .write = write; .spad = (5592405 & top0) ? 4660 : top1; }
+  .pe2 { .write = write; .spad = (top0 & 5592405) ? (4660 + 0) : top1; }
+  .pe3 { .write = write; .spad = ((top0 & 5592405)) ? 4660 : (top1); }
+}
+
+@kernel checkSelCst6 config | exec
+void checkSelCst6Run(void) {
 }
 
 @emulate "sel_cst_ofb"
