@@ -8,6 +8,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 
 - [6.6.1 How to read the tables](#661-how-to-read-the-tables)
 - [6.6.2 Lot 1: 0x000 to 0x00f](#662-lot-1-0x000-to-0x00f)
+- [6.6.3 Lot 2: 0x010 to 0x01f](#663-lot-2-0x010-to-0x01f)
 
 ## 6.6.1 How to read the tables
 
@@ -50,4 +51,31 @@ Each lot of 16 opcodes has its table. A row is one operation.
 **Rules:**
 
 - The shift of the operation is ignored: `pass(x) >> n` and `cst(c) >> n` give the same words as `pass(x)` and `cst(c)`. A shift written on a number alone, `5 >> 2`, is computed at compile time.
+
+## 6.6.3 Lot 2: 0x010 to 0x01f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x010 | `a + b` | `a + b` | kept |
+| 0x014 | `x >> n` | `x` shifted to the right by `n` | kept |
+| 0x018 | `a - b` | `a - b` | kept |
+| 0x01c | not written | the same word as 0x014 | kept |
+
+```c
+.pe0 { .spad = top0 + top1; }
+.pe1 { .spad = top1 >> 3; }
+.pe2 { .spad = top0 - top1 >> 1; }
+```
+
+**Explanation of the code above:**
+
+- `pe0` adds `top0` and `top1`.
+- `pe1` shifts `top1` to the right by 3. `x` is a buffer or a `Staging` variable, and `n` is a number from 0 to 63. The shift keeps the sign: it is an arithmetic shift.
+- `pe2` subtracts `top1` from `top0`, then shifts the difference to the right by 1.
+
+**Rules:**
+
+- With `k` kept, the shift written after the operation is applied to the exact result, before the 24 low bits are kept.
+- `pass(x) >> n` is not the shift of `x`: it is the opcode 0x004, which ignores the shift ([6.6.2](#662-lot-1-0x000-to-0x00f)). `x >> n` on a buffer is the opcode 0x014.
+- With `--compat fat`, `a + b` is written with the opcode 0x030 and its number at 0 ([6.2.3](operations.md#623-how-the-opcode-is-chosen)).
 
