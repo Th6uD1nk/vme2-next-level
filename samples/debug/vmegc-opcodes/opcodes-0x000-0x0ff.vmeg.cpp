@@ -1173,3 +1173,95 @@ void checkNorRun(void) {
 @kernel checkNorCst config | exec
 void checkNorCstRun(void) {
 }
+
+@emulate "xor"
+.kernel checkXor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 ^ top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 ^ top0; }
+  .pe2 { .write = write; .spad = (top0 ^ top1); }
+  .pe3 { .write = write; .spad = top0 ^ (top1); }
+}
+
+@kernel checkXor config | exec
+void checkXorRun(void) {
+}
+
+@emulate "xor_cst"
+.kernel checkXorCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 0x55; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 0x55); }
+  .pe2 { .write = write; .spad = 0x55 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 85); }
+}
+
+@kernel checkXorCst config | exec
+void checkXorCstRun(void) {
+}
+
+@emulate "xnor"
+.kernel checkXnor direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top0 ^ top1); }
+  .pe1 { .top = top; .write = write; .spad = ~(top1 ^ top0); }
+  .pe2 { .write = write; .spad = (~(top0 ^ top1)); }
+  .pe3 { .write = write; .spad = ~(top0 ^ (top1)); }
+}
+
+@kernel checkXnor config | exec
+void checkXnorRun(void) {
+}
+
+@emulate "xnor_cst"
+.kernel checkXnorCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 ^ 0x55); }
+  .pe1 { .top = top; .write = write; .spad = ~xor(top1, 0x55); }
+  .pe2 { .write = write; .spad = ~(0x55 ^ top1); }
+  .pe3 { .write = write; .spad = (~(top1 ^ 85)); }
+}
+
+@kernel checkXnorCst config | exec
+void checkXnorCstRun(void) {
+}
