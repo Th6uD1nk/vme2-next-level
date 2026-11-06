@@ -217,6 +217,14 @@ def op_shr_dyn_u(back, front, fu, a, b, previous, state):
   return shift_right(b & 0xffffff, signed_amount(back))
 
 
+def op_shl_reg(back, front, fu, a, b, previous, state):
+  return shift_right(back, -signed_amount(front))
+
+
+def op_shr_reg(back, front, fu, a, b, previous, state):
+  return shift_right(back, signed_amount(front))
+
+
 def shift_by_register(value, b):
   amount = b & 63
   return shift_right(value, amount - 64 if amount >= 32 else amount)
@@ -266,6 +274,8 @@ HANDLERS = {
   "cst": op_cst,
   "shl_dyn": op_shl_dyn,
   "shr_dyn": op_shr_dyn,
+  "shl_reg": op_shl_reg,
+  "shr_reg": op_shr_reg,
   "shl_dyn_u": op_shl_dyn_u,
   "shr_dyn_u": op_shr_dyn_u,
   "mul_clp": op_mul_clp,
