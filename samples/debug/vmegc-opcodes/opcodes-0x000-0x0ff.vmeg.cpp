@@ -4458,14 +4458,129 @@ void checkAndRun(void) {
   Agu top = { count };
   Agu write = { count, cyc: auto };
 
-  .pe0 { .top = top; .write = write; .spad = top1 & 0xff; }
-  .pe1 { .top = top; .write = write; .spad = and(top1, 0xff); }
-  .pe2 { .write = write; .spad = 0xff & top1; }
+  .pe0 { .top = top; .write = write; .spad = top1 & 255; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, 255); }
+  .pe2 { .write = write; .spad = 255 & top1; }
   .pe3 { .write = write; .spad = (top1 & 255); }
 }
 
 @kernel checkAndCst config | exec
 void checkAndCstRun(void) {
+}
+
+@emulate "and_cst_2"
+.kernel checkAndCst2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 & 0; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, 0); }
+  .pe2 { .write = write; .spad = 0 & top1; }
+  .pe3 { .write = write; .spad = (top1 & 0); }
+}
+
+@kernel checkAndCst2 config | exec
+void checkAndCst2Run(void) {
+}
+
+@emulate "and_cst_3"
+.kernel checkAndCst3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 & -1; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, -1); }
+  .pe2 { .write = write; .spad = -1 & top1; }
+  .pe3 { .write = write; .spad = (top1 & -1); }
+}
+
+@kernel checkAndCst3 config | exec
+void checkAndCst3Run(void) {
+}
+
+@emulate "and_cst_4"
+.kernel checkAndCst4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 & 8388607; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, 8388607); }
+  .pe2 { .write = write; .spad = 8388607 & top1; }
+  .pe3 { .write = write; .spad = (top1 & 8388607); }
+}
+
+@kernel checkAndCst4 config | exec
+void checkAndCst4Run(void) {
+}
+
+@emulate "and_cst_5"
+.kernel checkAndCst5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 & 8388608; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, 8388608); }
+  .pe2 { .write = write; .spad = 8388608 & top1; }
+  .pe3 { .write = write; .spad = (top1 & 8388608); }
+}
+
+@kernel checkAndCst5 config | exec
+void checkAndCst5Run(void) {
+}
+
+@emulate "and_cst_6"
+.kernel checkAndCst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 & 5592405; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, 5592405); }
+  .pe2 { .write = write; .spad = 5592405 & top1; }
+  .pe3 { .write = write; .spad = (top1 & 5592405); }
+}
+
+@kernel checkAndCst6 config | exec
+void checkAndCst6Run(void) {
 }
 
 @emulate "nand"

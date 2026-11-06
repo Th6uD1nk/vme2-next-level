@@ -96,7 +96,7 @@ SPECS = [
   dict(id="shr_reg_u", opcode=0x0b8, lot=12, writings=["top1 >>> top0", "(top1 >>> top0)", "top1 >>> (top0)", "(top1) >>> (top0)"], expected=lambda f, b: shift_left(unsigned(b), -amount(f))),
   dict(id="shr_cst_u", opcode=0x0bc, lot=12, writings=["top1 >>> {0}", "(top1 >>> {0})", "top1 >>> ({0} + 0)", "(top1) >>> {0}"], values=[(3,), (0,), (1,), (31,), (-1,), (-32,)], expected=lambda f, b, c: shift_left(unsigned(b), -amount(c))),
   dict(id="and", opcode=0x0c0, lot=13, writings=["top0 & top1", "top1 & top0", "(top0 & top1)", "top0 & (top1)"], expected=lambda f, b: f & b),
-  dict(id="and_cst", opcode=0x0c4, lot=13, writings=["top1 & 0xff", "and(top1, 0xff)", "0xff & top1", "(top1 & 255)"], expected=lambda f, b: b & 0xff),
+  dict(id="and_cst", opcode=0x0c4, lot=13, writings=["top1 & {0}", "and(top1, {0})", "{0} & top1", "(top1 & {0})"], values=[(255,), (0,), (-1,), (8388607,), (8388608,), (5592405,)], expected=lambda f, b, c: b & c),
   dict(id="nand", opcode=0x0c8, lot=13, writings=["~(top0 & top1)", "~(top1 & top0)", "(~(top0 & top1))", "~(top0 & (top1))"], expected=lambda f, b: ~(f & b)),
   dict(id="nand_cst", opcode=0x0cc, lot=13, writings=["~(top1 & 0xff)", "~and(top1, 0xff)", "~(0xff & top1)", "(~(top1 & 255))"], expected=lambda f, b: ~(b & 0xff)),
   dict(id="or", opcode=0x0d0, lot=14, writings=["top0 | top1", "top1 | top0", "(top0 | top1)", "top0 | (top1)"], expected=lambda f, b: f | b),
