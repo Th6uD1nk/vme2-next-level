@@ -22,6 +22,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.8 cst](#638-cst)
   - [6.3.9 shrcst](#639-shrcst)
   - [6.3.10 addbyt, subbyt and addhib](#6310-addbyt-subbyt-and-addhib)
+  - [6.3.11 mulclp and mulclpneg](#6311-mulclp-and-mulclpneg)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
 - [6.6 The opcodes by range](#66-the-opcodes-by-range)
@@ -368,6 +369,24 @@ Staging s;
 
 - The sum of the bytes 0 has no function: it is written `(a & 255) + (b & 255)` ([6.6.7](opcodes-0x000-0x0ff.md#667-lot-6-0x050-to-0x05f)).
 - The shift written after `addbyt` and `subbyt` is not applied. After `addhib`, a shift of 1 doubles the result ([6.6.5](opcodes-0x000-0x0ff.md#665-lot-4-0x030-to-0x03f), [6.6.7](opcodes-0x000-0x0ff.md#667-lot-6-0x050-to-0x05f)).
+
+### 6.3.11 mulclp and mulclpneg
+
+`mulclp(f, x)` multiplies `x` by `f` when `f` is from -2 to 2, and gives zero for any other value of `f`. `mulclpneg(f, x)` does the same with the opposite of the product. `f` and `x` are buffers or `Staging` variables.
+
+```c
+.pe0 { .spad = mulclp(top0, top1); }
+.pe1 { .spad = mulclpneg(top0, top1); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` writes `top1 * top0` for the words where `top0` is -2, -1, 0, 1 or 2, and 0 for the others.
+- `pe1` writes `-(top1 * top0)` under the same condition.
+
+**Rules:**
+
+- The shift written after one of these functions is not applied ([6.6.10](opcodes-0x000-0x0ff.md#6610-lot-9-0x080-to-0x08f)).
 
 ## 6.4 sat and the shifts
 
