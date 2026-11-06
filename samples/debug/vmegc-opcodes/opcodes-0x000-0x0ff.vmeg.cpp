@@ -1248,6 +1248,144 @@ void checkShrCstOfa7Run(void) {
 void checkSubshrRun(void) {
 }
 
+@emulate "subshr_2"
+.kernel checkSubshr2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - (top1 >> 0); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top1, top0, 0); }
+  .pe2 { .write = write; .spad = (top0) - (top1 >> 0); }
+  .pe3 { .write = write; .spad = top0 - ((top1) >> 0); }
+}
+
+@kernel checkSubshr2 config | exec
+void checkSubshr2Run(void) {
+}
+
+@emulate "subshr_3"
+.kernel checkSubshr3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - (top1 >> 1); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top1, top0, 1); }
+  .pe2 { .write = write; .spad = (top0) - (top1 >> 1); }
+  .pe3 { .write = write; .spad = top0 - ((top1) >> 1); }
+}
+
+@kernel checkSubshr3 config | exec
+void checkSubshr3Run(void) {
+}
+
+@emulate "subshr_4"
+.kernel checkSubshr4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - (top1 >> 31); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top1, top0, 31); }
+  .pe2 { .write = write; .spad = (top0) - (top1 >> 31); }
+  .pe3 { .write = write; .spad = top0 - ((top1) >> 31); }
+}
+
+@kernel checkSubshr4 config | exec
+void checkSubshr4Run(void) {
+}
+
+@emulate "subshr_5"
+.kernel checkSubshr5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - (top1 >> -1); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top1, top0, -1); }
+  .pe2 { .write = write; .spad = (top0) - (top1 >> -1); }
+  .pe3 { .write = write; .spad = top0 - ((top1) >> -1); }
+}
+
+@kernel checkSubshr5 config | exec
+void checkSubshr5Run(void) {
+}
+
+@emulate "subshr_6"
+.kernel checkSubshr6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - (top1 >> -32); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top1, top0, -32); }
+  .pe2 { .write = write; .spad = (top0) - (top1 >> -32); }
+  .pe3 { .write = write; .spad = top0 - ((top1) >> -32); }
+}
+
+@kernel checkSubshr6 config | exec
+void checkSubshr6Run(void) {
+}
+
+@emulate "subshr_7"
+.kernel checkSubshr7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - (top1 >> 40); }
+  .pe1 { .top = top; .write = write; .spad = subshr(top1, top0, 40); }
+  .pe2 { .write = write; .spad = (top0) - (top1 >> 40); }
+  .pe3 { .write = write; .spad = top0 - ((top1) >> 40); }
+}
+
+@kernel checkSubshr7 config | exec
+void checkSubshr7Run(void) {
+}
+
 @emulate "shr_cst_neg_ofa"
 .kernel checkShrCstNegOfa direct {
   Int count = 256 - 1;
