@@ -21,6 +21,7 @@ This page presents the operations currently supported. The list is not complete.
   - [6.3.7 pass](#637-pass)
 - [6.4 sat and the shifts](#64-sat-and-the-shifts)
 - [6.5 Errors](#65-errors)
+- [6.6 The opcodes by range](#66-the-opcodes-by-range)
 
 ## 6.1 Operands and results
 
@@ -355,3 +356,14 @@ The messages start with `line N:`, left out here.
 | [6.4](#64-sat-and-the-shifts) | `the shift goes after the sat: sat(x, n) >> k` | a shift inside the `sat` |
 | [6.4](#64-sat-and-the-shifts) | `the shift must be 0 to 63` | a shift above 63 |
 | [6.4](#64-sat-and-the-shifts) | `an operation takes only one shift` | two shifts on the same operation |
+
+## 6.6 The opcodes by range
+
+The opcodes are listed by range, with the way to write each one and what it computes.
+
+| Range | Page |
+|---|---|
+| 0x000 to 0x0ff | [The opcodes 0x000 to 0x0ff](opcodes-0x000-0x0ff.md) |
+
+`vmegc --ops` shows the opcodes that `vmegc` writes, sorted by opcode ([1.5](running.md#15---ops)).
+
