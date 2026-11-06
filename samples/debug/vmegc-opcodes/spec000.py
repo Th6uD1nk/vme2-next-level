@@ -102,7 +102,7 @@ SPECS = [
   dict(id="or", opcode=0x0d0, lot=14, writings=["top0 | top1", "top1 | top0", "(top0 | top1)", "top0 | (top1)"], expected=lambda f, b: f | b),
   dict(id="or_cst", opcode=0x0d4, lot=14, writings=["top1 | {0}", "or(top1, {0})", "{0} | top1", "(top1 | {0})"], values=[(128,), (0,), (-1,), (8388607,), (8388608,), (5592405,)], expected=lambda f, b, c: b | c),
   dict(id="nor", opcode=0x0d8, lot=14, writings=["~(top0 | top1)", "~(top1 | top0)", "(~(top0 | top1))", "~(top0 | (top1))"], expected=lambda f, b: ~(f | b)),
-  dict(id="nor_cst", opcode=0x0dc, lot=14, writings=["~(top1 | 0x80)", "~or(top1, 0x80)", "~(0x80 | top1)", "(~(top1 | 128))"], expected=lambda f, b: ~(b | 0x80)),
+  dict(id="nor_cst", opcode=0x0dc, lot=14, writings=["~(top1 | {0})", "~or(top1, {0})", "~({0} | top1)", "(~(top1 | {0}))"], values=[(128,), (0,), (-1,), (8388607,), (8388608,), (5592405,)], expected=lambda f, b, c: ~(b | c)),
   dict(id="xor", opcode=0x0e0, lot=15, writings=["top0 ^ top1", "top1 ^ top0", "(top0 ^ top1)", "top0 ^ (top1)"], expected=lambda f, b: f ^ b),
   dict(id="xor_cst", opcode=0x0e4, lot=15, writings=["top1 ^ 0x55", "xor(top1, 0x55)", "0x55 ^ top1", "(top1 ^ 85)"], expected=lambda f, b: b ^ 0x55),
   dict(id="xnor", opcode=0x0e8, lot=15, writings=["~(top0 ^ top1)", "~(top1 ^ top0)", "(~(top0 ^ top1))", "~(top0 ^ (top1))"], expected=lambda f, b: ~(f ^ b)),
