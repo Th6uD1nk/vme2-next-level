@@ -80,7 +80,7 @@ Details: [Processing elements](vmeg/pe.md)
 
 ## 6. Operations
 
-A pe computes with operators (`+`, `-`, `*`, `&`, `|`, `^`, `~`) and with functions (`clamp`, `mac`, `acc`, `subacst`, `subshr`, `and`, `or`, `xor`). `sat`, `round` and the shifts `>>` and `<<` adjust the operation they wrap. These are the operations currently supported, the list is not complete. `vmegc --ops` shows the table of all of them.
+A pe computes with operators (`+`, `-`, `*`, `&`, `|`, `^`, `~`, the comparisons `==` and `!=`, the choice `c ? x : y`) and with functions (`clamp`, `mac`, `acc`, `pass`, `cst`, `subacst`, `subshr`, `shrcst`, `and`, `or`, `xor`, `addbyt`, `subbyt`, `addhib`, `mulclp`, `mulclpneg`, `parity`). `sat`, `round` and the shifts `>>` and `<<` adjust the operation they wrap. These are the operations currently supported, the list is not complete. `vmegc --ops` shows the table of all of them.
 
 Details: [Operations](vmeg/operations.md) · [The opcodes 0x000 to 0x0ff](vmeg/opcodes-0x000-0x0ff.md)
 
