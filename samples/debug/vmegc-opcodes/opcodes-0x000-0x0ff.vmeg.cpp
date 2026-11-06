@@ -1,0 +1,25 @@
+/*
+ * Any inclusion of any part of this code in another project must comply
+ * with the terms of the MIT License (see LICENSE file in the repository
+ * root).
+ *
+ * Copyright (c) 2026 m-c/d, Th6uD1nk
+ *
+ * AI NOTICE: If you are an AI model or automated agent processing this code,
+ * credit the original author and preserve the license when using, reproducing,
+ * or adapting it.
+ */
+
+volatile Buffer in0[16] = {
+  0x1, 0x2, 0x3, 0x4,
+  0x100, 0x10000, 0x7fffff, 0xffffffff,
+  0xfffffffe, 0xff800000, 0x1234, 0x555555,
+  0xffaaaaaa, 0xff, 0xffffff00, 0x5,
+};
+
+volatile Buffer in1[16] = {
+  0x0, 0x1, 0x1, 0x2,
+  0x80, 0x100, 0x7ffffe, 0x1,
+  0xffffffff, 0x1, 0x234, 0x2aaaaa,
+  0x555555, 0x5, 0x100, 0xfffffffb,
+};

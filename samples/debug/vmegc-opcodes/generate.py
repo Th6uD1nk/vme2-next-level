@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HEADER = """/*
@@ -60,3 +61,23 @@ def kernel(entry):
 void {name}Run(void) {{
 }}
 """
+
+
+def source(name):
+  module = load(name)
+  parts = [HEADER, f"volatile Buffer in0[16] = {{\n{words(module.IN0)}\n}};\n", f"volatile Buffer in1[16] = {{\n{words(module.IN1)}\n}};\n"]
+  parts.extend(kernel(entry) for entry in module.SPECS)
+  return "\n".join(parts)
+
+
+def main(arguments):
+  name = arguments[0] if arguments else "0x000-0x0ff"
+  path = os.path.join(HERE, f"opcodes-{name}.vmeg.cpp")
+  with open(path, "w", encoding="utf-8") as f:
+    f.write(source(name))
+  print(path)
+  return 0
+
+
+if __name__ == "__main__":
+  sys.exit(main(sys.argv[1:]))
