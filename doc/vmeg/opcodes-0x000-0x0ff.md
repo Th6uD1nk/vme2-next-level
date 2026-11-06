@@ -18,6 +18,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.10 Lot 9: 0x080 to 0x08f](#6610-lot-9-0x080-to-0x08f)
 - [6.6.11 Lot 10: 0x090 to 0x09f](#6611-lot-10-0x090-to-0x09f)
 - [6.6.12 Lot 11: 0x0a0 to 0x0af](#6612-lot-11-0x0a0-to-0x0af)
+- [6.6.13 Lot 12: 0x0b0 to 0x0bf](#6613-lot-12-0x0b0-to-0x0bf)
 
 ## 6.6.1 How to read the tables
 
@@ -347,5 +348,33 @@ Each lot of 16 opcodes has its table. A row is one operation.
 - `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). With two operands, the second one is the amount of the shift.
 - The amount is read as a signed number of 6 bits: from 0 to 31 the shift goes in the direction of the operator, from -32 to -1 it goes the other way. Only the 6 low bits count.
 - `x >> n` written with a number is the opcode 0x014, where the amount `n` goes from 0 to 63 ([6.6.3](#663-lot-2-0x010-to-0x01f)). `shrcst(x, c)` reads `c` as a signed number of 6 bits.
+- The shift written after one of these operations is not applied.
+
+## 6.6.13 Lot 12: 0x0b0 to 0x0bf
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x0b0 | `a <<< b` | `a` as an unsigned number of 24 bits shifted to the left by `b`, without the sign when it shifts to the right | ignored |
+| 0x0b4 | `x <<< c` | `x` as an unsigned number of 24 bits shifted to the left by `c`, without the sign when it shifts to the right | ignored |
+| 0x0b8 | `a >>> b` | `a` as an unsigned number of 24 bits shifted to the right by `b`, without the sign | ignored |
+| 0x0bc | `x >>> c` | `x` as an unsigned number of 24 bits shifted to the right by `c`, without the sign | ignored |
+
+```c
+.pe0 { .spad = top1 <<< top0; }
+.pe1 { .spad = top1 <<< 3; }
+.pe2 { .spad = top1 >>> top0; }
+.pe3 { .spad = top1 >>> 3; }
+```
+
+**Explanation of the code above:**
+
+- `pe0` shifts `top1` to the left by the words of `top0`, and `pe1` by 3. The left shift gives the same word as the one of [6.6.12](#6612-lot-11-0x0a0-to-0x0af).
+- `pe2` shifts `top1` to the right by the words of `top0`, and `pe3` by 3. The bits that come in on the left are zeros, where `>>` repeats the sign.
+
+**Rules:**
+
+- `a`, `b` and `x` are buffers or `Staging` variables, and the number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)). With two operands, the second one is the amount of the shift.
+- The amount is read as a signed number of 6 bits: from 0 to 31 the shift goes in the direction of the operator, from -32 to -1 it goes the other way. Only the 6 low bits of a word count.
+- A number `c` outside the range -32 to 31 gives the error `no opcode covers this expression`.
 - The shift written after one of these operations is not applied.
 
