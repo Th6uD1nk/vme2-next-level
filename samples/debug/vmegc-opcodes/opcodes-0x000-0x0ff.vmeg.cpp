@@ -397,6 +397,121 @@ void checkSubRun(void) {
 void checkAddCstRun(void) {
 }
 
+@emulate "add_cst_2"
+.kernel checkAddCst2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 + 0; }
+  .pe1 { .top = top; .write = write; .spad = 0 + top1; }
+  .pe2 { .write = write; .spad = (top1) + 0; }
+  .pe3 { .write = write; .spad = (top1 + 0); }
+}
+
+@kernel checkAddCst2 config | exec
+void checkAddCst2Run(void) {
+}
+
+@emulate "add_cst_3"
+.kernel checkAddCst3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 + -1; }
+  .pe1 { .top = top; .write = write; .spad = -1 + top1; }
+  .pe2 { .write = write; .spad = (top1) + -1; }
+  .pe3 { .write = write; .spad = (top1 + -1); }
+}
+
+@kernel checkAddCst3 config | exec
+void checkAddCst3Run(void) {
+}
+
+@emulate "add_cst_4"
+.kernel checkAddCst4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 + 8388607; }
+  .pe1 { .top = top; .write = write; .spad = 8388607 + top1; }
+  .pe2 { .write = write; .spad = (top1) + 8388607; }
+  .pe3 { .write = write; .spad = (top1 + 8388607); }
+}
+
+@kernel checkAddCst4 config | exec
+void checkAddCst4Run(void) {
+}
+
+@emulate "add_cst_5"
+.kernel checkAddCst5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 + -8388608; }
+  .pe1 { .top = top; .write = write; .spad = -8388608 + top1; }
+  .pe2 { .write = write; .spad = (top1) + -8388608; }
+  .pe3 { .write = write; .spad = (top1 + -8388608); }
+}
+
+@kernel checkAddCst5 config | exec
+void checkAddCst5Run(void) {
+}
+
+@emulate "add_cst_6"
+.kernel checkAddCst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 + 4660; }
+  .pe1 { .top = top; .write = write; .spad = 4660 + top1; }
+  .pe2 { .write = write; .spad = (top1) + 4660; }
+  .pe3 { .write = write; .spad = (top1 + 4660); }
+}
+
+@kernel checkAddCst6 config | exec
+void checkAddCst6Run(void) {
+}
+
 @emulate "neg_ofb"
 .kernel checkNegOfb direct {
   Int count = 256 - 1;
@@ -418,6 +533,98 @@ void checkAddCstRun(void) {
 
 @kernel checkNegOfb config | exec
 void checkNegOfbRun(void) {
+}
+
+@emulate "neg_ofb_2"
+.kernel checkNegOfb2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 0 - top1; }
+  .pe1 { .top = top; .write = write; .spad = (0 - top1); }
+  .pe2 { .write = write; .spad = 0 - (top1); }
+  .pe3 { .write = write; .spad = (0) - top1; }
+}
+
+@kernel checkNegOfb2 config | exec
+void checkNegOfb2Run(void) {
+}
+
+@emulate "neg_ofb_3"
+.kernel checkNegOfb3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -1 - top1; }
+  .pe1 { .top = top; .write = write; .spad = (-1 - top1); }
+  .pe2 { .write = write; .spad = -1 - (top1); }
+  .pe3 { .write = write; .spad = (-1) - top1; }
+}
+
+@kernel checkNegOfb3 config | exec
+void checkNegOfb3Run(void) {
+}
+
+@emulate "neg_ofb_4"
+.kernel checkNegOfb4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = 8388607 - top1; }
+  .pe1 { .top = top; .write = write; .spad = (8388607 - top1); }
+  .pe2 { .write = write; .spad = 8388607 - (top1); }
+  .pe3 { .write = write; .spad = (8388607) - top1; }
+}
+
+@kernel checkNegOfb4 config | exec
+void checkNegOfb4Run(void) {
+}
+
+@emulate "neg_ofb_5"
+.kernel checkNegOfb5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = -8388608 - top1; }
+  .pe1 { .top = top; .write = write; .spad = (-8388608 - top1); }
+  .pe2 { .write = write; .spad = -8388608 - (top1); }
+  .pe3 { .write = write; .spad = (-8388608) - top1; }
+}
+
+@kernel checkNegOfb5 config | exec
+void checkNegOfb5Run(void) {
 }
 
 @emulate "add_ofa"
