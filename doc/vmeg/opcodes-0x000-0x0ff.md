@@ -10,6 +10,7 @@ This page lists, by lot of 16 opcodes, the operations of the range 0x000-0x0ff t
 - [6.6.2 Lot 1: 0x000 to 0x00f](#662-lot-1-0x000-to-0x00f)
 - [6.6.3 Lot 2: 0x010 to 0x01f](#663-lot-2-0x010-to-0x01f)
 - [6.6.4 Lot 3: 0x020 to 0x02f](#664-lot-3-0x020-to-0x02f)
+- [6.6.5 Lot 4: 0x030 to 0x03f](#665-lot-4-0x030-to-0x03f)
 
 ## 6.6.1 How to read the tables
 
@@ -105,4 +106,33 @@ Each lot of 16 opcodes has its table. A row is one operation.
 
 - `x` is a buffer or a `Staging` variable. The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
 - With `k` kept, the shift written after the operation is applied to the exact result, before the 24 low bits are kept.
+
+## 6.6.5 Lot 4: 0x030 to 0x03f
+
+| Opcode | Written | Result | k |
+|---|---|---|---|
+| 0x030 | `a + b + c` | `(a + b) + c` | ignored |
+| 0x034 | `a - b + c`, `subacst(a, b, c)` | `(a - b) + c` | ignored |
+| 0x038 | `addbyt(a, b)` | the byte 0 of `a` plus the byte 0 of `b` plus the byte 1 of `a` plus the byte 1 of `b` | ignored |
+| 0x03c | `subbyt(a, b)` | the byte 0 of `a` minus the byte 0 of `b`, plus the byte 1 of `a` minus the byte 1 of `b` | ignored |
+
+```c
+.pe0 { .spad = top0 + top1 + 5; }
+.pe1 { .spad = top0 - top1 + 5; }
+.pe2 { .spad = addbyt(top0, top1); }
+.pe3 { .spad = subbyt(top0, top1); }
+```
+
+**Explanation of the code above:**
+
+- `pe0` adds `top0`, `top1` and the number 5. The number can be written on either side: `5 + (top0 + top1)` is the same operation.
+- `pe1` subtracts `top1` from `top0`, then adds the number 5.
+- `pe2` adds the two low bytes of `top0` and `top1` and the two bytes that follow them.
+- `pe3` does the same with differences: the difference of the low bytes plus the difference of the bytes that follow.
+
+**Rules:**
+
+- The byte 0 of a word is its 8 low bits, the byte 1 is the next 8 bits. The bits above are not used.
+- `a` and `b` are buffers or `Staging` variables. The number `c` is known at compile time ([2.6](language.md#26-numbers-macros-and-unknown-names)).
+- The shift written after one of these operations is not applied.
 
