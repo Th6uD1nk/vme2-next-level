@@ -989,3 +989,95 @@ void checkShrRegURun(void) {
 @kernel checkShrCstU config | exec
 void checkShrCstURun(void) {
 }
+
+@emulate "and"
+.kernel checkAnd direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 & top1; }
+  .pe1 { .top = top; .write = write; .spad = top1 & top0; }
+  .pe2 { .write = write; .spad = (top0 & top1); }
+  .pe3 { .write = write; .spad = top0 & (top1); }
+}
+
+@kernel checkAnd config | exec
+void checkAndRun(void) {
+}
+
+@emulate "and_cst"
+.kernel checkAndCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 & 0xff; }
+  .pe1 { .top = top; .write = write; .spad = and(top1, 0xff); }
+  .pe2 { .write = write; .spad = 0xff & top1; }
+  .pe3 { .write = write; .spad = (top1 & 255); }
+}
+
+@kernel checkAndCst config | exec
+void checkAndCstRun(void) {
+}
+
+@emulate "nand"
+.kernel checkNand direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top0 & top1); }
+  .pe1 { .top = top; .write = write; .spad = ~(top1 & top0); }
+  .pe2 { .write = write; .spad = (~(top0 & top1)); }
+  .pe3 { .write = write; .spad = ~(top0 & (top1)); }
+}
+
+@kernel checkNand config | exec
+void checkNandRun(void) {
+}
+
+@emulate "nand_cst"
+.kernel checkNandCst direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 & 0xff); }
+  .pe1 { .top = top; .write = write; .spad = ~and(top1, 0xff); }
+  .pe2 { .write = write; .spad = ~(0xff & top1); }
+  .pe3 { .write = write; .spad = (~(top1 & 255)); }
+}
+
+@kernel checkNandCst config | exec
+void checkNandCstRun(void) {
+}
