@@ -918,12 +918,150 @@ void checkSubBytRun(void) {
 
   .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> 3); }
   .pe1 { .top = top; .write = write; .spad = (top1 >> 3) + top0; }
-  .pe2 { .write = write; .spad = top0 + (top1 >> 1 + 2); }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (3 + 0)); }
   .pe3 { .write = write; .spad = (top0) + ((top1) >> 3); }
 }
 
 @kernel checkAddShf config | exec
 void checkAddShfRun(void) {
+}
+
+@emulate "add_shf_2"
+.kernel checkAddShf2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> 0); }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> 0) + top0; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (0 + 0)); }
+  .pe3 { .write = write; .spad = (top0) + ((top1) >> 0); }
+}
+
+@kernel checkAddShf2 config | exec
+void checkAddShf2Run(void) {
+}
+
+@emulate "add_shf_3"
+.kernel checkAddShf3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> 1); }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> 1) + top0; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (1 + 0)); }
+  .pe3 { .write = write; .spad = (top0) + ((top1) >> 1); }
+}
+
+@kernel checkAddShf3 config | exec
+void checkAddShf3Run(void) {
+}
+
+@emulate "add_shf_4"
+.kernel checkAddShf4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> 31); }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> 31) + top0; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (31 + 0)); }
+  .pe3 { .write = write; .spad = (top0) + ((top1) >> 31); }
+}
+
+@kernel checkAddShf4 config | exec
+void checkAddShf4Run(void) {
+}
+
+@emulate "add_shf_5"
+.kernel checkAddShf5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> -1); }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> -1) + top0; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (-1 + 0)); }
+  .pe3 { .write = write; .spad = (top0) + ((top1) >> -1); }
+}
+
+@kernel checkAddShf5 config | exec
+void checkAddShf5Run(void) {
+}
+
+@emulate "add_shf_6"
+.kernel checkAddShf6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> -32); }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> -32) + top0; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (-32 + 0)); }
+  .pe3 { .write = write; .spad = (top0) + ((top1) >> -32); }
+}
+
+@kernel checkAddShf6 config | exec
+void checkAddShf6Run(void) {
+}
+
+@emulate "add_shf_7"
+.kernel checkAddShf7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + (top1 >> 40); }
+  .pe1 { .top = top; .write = write; .spad = (top1 >> 40) + top0; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> (40 + 0)); }
+  .pe3 { .write = write; .spad = (top0) + ((top1) >> 40); }
+}
+
+@kernel checkAddShf7 config | exec
+void checkAddShf7Run(void) {
 }
 
 @emulate "shr_cst_ofa"

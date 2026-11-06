@@ -40,6 +40,10 @@ def shift_left(v, n):
   return v << n if n >= 0 else v >> -n
 
 
+def shifted_right(v, n):
+  return shift_left(v, -amount(n))
+
+
 def byte0(v):
   return v & 0xff
 
@@ -60,7 +64,7 @@ SPECS = [
   dict(id="subacst", opcode=0x034, lot=4, writings=["top0 - top1 + {0}", "subacst(top0, top1, {0})", "(top0 - top1) + {0}", "{0} + (top0 - top1)"], values=[(5,), (-1,), (8388607,), (-8388608,), (4660,)], expected=lambda f, b, c: f - b + c),
   dict(id="add_byt", opcode=0x038, lot=4, writings=["addbyt(top0, top1)", "addbyt(top1, top0)", "addbyt( top0 , top1 )", "(addbyt(top0, top1))"], expected=lambda f, b: byte0(f) + byte0(b) + byte1(f) + byte1(b)),
   dict(id="sub_byt", opcode=0x03c, lot=4, writings=["subbyt(top0, top1)", "(subbyt(top0, top1))", "subbyt( top0 , top1 )", "subbyt(top0,top1)"], expected=lambda f, b: byte0(f) - byte0(b) + byte1(f) - byte1(b)),
-  dict(id="add_shf", opcode=0x040, lot=5, writings=["top0 + (top1 >> 3)", "(top1 >> 3) + top0", "top0 + (top1 >> 1 + 2)", "(top0) + ((top1) >> 3)"], expected=lambda f, b: f + (b >> 3)),
+  dict(id="add_shf", opcode=0x040, lot=5, writings=["top0 + (top1 >> {0})", "(top1 >> {0}) + top0", "top0 + (top1 >> ({0} + 0))", "(top0) + ((top1) >> {0})"], values=[(3,), (0,), (1,), (31,), (-1,), (-32,), (40,)], expected=lambda f, b, n: f + shifted_right(b, n)),
   dict(id="shr_cst_ofa", opcode=0x044, lot=5, writings=["(top1 >> 3) + 5", "5 + (top1 >> 3)", "((top1 >> 3)) + 5", "(top1 >> 3) + (2 + 3)"], expected=lambda f, b: (b >> 3) + 5),
   dict(id="subshr", opcode=0x048, lot=5, writings=["top0 - (top1 >> 3)", "subshr(top1, top0, 3)", "(top0) - (top1 >> 3)", "top0 - ((top1) >> 3)"], expected=lambda f, b: f - (b >> 3)),
   dict(id="shr_cst_neg_ofa", opcode=0x04c, lot=5, writings=["5 - (top1 >> 3)", "(5) - (top1 >> 3)", "(2 + 3) - (top1 >> 3)", "5 - ((top1) >> 3)"], expected=lambda f, b: 5 - (b >> 3)),
