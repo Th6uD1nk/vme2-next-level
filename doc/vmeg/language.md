@@ -148,7 +148,7 @@ An expression between numbers uses these operators, from the strongest to the we
 | Level | Operators |
 |---|---|
 | 1 | `-` (negation), `~` (complement), parentheses |
-| 2 | `*` |
+| 2 | `*` `/` `%` |
 | 3 | `+` `-` |
 | 4 | `<<` `>>` |
 | 5 | `&` |
@@ -160,6 +160,9 @@ An expression between numbers uses these operators, from the strongest to the we
 | `1 + 2 * 3` | `7` |
 | `(1 + 2) * 3` | `9` |
 | `10 - 2 - 3` | `5` |
+| `7 / 2` | `3` |
+| `-7 / 2` | `-3` |
+| `7 % 3` | `1` |
 | `1 << 2 + 1` | `8` |
 | `6 & 3 + 1` | `4` |
 | `1 \| 6 & 3` | `3` |
@@ -171,7 +174,7 @@ The operands are numbers, `Int` names, loop variables and macros ([2.6](#26-numb
 
 Between numbers, `<<` and `>>` are the plain C shifts. On the result of an operation of a pe they apply to that result, see [Operations](operations.md).
 
-Currently not supported: `/`, `%` and the comparisons.
+The division gives the integer part of the quotient, truncated toward zero as in C, and `%` is the remainder of that division. Currently not supported: the comparisons.
 
 ## 2.6 Numbers, macros and unknown names
 
