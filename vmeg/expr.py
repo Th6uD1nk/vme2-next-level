@@ -21,6 +21,8 @@ OPERATORS = {
   "/": divide,
   "%": modulo,
   ">>": lambda a, b: a >> b,
+  "==": lambda a, b: int(a == b),
+  "!=": lambda a, b: int(a != b),
   ">>>": lambda a, b: logical_shift(a, -b),
   "<<<": lambda a, b: logical_shift(a, b),
   "<<": lambda a, b: a << b,

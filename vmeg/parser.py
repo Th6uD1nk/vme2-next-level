@@ -217,10 +217,30 @@ def accept_single(p, symbol):
   return True
 
 
-def parse_and(p):
+def accept_equality(p):
+  tok = p.peek()
+  following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+  if tok is None or following is None or tok[0] != "punct" or following[0] != "punct" or following[1] != "=" or tok[3] != following[2]:
+    return None
+  if tok[1] in ("=", "!"):
+    p.i += 2
+    return tok[1] + "="
+  return None
+
+
+def parse_equality(p):
   left = parse_shift(p)
+  while True:
+    op = accept_equality(p)
+    if op is None:
+      return left
+    left = ("bin", op, left, parse_shift(p))
+
+
+def parse_and(p):
+  left = parse_equality(p)
   while accept_single(p, "&"):
-    left = ("bin", "&", left, parse_shift(p))
+    left = ("bin", "&", left, parse_equality(p))
   return left
 
 

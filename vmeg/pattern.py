@@ -1,3 +1,4 @@
+from vmeg.expr import fold
 from vmeg.parser import Parser, parse_expr
 from vmeg.scanner import tokens
 
@@ -8,7 +9,7 @@ def parse_pattern(text):
   tree = parse_expr(p)
   if p.peek() is not None:
     p.error("unexpected text after the pattern")
-  return tree
+  return fold(tree, {})
 
 
 COMMUTATIVE = ("+", "*", "&", "|", "^")
