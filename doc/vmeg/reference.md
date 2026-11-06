@@ -97,6 +97,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `acc` | [6.3.5](operations.md#635-acc) |
 | `and`, `or`, `xor` | [6.3.6](operations.md#636-and-or-and-xor) |
 | `sat`, `round`, `>>`, `<<` | [6.4](operations.md#64-sat-and-the-shifts) |
+| the opcodes 0x000 to 0x0ff | [6.6](operations.md#66-the-opcodes-by-range) |
 
 ## 15.7 Staging
 
