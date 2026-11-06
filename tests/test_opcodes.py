@@ -224,6 +224,12 @@ class LogicalShiftTest(unittest.TestCase):
         kernel_lines(body, None)
 
 
+class XnorTest(unittest.TestCase):
+  def test_the_complement_of_an_exclusive_or_of_two_buffers_is_one_opcode(self):
+    self.assertEqual(kernel_lines(".spad = ~(top0 ^ top1);", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, TOP_1), fu_code(OP_XNR));"])
+    self.assertEqual(codes(".spad = ~(top0 ^ 5);"), ["OP_XOR_CST_NOT"])
+
+
 class ShiftTest(unittest.TestCase):
   def test_a_shift_inside_a_pattern_finds_its_opcode_like_the_function_writing(self):
     expected = ("fu_code(OP_SUB_OFB)", [("B", "2")])
