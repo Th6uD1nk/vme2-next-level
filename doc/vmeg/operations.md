@@ -421,7 +421,7 @@ Staging s;
 | `sat(op, bits)` | limits the result of `op` to `bits` bits, signed: from `-2^(bits-1)` to `2^(bits-1)-1`. `bits` is from 0 to 31, and 0 means no saturation |
 | `round(op)` | rounds the shift of `op` to the nearest, a half goes up, instead of rounding down. It acts on the shift of an addition, of `a - b` and of a product. It does nothing on `subacst`, `subshr` and `(a >> n) - b` |
 | `op >> n` | shifts the result of `op` to the right by `n`, from 0 to 63. The operations of the lots 2 and 3, the product, `mac` and `acc` apply it. The other operations ignore it ([6.6](#66-the-opcodes-by-range)) |
-| `op << n` | the rotary shift of the result by `n`, from 0 to 63. On a buffer or a `Staging` variable alone, `x << c` is the opcode `0x0a4` instead |
+| `op << n` | writes the shift `64 - n` of the operation, `n` from 0 to 63. The operations that apply the shift then shift their result to the right by `64 - n`. On a buffer or a `Staging` variable alone, `x << c` is the opcode `0x0a4` instead |
 
 - `sat(top0, 7)` and `round(top0)` wrap a buffer: the operation is `pass` with the `sat` or the `round`. `top0 >> 2` is the opcode `0x014`, which shifts `top0` ([6.6.3](opcodes-0x000-0x0ff.md#663-lot-2-0x010-to-0x01f)).
 - An operation takes one `sat`, one `round` and one shift. When `sat` and a shift are used, the shift goes after the `sat`: `sat(x, 7) >> 2`.
