@@ -368,3 +368,95 @@ void checkSubshrRun(void) {
 @kernel checkShrCstNegOfa config | exec
 void checkShrCstNegOfaRun(void) {
 }
+
+@emulate "shrsub"
+.kernel checkShrsub direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 >> 3) - top0; }
+  .pe1 { .top = top; .write = write; .spad = ((top1 >> 3)) - top0; }
+  .pe2 { .write = write; .spad = (top1 >> 3) - (top0); }
+  .pe3 { .write = write; .spad = ((top1) >> 3) - top0; }
+}
+
+@kernel checkShrsub config | exec
+void checkShrsubRun(void) {
+}
+
+@emulate "shr_cst_ofs"
+.kernel checkShrCstOfs direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 >> 3) - 5; }
+  .pe1 { .top = top; .write = write; .spad = ((top1 >> 3)) - 5; }
+  .pe2 { .write = write; .spad = (top1 >> 3) - (2 + 3); }
+  .pe3 { .write = write; .spad = ((top1) >> 3) - 5; }
+}
+
+@kernel checkShrCstOfs config | exec
+void checkShrCstOfsRun(void) {
+}
+
+@emulate "add_hib"
+.kernel checkAddHib direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = addhib(top1, top0); }
+  .pe2 { .write = write; .spad = addhib( top0 , top1 ); }
+  .pe3 { .write = write; .spad = (addhib(top0, top1)); }
+}
+
+@kernel checkAddHib config | exec
+void checkAddHibRun(void) {
+}
+
+@emulate "add_lob"
+.kernel checkAddLob direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = (top1 & 0xff) + (top0 & 0xff); }
+  .pe2 { .write = write; .spad = ((top0 & 255)) + ((top1 & 255)); }
+  .pe3 { .write = write; .spad = (255 & top0) + (255 & top1); }
+}
+
+@kernel checkAddLob config | exec
+void checkAddLobRun(void) {
+}

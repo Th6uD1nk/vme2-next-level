@@ -39,4 +39,8 @@ SPECS = [
   dict(id="shr_cst_ofa", opcode=0x044, lot=5, writings=["(top1 >> 3) + 5", "5 + (top1 >> 3)", "((top1 >> 3)) + 5", "(top1 >> 3) + (2 + 3)"], expected=lambda f, b: (b >> 3) + 5),
   dict(id="subshr", opcode=0x048, lot=5, writings=["top0 - (top1 >> 3)", "subshr(top1, top0, 3)", "(top0) - (top1 >> 3)", "top0 - ((top1) >> 3)"], expected=lambda f, b: f - (b >> 3)),
   dict(id="shr_cst_neg_ofa", opcode=0x04c, lot=5, writings=["5 - (top1 >> 3)", "(5) - (top1 >> 3)", "(2 + 3) - (top1 >> 3)", "5 - ((top1) >> 3)"], expected=lambda f, b: 5 - (b >> 3)),
+  dict(id="shrsub", opcode=0x050, lot=6, writings=["(top1 >> 3) - top0", "((top1 >> 3)) - top0", "(top1 >> 3) - (top0)", "((top1) >> 3) - top0"], expected=lambda f, b: (b >> 3) - f),
+  dict(id="shr_cst_ofs", opcode=0x054, lot=6, writings=["(top1 >> 3) - 5", "((top1 >> 3)) - 5", "(top1 >> 3) - (2 + 3)", "((top1) >> 3) - 5"], expected=lambda f, b: (b >> 3) - 5),
+  dict(id="add_hib", opcode=0x058, lot=6, writings=["addhib(top0, top1)", "addhib(top1, top0)", "addhib( top0 , top1 )", "(addhib(top0, top1))"], expected=lambda f, b: byte1(f) + byte1(b)),
+  dict(id="add_lob", opcode=0x05c, lot=6, writings=["(top0 & 255) + (top1 & 255)", "(top1 & 0xff) + (top0 & 0xff)", "((top0 & 255)) + ((top1 & 255))", "(255 & top0) + (255 & top1)"], expected=lambda f, b: byte0(f) + byte0(b)),
 ]
