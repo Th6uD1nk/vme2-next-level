@@ -29,4 +29,6 @@ SPECS = [
   dict(id="add", opcode=0x010, lot=2, writings=["top0 + top1", "top1 + top0", "(top0 + top1)", "top0 + (top1)"], expected=lambda f, b: f + b),
   dict(id="bak_shr", opcode=0x014, lot=2, writings=["top1 >> 3", "(top1 >> 3)", "top1 >> (1 + 2)", "(top1) >> 3"], expected=lambda f, b: b >> 3),
   dict(id="sub", opcode=0x018, lot=2, writings=["top0 - top1", "(top0 - top1)", "top0 - (top1)", "(top0) - (top1)"], expected=lambda f, b: f - b),
+  dict(id="add_cst", opcode=0x024, lot=3, writings=["top1 + 3", "3 + top1", "(top1) + 3", "(top1 + 3)"], expected=lambda f, b: b + 3),
+  dict(id="neg_ofb", opcode=0x02c, lot=3, writings=["7 - top1", "(7 - top1)", "7 - (top1)", "(7) - top1"], expected=lambda f, b: 7 - b),
 ]
