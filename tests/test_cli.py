@@ -84,6 +84,19 @@ class KernelOperationsTest(unittest.TestCase):
     self.assertIn("0x030  a + b + c  ", lines[2])
     self.assertTrue(lines[2].endswith("a = top0, b = base0, c = 0"))
 
+class RemapListTest(unittest.TestCase):
+  def test_the_listing_shows_the_opcode_that_a_remap_writes(self):
+    source = SOURCE.replace(".spad = top0 + base0 + 5;", ".remap = { operator: \"+\", primary: 0x038 }; .spad = top0 + base0 + 5;")
+    with tempfile.TemporaryDirectory() as folder:
+      path = os.path.join(folder, "main.vmeg.c")
+      with open(path, "w") as f:
+        f.write(source)
+      out = io.StringIO()
+      with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+        main(["--list", "--kernel", "run", path])
+    self.assertIn("0x038  a + b + c  ", out.getvalue().splitlines()[1])
+
+
 class OperationsListTest(unittest.TestCase):
   def test_the_ops_option_lists_the_operations_and_ends_without_error(self):
     out = io.StringIO()
