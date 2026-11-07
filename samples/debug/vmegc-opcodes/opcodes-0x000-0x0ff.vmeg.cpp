@@ -2122,6 +2122,52 @@ void checkShrsub6Run(void) {
 void checkShrsub7Run(void) {
 }
 
+@emulate "shrsub_8"
+.kernel checkShrsub8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 >> 16777215) - top0; }
+  .pe1 { .top = top; .write = write; .spad = ((top1 >> 16777215)) - top0; }
+  .pe2 { .write = write; .spad = (top1 >> 16777215) - (top0); }
+  .pe3 { .write = write; .spad = ((top1) >> 16777215) - top0; }
+}
+
+@kernel checkShrsub8 config | exec
+void checkShrsub8Run(void) {
+}
+
+@emulate "shrsub_9"
+.kernel checkShrsub9 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 >> 4278190083) - top0; }
+  .pe1 { .top = top; .write = write; .spad = ((top1 >> 4278190083)) - top0; }
+  .pe2 { .write = write; .spad = (top1 >> 4278190083) - (top0); }
+  .pe3 { .write = write; .spad = ((top1) >> 4278190083) - top0; }
+}
+
+@kernel checkShrsub9 config | exec
+void checkShrsub9Run(void) {
+}
+
 @emulate "shr_cst_ofs"
 .kernel checkShrCstOfs direct {
   Int count = 256 - 1;
@@ -2281,6 +2327,52 @@ void checkShrCstOfs6Run(void) {
 
 @kernel checkShrCstOfs7 config | exec
 void checkShrCstOfs7Run(void) {
+}
+
+@emulate "shr_cst_ofs_8"
+.kernel checkShrCstOfs8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 >> 16777215) - 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = ((top1 >> 16777215)) - 4278190083; }
+  .pe2 { .write = write; .spad = (top1 >> 16777215) - (4278190083); }
+  .pe3 { .write = write; .spad = ((top1) >> 16777215) - 4278190083; }
+}
+
+@kernel checkShrCstOfs8 config | exec
+void checkShrCstOfs8Run(void) {
+}
+
+@emulate "shr_cst_ofs_9"
+.kernel checkShrCstOfs9 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 >> 4278190083) - 16777215; }
+  .pe1 { .top = top; .write = write; .spad = ((top1 >> 4278190083)) - 16777215; }
+  .pe2 { .write = write; .spad = (top1 >> 4278190083) - (16777215); }
+  .pe3 { .write = write; .spad = ((top1) >> 4278190083) - 16777215; }
+}
+
+@kernel checkShrCstOfs9 config | exec
+void checkShrCstOfs9Run(void) {
 }
 
 @emulate "add_hib"
