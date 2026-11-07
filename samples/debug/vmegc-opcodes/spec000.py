@@ -44,6 +44,10 @@ def shifted_right(v, n):
   return shift_left(v, -amount(n))
 
 
+def reg(v):
+  return signed24(v)
+
+
 def byte0(v):
   return v & 0xff
 
