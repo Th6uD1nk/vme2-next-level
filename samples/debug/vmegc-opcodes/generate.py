@@ -73,6 +73,10 @@ void {name}Run(void) {{
 def entries(module):
   found = []
   for entry in module.SPECS:
+    if "sets" in entry:
+      for index, name in enumerate(entry["sets"]):
+        found.append(dict(entry, id=entry["id"] if index == 0 else f"{entry['id']}_{index + 1}", inputs=name))
+      continue
     values = entry.get("values")
     if values is None:
       found.append(entry)
