@@ -369,14 +369,18 @@ class RemapTest(unittest.TestCase):
       "vme_pe0(vme_fu(SECONDARY), vme_mux(STAGING_0, TOP_1), VME_FU_OPCODE_MUL_VEC_RSHIFT);",
     ])
 
-  def test_a_remap_warns_for_a_value_without_register_and_for_an_opcode_without_the_operator(self):
+  def test_a_remap_writes_a_value_without_register_with_a_warning_and_warns_for_an_opcode_without_the_operator(self):
     def warnings_of(body):
       text = ".kernel k direct {\n  .pe0 { " + body + " }\n}\n@kernel k config | exec\nvoid f() { }\n"
       found = []
       generate(text, find_blocks(text)[0], found, None)
       return [message for _, message in found if "remap" in message]
     self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x010 }; .spad = top0 + base0 + 5;"), [
-      "the value of 'c' is not written, the opcode 0x010 of .remap primary has no register for it",
+      "the opcode 0x010 of .remap primary has no register for 'c', its value is written as it is in the register A",
+    ])
+    self.assertEqual(kernel_lines(".remap = { operator: \"+\", primary: 0x038 }; .spad = top0 + base0 + 5;", None), [
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(0x038));",
+      "vme_pe0(fu_reg(PRIMARY, A), 5);",
     ])
     self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x030 }; .spad = top0 + base0;"), [])
     self.assertEqual(warnings_of(".remap = { operator: \"+\", primary: 0x220 }; .spad = top0 + base0;"), [
