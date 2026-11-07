@@ -57,6 +57,27 @@ def byte1(v):
 
 
 
+
+def add_bytes(f, b):
+  return byte0(f) + byte0(b) + byte1(f) + byte1(b)
+
+
+def sub_bytes(f, b):
+  return byte0(f) - byte0(b) + byte1(f) - byte1(b)
+
+
+def add_high(f, b):
+  return byte1(f) + byte1(b)
+
+
+def add_low(f, b):
+  return byte0(f) + byte0(b)
+
+
+def doubled(function):
+  return lambda f, b: 2 * function(f, b)
+
+
 BYTES = [0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff]
 HIGH = [0x00, 0x01, 0x80, 0xff]
 SET_SIZE = 256
