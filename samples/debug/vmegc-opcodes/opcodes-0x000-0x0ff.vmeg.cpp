@@ -2366,6 +2366,29 @@ void checkAddBytSet7Run(void) {
 void checkAddBytSet8Run(void) {
 }
 
+@emulate "add_byt_k"
+.kernel checkAddBytK direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addbyt(top0, top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = addbyt(top0, top1) >> 2; }
+  .pe2 { .write = write; .spad = addbyt(top0, top1) >> 31; }
+  .pe3 { .write = write; .spad = addbyt(top0, top1) << 1; }
+}
+
+@kernel checkAddBytK config | exec
+void checkAddBytKRun(void) {
+}
+
 @emulate "sub_byt"
 .kernel checkSubByt direct {
   Int count = 256 - 1;
@@ -2571,6 +2594,29 @@ void checkSubBytSet7Run(void) {
 
 @kernel checkSubBytSet8 config | exec
 void checkSubBytSet8Run(void) {
+}
+
+@emulate "sub_byt_k"
+.kernel checkSubBytK direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = subbyt(top0, top1) >> 2; }
+  .pe2 { .write = write; .spad = subbyt(top0, top1) >> 31; }
+  .pe3 { .write = write; .spad = subbyt(top0, top1) << 1; }
+}
+
+@kernel checkSubBytK config | exec
+void checkSubBytKRun(void) {
 }
 
 @emulate "add_shf"
@@ -4045,6 +4091,29 @@ void checkAddHibSet7Run(void) {
 void checkAddHibSet8Run(void) {
 }
 
+@emulate "add_hib_k"
+.kernel checkAddHibK direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = addhib(top0, top1) >> 2; }
+  .pe2 { .write = write; .spad = addhib(top0, top1) >> 31; }
+  .pe3 { .write = write; .spad = addhib(top0, top1) << 1; }
+}
+
+@kernel checkAddHibK config | exec
+void checkAddHibKRun(void) {
+}
+
 @emulate "add_lob_set"
 .kernel checkAddLobSet direct {
   Int count = 256 - 1;
@@ -4227,6 +4296,29 @@ void checkAddLobSet7Run(void) {
 
 @kernel checkAddLobSet8 config | exec
 void checkAddLobSet8Run(void) {
+}
+
+@emulate "add_lob_k"
+.kernel checkAddLobK direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ((top0 & 255) + (top1 & 255)) >> 1; }
+  .pe1 { .top = top; .write = write; .spad = ((top0 & 255) + (top1 & 255)) >> 2; }
+  .pe2 { .write = write; .spad = ((top0 & 255) + (top1 & 255)) >> 31; }
+  .pe3 { .write = write; .spad = ((top0 & 255) + (top1 & 255)) << 1; }
+}
+
+@kernel checkAddLobK config | exec
+void checkAddLobKRun(void) {
 }
 
 @emulate "sel_neg"
