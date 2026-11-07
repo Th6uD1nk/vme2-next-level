@@ -3,6 +3,7 @@ import os
 import sys
 
 from vmegt.build import build_all
+from vmegt.check import check_all
 from vmegt.ids import ROOT, chosen_ids
 from vmegt.run import find_pspsh, reset, run_kernel
 
@@ -12,6 +13,7 @@ def main(argv=None):
   parser.add_argument("input")
   parser.add_argument("ids", nargs="*")
   parser.add_argument("--list", action="store_true")
+  parser.add_argument("--check", action="store_true")
   parser.add_argument("--pspdev", default=os.environ.get("PSPDEV"))
   parser.add_argument("--pspsh", default=None)
   parser.add_argument("--host", default=os.environ.get("PSP_HOST"))
@@ -29,8 +31,9 @@ def main(argv=None):
   if not os.path.exists(args.input):
     print(f"{args.input}: no such file", file=sys.stderr)
     return 2
+  source = os.path.abspath(args.input)
   try:
-    ids = chosen_ids(os.path.abspath(args.input), args.ids)
+    ids = chosen_ids(source, args.ids)
   except ValueError as e:
     print(f"{args.input}: {e}", file=sys.stderr)
     return 2
@@ -49,8 +52,9 @@ def main(argv=None):
   os.makedirs(work, exist_ok=True)
   os.makedirs(host, exist_ok=True)
   final = args.log or os.path.join(work, "results.log")
-  builds = build_all(os.path.abspath(args.input), ids, work, args.pspdev, args.jobs, args.buffers_start, args.buffers_words, args.use)
+  builds = build_all(source, ids, work, args.pspdev, args.jobs, args.buffers_start, args.buffers_words, args.use)
   status = {}
+  sections = {}
   reset(pspsh, args.port, work, args.reset_wait)
   with open(final, "w", encoding="utf-8") as out:
     for position, (identifier, (program, error)) in enumerate(zip(ids, builds), 1):
@@ -61,15 +65,23 @@ def main(argv=None):
       else:
         text = run_kernel(pspsh, args.port, host, work, program, identifier, args.reset_wait, args.timeout, args.retries)
         status[identifier] = "no log" if text is None else "done"
+        if text is not None:
+          sections[identifier] = text
         out.write("no log\n" if text is None else text.rstrip("\n") + "\n")
       out.write("\n")
       out.flush()
       print(f"[{position}/{len(ids)}] {identifier}: {status[identifier]}", file=sys.stderr, flush=True)
+    if args.check:
+      checked = check_all(source, [i for i in ids if i in sections], sections, args.jobs, args.buffers_start, args.buffers_words, args.use)
+      for identifier, result in checked.items():
+        status[identifier] = result
+        print(f"{identifier}: {result}", file=sys.stderr, flush=True)
     out.write("=== summary ===\n")
     for identifier in ids:
       out.write(f"{identifier}: {status[identifier]}\n")
   print(final)
-  return 0 if all(value == "done" for value in status.values()) else 1
+  expected = "ok" if args.check else "done"
+  return 0 if all(value == expected for value in status.values()) else 1
 
 
 if __name__ == "__main__":
