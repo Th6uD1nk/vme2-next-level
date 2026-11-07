@@ -31,6 +31,16 @@ Some kernels only:
 python3 samples/debug/vmegc-opcodes/check.py add_cst sel_neg_3
 ```
 
+Run kernels on the PSP and compare their buffers against the emulator (`vmegt --check`):
+```
+python3 vmegt.py --check --buffers-words 256 samples/debug/vmegc-opcodes/opcodes-0x000-0x0ff.vmeg.cpp add_cst sel_neg_3
+```
+
+Compare an existing PSP log (`results.log` or `log.txt`) against the emulator without touching the PSP:
+```
+python3 vmegt.py --check --reuse-log --log psp-kernels/results.log --buffers-words 256 samples/debug/vmegc-opcodes/opcodes-0x000-0x0ff.vmeg.cpp add_cst sel_neg_3
+```
+
 Opcodes used by a kernel:
 ```
 python3 vmegc.py --list --kernel checkAddCst samples/debug/vmegc-opcodes/opcodes-0x000-0x0ff.vmeg.cpp
