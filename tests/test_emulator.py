@@ -10,11 +10,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmee.agu import stream_at
 from vmee.extract import array_declarations, host_main, host_program
-from vmee.fu import execute, opcode_entry
+from vmee.fu import execute, fu_operands, opcode_entry
 from vmee.host import build_program, run_program
 from vmee.listing import defines, emulations, format_listing
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from vmee.registers import CONTEXT_WORDS, agu_register, fu_register
+from vmee.registers import CONTEXT_WORDS, FU_OPERAND_REGISTERS, agu_register, fu_register
 from vmee.run import run_emulation
 from vmee.trace import replay
 from vmee.machine import Emulator
@@ -327,6 +327,18 @@ def fu_of(opcode):
 def cut24(value):
   value &= 0xffffff
   return value - (1 << 24) if value >= 1 << 23 else value
+
+
+class OperandRegistersTest(unittest.TestCase):
+  def test_the_registers_a_and_b_of_a_fu_are_read_on_24_bits_as_signed_numbers(self):
+    first = FU_OPERAND_REGISTERS["primary"]
+    registers = [0] * (first + 2)
+    registers[first], registers[first + 1] = 0xffffff, 0xff000003
+    self.assertEqual(fu_operands(registers, 0, "primary"), (-1, 3))
+    registers[first], registers[first + 1] = 0x800000, 0x7fffff
+    self.assertEqual(fu_operands(registers, 0, "primary"), (-0x800000, 0x7fffff))
+    registers[first], registers[first + 1] = 0xffffffff, 0x01000000
+    self.assertEqual(fu_operands(registers, 0, "primary"), (-1, 0))
 
 
 class SubtractionOnThePspTest(unittest.TestCase):
