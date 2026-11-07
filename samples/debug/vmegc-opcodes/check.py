@@ -66,8 +66,8 @@ def check(module, source, entry, log=None):
     return f"{identifier}: {error}"
   emulated = parse(text, size)
   if log is None:
-    expected = [word(entry["expected"](f, b)) for f, b in zip(first, second)]
-    found, reference, names = emulated, {pe: expected for pe in range(4)}, ("got", "expected")
+    functions = entry["expected"] if isinstance(entry["expected"], list) else [entry["expected"]] * 4
+    found, reference, names = emulated, {pe: [word(functions[pe](f, b)) for f, b in zip(first, second)] for pe in range(4)}, ("got", "expected")
   else:
     found, reference, names = parse(log, size), emulated, ("PSP", "emulator")
   if len(found) < 4 or len(reference) < 4:
