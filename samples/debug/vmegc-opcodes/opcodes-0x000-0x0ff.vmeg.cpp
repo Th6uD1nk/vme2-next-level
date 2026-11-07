@@ -3861,6 +3861,374 @@ void checkAddHibRun(void) {
 void checkAddLobRun(void) {
 }
 
+@emulate "add_hib_set"
+.kernel checkAddHibSet direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b0, count };
+  Transfer top1Transfer = { memory: in1b0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet config | exec
+void checkAddHibSetRun(void) {
+}
+
+@emulate "add_hib_set_2"
+.kernel checkAddHibSet2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b1, count };
+  Transfer top1Transfer = { memory: in1b1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet2 config | exec
+void checkAddHibSet2Run(void) {
+}
+
+@emulate "add_hib_set_3"
+.kernel checkAddHibSet3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b2, count };
+  Transfer top1Transfer = { memory: in1b2, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet3 config | exec
+void checkAddHibSet3Run(void) {
+}
+
+@emulate "add_hib_set_4"
+.kernel checkAddHibSet4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b3, count };
+  Transfer top1Transfer = { memory: in1b3, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet4 config | exec
+void checkAddHibSet4Run(void) {
+}
+
+@emulate "add_hib_set_5"
+.kernel checkAddHibSet5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b4, count };
+  Transfer top1Transfer = { memory: in1b4, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet5 config | exec
+void checkAddHibSet5Run(void) {
+}
+
+@emulate "add_hib_set_6"
+.kernel checkAddHibSet6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b5, count };
+  Transfer top1Transfer = { memory: in1b5, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet6 config | exec
+void checkAddHibSet6Run(void) {
+}
+
+@emulate "add_hib_set_7"
+.kernel checkAddHibSet7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet7 config | exec
+void checkAddHibSet7Run(void) {
+}
+
+@emulate "add_hib_set_8"
+.kernel checkAddHibSet8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = addhib(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x058 }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x058 }; }
+  .pe3 { .write = write; .spad = addhib(top1, top0); }
+}
+
+@kernel checkAddHibSet8 config | exec
+void checkAddHibSet8Run(void) {
+}
+
+@emulate "add_lob_set"
+.kernel checkAddLobSet direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b0, count };
+  Transfer top1Transfer = { memory: in1b0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet config | exec
+void checkAddLobSetRun(void) {
+}
+
+@emulate "add_lob_set_2"
+.kernel checkAddLobSet2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b1, count };
+  Transfer top1Transfer = { memory: in1b1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet2 config | exec
+void checkAddLobSet2Run(void) {
+}
+
+@emulate "add_lob_set_3"
+.kernel checkAddLobSet3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b2, count };
+  Transfer top1Transfer = { memory: in1b2, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet3 config | exec
+void checkAddLobSet3Run(void) {
+}
+
+@emulate "add_lob_set_4"
+.kernel checkAddLobSet4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b3, count };
+  Transfer top1Transfer = { memory: in1b3, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet4 config | exec
+void checkAddLobSet4Run(void) {
+}
+
+@emulate "add_lob_set_5"
+.kernel checkAddLobSet5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b4, count };
+  Transfer top1Transfer = { memory: in1b4, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet5 config | exec
+void checkAddLobSet5Run(void) {
+}
+
+@emulate "add_lob_set_6"
+.kernel checkAddLobSet6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b5, count };
+  Transfer top1Transfer = { memory: in1b5, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet6 config | exec
+void checkAddLobSet6Run(void) {
+}
+
+@emulate "add_lob_set_7"
+.kernel checkAddLobSet7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet7 config | exec
+void checkAddLobSet7Run(void) {
+}
+
+@emulate "add_lob_set_8"
+.kernel checkAddLobSet8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top0 & 255) + (top1 & 255); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x05c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x05c }; }
+  .pe3 { .write = write; .spad = (top1 & 255) + (top0 & 255); }
+}
+
+@kernel checkAddLobSet8 config | exec
+void checkAddLobSet8Run(void) {
+}
+
 @emulate "sel_neg"
 .kernel checkSelNeg direct {
   Int count = 256 - 1;
