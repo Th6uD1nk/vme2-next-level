@@ -2389,6 +2389,52 @@ void checkAddBytSet8Run(void) {
 void checkAddBytKRun(void) {
 }
 
+@emulate "add_byt_stg"
+.kernel checkAddBytStg direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = addbyt(s0, top1); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = addbyt(s1, top1); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = addbyt(s2, top1); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = addbyt(s3, top1); }
+}
+
+@kernel checkAddBytStg config | exec
+void checkAddBytStgRun(void) {
+}
+
+@emulate "add_byt_stg_2"
+.kernel checkAddBytStg2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = addbyt(s0, top1); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = addbyt(s1, top1); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = addbyt(s2, top1); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = addbyt(s3, top1); }
+}
+
+@kernel checkAddBytStg2 config | exec
+void checkAddBytStg2Run(void) {
+}
+
 @emulate "sub_byt"
 .kernel checkSubByt direct {
   Int count = 256 - 1;
@@ -2617,6 +2663,52 @@ void checkSubBytSet8Run(void) {
 
 @kernel checkSubBytK config | exec
 void checkSubBytKRun(void) {
+}
+
+@emulate "sub_byt_stg"
+.kernel checkSubBytStg direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = subbyt(s0, top1); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = subbyt(s1, top1); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = subbyt(s2, top1); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = subbyt(s3, top1); }
+}
+
+@kernel checkSubBytStg config | exec
+void checkSubBytStgRun(void) {
+}
+
+@emulate "sub_byt_stg_2"
+.kernel checkSubBytStg2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = subbyt(s0, top1); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = subbyt(s1, top1); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = subbyt(s2, top1); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = subbyt(s3, top1); }
+}
+
+@kernel checkSubBytStg2 config | exec
+void checkSubBytStg2Run(void) {
 }
 
 @emulate "add_shf"
@@ -4114,6 +4206,52 @@ void checkAddHibSet8Run(void) {
 void checkAddHibKRun(void) {
 }
 
+@emulate "add_hib_stg"
+.kernel checkAddHibStg direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = addhib(s0, top1); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = addhib(s1, top1); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = addhib(s2, top1); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = addhib(s3, top1); }
+}
+
+@kernel checkAddHibStg config | exec
+void checkAddHibStgRun(void) {
+}
+
+@emulate "add_hib_stg_2"
+.kernel checkAddHibStg2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = addhib(s0, top1); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = addhib(s1, top1); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = addhib(s2, top1); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = addhib(s3, top1); }
+}
+
+@kernel checkAddHibStg2 config | exec
+void checkAddHibStg2Run(void) {
+}
+
 @emulate "add_lob_set"
 .kernel checkAddLobSet direct {
   Int count = 256 - 1;
@@ -4319,6 +4457,52 @@ void checkAddLobSet8Run(void) {
 
 @kernel checkAddLobK config | exec
 void checkAddLobKRun(void) {
+}
+
+@emulate "add_lob_stg"
+.kernel checkAddLobStg direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = ((s0 & 255) + (top1 & 255)); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = ((s1 & 255) + (top1 & 255)); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = ((s2 & 255) + (top1 & 255)); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = ((s3 & 255) + (top1 & 255)); }
+}
+
+@kernel checkAddLobStg config | exec
+void checkAddLobStgRun(void) {
+}
+
+@emulate "add_lob_stg_2"
+.kernel checkAddLobStg2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; Staging s0; s0 = top0 + top1; .spad = ((s0 & 255) + (top1 & 255)); }
+  .pe1 { .top = top; .write = write; Staging s1; s1 = top0 + top1; .spad = ((s1 & 255) + (top1 & 255)); }
+  .pe2 { .write = write; Staging s2; s2 = top0 + top1; .spad = ((s2 & 255) + (top1 & 255)); }
+  .pe3 { .write = write; Staging s3; s3 = top0 + top1; .spad = ((s3 & 255) + (top1 & 255)); }
+}
+
+@kernel checkAddLobStg2 config | exec
+void checkAddLobStg2Run(void) {
 }
 
 @emulate "sel_neg"
