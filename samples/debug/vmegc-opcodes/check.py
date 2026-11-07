@@ -59,13 +59,14 @@ def check(module, source, entry, log=None):
     problem = check_opcodes(source, entry)
     if problem:
       return problem
-  size = len(module.IN0)
+  first, second = module.SETS[entry["inputs"]] if "inputs" in entry else (module.IN0, module.IN1)
+  size = len(first)
   text, error = emulate(source, identifier, size)
   if text is None:
     return f"{identifier}: {error}"
   emulated = parse(text, size)
   if log is None:
-    expected = [word(entry["expected"](f, b)) for f, b in zip(module.IN0, module.IN1)]
+    expected = [word(entry["expected"](f, b)) for f, b in zip(first, second)]
     found, reference, names = emulated, {pe: expected for pe in range(4)}, ("got", "expected")
   else:
     found, reference, names = parse(log, size), emulated, ("PSP", "emulator")
