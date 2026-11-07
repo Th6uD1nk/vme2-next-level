@@ -35,18 +35,25 @@ def words(values):
   return "\n".join(rows)
 
 
+def buffer_names(entry):
+  suffix = entry.get("inputs", "")
+  return f"in0{suffix}", f"in1{suffix}"
+
+
 def kernel(entry, size):
   name = "check" + camel(entry["id"])
+  first, second = buffer_names(entry)
   pes = []
   for pe, writing in enumerate(entry["writings"]):
     top = ".top = top; " if pe < 2 else ""
-    pes.append(f"  .pe{pe} {{ {top}.write = write; .spad = {writing}; }}")
+    body = writing if writing.startswith("Staging") else f".spad = {writing};"
+    pes.append(f"  .pe{pe} {{ {top}.write = write; {body} }}")
   return f"""@emulate "{entry['id']}"
 .kernel {name} direct {{
   Int count = {size} - 1;
 
-  Transfer top0Transfer = {{ memory: in0, count }};
-  Transfer top1Transfer = {{ memory: in1, count }};
+  Transfer top0Transfer = {{ memory: {first}, count }};
+  Transfer top1Transfer = {{ memory: {second}, count }};
 
   .load {{ .transfer = top0Transfer; .scope = global; .offsets {{ .top0 = 0; }} }}
   .load {{ .transfer = top1Transfer; .scope = global; .offsets {{ .top1 = 0; }} }}
