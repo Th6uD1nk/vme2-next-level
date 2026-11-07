@@ -1,4 +1,4 @@
-[Index](../VMEE.md) · [Traces](traces.md) · [Memories](memories.md)
+[Index](../VMEE.md) · [Traces](traces.md) · [Running on the PSP with vmegt](vmegt.md) · [Memories](memories.md)
 
 # Running on the PSP with vmeh
 

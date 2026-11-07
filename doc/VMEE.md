@@ -4,6 +4,8 @@
 
 **vmeh** writes the program that runs the same kernels on the PSP. It writes the content of the buffers in the same format as vmee, so that the two results can be compared.
 
+**vmegt** builds and runs the `@emulate` kernels of a file on the PSP through psplink, one after the other, and writes their logs in one file.
+
 A quick example, a kernel marked for the emulator, and the command that plays it:
 
 ```c
@@ -29,7 +31,7 @@ vmee --run add-test main.vmeg.cpp
 |---|---|---|
 | 1 | [Running vmee](#1-running-vmee) | `--run`, several files, the window of the buffers, `--trace`, `--compat`, `--use` |
 | 2 | [Traces](#2-traces) | the trace file, the lines `W` and `M` |
-| 3 | [Running on the PSP with vmeh](#3-running-on-the-psp-with-vmeh) | the build, the kernels, `config.txt`, `log.txt`, the comparison with vmee |
+| 3 | [Running on the PSP with vmeh](#3-running-on-the-psp-with-vmeh) | the build, the kernels, `config.txt`, `log.txt`, `vmegt`, the comparison with vmee |
 | 4 | [Memories](#4-memories) | the scratchpad, the stagings, the RAM |
 | 5 | [The DMAC](#5-the-dmac) | the registers, the context, the transfers |
 | 6 | [Datapath registers](#6-datapath-registers) | the 106 registers and the trigger |
@@ -50,7 +52,7 @@ Details: [Traces](vmee/traces.md)
 
 ## 3. Running on the PSP with vmeh
 
-Details: [Running on the PSP with vmeh](vmee/vmeh.md)
+Details: [Running on the PSP with vmeh](vmee/vmeh.md) · [Running on the PSP with vmegt](vmee/vmegt.md)
 
 ## 4. Memories
 
