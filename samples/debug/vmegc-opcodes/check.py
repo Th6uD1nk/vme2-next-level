@@ -65,6 +65,8 @@ def check(module, source, entry, log=None):
   if text is None:
     return f"{identifier}: {error}"
   emulated = parse(text, size)
+  if log is None and entry["expected"] is None:
+    return None
   if log is None:
     functions = entry["expected"] if isinstance(entry["expected"], list) else [entry["expected"]] * 4
     found, reference, names = emulated, {pe: [word(functions[pe](f, b)) for f, b in zip(first, second)] for pe in range(4)}, ("got", "expected")
@@ -98,7 +100,7 @@ def main(arguments):
   with ThreadPoolExecutor(os.cpu_count()) as pool:
     problems = list(pool.map(lambda entry: check(module, source, entry, log), chosen))
   for entry, problem in zip(chosen, problems):
-    print(problem or f"{entry['id']}: ok")
+    print(problem or f"{entry['id']}: ok" + (", no equation, compare with the PSP" if entry["expected"] is None and log is None else ""))
   return 1 if any(problems) else 0
 
 
