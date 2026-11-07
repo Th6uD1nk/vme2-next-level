@@ -2389,6 +2389,190 @@ void checkAddBytSet8Run(void) {
 void checkSubBytRun(void) {
 }
 
+@emulate "sub_byt_set"
+.kernel checkSubBytSet direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b0, count };
+  Transfer top1Transfer = { memory: in1b0, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet config | exec
+void checkSubBytSetRun(void) {
+}
+
+@emulate "sub_byt_set_2"
+.kernel checkSubBytSet2 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b1, count };
+  Transfer top1Transfer = { memory: in1b1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet2 config | exec
+void checkSubBytSet2Run(void) {
+}
+
+@emulate "sub_byt_set_3"
+.kernel checkSubBytSet3 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b2, count };
+  Transfer top1Transfer = { memory: in1b2, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet3 config | exec
+void checkSubBytSet3Run(void) {
+}
+
+@emulate "sub_byt_set_4"
+.kernel checkSubBytSet4 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b3, count };
+  Transfer top1Transfer = { memory: in1b3, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet4 config | exec
+void checkSubBytSet4Run(void) {
+}
+
+@emulate "sub_byt_set_5"
+.kernel checkSubBytSet5 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b4, count };
+  Transfer top1Transfer = { memory: in1b4, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet5 config | exec
+void checkSubBytSet5Run(void) {
+}
+
+@emulate "sub_byt_set_6"
+.kernel checkSubBytSet6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b5, count };
+  Transfer top1Transfer = { memory: in1b5, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet6 config | exec
+void checkSubBytSet6Run(void) {
+}
+
+@emulate "sub_byt_set_7"
+.kernel checkSubBytSet7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b6, count };
+  Transfer top1Transfer = { memory: in1b6, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet7 config | exec
+void checkSubBytSet7Run(void) {
+}
+
+@emulate "sub_byt_set_8"
+.kernel checkSubBytSet8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0b7, count };
+  Transfer top1Transfer = { memory: in1b7, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = subbyt(top0, top1); }
+  .pe1 { .top = top; .write = write; .spad = top0 + top1 + 5592405; .remap = { operator: "+", primary: 0x03c }; }
+  .pe2 { .write = write; .spad = top0 + (top1 >> 37); .remap = { operator: "+", primary: 0x03c }; }
+  .pe3 { .write = write; .spad = (subbyt(top0, top1)); }
+}
+
+@kernel checkSubBytSet8 config | exec
+void checkSubBytSet8Run(void) {
+}
+
 @emulate "add_shf"
 .kernel checkAddShf direct {
   Int count = 256 - 1;
