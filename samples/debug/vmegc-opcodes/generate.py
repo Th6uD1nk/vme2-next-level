@@ -91,7 +91,12 @@ def source(name):
   module = load(name)
   size = len(module.IN0)
   parts = [HEADER, f"volatile Buffer in0[{size}] = {{\n{words(module.IN0)}\n}};\n", f"volatile Buffer in1[{size}] = {{\n{words(module.IN1)}\n}};\n"]
-  parts.extend(kernel(entry, size) for entry in entries(module))
+  chosen = entries(module)
+  for name in sorted({entry["inputs"] for entry in chosen if "inputs" in entry}):
+    first, second = module.SETS[name]
+    parts.append(f"volatile Buffer in0{name}[{size}] = {{\n{words(first)}\n}};\n")
+    parts.append(f"volatile Buffer in1{name}[{size}] = {{\n{words(second)}\n}};\n")
+  parts.extend(kernel(entry, size) for entry in chosen)
   return "\n".join(parts)
 
 
