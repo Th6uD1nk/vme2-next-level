@@ -880,6 +880,52 @@ void checkAddOfa4Run(void) {
 void checkAddOfa5Run(void) {
 }
 
+@emulate "add_ofa_6"
+.kernel checkAddOfa6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + top1 + 16777215; }
+  .pe1 { .top = top; .write = write; .spad = (top0 + top1) + 16777215; }
+  .pe2 { .write = write; .spad = 16777215 + (top0 + top1); }
+  .pe3 { .write = write; .spad = top1 + top0 + 16777215; }
+}
+
+@kernel checkAddOfa6 config | exec
+void checkAddOfa6Run(void) {
+}
+
+@emulate "add_ofa_7"
+.kernel checkAddOfa7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 + top1 + 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = (top0 + top1) + 4278190083; }
+  .pe2 { .write = write; .spad = 4278190083 + (top0 + top1); }
+  .pe3 { .write = write; .spad = top1 + top0 + 4278190083; }
+}
+
+@kernel checkAddOfa7 config | exec
+void checkAddOfa7Run(void) {
+}
+
 @emulate "subacst"
 .kernel checkSubacst direct {
   Int count = 256 - 1;
@@ -993,6 +1039,52 @@ void checkSubacst4Run(void) {
 
 @kernel checkSubacst5 config | exec
 void checkSubacst5Run(void) {
+}
+
+@emulate "subacst_6"
+.kernel checkSubacst6 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - top1 + 16777215; }
+  .pe1 { .top = top; .write = write; .spad = subacst(top0, top1, 16777215); }
+  .pe2 { .write = write; .spad = (top0 - top1) + 16777215; }
+  .pe3 { .write = write; .spad = 16777215 + (top0 - top1); }
+}
+
+@kernel checkSubacst6 config | exec
+void checkSubacst6Run(void) {
+}
+
+@emulate "subacst_7"
+.kernel checkSubacst7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top0 - top1 + 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = subacst(top0, top1, 4278190083); }
+  .pe2 { .write = write; .spad = (top0 - top1) + 4278190083; }
+  .pe3 { .write = write; .spad = 4278190083 + (top0 - top1); }
+}
+
+@kernel checkSubacst7 config | exec
+void checkSubacst7Run(void) {
 }
 
 @emulate "add_byt"
