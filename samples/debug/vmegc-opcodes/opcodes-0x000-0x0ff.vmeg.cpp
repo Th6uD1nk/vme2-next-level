@@ -6009,6 +6009,52 @@ void checkOrCst5Run(void) {
 void checkOrCst6Run(void) {
 }
 
+@emulate "or_cst_7"
+.kernel checkOrCst7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 16777215; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 16777215); }
+  .pe2 { .write = write; .spad = 16777215 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 16777215); }
+}
+
+@kernel checkOrCst7 config | exec
+void checkOrCst7Run(void) {
+}
+
+@emulate "or_cst_8"
+.kernel checkOrCst8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 | 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = or(top1, 4278190083); }
+  .pe2 { .write = write; .spad = 4278190083 | top1; }
+  .pe3 { .write = write; .spad = (top1 | 4278190083); }
+}
+
+@kernel checkOrCst8 config | exec
+void checkOrCst8Run(void) {
+}
+
 @emulate "nor"
 .kernel checkNor direct {
   Int count = 256 - 1;
@@ -6168,6 +6214,52 @@ void checkNorCst5Run(void) {
 
 @kernel checkNorCst6 config | exec
 void checkNorCst6Run(void) {
+}
+
+@emulate "nor_cst_7"
+.kernel checkNorCst7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 | 16777215); }
+  .pe1 { .top = top; .write = write; .spad = ~or(top1, 16777215); }
+  .pe2 { .write = write; .spad = ~(16777215 | top1); }
+  .pe3 { .write = write; .spad = (~(top1 | 16777215)); }
+}
+
+@kernel checkNorCst7 config | exec
+void checkNorCst7Run(void) {
+}
+
+@emulate "nor_cst_8"
+.kernel checkNorCst8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 | 4278190083); }
+  .pe1 { .top = top; .write = write; .spad = ~or(top1, 4278190083); }
+  .pe2 { .write = write; .spad = ~(4278190083 | top1); }
+  .pe3 { .write = write; .spad = (~(top1 | 4278190083)); }
+}
+
+@kernel checkNorCst8 config | exec
+void checkNorCst8Run(void) {
 }
 
 @emulate "xor"
