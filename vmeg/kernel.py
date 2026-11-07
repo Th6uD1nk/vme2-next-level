@@ -536,11 +536,16 @@ def place(state, lines, pe, operations, line):
     if operation.get("round"):
       sat += ", (1 << 6)"
     lines.append(f"vme_pe{pe}(vme_fu({unit}), {mux}, {code}{sat});")
+    registers = dict(encoding["registers"])
     if encoding is not specification:
-      for argument in specification["registers"].values():
+      for register, argument in specification["registers"].items():
         if argument in operation["numbers"] and argument not in encoding["registers"].values():
-          warn(state, line, f"the value of '{argument}' is not written, the opcode 0x{encoding['opcode']:03x} of .remap {unit.lower()} has no register for it")
-    for register, argument in encoding["registers"].items():
+          if register in registers:
+            warn(state, line, f"the value of '{argument}' is not written, the register {register} of the opcode 0x{encoding['opcode']:03x} of .remap {unit.lower()} is for another value")
+          else:
+            registers[register] = argument
+            warn(state, line, f"the opcode 0x{encoding['opcode']:03x} of .remap {unit.lower()} has no register for '{argument}', its value is written as it is in the register {register}")
+    for register, argument in registers.items():
       value = operation["numbers"].get(argument, 0)
       if not -0x800000 <= value <= 0xffffff:
         warn(state, line, f"the number {hex(value)} of '{argument}' does not fit in 24 bits, it is written as it is in the register {register}")
