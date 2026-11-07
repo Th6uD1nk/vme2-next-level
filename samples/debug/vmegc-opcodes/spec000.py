@@ -56,6 +56,32 @@ def byte1(v):
   return (v >> 8) & 0xff
 
 
+
+BYTES = [0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff]
+HIGH = [0x00, 0x01, 0x80, 0xff]
+SET_SIZE = 256
+
+
+def byte_pairs():
+  return [(l1 | h1 << 8, l2 | h2 << 8) for l1 in BYTES for h1 in BYTES for l2 in BYTES for h2 in BYTES]
+
+
+def byte_set(index):
+  pairs = byte_pairs()
+  if index < 6:
+    part = pairs[index * SET_SIZE:(index + 1) * SET_SIZE]
+    part += pairs[:SET_SIZE - len(part)]
+  elif index == 6:
+    noise = series(2463534242, SET_SIZE)
+    part = [(signed24(f | HIGH[(n >> 3) & 3] << 16), signed24(b | HIGH[(n >> 5) & 3] << 16)) for (f, b), n in zip(pairs[::5], noise)]
+  else:
+    part = list(zip(series(1812433253, SET_SIZE), series(2463534242, SET_SIZE)))
+  return [f for f, _ in part], [b for _, b in part]
+
+
+SETS = {f"b{index}": byte_set(index) for index in range(8)}
+
+
 SPECS = [
   dict(id="pass", opcode=0x004, lot=1, writings=["top1", "(top1)", "pass(top1)", "sat(top1, 31)"], expected=lambda f, b: b),
   dict(id="cst", opcode=0x00c, lot=1, writings=["{0}", "cst({0})", "({0} + 1) - 1", "({0} * 1) | 0"], values=[(5,), (0,), (-1,), (8388607,), (-8388608,), (4660,), (16777215,), (4278190083,)], expected=lambda f, b, c: c),
