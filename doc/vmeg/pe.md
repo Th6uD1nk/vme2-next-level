@@ -133,7 +133,7 @@ Staging s;
 - The operator is written between double quotes. The opcodes are numbers, or `Int` variables.
 - The opcode must be in the table of `vmegc`, and it must have the operator of the `.remap`. `vmegc --ops` lists, under each opcode, the opcodes it can be remapped with ([1.5](running.md#15---ops)).
 - The selector is not changed: it chooses the opcode from the way the operation is written, then the `.remap` replaces it. The registers (`A`, `B`) are those of the new opcode: a register that the new opcode has and the expression does not give is 0.
-- A warning is given when the expression gives a value that the new opcode has no register for. It is not given in the other direction.
+- When the expression gives a value that the new opcode has no register for, the value is written as it is in the register that the replaced operation has for it, and a warning says so. For example `.remap = { operator: "+", primary: 0x038 }; .spad = top0 + top1 + 5;` writes 5 in the register A, next to the opcode `0x038`. When the new opcode already uses that register for another value, the value is not written and a warning says so. No warning is given in the other direction.
 - A warning is given when the opcode is in the table but has not the operator of the `.remap`: the code is written as it is, with the registers of the new opcode. `.remap = { operator: "pass", primary: 0x024 }` is written with the opcode `0x024` and its register B at 0.
 - A `.remap` that names a unit gives no warning for a `mul`, `mac` or `acc` in this unit ([5.3](#53-operations-in-a-pe)).
 
