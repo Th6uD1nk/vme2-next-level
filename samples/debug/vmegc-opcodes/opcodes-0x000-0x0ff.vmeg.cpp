@@ -3295,6 +3295,52 @@ void checkSelAds5Run(void) {
 void checkSelAds6Run(void) {
 }
 
+@emulate "sel_ads_7"
+.kernel checkSelAds7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 16777215) ? top1 - 4278190083 : top1 + 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = (16777215 & top1) ? top1 - 4278190083 : top1 + 4278190083; }
+  .pe2 { .write = write; .spad = (top1 & 16777215) ? (top1 - 4278190083) : (top1 + 4278190083); }
+  .pe3 { .write = write; .spad = ((top1 & 16777215)) ? top1 - (4278190083 + 0) : top1 + 4278190083; }
+}
+
+@kernel checkSelAds7 config | exec
+void checkSelAds7Run(void) {
+}
+
+@emulate "sel_ads_8"
+.kernel checkSelAds8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4278190083) ? top1 - 16777215 : top1 + 16777215; }
+  .pe1 { .top = top; .write = write; .spad = (4278190083 & top1) ? top1 - 16777215 : top1 + 16777215; }
+  .pe2 { .write = write; .spad = (top1 & 4278190083) ? (top1 - 16777215) : (top1 + 16777215); }
+  .pe3 { .write = write; .spad = ((top1 & 4278190083)) ? top1 - (16777215 + 0) : top1 + 16777215; }
+}
+
+@kernel checkSelAds8 config | exec
+void checkSelAds8Run(void) {
+}
+
 @emulate "sel_ads_inv"
 .kernel checkSelAdsInv direct {
   Int count = 256 - 1;
@@ -3431,6 +3477,52 @@ void checkSelAdsInv5Run(void) {
 
 @kernel checkSelAdsInv6 config | exec
 void checkSelAdsInv6Run(void) {
+}
+
+@emulate "sel_ads_inv_7"
+.kernel checkSelAdsInv7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 16777215) ? top1 + 4278190083 : top1 - 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = (16777215 & top1) ? top1 + 4278190083 : top1 - 4278190083; }
+  .pe2 { .write = write; .spad = (top1 & 16777215) ? (top1 + 4278190083) : (top1 - 4278190083); }
+  .pe3 { .write = write; .spad = ((top1 & 16777215)) ? top1 + (4278190083 + 0) : top1 - 4278190083; }
+}
+
+@kernel checkSelAdsInv7 config | exec
+void checkSelAdsInv7Run(void) {
+}
+
+@emulate "sel_ads_inv_8"
+.kernel checkSelAdsInv8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = (top1 & 4278190083) ? top1 + 16777215 : top1 - 16777215; }
+  .pe1 { .top = top; .write = write; .spad = (4278190083 & top1) ? top1 + 16777215 : top1 - 16777215; }
+  .pe2 { .write = write; .spad = (top1 & 4278190083) ? (top1 + 16777215) : (top1 - 16777215); }
+  .pe3 { .write = write; .spad = ((top1 & 4278190083)) ? top1 + (16777215 + 0) : top1 - 16777215; }
+}
+
+@kernel checkSelAdsInv8 config | exec
+void checkSelAdsInv8Run(void) {
 }
 
 @emulate "clamp"
@@ -3592,6 +3684,52 @@ void checkClamp6Run(void) {
 
 @kernel checkClamp7 config | exec
 void checkClamp7Run(void) {
+}
+
+@emulate "clamp_8"
+.kernel checkClamp8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, 16777215, 4278190083); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,16777215,4278190083); }
+  .pe2 { .write = write; .spad = clamp((top1), 16777215, 4278190083); }
+  .pe3 { .write = write; .spad = clamp(top1, 16777215 + 0, 4278190083); }
+}
+
+@kernel checkClamp8 config | exec
+void checkClamp8Run(void) {
+}
+
+@emulate "clamp_9"
+.kernel checkClamp9 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = clamp(top1, 4278190083, 16777215); }
+  .pe1 { .top = top; .write = write; .spad = clamp(top1,4278190083,16777215); }
+  .pe2 { .write = write; .spad = clamp((top1), 4278190083, 16777215); }
+  .pe3 { .write = write; .spad = clamp(top1, 4278190083 + 0, 16777215); }
+}
+
+@kernel checkClamp9 config | exec
+void checkClamp9Run(void) {
 }
 
 @emulate "mul_clp"
