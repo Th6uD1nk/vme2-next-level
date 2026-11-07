@@ -24,6 +24,6 @@ def kernel_operation_lines(state):
   rows = []
   for operation in state["operations"]:
     specification = OPERATIONS[operation["kind"]]
-    rows.append((f"pe{operation['pe']}", f"line {operation['line']}", f"0x{specification['opcode']:03x}", specification["pattern"], bound_values(operation)))
+    rows.append((f"pe{operation['pe']}", f"line {operation['line']}", f"0x{operation.get('opcode', specification['opcode']):03x}", specification["pattern"], bound_values(operation)))
   widths = [max(len(row[i]) for row in rows) for i in range(4)] if rows else []
   return ["  " + "  ".join(column.ljust(width) for column, width in zip(row, widths)) + "  " + row[4] for row in rows]

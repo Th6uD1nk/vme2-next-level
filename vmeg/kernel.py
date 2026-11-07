@@ -518,6 +518,7 @@ def place(state, lines, pe, operations, line):
     if unit.lower() in remap:
       chosen = remap[unit.lower()]
       encoding = OPERATIONS[chosen] if isinstance(chosen, str) else {"opcode": chosen, "code": f"fu_code(0x{chosen:03x})", "registers": specification["registers"]}
+    state["operations"][-1]["opcode"] = encoding["opcode"]
     code = encoding["code"]
     if len(specification["operands"]) == 2:
       mux = f"vme_mux({operation['front']}, {operation['back']})"
