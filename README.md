@@ -4,7 +4,7 @@ VME2 Next Level is a toolkit for the PSP Virtual Mobile Engine (VME2), including
 
 ## Install
 
-Clone with `--recursive`, then run `./install.sh` in the folder of the project. It builds the me-core libraries for the vmeg environment and adds `bin` to your `PATH` and `VMEGC_HOME` to your `~/.bashrc` (`./install.sh --uninstall` removes them). In a new terminal, `vmegc`, `vmee` and `vmeh` are available from any folder.
+Clone with `--recursive`, then run `./install.sh` in the folder of the project. It builds the me-core libraries for the vmeg environment and adds `bin` to your `PATH` and `VMEGC_HOME` to your `~/.bashrc` (`./install.sh --uninstall` removes them). In a new terminal, `vmegc`, `vmee`, `vmeh` and `vmegt` are available from any folder.
 
 ## vmeg
 
@@ -61,6 +61,16 @@ With several `@emulate` in the file, the program has all of them. The screen sho
 The window of the buffers that is written can be changed with `-DVMEH_BUFFERS_START=0` and `-DVMEH_BUFFERS_WORDS=32` (the defaults). With several `@emulate`, the program reads it at the start from `config.txt`, next to `log.txt`, with the lines `start: 0` and `count: 32`; these two values are the defaults when the file is not there. `vmeemu.py --run` has the same options, `--buffers-start` and `--buffers-words`.
 
 It needs the PSP toolchain, like the other samples.
+
+## vmegt
+
+**vmegt** (vmeg test) builds and runs the `@emulate` kernels of a vmeg file on a PSP through psplink, one after the other, and writes the dump of the base buffers of every kernel in one log (`results.log` in `--work` by default).
+
+```
+python3 vmegt.py samples/c/saturate-clamp.vmeg.c
+```
+
+More details in the documentation: [vmegt](doc/vmee/vmegt.md)
 
 ## Related Projects
 
