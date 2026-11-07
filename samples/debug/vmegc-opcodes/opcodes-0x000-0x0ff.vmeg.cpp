@@ -6423,6 +6423,52 @@ void checkXorCst5Run(void) {
 void checkXorCst6Run(void) {
 }
 
+@emulate "xor_cst_7"
+.kernel checkXorCst7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 16777215; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 16777215); }
+  .pe2 { .write = write; .spad = 16777215 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 16777215); }
+}
+
+@kernel checkXorCst7 config | exec
+void checkXorCst7Run(void) {
+}
+
+@emulate "xor_cst_8"
+.kernel checkXorCst8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = top1 ^ 4278190083; }
+  .pe1 { .top = top; .write = write; .spad = xor(top1, 4278190083); }
+  .pe2 { .write = write; .spad = 4278190083 ^ top1; }
+  .pe3 { .write = write; .spad = (top1 ^ 4278190083); }
+}
+
+@kernel checkXorCst8 config | exec
+void checkXorCst8Run(void) {
+}
+
 @emulate "xnor"
 .kernel checkXnor direct {
   Int count = 256 - 1;
@@ -6582,6 +6628,52 @@ void checkXnorCst5Run(void) {
 
 @kernel checkXnorCst6 config | exec
 void checkXnorCst6Run(void) {
+}
+
+@emulate "xnor_cst_7"
+.kernel checkXnorCst7 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 ^ 16777215); }
+  .pe1 { .top = top; .write = write; .spad = ~xor(top1, 16777215); }
+  .pe2 { .write = write; .spad = ~(16777215 ^ top1); }
+  .pe3 { .write = write; .spad = (~(top1 ^ 16777215)); }
+}
+
+@kernel checkXnorCst7 config | exec
+void checkXnorCst7Run(void) {
+}
+
+@emulate "xnor_cst_8"
+.kernel checkXnorCst8 direct {
+  Int count = 256 - 1;
+
+  Transfer top0Transfer = { memory: in0, count };
+  Transfer top1Transfer = { memory: in1, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  .pe0 { .top = top; .write = write; .spad = ~(top1 ^ 4278190083); }
+  .pe1 { .top = top; .write = write; .spad = ~xor(top1, 4278190083); }
+  .pe2 { .write = write; .spad = ~(4278190083 ^ top1); }
+  .pe3 { .write = write; .spad = (~(top1 ^ 4278190083)); }
+}
+
+@kernel checkXnorCst8 config | exec
+void checkXnorCst8Run(void) {
 }
 
 @emulate "tst_em1"
