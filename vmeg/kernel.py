@@ -491,6 +491,10 @@ def claim(state, pe, name, line):
   state["set"][key] = line
 
 
+def base_name(target):
+  return target[0] if isinstance(target, tuple) else target
+
+
 def staging_refs(state):
   return {name: f"STAGING_{variable['pe'] + 4 * variable['unit']}" if "pe" in variable else None for name, variable in state["stagings"].items()}
 
@@ -725,7 +729,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None}
 
 
 def new_env(macros=None):
@@ -861,12 +865,13 @@ def transfer_initializer(kind, transfer):
 
 
 def declare_transfers(text, block):
-  names = {statement[1]: statement[-1] for statement in declared_statements(text, block[1])}
+  names = {base_name(statement[1]): statement[-1] for statement in declared_statements(text, block[1])}
   own = declare_statements(text, block)
   for statement in own:
-    if statement[1] in names:
-      raise ValueError(f"line {statement[-1]}: '{statement[1]}' is already declared in a @declare, at line {names[statement[1]]}")
-    names[statement[1]] = statement[-1]
+    key = base_name(statement[1])
+    if key in names:
+      raise ValueError(f"line {statement[-1]}: '{key}' is already declared in a @declare, at line {names[key]}")
+    names[key] = statement[-1]
   macros = known_macros(text, block[1])
   state = new_state(macros)
   env = new_env(macros)
