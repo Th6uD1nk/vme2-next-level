@@ -760,6 +760,17 @@ def parse_memory_use(p):
   return ("memoryuse", value)
 
 
+def parse_element_assignment(p):
+  name = p.ident()
+  p.expect("[")
+  index = parse_expr(p)
+  p.expect("]")
+  p.expect("=")
+  value = parse_expr(p)
+  p.expect(";")
+  return ("elemset", name, index, value)
+
+
 def parse_statement(p):
   tok = p.peek()
   line = p.text.count("\n", 0, tok[2]) + 1
@@ -778,6 +789,9 @@ def parse_statement(p):
       return parse_int_declaration(p) + (line,)
     if tok[1] == "pe":
       return parse_pe_statement(p) + (line,)
+    following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+    if following is not None and following[0] == "punct" and following[1] == "[":
+      return parse_element_assignment(p) + (line,)
   if tok[0] == "punct" and tok[1] == ".":
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
