@@ -87,7 +87,11 @@ def substitute(statement, env):
   if kind == "regs":
     return ("regs", [(name, fold(value, env)) for name, value in statement[1]], line)
   if kind == "int":
-    return ("int", statement[1], fold(statement[2], env), line)
+    value = statement[2]
+    folded = None if value is None else ("list", [fold(item, env) for item in value[1]]) if value[0] == "list" else fold(value, env)
+    return ("int", substitute_decl_name(statement[1], env), folded, line)
+  if kind == "elemset":
+    return ("elemset", statement[1], fold(statement[2], env), fold(statement[3], env), line)
   if kind == "agu":
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
