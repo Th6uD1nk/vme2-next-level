@@ -340,11 +340,20 @@ def add_statement(statements, statement):
     statements.append(statement)
 
 
+def parse_declared_name(p):
+  name = p.ident()
+  if p.accept("["):
+    size = parse_expr(p)
+    p.expect("]")
+    return (name, size)
+  return name
+
+
 def parse_declarators(p, keyword, kind):
   p.expect(keyword)
   members = []
   while True:
-    members.append((kind, p.ident()))
+    members.append((kind, parse_declared_name(p)))
     if not p.accept(","):
       break
   p.expect(";")
