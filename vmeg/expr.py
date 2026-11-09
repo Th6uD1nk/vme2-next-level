@@ -84,7 +84,7 @@ def substitute(statement, env):
   if kind == "agu":
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
-    return ("stageset", substitute_target(statement[1], env), statement[2], fold(statement[3], env), line)
+    return ("stageset", substitute_target(statement[1], env), substitute_decl_name(statement[2], env), fold(statement[3], env), line)
   if kind == "stagingdecl":
     return ("stagingdecl", substitute_decl_name(statement[1], env), line)
   if kind in ("transferdecl", "paramsdef"):
