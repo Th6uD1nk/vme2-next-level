@@ -372,6 +372,18 @@ def parse_expr_list(p):
   return ("list", items)
 
 
+def parse_item_list(p):
+  p.expect("{")
+  items = []
+  if not p.accept("}"):
+    while True:
+      items.append(parse_params(p))
+      if not p.accept(","):
+        break
+    p.expect("}")
+  return ("list", items)
+
+
 def parse_int_declaration(p):
   p.expect("Int")
   members = []
@@ -403,9 +415,13 @@ def parse_agu_declaration(p):
       p.error(f"the Agu mode {mode} is not described ({', '.join(str(known) for known in AGU_MODES)})", token)
   members = []
   while True:
-    name = p.ident()
-    p.expect("=")
-    members.append(("agudecl", name, parse_params(p), mode))
+    target = parse_declared_name(p)
+    if isinstance(target, tuple):
+      value = parse_item_list(p) if p.accept("=") else None
+    else:
+      p.expect("=")
+      value = parse_params(p)
+    members.append(("agudecl", target, value, mode))
     if not p.accept(","):
       break
   p.expect(";")
@@ -766,7 +782,11 @@ def parse_element_assignment(p):
   index = parse_expr(p)
   p.expect("]")
   p.expect("=")
-  value = parse_expr(p)
+  tok = p.peek()
+  if tok is not None and tok[0] == "punct" and tok[1] == "{":
+    value = parse_params(p)
+  else:
+    value = parse_expr(p)
   p.expect(";")
   return ("elemset", name, index, value)
 
