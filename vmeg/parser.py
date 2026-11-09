@@ -376,9 +376,13 @@ def parse_int_declaration(p):
   p.expect("Int")
   members = []
   while True:
-    name = p.ident()
-    p.expect("=")
-    members.append(("int", name, parse_expr(p)))
+    target = parse_declared_name(p)
+    if isinstance(target, tuple):
+      value = parse_expr_list(p) if p.accept("=") else None
+    else:
+      p.expect("=")
+      value = parse_expr(p)
+    members.append(("int", target, value))
     if not p.accept(","):
       break
   p.expect(";")
