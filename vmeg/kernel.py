@@ -520,6 +520,23 @@ def declare_keys(target, kind, env, state):
   return [f"{name}[{i}]" for i in range(size[1])]
 
 
+def resolve_var(target, env, state):
+  if isinstance(target, tuple):
+    name, index = target[0], fold(target[1], env)
+    if index[0] != "num":
+      raise ValueError(f"{name}[...]: index must be a number")
+    if name in state["arrays"]:
+      size = state["arrays"][name]["size"]
+      if not 0 <= index[1] < size:
+        raise ValueError(f"{name}[{index[1]}]: index out of range (0 to {size - 1})")
+    elif name in state["stagings"] or name in state["agus"] or name in state["transfers"] or (name in env and name not in state["macros"]):
+      raise ValueError(f"'{name}' is not an array")
+    return f"{name}[{index[1]}]"
+  if target in state["arrays"]:
+    raise ValueError(f"'{target}' is an array, write {target}[...]")
+  return target
+
+
 def staging_refs(state):
   return {name: f"STAGING_{variable['pe'] + 4 * variable['unit']}" if "pe" in variable else None for name, variable in state["stagings"].items()}
 
