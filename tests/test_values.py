@@ -299,3 +299,54 @@ class StagingArrayTest(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
           staging_lines("  " + body)
         self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+
+
+def int_lines(body, head=""):
+  text = head + ".kernel k direct {\n" + body + "\n}\n@kernel k config | exec\nvoid f() { }\n"
+  out = render(text, find_blocks(text), "t.vmeg.c")
+  return [line.strip() for line in out.splitlines() if "agu_top(" in line or "fu_reg(" in line or "vme_fu(" in line]
+
+
+class IntArrayTest(unittest.TestCase):
+  def test_an_array_with_initializers_configures_an_agu(self):
+    lines = int_lines("  Int a[2] = { 5, 10 };\n  Agu t = { count: a[0], step: a[1] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0xa), 5);", lines)
+
+  def test_an_array_can_be_declared_in_declare_block(self):
+    lines = int_lines("  Agu t = { count: a[0], step: a[1] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }", "@declare { Int a[2] = { 5, 10 }; }\n")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0xa), 5);", lines)
+
+  def test_elements_can_be_assigned_and_used_in_expressions(self):
+    lines = int_lines("  Int a[2];\n  a[0] = 5;\n  a[1] = a[0] + 5;\n  Agu t = { count: a[0], step: a[1] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0xa), 5);", lines)
+
+  def test_elements_can_be_populated_in_a_loop(self):
+    lines = int_lines("  Int a[2];\n  for n in 0..1 { a[n] = (n + 1) * 4; }\n  Agu t = { count: a[0], step: a[1] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(8), 4);", lines)
+
+  def test_elements_can_be_read_in_pe_operations(self):
+    lines = int_lines("  Int a[2] = { 10, 20 };\n  .pe0 { .spad = top0 + a[0]; }\n  .pe1 { .spad = top1 + a[1]; }")
+    self.assertIn("vme_pe0(fu_reg(PRIMARY, B), 0xa);", lines)
+    self.assertIn("vme_pe1(fu_reg(PRIMARY, B), 0x14);", lines)
+
+  def test_the_misuse_of_an_array_is_refused_with_the_line(self):
+    cases = [
+      ("Int a[0];", "line 2: a[...]: array size must be a number of 1 or more"),
+      ("Int a[2] = { 1, 2, 3 };", "line 2: a[...]: too many initializers (3 for size 2)"),
+      ("Int a[2];\n  a[2] = 1;", "line 3: a[2]: index out of range (0 to 1)"),
+      ("Int a[2];\n  a[-1] = 1;", "line 3: a[-1]: index out of range (0 to 1)"),
+      ("Int a = 1;\n  a[0] = 1;", "line 3: 'a' is not an array"),
+      ("Int a[2];\n  Int a = 1;", "line 3: 'a' is defined twice"),
+      ("Int a[2];\n  Int a[2];", "line 3: 'a' is defined twice"),
+      ("Int auto[2];", "line 2: auto is reserved for the cyc of a write AGU"),
+      ("Staging s[2];\n  Int s[2];", "line 3: 's' is already declared as a Staging variable"),
+      ("Agu t = { count: 3 };\n  Int t[2];", "line 3: 't' is already declared as an Agu variable"),
+      ("Transfer in = { memory: buf, count: 4 };\n  Int in[2];", "line 3: 'in' is already declared as a Transfer variable"),
+      ("Staging s[2];\n  s[0] = 1;", "line 3: 's' is a Staging variable, only an Int variable can receive an assignment"),
+      ("b[0] = 1;", "line 2: unknown array 'b'"),
+    ]
+    for body, message in cases:
+      with self.subTest(body=body):
+        with self.assertRaises(ValueError) as ctx:
+          int_lines("  " + body)
+        self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
