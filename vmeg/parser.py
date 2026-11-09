@@ -326,7 +326,7 @@ def parse_pe_assignment(p, target):
     if tok is None or tok[0] != "ident":
       p.error("expected parameters { ... } or the name of an Agu variable")
     kind = "aguref"
-    value = ("name", p.ident())
+    value = ("name", parse_declared_name(p))
   else:
     p.error(f"unknown element '{target[2]}' of a pe ({', '.join(AGU_KINDS)})", name_token)
   p.expect(";")
