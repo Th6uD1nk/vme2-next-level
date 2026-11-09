@@ -360,6 +360,18 @@ def parse_declarators(p, keyword, kind):
   return ("declarations", members)
 
 
+def parse_expr_list(p):
+  p.expect("{")
+  items = []
+  if not p.accept("}"):
+    while True:
+      items.append(parse_expr(p))
+      if not p.accept(","):
+        break
+    p.expect("}")
+  return ("list", items)
+
+
 def parse_int_declaration(p):
   p.expect("Int")
   members = []
