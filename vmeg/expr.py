@@ -32,6 +32,12 @@ OPERATORS = {
 }
 
 
+def element(expr, env):
+  index = fold(expr[2], env)
+  key = f"{expr[1]}[{index[1]}]" if index[0] == "num" else None
+  return index, env.get(key)
+
+
 def fold(expr, env):
   kind = expr[0]
   if kind == "name":
@@ -54,7 +60,8 @@ def fold(expr, env):
       return fold(expr[2] if condition[1] else expr[3], env)
     return ("cond", condition, fold(expr[2], env), fold(expr[3], env))
   if kind == "index":
-    return ("index", expr[1], fold(expr[2], env))
+    index, known = element(expr, env)
+    return known if known is not None else ("index", expr[1], index)
   if kind == "call":
     return ("call", expr[1], [fold(arg, env) for arg in expr[2]])
   return expr
@@ -123,6 +130,10 @@ def copy_text(expr, env):
     return f"({copy_text(expr[2], env)} {expr[1]} {copy_text(expr[3], env)})"
   if kind == "cond":
     return f"({copy_text(expr[1], env)} ? {copy_text(expr[2], env)} : {copy_text(expr[3], env)})"
+  if kind == "index":
+    known = element(expr, env)[1]
+    if known is not None:
+      return str(known[1]) if known[0] == "num" else known[1]
   raise ValueError(f"'{kind}' expression not supported here")
 
 
