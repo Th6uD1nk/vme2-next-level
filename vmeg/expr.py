@@ -68,6 +68,10 @@ def substitute_target(target, env):
   return ("target", fold(target[1], env), target[2])
 
 
+def substitute_decl_name(target, env):
+  return (target[0], fold(target[1], env)) if isinstance(target, tuple) else target
+
+
 def substitute(statement, env):
   kind = statement[0]
   line = statement[-1]
@@ -81,7 +85,9 @@ def substitute(statement, env):
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
     return ("stageset", substitute_target(statement[1], env), statement[2], fold(statement[3], env), line)
-  if kind in ("stagingdecl", "transferdecl", "paramsdef"):
+  if kind == "stagingdecl":
+    return ("stagingdecl", substitute_decl_name(statement[1], env), line)
+  if kind in ("transferdecl", "paramsdef"):
     return statement
   if kind in ("load", "store"):
     return (kind, [(name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]]) if name == "offsets" else item) for name, item in statement[1]], line)
