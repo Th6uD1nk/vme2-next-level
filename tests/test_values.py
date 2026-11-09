@@ -262,3 +262,40 @@ class FunctionOfATransferTest(unittest.TestCase):
     self.assertLess(out.index("void f(int n) {"), out.index("fTLoad(arr, VME_TOP_BUFF0_WOFF, n);"))
     self.assertLess(out.index("fTLoad(arr, VME_TOP_BUFF0_WOFF, n);"), out.index("f2TStore(arr, VME_BASE_BUFF1_WOFF + 8);"))
     self.assertEqual(out.count("vme_dma(MEMORY"), 2)
+
+
+def staging_lines(body, head=""):
+  text = head + ".kernel k direct {\n" + body + "\n}\n@kernel k config | exec\nvoid f() { }\n"
+  out = render(text, find_blocks(text), "t.vmeg.c")
+  return [line.strip() for line in out.splitlines() if "vme_fu" in line or "fu_reg" in line]
+
+
+STAGING_LOOP = "  for n in 0..2 {\n    pe[n] { s[n] = top[n] + 1; .spad = s[n] + 2; }\n  }"
+STAGING_MANUAL = "  .pe0 { s0 = top0 + 1; .spad = s0 + 2; }\n  .pe1 { s1 = top1 + 1; .spad = s1 + 2; }\n  .pe2 { s2 = top2 + 1; .spad = s2 + 2; }"
+
+
+class StagingArrayTest(unittest.TestCase):
+  def test_an_array_in_a_loop_gives_the_code_of_the_scalars_written_one_by_one(self):
+    expected = staging_lines("  Staging s0, s1, s2;\n" + STAGING_MANUAL)
+    self.assertEqual(staging_lines("  Staging s[3];\n" + STAGING_LOOP), expected)
+    self.assertEqual(staging_lines(STAGING_LOOP, "@declare { Staging s[3]; }\n"), expected)
+
+  def test_a_pe_reads_the_element_set_by_another_pe(self):
+    lines = staging_lines("  Staging s[2];\n  .pe0 { s[0] = top0 + 1; }\n  .pe1 { .spad = s[0] + top1; }")
+    self.assertIn("vme_pe1(vme_fu(PRIMARY), vme_mux(STAGING_0, TOP_1), fu_code(OP_ADD));", lines)
+
+  def test_the_misuse_of_an_array_is_refused_with_the_line(self):
+    cases = [
+      ("Staging s[2];\n  .pe0 { s[2] = top0 + 1; }", "line 3: s[2]: index out of range (0 to 1)"),
+      ("Staging s[2];\n  .pe0 { s = top0 + 1; }", "line 3: 's' is an array, write s[...]"),
+      ("Staging s;\n  .pe0 { s[0] = top0 + 1; }", "line 3: 's' is not an array"),
+      ("Staging s[0];", "line 2: s[...]: array size must be a number of 1 or more"),
+      ("Staging s[2];\n  .pe0 { .spad = s[1] + 1; }", "line 3: the Staging variable 's[1]' is read before it is set"),
+      ("Staging s[2];\n  .pe0 { s[0] = top0 + 1; }\n  .pe1 { s[0] = top1 + 1; }", "line 4: the Staging variable 's[0]' is already set at line 3"),
+      ("Staging s[2];\n  Staging s;", "line 3: the Staging variable 's' is declared twice"),
+    ]
+    for body, message in cases:
+      with self.subTest(body=body):
+        with self.assertRaises(ValueError) as ctx:
+          staging_lines("  " + body)
+        self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
