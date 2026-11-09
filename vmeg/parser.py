@@ -584,7 +584,7 @@ def parse_pe_block(p, index):
       continue
     if p.peek()[0] == "ident":
       start = p.peek()
-      name = p.ident()
+      name = parse_declared_name(p)
       p.expect("=")
       if p.peek() is not None and p.peek()[1] == "{":
         p.error("expected '.'", start)
