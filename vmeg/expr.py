@@ -91,7 +91,8 @@ def substitute(statement, env):
     folded = None if value is None else ("list", [fold(item, env) for item in value[1]]) if value[0] == "list" else fold(value, env)
     return ("int", substitute_decl_name(statement[1], env), folded, line)
   if kind == "elemset":
-    return ("elemset", statement[1], fold(statement[2], env), fold(statement[3], env), line)
+    value = ("params", fold_params(statement[3][1], env)) if statement[3][0] == "params" else fold(statement[3], env)
+    return ("elemset", statement[1], fold(statement[2], env), value, line)
   if kind == "agu":
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
   if kind == "stageset":
@@ -103,9 +104,11 @@ def substitute(statement, env):
   if kind in ("load", "store"):
     return (kind, [(name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]]) if name == "offsets" else item) for name, item in statement[1]], line)
   if kind == "agudecl":
-    return ("agudecl", statement[1], ("params", fold_params(statement[2][1], env)), statement[3], line)
+    value = statement[2]
+    folded = None if value is None else ("list", [("params", fold_params(item[1], env)) for item in value[1]]) if value[0] == "list" else ("params", fold_params(value[1], env))
+    return ("agudecl", substitute_decl_name(statement[1], env), folded, statement[3], line)
   if kind == "aguref":
-    return ("aguref", substitute_target(statement[1], env), statement[2], line)
+    return ("aguref", substitute_target(statement[1], env), ("name", substitute_decl_name(statement[2][1], env)), line)
   if kind == "peblock":
     return ("peblock", [substitute(inner, env) for inner in statement[1]], line)
   if kind == "operation":
