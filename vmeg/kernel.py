@@ -194,7 +194,16 @@ def unroll(loop):
     for statement in body:
       statement = substitute(statement, env)
       if statement[0] == "int":
-        env[statement[1]] = statement[2]
+        if isinstance(statement[1], tuple):
+          if statement[2] is not None:
+            for i, item in enumerate(statement[2][1]):
+              env[f"{statement[1][0]}[{i}]"] = item
+        else:
+          env[statement[1]] = statement[2]
+      elif statement[0] == "elemset":
+        if statement[2][0] == "num":
+          env[f"{statement[1]}[{statement[2][1]}]"] = statement[3]
+        out.append(statement)
       elif statement[0] == "for":
         out.extend(unroll(statement))
       elif statement[0] == "peblock":
@@ -619,11 +628,28 @@ def place(state, lines, pe, operations, line):
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "int":
-    if statement[1] == "auto":
+    if base_name(statement[1]) == "auto":
       raise ValueError("auto is reserved for the cyc of a write AGU")
-    if statement[1] in env and statement[1] not in state["macros"]:
-      raise ValueError(f"'{statement[1]}' is defined twice")
-    env[statement[1]] = full_value(statement[2], env)
+    keys = declare_keys(statement[1], "Int", env, state)
+    if isinstance(statement[1], tuple):
+      if statement[2] is not None:
+        name = statement[1][0]
+        items = statement[2][1]
+        if len(items) > len(keys):
+          raise ValueError(f"{name}[...]: too many initializers ({len(items)} for size {len(keys)})")
+        for key, item in zip(keys, items):
+          env[key] = full_value(item, env)
+    else:
+      env[keys[0]] = full_value(statement[2], env)
+  elif kind == "elemset":
+    name = statement[1]
+    key = resolve_var((name, statement[2]), env, state)
+    if name not in state["arrays"]:
+      raise ValueError(f"unknown array '{name}'")
+    array_kind = state["arrays"][name]["kind"]
+    if array_kind != "Int":
+      raise ValueError(f"'{name}' is a {array_kind} variable, only an Int variable can receive an assignment")
+    env[key] = full_value(statement[3], env)
   elif kind == "regs":
     for name, value in statement[1]:
       if value[0] != "num":
