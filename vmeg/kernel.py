@@ -495,6 +495,31 @@ def base_name(target):
   return target[0] if isinstance(target, tuple) else target
 
 
+def check_name_free(name, kind, state, env):
+  stores = {"Agu": (state["agus"], "an Agu"), "Staging": (state["stagings"], "a Staging"), "Transfer": (state["transfers"], "a Transfer")}
+  array_kind = state["arrays"].get(name, {}).get("kind")
+  if kind == "Int":
+    if (name in env and name not in state["macros"]) or array_kind == "Int":
+      raise ValueError(f"'{name}' is defined twice")
+  elif name in stores[kind][0] or array_kind == kind:
+    raise ValueError(f"the {kind} variable '{name}' is declared twice")
+  for other, (table, label) in stores.items():
+    if other != kind and (name in table or array_kind == other):
+      raise ValueError(f"'{name}' is already declared as {label} variable")
+
+
+def declare_keys(target, kind, env, state):
+  name = base_name(target)
+  check_name_free(name, kind, state, env)
+  if not isinstance(target, tuple):
+    return [name]
+  size = fold(target[1], env)
+  if size[0] != "num" or size[1] < 1:
+    raise ValueError(f"{name}[...]: array size must be a number of 1 or more")
+  state["arrays"][name] = {"kind": kind, "size": size[1]}
+  return [f"{name}[{i}]" for i in range(size[1])]
+
+
 def staging_refs(state):
   return {name: f"STAGING_{variable['pe'] + 4 * variable['unit']}" if "pe" in variable else None for name, variable in state["stagings"].items()}
 
