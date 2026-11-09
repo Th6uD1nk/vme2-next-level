@@ -656,13 +656,8 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"'{statement[1]}' is already declared as a Transfer variable")
     state["agus"][statement[1]] = {"params": statement[2], "owners": {}, "mode": statement[3]}
   elif kind == "stagingdecl":
-    if statement[1] in state["stagings"]:
-      raise ValueError(f"the Staging variable '{statement[1]}' is declared twice")
-    if statement[1] in state["agus"]:
-      raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
-    if statement[1] in state["transfers"]:
-      raise ValueError(f"'{statement[1]}' is already declared as a Transfer variable")
-    state["stagings"][statement[1]] = {}
+    for key in declare_keys(statement[1], "Staging", env, state):
+      state["stagings"][key] = {}
   elif kind in ("load", "store"):
     items = dict(statement[1])
     if "transfer" not in items:
@@ -766,12 +761,13 @@ def emit_statement(statement, env, lines, state):
       units[unit] = target
     remaps[operator] = units
   elif kind == "stageset":
-    name = statement[2]
+    name = resolve_var(statement[2], env, state)
     variable = state["stagings"].get(name)
     if variable is None:
-      if name in state["agus"]:
-        raise ValueError(f"'{name}' is an Agu variable, only a Staging variable can receive an operation")
-      raise ValueError(f"unknown Staging variable '{name}'")
+      base = base_name(statement[2])
+      if name in state["agus"] or state["arrays"].get(base, {}).get("kind") == "Agu":
+        raise ValueError(f"'{base}' is an Agu variable, only a Staging variable can receive an operation")
+      raise ValueError(f"unknown Staging variable '{base}'")
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
     pe = target_pe(statement[1], env)
