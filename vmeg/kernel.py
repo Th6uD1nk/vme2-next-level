@@ -35,10 +35,26 @@ def constant(expr, what):
 
 
 def source_ref(expr, stagings):
-  if expr[0] == "name" and expr[1] in stagings:
-    if stagings[expr[1]] is None:
-      raise ValueError(f"the Staging variable '{expr[1]}' is read before it is set")
-    return stagings[expr[1]]
+  if expr[0] == "name":
+    if expr[1] in stagings:
+      if stagings[expr[1]] is None:
+        raise ValueError(f"the Staging variable '{expr[1]}' is read before it is set")
+      return stagings[expr[1]]
+    if f"{expr[1]}[0]" in stagings:
+      raise ValueError(f"'{expr[1]}' is an array, write {expr[1]}[...]")
+  if expr[0] == "index" and expr[1] not in ("top", "base"):
+    if expr[1] in stagings:
+      raise ValueError(f"'{expr[1]}' is not an array")
+    if f"{expr[1]}[0]" in stagings:
+      if expr[2][0] != "num":
+        raise ValueError(f"{expr[1]}[...]: index must be a number")
+      key = f"{expr[1]}[{expr[2][1]}]"
+      if key not in stagings:
+        size = sum(1 for name in stagings if name.startswith(expr[1] + "["))
+        raise ValueError(f"{key}: index out of range (0 to {size - 1})")
+      if stagings[key] is None:
+        raise ValueError(f"the Staging variable '{key}' is read before it is set")
+      return stagings[key]
   return buffer_ref(expr)
 
 
