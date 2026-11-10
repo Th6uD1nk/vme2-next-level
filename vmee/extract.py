@@ -3,7 +3,7 @@ import re
 from vmee.listing import defines, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_lines, memory_edits
-from vmeg.kernel import TRANSFER_STRUCTS, TRANSFER_TYPES, declare_transfers, generate, transfer_initializer
+from vmeg.kernel import TRANSFER_STRUCTS, TRANSFER_TYPES, base_name, declare_transfers, generate, transfer_initializer
 from vmeg.qformat import translate_buffer
 from vmeg.registry import declarations, project_registry, split_declarators
 from vmeg.parser import declare_statements
@@ -164,7 +164,7 @@ def buffer_text(declaration):
 def declare_blocks(text, identifier):
   emulation = chosen_emulation(text, identifier)
   searched = [text[block[1]:block[3]] for block in find_blocks(text) if block[0] == "kernel" and kernel_name(text, block) in emulation["kernels"]] + [statement for statements in emulation["bodies"] for statement in statements]
-  blocks = [(block, {statement[1] for statement in declare_statements(text, block)}) for block in find_blocks(text) if block[0] == "declare"]
+  blocks = [(block, {base_name(statement[1]) for statement in declare_statements(text, block)}) for block in find_blocks(text) if block[0] == "declare"]
   found = []
   grown = True
   while grown:
