@@ -79,6 +79,12 @@ def substitute_decl_name(target, env):
   return (target[0], fold(target[1], env)) if isinstance(target, tuple) else target
 
 
+def fold_spread(spread, env):
+  base = substitute_decl_name(spread[1], env)
+  fields = [(name, ("spreadparams", [(subname, fold(subval, env)) for subname, subval in value[1]], value[2]) if value[0] == "spreadparams" else fold(value, env)) for name, value in spread[2]]
+  return ("spread", base, fields)
+
+
 def fold_transfer_items(value, env):
   if value is None:
     return None
@@ -86,6 +92,8 @@ def fold_transfer_items(value, env):
     return ("list", [fold_transfer_items(item, env) for item in value[1]])
   if value[0] == "params":
     return ("params", fold_params(value[1], env))
+  if value[0] == "spread":
+    return fold_spread(value, env)
   return fold(value, env)
 
 
@@ -101,7 +109,7 @@ def substitute(statement, env):
     folded = None if value is None else ("list", [fold(item, env) for item in value[1]]) if value[0] == "list" else fold(value, env)
     return ("int", substitute_decl_name(statement[1], env), folded, line)
   if kind == "elemset":
-    value = ("params", fold_params(statement[3][1], env)) if statement[3][0] == "params" else fold(statement[3], env)
+    value = fold_spread(statement[3], env) if statement[3][0] == "spread" else ("params", fold_params(statement[3][1], env)) if statement[3][0] == "params" else fold(statement[3], env)
     return ("elemset", statement[1], fold(statement[2], env), value, line)
   if kind == "agu":
     return ("agu", substitute_target(statement[1], env), ("params", fold_params(statement[2][1], env)), line)
@@ -114,7 +122,20 @@ def substitute(statement, env):
   if kind in ("transferdecl", "declaredtransfer"):
     return (kind, substitute_decl_name(statement[1], env), fold_transfer_items(statement[2], env), statement[3], line)
   if kind in ("load", "store"):
-    return (kind, [(name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]]) if name == "offsets" else item) for name, item in statement[1]], line)
+    items = []
+    for name, item in statement[1]:
+      if name == "offsets":
+        items.append((name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]])))
+      elif name == "transfer":
+        if item[0] == "spread":
+          items.append((name, fold_spread(item, env)))
+        elif item[0] == "name":
+          items.append((name, ("name", substitute_decl_name(item[1], env))))
+        else:
+          items.append((name, item))
+      else:
+        items.append((name, item))
+    return (kind, items, line)
   if kind == "agudecl":
     value = statement[2]
     folded = None if value is None else ("list", [("params", fold_params(item[1], env)) for item in value[1]]) if value[0] == "list" else ("params", fold_params(value[1], env))
