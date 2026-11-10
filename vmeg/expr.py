@@ -79,6 +79,16 @@ def substitute_decl_name(target, env):
   return (target[0], fold(target[1], env)) if isinstance(target, tuple) else target
 
 
+def fold_transfer_items(value, env):
+  if value is None:
+    return None
+  if value[0] == "list":
+    return ("list", [fold_transfer_items(item, env) for item in value[1]])
+  if value[0] == "params":
+    return ("params", fold_params(value[1], env))
+  return fold(value, env)
+
+
 def substitute(statement, env):
   kind = statement[0]
   line = statement[-1]
@@ -99,8 +109,10 @@ def substitute(statement, env):
     return ("stageset", substitute_target(statement[1], env), substitute_decl_name(statement[2], env), fold(statement[3], env), line)
   if kind == "stagingdecl":
     return ("stagingdecl", substitute_decl_name(statement[1], env), line)
-  if kind in ("transferdecl", "paramsdef"):
+  if kind == "paramsdef":
     return statement
+  if kind in ("transferdecl", "declaredtransfer"):
+    return (kind, substitute_decl_name(statement[1], env), fold_transfer_items(statement[2], env), statement[3], line)
   if kind in ("load", "store"):
     return (kind, [(name, ("offsets", [(buffer, fold(index, env), fold(value, env)) for buffer, index, value in item[1]]) if name == "offsets" else item) for name, item in statement[1]], line)
   if kind == "agudecl":
