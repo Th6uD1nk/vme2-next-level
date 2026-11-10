@@ -528,6 +528,8 @@ def check_name_free(name, kind, state, env):
       raise ValueError(f"'{name}' is defined twice")
   elif name in stores[kind][0] or array_kind == kind:
     raise ValueError(f"the {kind} variable '{name}' is declared twice")
+  elif (name in env and name not in state["macros"]) or array_kind == "Int":
+    raise ValueError(f"'{name}' is already declared as an Int variable")
   for other, (table, label) in stores.items():
     if other != kind and (name in table or array_kind == other):
       raise ValueError(f"'{name}' is already declared as {label} variable")
@@ -647,9 +649,14 @@ def emit_statement(statement, env, lines, state):
     if name not in state["arrays"]:
       raise ValueError(f"unknown array '{name}'")
     array_kind = state["arrays"][name]["kind"]
-    if array_kind != "Int":
+    if array_kind == "Int":
+      env[key] = full_value(statement[3], env)
+    elif array_kind == "Agu":
+      if statement[3][0] != "params":
+        raise ValueError(f"'{name}' is an Agu variable, it takes parameters between braces")
+      state["agus"][key]["params"] = statement[3]
+    else:
       raise ValueError(f"'{name}' is a {array_kind} variable, only an Int variable can receive an assignment")
-    env[key] = full_value(statement[3], env)
   elif kind == "regs":
     for name, value in statement[1]:
       if value[0] != "num":
@@ -674,13 +681,17 @@ def emit_statement(statement, env, lines, state):
     state["routing"][statement[1][2]][pe] = pe
     lines.extend(generate_agu(statement[1], statement[2], env, state, len(lines), statement[-1]))
   elif kind == "agudecl":
-    if statement[1] in state["agus"]:
-      raise ValueError(f"the Agu variable '{statement[1]}' is declared twice")
-    if statement[1] in state["stagings"]:
-      raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
-    if statement[1] in state["transfers"]:
-      raise ValueError(f"'{statement[1]}' is already declared as a Transfer variable")
-    state["agus"][statement[1]] = {"params": statement[2], "owners": {}, "mode": statement[3]}
+    keys = declare_keys(statement[1], "Agu", env, state)
+    if isinstance(statement[1], tuple):
+      items = statement[2][1] if statement[2] is not None else []
+      if len(items) > len(keys):
+        name = statement[1][0]
+        raise ValueError(f"{name}[...]: too many initializers ({len(items)} for size {len(keys)})")
+      for i, key in enumerate(keys):
+        params = items[i] if i < len(items) else None
+        state["agus"][key] = {"params": params, "owners": {}, "mode": statement[3]}
+    else:
+      state["agus"][keys[0]] = {"params": statement[2], "owners": {}, "mode": statement[3]}
   elif kind == "stagingdecl":
     for key in declare_keys(statement[1], "Staging", env, state):
       state["stagings"][key] = {}
@@ -729,20 +740,23 @@ def emit_statement(statement, env, lines, state):
     if kind == "declaredtransfer":
       state["transfers"][statement[1]]["declared"] = transfer_variable(statement[1])
   elif kind == "aguref":
-    variable = state["agus"].get(statement[2][1])
+    ref = resolve_var(statement[2][1], env, state)
+    variable = state["agus"].get(ref)
     if variable is None:
-      raise ValueError(f"unknown Agu variable '{statement[2][1]}'")
+      raise ValueError(f"unknown Agu variable '{base_name(statement[2][1])}'")
+    if variable["params"] is None:
+      raise ValueError(f"the Agu variable '{ref}' is read before it is set")
     pe = target_pe(statement[1], env)
     slot = statement[1][2]
     for bound in variable["owners"]:
       if bound != slot:
-        raise ValueError(f"the Agu variable '{statement[2][1]}' is already bound to .{bound}, it cannot be bound to .{slot}")
+        raise ValueError(f"the Agu variable '{ref}' is already bound to .{bound}, it cannot be bound to .{slot}")
     claim(state, pe, slot, statement[-1])
     if slot not in variable["owners"]:
       variable["owners"][slot] = pe
       lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1], variable["mode"]))
     if any(key == "cyc" and has_auto(value) for key, value in variable["params"][1]):
-      state["sharers"].setdefault(statement[2][1], []).append((pe, statement[-1]))
+      state["sharers"].setdefault(ref, []).append((pe, statement[-1]))
     state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "operation":
     pe = target_pe(statement[1], env)
