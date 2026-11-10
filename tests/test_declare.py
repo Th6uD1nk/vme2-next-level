@@ -229,6 +229,38 @@ void meLibOnProcess(void) {
     entry = emulations(source)[0]
     self.assertEqual([(link[0], link[1], link[3]) for link in entry["global"]], [("TOP_0", 8, "a"), ("TOP_1", 16, "b")])
 
+  def test_the_misuse_of_an_array_is_refused_with_the_line(self):
+    cases = [
+      ("Transfer in[0];", "line 3: in[...]: array size must be a number of 1 or more"),
+      ("Transfer in[2] = { { memory: a, count: 1 }, { memory: a, count: 2 }, { memory: a, count: 3 } };", "line 3: in[...]: too many initializers (3 for size 2)"),
+      ("Transfer in[2];\n  .load { .transfer = in[0]; }", "line 4: the Transfer variable 'in[0]' is read before it is set"),
+      ("Transfer in[2] = { { memory: a, count: 1 } };\n  .load { .transfer = in; }", "line 4: 'in' is an array, write in[...]"),
+      ("Transfer in = { memory: a, count: 1 };\n  .load { .transfer = in[0]; }", "line 4: 'in' is not an array"),
+      ("Transfer in[2] = { { memory: a, count: 1 } };\n  .load { .transfer = in[2]; }", "line 4: in[2]: index out of range (0 to 1)"),
+      ("Transfer in[2] = { { memory: a, count: 1 } };\n  .load { .transfer = in[-1]; }", "line 4: in[-1]: index out of range (0 to 1)"),
+      ("Transfer in[2];\n  in[0] = 5;", "line 4: 'in' is a Transfer variable, it takes parameters between braces"),
+      ("Staging s[2];\n  Transfer s = { memory: a, count: 1 };", "line 4: 's' is already declared as a Staging variable"),
+      ("Int a[2];\n  Transfer a = { memory: a, count: 1 };", "line 4: 'a' is already declared as an Int variable"),
+      ("Agu t[2];\n  Transfer t = { memory: a, count: 1 };", "line 4: 't' is already declared as an Agu variable"),
+      ("Transfer in[2];\n  Transfer in = { memory: a, count: 1 };", "line 4: the Transfer variable 'in' is declared twice"),
+      ("Transfer in[2];\n  Transfer in[2];", "line 4: the Transfer variable 'in' is declared twice"),
+      ("Agu t[2] = { { count: 3 } };\n  .load { .transfer = t[0]; }", "line 4: 't' is an Agu variable, only a Transfer variable can be used in .load"),
+      ("Staging s[2];\n  .load { .transfer = s[0]; }", "line 4: 's' is a Staging variable, only a Transfer variable can be used in .load"),
+      ("Transfer in[2] = { { memory: a, count: 1 } };\n  .pe0 { in[0] = 5; }", "line 4: 'in' is a Transfer variable, only a Staging variable can receive an operation"),
+    ]
+    for body, message in cases:
+      text = f"volatile Buffer a[16];\n.kernel k direct {{\n  {body}\n}}\n@kernel k config | exec\nvoid f(void) {{}}\n"
+      with self.subTest(body=body):
+        with self.assertRaises(ValueError) as ctx:
+          translated(text)
+        self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+    with self.assertRaises(ValueError) as ctx:
+      translated("volatile Buffer a[16];\n@declare { Transfer in[2]; }\n")
+    self.assertIn("the Transfer variable 'in[0]' is read before it is set", str(ctx.exception))
+    with self.assertRaises(ValueError) as ctx:
+      translated("volatile Buffer a[16], b[16];\n@declare {\n  Transfer in[2] = { { memory: a, count: 15 }, { memory: b, count: 15 } };\n  Transfer(Words) w = { ...in[0], memory: b };\n}\n")
+    self.assertIn("Transfer w is a Transfer(Words), its base 'in[0]' is a Transfer", str(ctx.exception))
+
 
 if __name__ == "__main__":
   unittest.main()
