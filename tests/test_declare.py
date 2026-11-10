@@ -159,6 +159,76 @@ void f(void) {}
     self.assertIn("kIn0Load(a, VME_TOP_BUFF0_WOFF);", out)
     self.assertIn("kIn1Store(b, VME_BASE_BUFF0_WOFF);", out)
 
+  def test_an_array_can_be_declared_in_declare_block(self):
+    source = """volatile Buffer a[16], b[16];
+@declare {
+  Transfer in[2] = { { memory: a, count: 7 }, { memory: b, count: 15 } };
+  Transfer(Words) w[2] = { { memory: a, count: 3, step: 2 }, { memory: b, count: 7, step: 4 } };
+}
+.kernel k direct {
+  .load { .transfer = in[0]; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = w[1]; .scope = global; .offsets { .top1 = 0; } }
+  .store { .transfer = in[1]; .scope = global; .offsets { .base0 = 0; } }
+  Agu t = { count: 3 };
+  .pe0 { .top = t; .spad = top0 + top0; }
+}
+@kernel k config | exec
+void f(void) {}
+"""
+    out = code(source)
+    self.assertIn("VmegTransfer vmeVarIn0 = { a, 7 };", out)
+    self.assertIn("VmegTransfer vmeVarIn1 = { b, 15 };", out)
+    self.assertIn("VmegTransferWords vmeVarW0 = { a, 3, 0, 2, 0, 0, 0 };", out)
+    self.assertIn("VmegTransferWords vmeVarW1 = { b, 7, 0, 4, 0, 0, 0 };", out)
+    self.assertIn("vmeTransferLoad(&vmeVarIn0, VME_TOP_BUFF0_WOFF);", out)
+    self.assertIn("vmeTransferLoadWords(&vmeVarW1, VME_TOP_BUFF1_WOFF);", out)
+    self.assertIn("vmeTransferStore(&vmeVarIn1, VME_BASE_BUFF0_WOFF);", out)
+
+  def test_spread_of_array_elements_in_declarations_and_load(self):
+    source = """volatile Buffer a[16], b[16], c[16];
+@declare {
+  Transfer in[2] = { { memory: a, count: 7 }, { memory: b, count: 15 } };
+  Transfer copy[2] = { { ...in[0], memory: c }, { ...in[1], count: 3 } };
+}
+.kernel k direct {
+  .load { .transfer = copy[0]; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = { ...in[1], memory: c, count: 5 }; .scope = global; .offsets { .top1 = 0; } }
+  Agu t = { count: 3 };
+  .pe0 { .top = t; .spad = top0 + top0; }
+}
+@kernel k config | exec
+void f(void) {}
+"""
+    out = code(source)
+    self.assertIn("VmegTransfer vmeVarCopy0 = { c, 7 };", out)
+    self.assertIn("VmegTransfer vmeVarCopy1 = { b, 3 };", out)
+    self.assertIn("vmeTransferLoad(&vmeVarCopy0, VME_TOP_BUFF0_WOFF);", out)
+    self.assertIn("VmegTransfer vmeCopyVar = vmeVarIn1;", out)
+    self.assertIn("vmeCopyVar.memory = c;", out)
+    self.assertIn("vmeCopyVar.count = 5;", out)
+    self.assertIn("vmeTransferLoad(&vmeCopyVar, VME_TOP_BUFF1_WOFF);", out)
+
+  def test_emulations_finds_declare_blocks_with_transfer_arrays(self):
+    source = """volatile Buffer a[16], b[16];
+@declare {
+  Transfer in[2] = { { memory: a, count: 7 }, { memory: b, count: 15 } };
+}
+.kernel k direct {
+  Agu t = { count: 3 };
+  .pe0 { .top = t; .spad = top0 + top0; }
+}
+void meLibOnProcess(void) {
+  @emulate "e" {
+    @kernel k config {
+      .load { .transfer = in[0]; .scope = global; .offsets { .top0 = 0; } }
+      .load { .transfer = in[1]; .scope = global; .offsets { .top1 = 0; } }
+    }
+  }
+}
+"""
+    entry = emulations(source)[0]
+    self.assertEqual([(link[0], link[1], link[3]) for link in entry["global"]], [("TOP_0", 8, "a"), ("TOP_1", 16, "b")])
+
 
 if __name__ == "__main__":
   unittest.main()
