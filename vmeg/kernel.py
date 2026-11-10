@@ -727,19 +727,34 @@ def emit_statement(statement, env, lines, state):
     state[kind + "s"].append(record)
     state["sequence"].append(record)
   elif kind in ("transferdecl", "declaredtransfer"):
-    if statement[1] in state["transfers"]:
-      raise ValueError(f"the Transfer variable '{statement[1]}' is declared twice")
-    if statement[1] in state["agus"]:
-      raise ValueError(f"'{statement[1]}' is already declared as an Agu variable")
-    if statement[1] in state["stagings"]:
-      raise ValueError(f"'{statement[1]}' is already declared as a Staging variable")
-    if statement[2][0] == "spread":
-      transfer = spread_declaration(statement, state["transfers"], env)
+    keys = declare_keys(statement[1], "Transfer", env, state)
+    type_name = statement[3]
+    if isinstance(statement[1], tuple):
+      items = statement[2][1] if statement[2] is not None else []
+      if len(items) > len(keys):
+        name = statement[1][0]
+        raise ValueError(f"{name}[...]: too many initializers ({len(items)} for size {len(keys)})")
+      for i, key in enumerate(keys):
+        if i < len(items):
+          item = items[i]
+          if item[0] == "spread":
+            transfer = spread_declaration(("transferdecl", key, item, type_name), state["transfers"], env)
+          else:
+            transfer = dict(TRANSFER_KINDS[type_name].check(key, item, env), type=type_name)
+        else:
+          transfer = {"type": type_name, "kind": TRANSFER_KINDS[type_name], "set": False}
+        state["transfers"][key] = transfer
+        if kind == "declaredtransfer":
+          state["transfers"][key]["declared"] = transfer_variable(key)
     else:
-      transfer = dict(TRANSFER_KINDS[statement[3]].check(statement[1], statement[2], env), type=statement[3])
-    state["transfers"][statement[1]] = transfer
-    if kind == "declaredtransfer":
-      state["transfers"][statement[1]]["declared"] = transfer_variable(statement[1])
+      key = keys[0]
+      if statement[2][0] == "spread":
+        transfer = spread_declaration(statement, state["transfers"], env)
+      else:
+        transfer = dict(TRANSFER_KINDS[type_name].check(key, statement[2], env), type=type_name)
+      state["transfers"][key] = transfer
+      if kind == "declaredtransfer":
+        state["transfers"][key]["declared"] = transfer_variable(key)
   elif kind == "aguref":
     ref = resolve_var(statement[2][1], env, state)
     variable = state["agus"].get(ref)
@@ -979,7 +994,12 @@ def declare_transfers(text, block):
       continue
     if statement[3] not in TRANSFER_TYPES:
       raise ValueError(f"line {statement[-1]}: Transfer({statement[3]}) is not generated yet (only Transfer and Transfer(Words))")
-    found.append((transfer_variable(statement[1]), statement[3], state["transfers"][statement[1]]))
+    keys = [f"{statement[1][0]}[{i}]" for i in range(state["arrays"][statement[1][0]]["size"])] if isinstance(statement[1], tuple) else [statement[1]]
+    for key in keys:
+      transfer = state["transfers"][key]
+      if transfer.get("set") is False or "memory" not in transfer:
+        raise ValueError(f"line {statement[-1]}: the Transfer variable '{key}' is read before it is set")
+      found.append((transfer_variable(key), statement[3], transfer))
   return found
 
 
