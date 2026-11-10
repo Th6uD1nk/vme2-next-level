@@ -377,7 +377,8 @@ def parse_item_list(p):
   items = []
   if not p.accept("}"):
     while True:
-      items.append(parse_params(p))
+      spread = p.peek() is not None and p.peek()[1] == "{" and ellipsis_at(p, 1)
+      items.append(parse_transfer_spread(p) if spread else parse_params(p))
       if not p.accept(","):
         break
     p.expect("}")
@@ -442,10 +443,14 @@ def parse_transfer_declaration(p):
       p.error(f"the Transfer type {kind} is not described ({', '.join(TRANSFER_TYPES)})", token)
   members = []
   while True:
-    name = p.ident()
-    p.expect("=")
-    spread = p.peek() is not None and p.peek()[1] == "{" and ellipsis_at(p, 1)
-    members.append(("transferdecl", name, parse_transfer_spread(p) if spread else parse_params(p), kind))
+    target = parse_declared_name(p)
+    if isinstance(target, tuple):
+      value = parse_item_list(p) if p.accept("=") else None
+    else:
+      p.expect("=")
+      spread = p.peek() is not None and p.peek()[1] == "{" and ellipsis_at(p, 1)
+      value = parse_transfer_spread(p) if spread else parse_params(p)
+    members.append(("transferdecl", target, value, kind))
     if not p.accept(","):
       break
   p.expect(";")
@@ -784,7 +789,8 @@ def parse_element_assignment(p):
   p.expect("=")
   tok = p.peek()
   if tok is not None and tok[0] == "punct" and tok[1] == "{":
-    value = parse_params(p)
+    spread = ellipsis_at(p, 1)
+    value = parse_transfer_spread(p) if spread else parse_params(p)
   else:
     value = parse_expr(p)
   p.expect(";")
