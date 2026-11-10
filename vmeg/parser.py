@@ -526,7 +526,7 @@ def parse_transfer_spread(p):
   p.expect("{")
   if not accept_ellipsis(p):
     p.error("a Transfer written in .transfer starts with ... and the name of a Transfer: .transfer = { ...name, field: value };", start)
-  base = p.ident()
+  base = parse_declared_name(p)
   items = []
   if p.accept(","):
     parse_spread_fields(p, items, False)
@@ -558,7 +558,7 @@ def parse_transfer_use(p):
       items.append((name, parse_transfer_spread(p)))
       p.expect(";")
       continue
-    items.append((name, ("name", p.ident())))
+    items.append((name, ("name", parse_declared_name(p) if name == "transfer" else p.ident())))
     if name == "scope" and value[1] not in TRANSFER_SCOPES:
       p.error(f".scope must be {' or '.join(TRANSFER_SCOPES)}", value)
     p.expect(";")
