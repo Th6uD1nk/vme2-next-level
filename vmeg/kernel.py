@@ -397,15 +397,24 @@ def transfer_function(name, transfer, direction):
   return f"static inline void {name}(volatile u32* memory, u32 spadOffset{parameters}) {{\n" + "".join(f"  {line}\n" for line in body) + "}"
 
 
-def spread_declaration(statement, transfers, env):
+def spread_declaration(statement, transfers, env, state=None):
   name, spread, type_name = statement[1], statement[2], statement[3]
-  base = transfers.get(spread[1])
+  base_key = resolve_var(spread[1], env, state) if state else spread[1]
+  base = transfers.get(base_key)
   if base is None:
-    raise ValueError(f"unknown Transfer variable '{spread[1]}'")
+    base_ident = base_name(spread[1])
+    if state and (base_ident in state["agus"] or state["arrays"].get(base_ident, {}).get("kind") == "Agu"):
+      raise ValueError(f"'{base_ident}' is an Agu variable, only a Transfer variable can be written with ...")
+    if state and (base_ident in state["stagings"] or state["arrays"].get(base_ident, {}).get("kind") == "Staging"):
+      raise ValueError(f"'{base_ident}' is a Staging variable, only a Transfer variable can be written with ...")
+    raise ValueError(f"unknown Transfer variable '{base_ident}'")
+  if base.get("set") is False or "memory" not in base:
+    raise ValueError(f"the Transfer variable '{base_key}' is read before it is set")
   if base["kind"] is not TRANSFER_KINDS[type_name]:
-    raise ValueError(f"Transfer {name} is a {transfer_type_name(type_name)}, its base '{spread[1]}' is a {transfer_type_name(base['type'])}")
-  check_spread(spread, base, False)
-  merged = dict(apply_spread(spread, base, env)[0], type=type_name)
+    raise ValueError(f"Transfer {name} is a {transfer_type_name(type_name)}, its base '{base_key}' is a {transfer_type_name(base['type'])}")
+  spread_normalized = ("spread", base_key, spread[2])
+  check_spread(spread_normalized, base, False)
+  merged = dict(apply_spread(spread_normalized, base, env)[0], type=type_name)
   merged.pop("declared", None)
   return merged
 
@@ -661,7 +670,7 @@ def emit_statement(statement, env, lines, state):
         raise ValueError(f"'{name}' is a Transfer variable, it takes parameters between braces")
       type_name = state["transfers"][key]["type"]
       if statement[3][0] == "spread":
-        transfer = spread_declaration(("transferdecl", key, statement[3], type_name), state["transfers"], env)
+        transfer = spread_declaration(("transferdecl", key, statement[3], type_name), state["transfers"], env, state)
       else:
         transfer = dict(TRANSFER_KINDS[type_name].check(key, statement[3], env), type=type_name)
       state["transfers"][key] = transfer
@@ -747,7 +756,7 @@ def emit_statement(statement, env, lines, state):
         if i < len(items):
           item = items[i]
           if item[0] == "spread":
-            transfer = spread_declaration(("transferdecl", key, item, type_name), state["transfers"], env)
+            transfer = spread_declaration(("transferdecl", key, item, type_name), state["transfers"], env, state)
           else:
             transfer = dict(TRANSFER_KINDS[type_name].check(key, item, env), type=type_name)
         else:
@@ -758,7 +767,7 @@ def emit_statement(statement, env, lines, state):
     else:
       key = keys[0]
       if statement[2][0] == "spread":
-        transfer = spread_declaration(statement, state["transfers"], env)
+        transfer = spread_declaration(statement, state["transfers"], env, state)
       else:
         transfer = dict(TRANSFER_KINDS[type_name].check(key, statement[2], env), type=type_name)
       state["transfers"][key] = transfer
