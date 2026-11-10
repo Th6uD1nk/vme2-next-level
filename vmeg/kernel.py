@@ -386,7 +386,8 @@ def transfer_lines(transfer, targets, direction):
 
 
 def camel(*words):
-  return words[0] + "".join(word[:1].upper() + word[1:] for word in words[1:])
+  clean = [word.replace("[", "").replace("]", "") for word in words]
+  return clean[0] + "".join(word[:1].upper() + word[1:] for word in clean[1:])
 
 
 def transfer_function(name, transfer, direction):
@@ -947,7 +948,8 @@ TRANSFER_STRUCTS = {
 
 
 def transfer_variable(name):
-  return "vmeVar" + name[:1].upper() + name[1:]
+  clean = name.replace("[", "").replace("]", "")
+  return "vmeVar" + clean[:1].upper() + clean[1:]
 
 
 def transfer_initializer(kind, transfer):
