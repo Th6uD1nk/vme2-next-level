@@ -109,5 +109,56 @@ class DeclareTest(unittest.TestCase):
       translated("volatile Buffer a[4];\n@declare { Transfer(Halves) h = { memory: a, count: 3 }; }\n")
 
 
+TRANSFER_ARRAY_LOOP = """
+volatile Buffer a[16], b[16];
+.kernel k direct {
+  Transfer in[2] = { { memory: a, count: 7 }, { memory: b, count: 15 } };
+  for i in 0..1 {
+    .load { .transfer = in[i]; .scope = global; .offsets { top[i] = 0; } }
+  }
+  Agu t = { count: 3 };
+  .pe0 { .top = t; .spad = top0 + top0; }
+}
+@kernel k config | exec
+void f(void) {}
+"""
+
+TRANSFER_ARRAY_MANUAL = """
+volatile Buffer a[16], b[16];
+.kernel k direct {
+  Transfer in[2] = { { memory: a, count: 7 }, { memory: b, count: 15 } };
+  .load { .transfer = in[0]; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = in[1]; .scope = global; .offsets { .top1 = 0; } }
+  Agu t = { count: 3 };
+  .pe0 { .top = t; .spad = top0 + top0; }
+}
+@kernel k config | exec
+void f(void) {}
+"""
+
+
+class TransferArrayTest(unittest.TestCase):
+  def test_an_array_in_a_loop_gives_the_code_of_the_scalars_written_one_by_one(self):
+    self.assertEqual(code(TRANSFER_ARRAY_LOOP), code(TRANSFER_ARRAY_MANUAL))
+
+  def test_elements_can_be_assigned_and_used_in_load_and_store(self):
+    source = """volatile Buffer a[16], b[16];
+.kernel k direct {
+  Transfer in[2];
+  in[0] = { memory: a, count: 7 };
+  in[1] = { memory: b, count: 15 };
+  .load { .transfer = in[0]; .scope = global; .offsets { .top0 = 0; } }
+  .store { .transfer = in[1]; .scope = global; .offsets { .base0 = 0; } }
+  Agu t = { count: 3 };
+  .pe0 { .top = t; .spad = top0 + top0; }
+}
+@kernel k config | exec
+void f(void) {}
+"""
+    out = code(source)
+    self.assertIn("kIn0Load(a, VME_TOP_BUFF0_WOFF);", out)
+    self.assertIn("kIn1Store(b, VME_BASE_BUFF0_WOFF);", out)
+
+
 if __name__ == "__main__":
   unittest.main()
