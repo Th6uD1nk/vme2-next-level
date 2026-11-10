@@ -656,6 +656,15 @@ def emit_statement(statement, env, lines, state):
       if statement[3][0] != "params":
         raise ValueError(f"'{name}' is an Agu variable, it takes parameters between braces")
       state["agus"][key]["params"] = statement[3]
+    elif array_kind == "Transfer":
+      if statement[3][0] not in ("params", "spread"):
+        raise ValueError(f"'{name}' is a Transfer variable, it takes parameters between braces")
+      type_name = state["transfers"][key]["type"]
+      if statement[3][0] == "spread":
+        transfer = spread_declaration(("transferdecl", key, statement[3], type_name), state["transfers"], env)
+      else:
+        transfer = dict(TRANSFER_KINDS[type_name].check(key, statement[3], env), type=type_name)
+      state["transfers"][key] = transfer
     else:
       raise ValueError(f"'{name}' is a {array_kind} variable, only an Int variable can receive an assignment")
   elif kind == "regs":
