@@ -729,16 +729,26 @@ def emit_statement(statement, env, lines, state):
       seen.add((buffer, slot[1]))
       offset = full_value(value, env)
       targets.append((buffer, slot[1], offset))
-    if items["transfer"][1] not in state["transfers"]:
-      raise ValueError(f"unknown Transfer variable '{items['transfer'][1]}'")
-    transfer = state["transfers"][items["transfer"][1]]
+    spread = items["transfer"] if items["transfer"][0] == "spread" else None
+    ref = resolve_var(spread[1] if spread else items["transfer"][1], env, state)
+    if ref not in state["transfers"]:
+      base = base_name(spread[1] if spread else items["transfer"][1])
+      if base in state["agus"] or state["arrays"].get(base, {}).get("kind") == "Agu":
+        raise ValueError(f"'{base}' is an Agu variable, only a Transfer variable can be used in .{kind}")
+      if base in state["stagings"] or state["arrays"].get(base, {}).get("kind") == "Staging":
+        raise ValueError(f"'{base}' is a Staging variable, only a Transfer variable can be used in .{kind}")
+      raise ValueError(f"unknown Transfer variable '{base}'")
+    transfer = state["transfers"][ref]
+    if transfer.get("set") is False or "memory" not in transfer:
+      raise ValueError(f"the Transfer variable '{ref}' is read before it is set")
     assignments = None
-    if items["transfer"][0] == "spread":
-      check_spread(items["transfer"], transfer)
-      transfer, assignments = apply_spread(items["transfer"], transfer, env)
+    if spread is not None:
+      spread = ("spread", ref, spread[2])
+      check_spread(spread, transfer)
+      transfer, assignments = apply_spread(spread, transfer, env)
     transfer["kind"].ensure_generated(kind)
     shared = transfer.get("declared")
-    function = shared_transfer_name(transfer["type"], kind) if shared else camel(state["owner"], items["transfer"][1], kind.capitalize()) if state["owner"] else None
+    function = shared_transfer_name(transfer["type"], kind) if shared else camel(state["owner"], ref, kind.capitalize()) if state["owner"] else None
     definition = shared_transfer_function(transfer["type"], kind) if shared else transfer_function(function, transfer, kind) if function else None
     calls = shared_transfer_calls(function, shared, targets, transfer["type"], assignments) if shared else transfer_calls(function, transfer, targets) if function else None
     record = {"function": function, "definition": definition, "calls": calls, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
@@ -841,6 +851,8 @@ def emit_statement(statement, env, lines, state):
       base = base_name(statement[2])
       if name in state["agus"] or state["arrays"].get(base, {}).get("kind") == "Agu":
         raise ValueError(f"'{base}' is an Agu variable, only a Staging variable can receive an operation")
+      if name in state["transfers"] or state["arrays"].get(base, {}).get("kind") == "Transfer":
+        raise ValueError(f"'{base}' is a Transfer variable, only a Staging variable can receive an operation")
       raise ValueError(f"unknown Staging variable '{base}'")
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
