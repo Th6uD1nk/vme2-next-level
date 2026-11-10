@@ -350,3 +350,55 @@ class IntArrayTest(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
           int_lines("  " + body)
         self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+
+
+def agu_array_lines(body, head=""):
+  text = head + ".kernel k direct {\n" + body + "\n}\n@kernel k config | exec\nvoid f() { }\n"
+  out = render(text, find_blocks(text), "t.vmeg.c")
+  return [line.strip() for line in out.splitlines() if "agu_top(" in line or "agu_write(" in line or "vme_icn(AGU_" in line]
+
+
+AGU_ARRAY_LOOP = "  Agu t[2] = { { count: 10 }, { count: 20 } };\n  Agu w = { count: 3 };\n  for n in 0..1 {\n    pe[n] { .top = t[n]; .write = w; .spad = top[n] + top[n]; }\n  }"
+AGU_ARRAY_MANUAL = "  Agu t0 = { count: 10 }, t1 = { count: 20 };\n  Agu w = { count: 3 };\n  .pe0 { .top = t0; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t1; .write = w; .spad = top1 + top1; }"
+
+
+class AguArrayTest(unittest.TestCase):
+  def test_an_array_in_a_loop_gives_the_code_of_the_scalars_written_one_by_one(self):
+    self.assertEqual(agu_array_lines(AGU_ARRAY_LOOP), agu_array_lines(AGU_ARRAY_MANUAL))
+
+  def test_an_array_can_be_declared_in_declare_block(self):
+    lines = agu_array_lines("  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t[1]; .write = w; .spad = top1 + top1; }", "@declare { Agu t[2] = { { count: 10 }, { count: 20 } }; }\n")
+    self.assertIn("vme_pe0(agu_top(COUNT), VME_DEF_STEP, 0xa);", lines)
+    self.assertIn("vme_pe1(agu_top(COUNT), VME_DEF_STEP, 0x14);", lines)
+
+  def test_elements_can_be_assigned_and_used_in_pes(self):
+    lines = agu_array_lines("  Agu t[2];\n  t[0] = { count: 10 };\n  t[1] = { count: 20 };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t[1]; .write = w; .spad = top1 + top1; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), VME_DEF_STEP, 0xa);", lines)
+    self.assertIn("vme_pe1(agu_top(COUNT), VME_DEF_STEP, 0x14);", lines)
+
+  def test_an_element_can_be_shared_between_pes(self):
+    lines = agu_array_lines("  Agu t[2] = { { count: 10 }, { count: 20 } };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t[0]; .write = w; .spad = top1 + top1; }")
+    self.assertIn("vme_icn(AGU_TOP, 0x4400);", lines)
+
+  def test_the_misuse_of_an_array_is_refused_with_the_line(self):
+    cases = [
+      ("Agu t[0];", "line 2: t[...]: array size must be a number of 1 or more"),
+      ("Agu t[2] = { { count: 1 }, { count: 2 }, { count: 3 } };", "line 2: t[...]: too many initializers (3 for size 2)"),
+      ("Agu t[2];\n  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }", "line 4: the Agu variable 't[0]' is read before it is set"),
+      ("Agu t[2] = { { count: 3 } };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }", "line 4: 't' is an array, write t[...]"),
+      ("Agu t = { count: 3 };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }", "line 4: 't' is not an array"),
+      ("Agu t[2] = { { count: 3 } };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[2]; .write = w; .spad = top0 + top0; }", "line 4: t[2]: index out of range (0 to 1)"),
+      ("Agu t[2] = { { count: 3 } };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[-1]; .write = w; .spad = top0 + top0; }", "line 4: t[-1]: index out of range (0 to 1)"),
+      ("Agu t[2];\n  t[0] = 5;", "line 3: 't' is an Agu variable, it takes parameters between braces"),
+      ("Staging s[2];\n  Agu s = { count: 3 };", "line 3: 's' is already declared as a Staging variable"),
+      ("Int a[2];\n  Agu a = { count: 3 };", "line 3: 'a' is already declared as an Int variable"),
+      ("Int a = 1;\n  Agu a = { count: 3 };", "line 3: 'a' is already declared as an Int variable"),
+      ("Agu t[2];\n  Agu t = { count: 3 };", "line 3: the Agu variable 't' is declared twice"),
+      ("Agu t[2];\n  Agu t[2];", "line 3: the Agu variable 't' is declared twice"),
+      ("Agu t[2] = { { count: 3 } };\n  .pe0 { .top = t[0]; .base = t[0]; }", "line 3: the Agu variable 't[0]' is already bound to .top, it cannot be bound to .base"),
+    ]
+    for body, message in cases:
+      with self.subTest(body=body):
+        with self.assertRaises(ValueError) as ctx:
+          agu_array_lines("  " + body)
+        self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
