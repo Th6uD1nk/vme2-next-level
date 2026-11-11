@@ -15,6 +15,7 @@ def main(argv=None):
   parser.add_argument("--list", action="store_true")
   parser.add_argument("--check", action="store_true")
   parser.add_argument("--reuse-log", action="store_true")
+  parser.add_argument("--compat", choices=["fat"], default=None)
   parser.add_argument("--pspdev", default=os.environ.get("PSPDEV"))
   parser.add_argument("--pspsh", default=None)
   parser.add_argument("--host", default=os.environ.get("PSP_HOST"))
@@ -55,7 +56,7 @@ def main(argv=None):
     sections = parse_log(raw)
     if not sections and len(ids) == 1:
       sections = {ids[0]: raw.strip()}
-    checked = check_all(source, ids, sections, args.jobs, args.buffers_start, args.buffers_words, args.use)
+    checked = check_all(source, ids, sections, args.jobs, args.buffers_start, args.buffers_words, args.use, args.compat)
     for identifier in ids:
       print(f"{identifier}: {checked[identifier]}")
     return 0 if all(value == "ok" for value in checked.values()) else 1
@@ -69,7 +70,7 @@ def main(argv=None):
   host = os.path.abspath(args.host or os.path.join(ROOT, "samples", "vmeh", "build"))
   os.makedirs(work, exist_ok=True)
   os.makedirs(host, exist_ok=True)
-  builds = build_all(source, ids, work, args.pspdev, args.jobs, args.buffers_start, args.buffers_words, args.use)
+  builds = build_all(source, ids, work, args.pspdev, args.jobs, args.buffers_start, args.buffers_words, args.use, args.compat)
   status = {}
   sections = {}
   reset(pspsh, args.port, work, args.reset_wait)
@@ -89,7 +90,7 @@ def main(argv=None):
       out.flush()
       print(f"[{position}/{len(ids)}] {identifier}: {status[identifier]}", file=sys.stderr, flush=True)
     if args.check:
-      checked = check_all(source, [i for i in ids if i in sections], sections, args.jobs, args.buffers_start, args.buffers_words, args.use)
+      checked = check_all(source, [i for i in ids if i in sections], sections, args.jobs, args.buffers_start, args.buffers_words, args.use, args.compat)
       for identifier, result in checked.items():
         status[identifier] = result
         print(f"{identifier}: {result}", file=sys.stderr, flush=True)

@@ -37,26 +37,28 @@ def compare_buffers(psp_text, emu_text, words):
   return "ok"
 
 
-def emulate(source, identifier, start, words, uses):
+def emulate(source, identifier, start, words, uses, compat=None):
   command = [sys.executable, os.path.join(ROOT, "vmeemu.py"), "--run", identifier, source, "--buffers-start", str(start), "--buffers-words", str(words)]
+  if compat:
+    command.extend(["--compat", compat])
   for item in uses:
     command.extend(["--use", item])
   run = subprocess.run(command, capture_output=True, text=True)
   return None if run.returncode else run.stdout, run.stderr.strip()
 
 
-def check_one(source, identifier, section, start, words, uses):
+def check_one(source, identifier, section, start, words, uses, compat=None):
   if section is None:
     return "not in log"
   if section == "no log" or section.startswith("build failed"):
     return section.splitlines()[0]
-  emu_text, error = emulate(source, identifier, start, words, uses)
+  emu_text, error = emulate(source, identifier, start, words, uses, compat)
   if emu_text is None:
     return f"emulator failed: {error}"
   return compare_buffers(section, emu_text, words)
 
 
-def check_all(source, ids, sections, jobs, start, words, uses):
+def check_all(source, ids, sections, jobs, start, words, uses, compat=None):
   with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
-    results = list(pool.map(lambda i: check_one(source, i, sections.get(i), start, words, uses), ids))
+    results = list(pool.map(lambda i: check_one(source, i, sections.get(i), start, words, uses, compat), ids))
   return dict(zip(ids, results))

@@ -12,7 +12,7 @@ def tool_environment(pspdev):
   return env
 
 
-def build(source, identifier, work, pspdev, start, words, uses):
+def build(source, identifier, work, pspdev, start, words, uses, compat=None):
   folder = os.path.join(work, identifier)
   os.makedirs(folder, exist_ok=True)
   env = tool_environment(pspdev)
@@ -22,6 +22,8 @@ def build(source, identifier, work, pspdev, start, words, uses):
     f"-DVMEH_BUFFERS_START={start}", f"-DVMEH_BUFFERS_WORDS={words}",
     f"-DVMEH_USE={';'.join(uses)}",
   ]
+  if compat:
+    arguments.append(f"-DVMEGC_COMPAT={compat}")
   configured = subprocess.run(arguments, capture_output=True, text=True, env=env)
   if configured.returncode:
     return None, configured.stdout + configured.stderr
@@ -32,6 +34,6 @@ def build(source, identifier, work, pspdev, start, words, uses):
   return program, ""
 
 
-def build_all(source, ids, work, pspdev, jobs, start, words, uses):
+def build_all(source, ids, work, pspdev, jobs, start, words, uses, compat=None):
   with ThreadPoolExecutor(max(1, jobs)) as pool:
-    return list(pool.map(lambda identifier: build(source, identifier, work, pspdev, start, words, uses), ids))
+    return list(pool.map(lambda identifier: build(source, identifier, work, pspdev, start, words, uses, compat), ids))
