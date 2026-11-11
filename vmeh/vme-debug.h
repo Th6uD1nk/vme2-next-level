@@ -16,6 +16,10 @@
 #include <cstdio>
 #include <me-core-mapper/me-lib.h>
 
+#ifndef VME_MUX_BACK_NONE
+#define VME_MUX_BACK_NONE 0x00000000
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
