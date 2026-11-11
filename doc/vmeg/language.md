@@ -133,19 +133,34 @@ Transfer in[2] = { { memory: bufA, count: 7 }, { memory: bufB, count: 15 } };
 
 ## 2.3 Accesses by index
 
-An access by index starts with no dot: `pe[p]`, `top[t]`, `base[b]`. The index is a number from 0 to 3, or an `Int`, a loop variable or an expression of those.
+An access by index starts with no dot: `pe[p]`, `top[t]`, `base[b]`, or an element of a variable array `name[i]`. The index is an integer number, an `Int`, a loop variable or a compile-time expression of those.
 
 | Written | Same as |
 |---|---|
 | `pe[1] { … }` | `.pe1 { … }` |
 | `pe[1].top = t;` | `.pe1.top = t;` |
 | `top[2] = 8;` in a `.offsets` | `.top2 = 8;` |
+| `s[p]` | element `p` of Staging array `s` |
+| `a[p]` | element `p` of Int array `a` |
+| `t[p]` | element `p` of Agu array `t` |
+| `in[p]` | element `p` of Transfer array `in` |
 
 ```c
 for p in 0..3 {
-  pe[p] { .top = t; .spad = top0 + top0; }
+  pe[p] {
+    .top = t[p];
+    .write = write[p];
+    s[p] = top[p] + a[p];
+    .spad = s[p] * 2;
+  }
 }
 ```
+
+**Rules for variable arrays:**
+
+- The index `i` is checked at compile-time and must be within the bounds `0` to `N - 1`. An index outside this range is refused with an error ([2.9](#29-errors)).
+- An element must be set before it is read.
+- Using an array name without brackets where a scalar is expected or using brackets on a scalar variable is refused.
 
 ## 2.4 Int
 
