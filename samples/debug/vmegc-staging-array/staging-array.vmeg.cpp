@@ -121,6 +121,36 @@ void runStagingArrayRun(void) {
 void runIntArrayRun(void) {
 }
 
+@emulate "agu-array"
+.kernel runAguArray direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: sharedTop0, count };
+  Transfer top1Transfer = { memory: sharedTop1, count };
+  Transfer top2Transfer = { memory: sharedTop2, count };
+  Transfer top3Transfer = { memory: sharedTop3, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = top2Transfer; .scope = global; .offsets { .top2 = 0; } }
+  .load { .transfer = top3Transfer; .scope = global; .offsets { .top3 = 0; } }
+
+  Agu t[4] = { { count }, { count }, { count }, { count } };
+  Agu write[4] = { { count, cyc: auto }, { count, cyc: auto }, { count, cyc: auto }, { count, cyc: auto } };
+
+  for p in 0..3 {
+    pe[p] {
+      .top = t[p];
+      .write = write[p];
+      .spad = top[p] + 1;
+    }
+  }
+}
+
+@kernel runAguArray config | exec
+void runAguArrayRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
