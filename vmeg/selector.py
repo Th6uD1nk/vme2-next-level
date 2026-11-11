@@ -86,7 +86,7 @@ def select(tree, operations=OPERATIONS):
 
 
 def usable(operations, compat):
-  return {kind: specification for kind, specification in operations.items() if not specification.get("auxiliary") and not (compat == "fat" and specification.get("not_portable"))}
+  return {kind: specification for kind, specification in operations.items() if not specification.get("auxiliary") and not (compat == "fat" and specification.get("not_portable") and kind not in FAT_FALLBACKS)}
 
 
 def choose_opcode(tree, compat, operations=OPERATIONS):
