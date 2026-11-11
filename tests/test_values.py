@@ -89,7 +89,10 @@ class CompatTest(unittest.TestCase):
   def test_the_option_fat_replaces_the_opcode_that_is_not_portable_by_its_variant(self):
     self.assertEqual(kernel_lines(".spad = top0 + base0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD));"])
     self.assertEqual(kernel_lines(".spad = top0 + base0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_ADD_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);"])
-    self.assertEqual(kernel_lines(".spad = top0 - base0;", "fat"), kernel_lines(".spad = top0 - base0;", None))
+    self.assertEqual(kernel_lines(".spad = top0 - base0;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB));"])
+    self.assertEqual(kernel_lines(".spad = top0 - base0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_INV_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);"])
+    self.assertEqual(kernel_lines(".spad = top0 >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(0x014), 3);"])
+    self.assertEqual(kernel_lines(".spad = top0 >> 3;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
 
 
 class RoundTest(unittest.TestCase):

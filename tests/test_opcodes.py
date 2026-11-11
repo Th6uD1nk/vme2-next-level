@@ -29,7 +29,8 @@ WRITTEN = [
   (".spad = top1 + 1;", "fat", "fu_code(OP_ADD_CST)", [("B", "1")]),
   (".spad = top0 + base0 + 5;", "fat", "fu_code(OP_ADD_OFA)", [("A", "5")]),
   (".spad = top0 - base0;", None, "fu_code(OP_SUB)", []),
-  (".spad = top1 - top0;", "fat", "fu_code(OP_SUB)", []),
+  (".spad = top1 - top0;", "fat", "fu_code(OP_SUB_INV_OFA)", [("A", "0")]),
+  (".spad = top1 >> 3;", "fat", "fu_code(OP_SHR_CST_OFA)", [("A", "0"), ("B", "3")]),
   (".spad = top0 * base0;", None, "VME_FU_OPCODE_MUL_RSHIFT_0", []),
   (".spad = top0 & base0;", None, "fu_code(OP_AND)", []),
   (".spad = top1 & 255;", None, "fu_code(OP_AND_CST)", [("B", "0xff")]),
@@ -84,6 +85,7 @@ class ComplementTest(unittest.TestCase):
     self.assertEqual(codes(".spad = ~(top0 + base0);"), ["OP_ADD", "OP_NOT"])
     self.assertEqual(codes(".spad = ~(top0 + base0);", "fat"), ["OP_ADD_OFA", "OP_NOT"])
     self.assertEqual(codes(".spad = ~(top0 - base0);"), ["OP_SUB", "OP_NOT"])
+    self.assertEqual(codes(".spad = ~(top0 - base0);", "fat"), ["OP_SUB_INV_OFA", "OP_NOT"])
     self.assertEqual(codes(".spad = ~(top0 + 1);"), ["OP_ADD_CST", "OP_NOT"])
 
   def test_a_sat_or_a_shift_in_the_complement_keeps_it_apart_from_the_operation(self):
