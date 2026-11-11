@@ -48,8 +48,8 @@ Staging s;
 
 - The bindings of the AGUs: `.top`, `.base` and `.write` ([4.3](agu.md#43-binding-an-agu-to-a-pe)).
 - The operation of the pe, which is the member `.spad`: its result leaves on the write AGU (`.spad = clamp(s, 0, 255);`). A pe has one.
-- An operation kept in a `Staging` variable, which starts with the name of the variable (`s = top1 + top2;`): the result stays in the pe and another operation can read it.
-- The declaration of an `Agu` or of a `Staging` variable for this block.
+- An operation kept in a `Staging` variable or element, which starts with the name of the variable (`s = top1 + top2;` or `s[p] = top1 + top2;`): the result stays in the pe and another operation can read it.
+- The declaration of an `Agu` or of a `Staging` variable for this block, including `Staging s[N];` arrays declared in the kernel ([2.2.4](language.md#224-array-declarations)).
 - Currently not supported: `Int` and loops inside a pe block, write them around the block.
 
 ## 5.3 Operations in a pe
@@ -69,6 +69,21 @@ Staging s;
 - `pe0` holds one operation.
 - `pe1` holds two: the addition, inside the `clamp`.
 - `pe2` holds two: the one kept in `s`, and the one that leaves.
+
+An array `Staging s[4];` allows unrolling two operations per pe in a loop:
+
+```c
+Staging s[4];
+
+for p in 0..3 {
+  pe[p] {
+    s[p] = top[p] + 1;
+    .spad = s[p] * 2;
+  }
+}
+```
+
+In each pe, `s[p]` holds the first operation and `.spad` computes the second.
 
 **Rules:**
 
@@ -149,6 +164,11 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `expected ';'` | an operation or an assignment of a pe without its `;` (`.spad = top0 + top1` or `s = top0 + 1`) |
 | [5.2](#52-what-a-block-holds) | `pe0.top is already set at line N` | the same member (`.top`, `.base`, `.write`) set twice in a pe |
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
+| [5.2](#52-what-a-block-holds) | `s[2]: index out of range (0 to 1)` | a Staging array index outside bounds |
+| [5.2](#52-what-a-block-holds) | `'s' is an array, write s[...]` | a Staging array name used without bracket index |
+| [5.2](#52-what-a-block-holds) | `'s' is not an array` | index brackets used on a scalar Staging variable |
+| [5.2](#52-what-a-block-holds) | `the Staging variable 's[0]' is already set at line N` | setting the same Staging element twice |
+| [5.2](#52-what-a-block-holds) | `the Staging variable 's[1]' is read before it is set` | reading a Staging element before an operation sets it |
 | [5.3](#53-operations-in-a-pe) | `a pe holds two operations at most, this pe needs 3` | more than two operations in a pe |
 | [5.4](#54-remapping-an-opcode) | `unknown field 'x' of .remap (operator, primary, secondary)` | a field other than `operator`, `primary` and `secondary` |
 | [5.4](#54-remapping-an-opcode) | `duplicate field 'primary' in .remap` | the same field twice (the message names it) |
