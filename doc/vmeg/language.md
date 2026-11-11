@@ -312,8 +312,14 @@ The block form `@context name config { }` inside a function is currently not sup
 | [2.2.3](#223-the-declare-block) | `only Agu, Staging, Transfer and Int variables are accepted in @declare` | another statement in the block |
 | [2.2.3](#223-the-declare-block) | `'x' is already declared in a @declare, at line 2` | the same name twice in a `@declare` |
 | [2.2.3](#223-the-declare-block) | `'x' is defined twice` | an `Int` of a kernel or of a block with the name of an `Int` of a `@declare` that serves it |
+| [2.2.4](#224-array-declarations) | `name[...]: array size must be a number of 1 or more` | an array size of 0 or negative |
+| [2.2.4](#224-array-declarations) | `name[...]: too many initializers (M for size N)` | more initializers in braces than the declared size |
 | [2.3](#23-accesses-by-index) | `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 |
 | [2.3](#23-accesses-by-index) | `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 |
+| [2.3](#23-accesses-by-index) | `name[i]: index out of range (0 to N - 1)` | array index outside bounds |
+| [2.3](#23-accesses-by-index) | `'name' is an array, write name[...]` | array variable used without bracket index |
+| [2.3](#23-accesses-by-index) | `'name' is not an array` | index brackets used on a scalar variable |
+| [2.3](#23-accesses-by-index) | `the Transfer variable 'name[0]' is read before it is set` | array element accessed before being initialized |
 | [2.4](#24-int) | `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
 | [2.5](#25-expressions) | `invalid number '010'` | a number with a leading zero |
 | [2.6](#26-numbers-macros-and-unknown-names) | `processing element index must be a number` | an unknown part in the index of a pe |
