@@ -28,4 +28,5 @@ To test the kernels on the emulator:
 python3 vmeemu.py --run staging-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
 python3 vmeemu.py --run int-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
 python3 vmeemu.py --run agu-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
+python3 vmeemu.py --run transfer-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
 ```

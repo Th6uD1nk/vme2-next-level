@@ -151,6 +151,34 @@ void runIntArrayRun(void) {
 void runAguArrayRun(void) {
 }
 
+@emulate "transfer-array"
+.kernel runTransferArray direct {
+  Int count = 16 - 1;
+
+  Transfer in[4] = {
+    { memory: sharedTop0, count },
+    { memory: sharedTop1, count },
+    { memory: sharedTop2, count },
+    { memory: sharedTop3, count }
+  };
+
+  for p in 0..3 {
+    .load { .transfer = in[p]; .scope = global; .offsets { top[p] = 0; } }
+  }
+
+  for p in 0..3 {
+    pe[p] {
+      .top = { count };
+      .write = { count, cyc: auto };
+      .spad = top[p] + 1;
+    }
+  }
+}
+
+@kernel runTransferArray config | exec
+void runTransferArrayRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
