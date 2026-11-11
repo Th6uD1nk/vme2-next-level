@@ -611,7 +611,7 @@ def place(state, lines, pe, operations, line):
       reads = (operation["front"], operation["back"])
     elif operands == ("front",):
       source = operation["source"] or f"STAGING_{pe}"
-      mux = f"vme_mux({source}, NONE)"
+      mux = f"vme_mux({source})"
       reads = (operation["source"],) if operation["source"] else ()
     else:
       source = operation["source"] or f"STAGING_{pe}"
