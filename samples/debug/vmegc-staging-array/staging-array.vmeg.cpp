@@ -89,6 +89,38 @@ volatile Buffer sharedTop3[16] = {
 void runStagingArrayRun(void) {
 }
 
+@emulate "int-array"
+.kernel runIntArray direct {
+  Int count = 16 - 1;
+
+  Transfer top0Transfer = { memory: sharedTop0, count };
+  Transfer top1Transfer = { memory: sharedTop1, count };
+  Transfer top2Transfer = { memory: sharedTop2, count };
+  Transfer top3Transfer = { memory: sharedTop3, count };
+
+  .load { .transfer = top0Transfer; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = top1Transfer; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = top2Transfer; .scope = global; .offsets { .top2 = 0; } }
+  .load { .transfer = top3Transfer; .scope = global; .offsets { .top3 = 0; } }
+
+  Agu top = { count };
+  Agu write = { count, cyc: auto };
+
+  Int a[4] = { 10, 20, 30, 40 };
+
+  for p in 0..3 {
+    pe[p] {
+      .top = top;
+      .write = write;
+      .spad = top[p] + a[p];
+    }
+  }
+}
+
+@kernel runIntArray config | exec
+void runIntArrayRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);

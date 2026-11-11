@@ -22,8 +22,9 @@ make
 
 ## Emulation
 
-To test the kernel on the emulator:
+To test the kernels on the emulator:
 
 ```
 python3 vmeemu.py --run staging-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
+python3 vmeemu.py --run int-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
 ```
