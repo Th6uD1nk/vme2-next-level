@@ -31,6 +31,7 @@ WRITTEN = [
   (".spad = top0 - base0;", None, "fu_code(OP_SUB)", []),
   (".spad = top1 - top0;", "fat", "fu_code(OP_SUB_INV_OFA)", [("A", "0")]),
   (".spad = top1 >> 3;", "fat", "fu_code(OP_SHR_CST_OFA)", [("A", "0"), ("B", "3")]),
+  (".spad = (top0 & 4) ? 0 : 9;", "fat", "fu_code(OP_SEL_CST_OFB)", [("A", "4"), ("B", "9")]),
   (".spad = top0 * base0;", None, "VME_FU_OPCODE_MUL_RSHIFT_0", []),
   (".spad = top0 & base0;", None, "fu_code(OP_AND)", []),
   (".spad = top1 & 255;", None, "fu_code(OP_AND_CST)", [("B", "0xff")]),
@@ -169,6 +170,7 @@ class SelectTest(unittest.TestCase):
 
   def test_a_ternary_between_zero_and_a_number_on_a_mask_test_of_one_operand_is_the_zero_select(self):
     self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 0 : 9;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SEL_CST_ZER));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 0 : 9;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, NONE), fu_code(OP_SEL_CST_OFB));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
     self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 9 : 0;", None)[0], "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SEL_CST_ZER_INV));")
 
   def test_a_ternary_that_no_opcode_covers_is_refused(self):
