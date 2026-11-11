@@ -200,6 +200,7 @@ OPERATIONS = {
   },
   "sel_cst_zer_inv": {
     "opcode": 0x08c,
+    "not_portable": True,
     "pattern": "(x & a) ? b : 0",
     "arguments": (("x", "operand"), ("a", "number"), ("b", "number")),
     "registers": {"A": "a", "B": "b"},
