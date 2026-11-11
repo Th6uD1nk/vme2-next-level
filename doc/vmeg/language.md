@@ -9,6 +9,7 @@
   - [2.2.1 Declaring several at once](#221-declaring-several-at-once)
   - [2.2.2 Names](#222-names)
   - [2.2.3 The @declare block](#223-the-declare-block)
+  - [2.2.4 Array declarations](#224-array-declarations)
 - [2.3 Accesses by index](#23-accesses-by-index)
 - [2.4 Int](#24-int)
 - [2.5 Expressions](#25-expressions)
@@ -110,6 +111,25 @@ Int n = 1, m = n + 1;
 - The names follow [2.2.2](#222-names). A name declared in a `@declare` cannot be declared again in a kernel or a block it serves, nor in another `@declare` it serves.
 - A function has its own `@declare`: the one of a function is not seen by the other functions.
 - A `Transfer` of a `@declare` is shared by the kernels ([9.1.1](transfers.md#911-a-transfer-of-a-declare)).
+
+### 2.2.4 Array declarations
+
+A variable of any type can be declared as a fixed-size array: `Type name[N];` or with an initializer `Type name[N] = { ... };`. The size `N` must be a compile-time constant integer of 1 or more.
+
+```c
+Staging s[4];
+Int a[4] = { 10, 20, 30, 40 };
+Agu t[4] = { { count: 15 }, { count: 15 }, { count: 15 }, { count: 15 } };
+Transfer in[2] = { { memory: bufA, count: 7 }, { memory: bufB, count: 15 } };
+```
+
+**Rules:**
+
+- `Staging` arrays are declared with no initializer (`Staging s[4];`).
+- `Int`, `Agu` and `Transfer` arrays can be initialized at declaration with a comma-separated list enclosed in braces `{ ... }`.
+- An array can also be declared without initializers and initialized element by element (`a[0] = 10;`, `t[0] = { count: 15 };`, `in[0] = { memory: bufA, count: 7 };`).
+- An initializer list cannot contain more items than the declared size `N` ([2.9](#29-errors)).
+- Array declarations are supported in kernels, inside loop bodies when unrolled, and in `@declare` blocks.
 
 ## 2.3 Accesses by index
 
