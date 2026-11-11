@@ -12,7 +12,7 @@ A sample illustrating `Staging` arrays (`Staging s[N]`) and indexed element acce
 ## Building
 
 ```
-cd samples/cpp/vmegc-staging-array
+cd samples/debug/vmegc-staging-array
 mkdir build && cd build
 cmake ..
 make
@@ -25,5 +25,5 @@ make
 To test the kernel on the emulator:
 
 ```
-python3 vmeemu.py --run staging-array samples/cpp/vmegc-staging-array/staging-array.vmeg.cpp
+python3 vmeemu.py --run staging-array samples/debug/vmegc-staging-array/staging-array.vmeg.cpp
 ```
