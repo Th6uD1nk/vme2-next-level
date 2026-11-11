@@ -1,5 +1,5 @@
 from vmee.registers import FU_OPERAND_REGISTERS
-from vmeg.operations import OPERATIONS
+from vmeg.operations import FAT_FALLBACKS, OPERATIONS
 
 
 def signed32(value):
@@ -372,6 +372,12 @@ ROUNDED = {OPERATIONS[kind]["opcode"] for kind in ("add", "sub", "mul", "mul_cst
 
 if len(OPCODES) != len(OPERATIONS):
   raise ValueError("two operations of the table have the same opcode")
+
+for kind, fallback in FAT_FALLBACKS.items():
+  if "opcode" in fallback and fallback["opcode"] not in OPCODES:
+    OPCODES[fallback["opcode"]] = (HANDLERS[kind], fallback.get("operands", OPERATIONS[kind]["operands"]))
+
+ROUNDED.add(0x028)
 
 
 def opcode_entry(fu):
