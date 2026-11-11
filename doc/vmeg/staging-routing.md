@@ -25,7 +25,7 @@ Staging s;
 
 **Explanation of the code above:**
 
-- `Staging s;` declares the variable, in the kernel or in the block of a pe. Several can be declared at once: `Staging a, b;` ([2.2](language.md#22-variables)).
+- `Staging s;` declares the variable, in the kernel or in the block of a pe. Several can be declared at once: `Staging a, b;` ([2.2](language.md#22-variables)). An array can also be declared: `Staging s[4];` ([2.2.4](language.md#224-array-declarations)), where each element `s[p]` holds an operation and is read like a scalar variable.
 - `s = top0 + top1;` sets it: the operation runs in `pe0` and its result stays there. An operation kept in a `Staging` variable is set by the name of the variable, not by `.spad`.
 - `.spad = top2 - s;` and `.spad = s + top3;` read it: the result of `pe0` is an operand of the operations of `pe1` and `pe2`.
 
@@ -98,9 +98,13 @@ The messages start with `line N:`, left out here.
 | Section | Message | Cause |
 |---|---|---|
 | [7.1](#71-staging-variables) | `the Staging variable 's' is declared twice` | two `Staging` with the same name |
+| [7.1](#71-staging-variables) | `s[...]: array size must be a number of 1 or more` | a `Staging` array declared with size 0 or negative |
+| [7.1](#71-staging-variables) | `s[2]: index out of range (0 to 1)` | a `Staging` array index outside bounds |
+| [7.1](#71-staging-variables) | `'s' is an array, write s[...]` | a `Staging` array name used without bracket index |
+| [7.1](#71-staging-variables) | `'s' is not an array` | index brackets used on a scalar `Staging` variable |
 | [7.1](#71-staging-variables) | `'a' is already declared as an Agu variable` | a `Staging` named like an `Agu` (or `a Transfer variable`) |
 | [7.1](#71-staging-variables) | `'a' is already declared as a Staging variable` | an `Agu` or a `Transfer` named like a `Staging` |
 | [7.1](#71-staging-variables) | `unknown Staging variable 'zz'` | `zz = …;` in a pe, with a name that is not declared |
 | [7.1](#71-staging-variables) | `'a' is an Agu variable, only a Staging variable can receive an operation` | an operation assigned to an `Agu` |
-| [7.1](#71-staging-variables) | `the Staging variable 's' is already set at line N` | a `Staging` set twice |
-| [7.1](#71-staging-variables) | `the Staging variable 's' is read before it is set` | a `Staging` read before the statement that sets it |
+| [7.1](#71-staging-variables) | `the Staging variable 's' is already set at line N` | a `Staging` (or element `s[i]`) set twice |
+| [7.1](#71-staging-variables) | `the Staging variable 's' is read before it is set` | a `Staging` (or element `s[i]`) read before the statement that sets it |
