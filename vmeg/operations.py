@@ -406,6 +406,7 @@ OPERATIONS = {
   },
   "sub": {
     "opcode": 0x018,
+    "not_portable": True,
     "pattern": "a - b",
     "arguments": (("a", "operand"), ("b", "operand")),
     "registers": {},
