@@ -1,7 +1,7 @@
 from functools import lru_cache
 from itertools import combinations
 
-from vmeg.operations import OPERATIONS, slots
+from vmeg.operations import FAT_FALLBACKS, OPERATIONS, slots
 from vmeg.pattern import ZERO, match, parse_pattern, without
 
 OPERATION_NODES = ("bin", "not", "neg", "call", "cond")
@@ -94,5 +94,7 @@ def choose_opcode(tree, compat, operations=OPERATIONS):
   if found is None:
     anywhere = select(tree, operations)
     if anywhere is not None:
+      if compat == "fat" and anywhere[0] in FAT_FALLBACKS:
+        return anywhere
       raise ValueError(f"{anywhere[0]} does not work on the fat and nothing replaces it")
   return found

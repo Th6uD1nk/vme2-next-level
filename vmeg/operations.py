@@ -663,6 +663,19 @@ OPERATIONS = dict(sorted(OPERATIONS.items(), key=lambda entry: entry[1]["opcode"
 
 check_patterns(OPERATIONS)
 
+FAT_FALLBACKS = {
+  "sel_cst_zer": {
+    "opcode": 0x06c,
+    "code": "fu_code(OP_SEL_CST_OFB)",
+    "operands": ("front",),
+  },
+  "sel_cst_zer_inv": {
+    "opcode": 0x068,
+    "code": "fu_code(OP_SEL_CST)",
+    "operands": ("front",),
+  },
+}
+
 
 def calls_of(operations):
   found = {}

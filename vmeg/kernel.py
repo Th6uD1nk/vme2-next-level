@@ -5,7 +5,7 @@ from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
 from vmeg.expr import value as full_value
-from vmeg.operations import FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS, ROOT_OPERATORS
+from vmeg.operations import FAT_FALLBACKS, FUNCTIONS, OPCODE_KINDS, OPERATIONS, OPERATORS, PATTERN_OPERATORS, ROOT_OPERATORS
 from vmeg.selector import OPERATION_NODES, choose_opcode
 from vmeg.parser import AGU_PARAMS, ICN_NAMES, Parser, buffer_ref, declare_statements, declared_statements, parse_body
 from vmeg.scanner import tokens
@@ -598,6 +598,8 @@ def place(state, lines, pe, operations, line):
     if specification["units"] == "primary" and number != 0 and unit.lower() not in remap:
       warn(state, line, f"{operation['kind']} is the second operation of pe{pe}, it is not known to run in the second unit")
     encoding = specification
+    if state.get("compat") == "fat" and operation["kind"] in FAT_FALLBACKS:
+      encoding = {**specification, **FAT_FALLBACKS[operation["kind"]]}
     if unit.lower() in remap:
       chosen = remap[unit.lower()]
       encoding = OPERATIONS[chosen] if isinstance(chosen, str) else {"opcode": chosen, "code": f"fu_code(0x{chosen:03x})", "registers": specification["registers"]}
