@@ -27,6 +27,7 @@ OPERATIONS = {
   },
   "bak_shr": {
     "opcode": 0x014,
+    "not_portable": True,
     "pattern": "x >> n",
     "arguments": (("x", "source"), ("n", "number")),
     "registers": {},
