@@ -93,8 +93,8 @@ class CompatTest(unittest.TestCase):
     self.assertEqual(kernel_lines(".spad = top0 - base0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, BASE_0), fu_code(OP_SUB_INV_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);"])
     self.assertEqual(kernel_lines(".spad = top0 >> 3;", None), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(0x014), 3);"])
     self.assertEqual(kernel_lines(".spad = top0 >> 3;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_SHR_CST_OFA));", "vme_pe0(fu_reg(PRIMARY, A), 0);", "vme_pe0(fu_reg(PRIMARY, B), 3);"])
-    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 0 : 9;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, NONE), fu_code(OP_SEL_CST_OFB));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
-    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 9 : 0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0, NONE), fu_code(OP_SEL_CST));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 0 : 9;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0), fu_code(OP_SEL_CST_OFB));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
+    self.assertEqual(kernel_lines(".spad = (top0 & 4) ? 9 : 0;", "fat"), ["vme_pe0(vme_fu(PRIMARY), vme_mux(TOP_0), fu_code(OP_SEL_CST));", "vme_pe0(fu_reg(PRIMARY, A), 4);", "vme_pe0(fu_reg(PRIMARY, B), 9);"])
 
 
 class RoundTest(unittest.TestCase):
