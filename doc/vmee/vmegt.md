@@ -58,6 +58,7 @@ vmegt --pspdev /path/to/pspdev --host /path/to/host0 FILE.vmeg.cpp
 | `--timeout` | 60 | seconds to wait for the `log.txt` of a kernel |
 | `--retries` | 1 | new tries of a kernel that gives no log |
 | `--jobs` | the number of cores | builds and emulator checks in parallel (the runs on the PSP are one after the other) |
+| `--compat` | none | hardware model to target (`fat`), passes `-DVMEGC_COMPAT=fat` to build and `--compat fat` to the emulator |
 | `--buffers-start` | 0 | first word of the window of the buffers |
 | `--buffers-words` | 32 | number of words of the window of the buffers |
 | `--use` | none | `pointer=array` pair given to vmeh and to the emulator, can be repeated |
