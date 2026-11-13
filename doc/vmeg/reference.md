@@ -45,7 +45,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `Int name = expression;` | [2.4](language.md#24-int) |
 | expressions | [2.5](language.md#25-expressions) |
 | macros, unknown names | [2.6](language.md#26-numbers-macros-and-unknown-names) |
-| `for p in a..b { }` | [2.7](language.md#27-loops) |
+| `for p in a..b { }`, `for p in a..b step k { }` | [2.7](language.md#27-loops) |
 | `.context`, `@context` | [2.8](language.md#28-synonyms) |
 
 ## 15.3 Kernel

@@ -271,15 +271,23 @@ A macro that is not trusted is an unknown name.
 
 ## 2.7 Loops
 
-`for p in a..b { … }` repeats its body for each value of `p` from `a` to `b`, both included. `vmegc` unrolls it: the body is written once per turn. The bounds are numbers ([2.6](#26-numbers-macros-and-unknown-names)). When `a` is above `b` the body is not written. Loops can be nested. Their body can hold `Int`, `.load` and `.store`, in a kernel as well as in a `@kernel` block, and pe blocks in a kernel.
+`for p in a..b { … }` repeats its body for each value of `p` from `a` to `b`, both included. `vmegc` unrolls it: the body is written once per turn. The bounds are numbers ([2.6](#26-numbers-macros-and-unknown-names)). When `a` is above `b`, the loop automatically iterates downwards from `a` to `b`.
+
+An optional step can be specified with `step` (or `by`):
+
+- `for p in 0..6 step 2 { … }` iterates over `0, 2, 4, 6`.
+- `for p in 6..0 step 2 { … }` iterates downwards over `6, 4, 2, 0`.
+- `for p in 3..0 { … }` iterates downwards over `3, 2, 1, 0` with the default step of 1.
+
+The step must always be a positive number of 1 or more. Loops can be nested. Their body can hold `Int`, `.load` and `.store`, in a kernel as well as in a `@kernel` block, and pe blocks in a kernel.
 
 ```c
-for p in 0..1 {
+for p in 0..3 step 2 {
   pe[p] { .top = t; .spad = top0 + top0; }
 }
 ```
 
-writes the same as `pe[0] { .top = t; .spad = top0 + top0; }` followed by `pe[1] { .top = t; .spad = top0 + top0; }`.
+writes the same as `pe[0] { .top = t; .spad = top0 + top0; }` followed by `pe[2] { .top = t; .spad = top0 + top0; }`.
 
 This is not the C `for (…)`, which stays C code.
 
@@ -323,7 +331,8 @@ The block form `@context name config { }` inside a function is currently not sup
 | [2.4](#24-int) | `'n' is defined twice` | two `Int` with the same name in the same kernel or block |
 | [2.5](#25-expressions) | `invalid number '010'` | a number with a leading zero |
 | [2.6](#26-numbers-macros-and-unknown-names) | `processing element index must be a number` | an unknown part in the index of a pe |
-| [2.6](#26-numbers-macros-and-unknown-names) | `for p: bounds must be numbers` | an unknown part in the bounds of a loop |
+| [2.6](#26-numbers-macros-and-unknown-names) | `for p: bounds and step must be numbers` | an unknown part in the bounds or step of a loop |
+| [2.7](#27-loops) | `for p: step must be a positive number of 1 or more` | a loop step of 0 or negative |
 | [2.6](#26-numbers-macros-and-unknown-names) | `'call' expression not supported here` | a macro with parameters used like a function, `F(3)`: currently not supported |
 | [2.7](#27-loops) | `the Agu variable 'x' is declared twice` | an `Agu`, a `Staging` or a `Transfer` declared in the body of a loop with two turns or more (currently not supported) |
 | [2.8](#28-synonyms) | `inside a function only '@kernel name { ... }' is accepted` | the block form of `@context` |
