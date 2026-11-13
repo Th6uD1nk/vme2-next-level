@@ -414,3 +414,39 @@ class AguArrayTest(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
           agu_array_lines("  " + body)
         self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+
+
+class ForLoopTest(unittest.TestCase):
+  def test_a_loop_with_a_positive_step_iterates_by_the_step(self):
+    lines = int_lines("  Int a[7];\n  for p in 0..6 step 2 { a[p] = p * 10; }\n  Agu t = { count: a[6], step: a[2] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0x14), 0x3c);", lines)
+
+  def test_a_loop_with_by_keyword_iterates_by_the_step(self):
+    lines = int_lines("  Int a[7];\n  for p in 0..6 by 2 { a[p] = p * 10; }\n  Agu t = { count: a[6], step: a[2] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0x14), 0x3c);", lines)
+
+  def test_a_descending_loop_without_step_iterates_downwards(self):
+    lines = int_lines("  Int a[4];\n  for p in 3..0 { a[p] = p * 10; }\n  Agu t = { count: a[0], step: a[3] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0x1e), 0);", lines)
+
+  def test_a_descending_loop_with_a_step_iterates_downwards_by_the_step(self):
+    lines = int_lines("  Int a[7];\n  for p in 6..0 step 2 { a[p] = p * 10; }\n  Agu t = { count: a[0], step: a[4] };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+    self.assertIn("vme_pe0(agu_top(COUNT), agu_step(0x28), 0);", lines)
+
+  def test_staging_elements_and_pes_can_be_unrolled_with_step(self):
+    lines = staging_lines("  Staging s[4];\n  for p in 0..3 step 2 {\n    pe[p] { s[p] = top[p] + 1; .spad = s[p] + 2; }\n  }")
+    self.assertIn("vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_ADD_CST));", lines)
+    self.assertIn("vme_pe2(vme_fu(PRIMARY), vme_mux(NONE, TOP_2), fu_code(OP_ADD_CST));", lines)
+
+  def test_invalid_step_or_bounds_are_rejected(self):
+    cases = [
+      ("for p in 0..4 step 0 { a[p] = p; }", "line 3: for p: step must be a positive number of 1 or more"),
+      ("for p in 0..4 step -1 { a[p] = p; }", "line 3: for p: step must be a positive number of 1 or more"),
+      ("for p in 0..4 step x { a[p] = p; }", "line 3: for p: bounds and step must be numbers"),
+    ]
+    for clause, message in cases:
+      with self.subTest(clause=clause):
+        with self.assertRaises(ValueError) as ctx:
+          int_lines("  Int a[5];\n  " + clause + "\n  Agu t = { count: 1 };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
+        self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+
