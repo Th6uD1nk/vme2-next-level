@@ -185,11 +185,18 @@ def flatten(expr, stagings, compat):
 
 
 def unroll(loop):
-  _, var, low, high, body, _ = loop
-  if low[0] != "num" or high[0] != "num":
-    raise ValueError(f"for {var}: bounds must be numbers")
+  if len(loop) == 6:
+    _, var, low, high, body, _ = loop
+    step = ("num", 1)
+  else:
+    _, var, low, high, step, body, _ = loop
+  if low[0] != "num" or high[0] != "num" or step[0] != "num":
+    raise ValueError(f"for {var}: bounds and step must be numbers")
+  if step[1] < 1:
+    raise ValueError(f"for {var}: step must be a positive number of 1 or more")
+  values = range(low[1], high[1] + 1, step[1]) if low[1] <= high[1] else range(low[1], high[1] - 1, -step[1])
   out = []
-  for value in range(low[1], high[1] + 1):
+  for value in values:
     env = {var: ("num", value)}
     for statement in body:
       statement = substitute(statement, env)
@@ -870,7 +877,10 @@ def emit_statement(statement, env, lines, state):
     for inner in sorted(statement[1], key=lambda item: item[0] != "remap"):
       emit(inner, env, lines, state)
   elif kind == "for":
-    loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), statement[4], statement[5])
+    if len(statement) == 6:
+      loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), ("num", 1), statement[4], statement[5])
+    else:
+      loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), fold(statement[4], env), statement[5], statement[6])
     for inner in unroll(loop):
       emit(inner, env, lines, state)
 
