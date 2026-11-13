@@ -660,8 +660,13 @@ def parse_for_header(p):
   p.expect(".")
   p.expect(".")
   high = parse_expr(p)
+  step = ("num", 1)
+  tok = p.peek()
+  if tok is not None and tok[0] == "ident" and tok[1] in ("step", "by"):
+    p.i += 1
+    step = parse_expr(p)
   p.expect("{")
-  return ("for", var, low, high)
+  return ("for", var, low, high, step)
 
 
 def buffer_ref(expr):
@@ -680,13 +685,13 @@ def buffer_ref(expr):
 
 
 def parse_for(p):
-  _, var, low, high = parse_for_header(p)
+  _, var, low, high, step = parse_for_header(p)
   body = []
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
     add_statement(body, parse_statement(p))
-  return ("for", var, low, high, body)
+  return ("for", var, low, high, step, body)
 
 
 def parse_params_definition(p):
