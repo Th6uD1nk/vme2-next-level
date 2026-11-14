@@ -82,6 +82,31 @@ volatile Buffer sharedFill[16] = {
 void runSpadRedirectRun(void) {
 }
 
+@emulate "rotate"
+.kernel runRotateSpad direct {
+  Int count = 16 - 1;
+
+  Transfer in[4] = {
+    { memory: sharedTop0, count },
+    { memory: sharedTop1, count },
+    { memory: sharedTop2, count },
+    { memory: sharedTop3, count }
+  };
+
+  for p in 0..3 {
+    .load { .transfer = in[p]; .scope = global; .offsets { top[p] = 0; } }
+    pe[p] {
+      .top = { count };
+      .write = { count, cyc: auto };
+      .spad[(p + 1) % 4] = top[p] + 10;
+    }
+  }
+}
+
+@kernel runRotateSpad config | exec
+void runRotateSpadRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
