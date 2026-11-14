@@ -390,7 +390,7 @@ class AguArrayTest(unittest.TestCase):
 
   def test_an_element_can_be_shared_between_pes(self):
     lines = agu_array_lines("  Agu t[2] = { { count: 10 }, { count: 20 } };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t[0]; .write = w; .spad = top1 + top1; }")
-    self.assertIn("vme_icn(AGU_TOP, 0x4400);", lines)
+    self.assertIn("vme_icn(AGU_TOP, 0x5500);", lines)
 
   def test_the_misuse_of_an_array_is_refused_with_the_line(self):
     cases = [
@@ -459,11 +459,11 @@ class SpadRedirectTest(unittest.TestCase):
 
   def test_dotted_statement_and_self_extended_spad_are_supported(self):
     lines = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; }\n  .pe0.spad[0] = top0;")
-    self.assertIn("vme_icn(AGU_WRITE, 0x4448);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x5558);", lines)
 
   def test_swapped_redirected_outputs_derive_crossbar_without_clobbering(self):
     lines = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[3] = top0; }\n  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
-    self.assertIn("vme_icn(AGU_WRITE, 0x844b);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x855b);", lines)
     self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1800, vme_cyc(4));", lines)
     self.assertIn("vme_pe3(agu_write(MODE), VME_DEF_MODE, vme_cyc(4));", lines)
 
@@ -487,12 +487,12 @@ class SpadRedirectTest(unittest.TestCase):
 
   def test_automatic_write_offset_combines_base_and_user_offset(self):
     cases = [
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", "0x4844"),
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: 16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x810, vme_cyc(4));", "0x4484"),
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: -16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x7f0, vme_cyc(4));", "0x4484"),
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: OFF, cyc: 4 }; .spad[3] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, (0x1800 + OFF) & 0xffff, vme_cyc(4));", "0x8444"),
-      ("  .pe0 { .top = { count: 4 }; .spad[2] = top0; .write = { count: 4, cyc: auto }; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(6));", "0x4844"),
-      ("  Agu(2) w = { count: 4, offset: 8 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), agu_mode(2), 0x808);", "0x4484"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", "0x5855"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: 16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x810, vme_cyc(4));", "0x5585"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: -16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x7f0, vme_cyc(4));", "0x5585"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: OFF, cyc: 4 }; .spad[3] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, (0x1800 + OFF) & 0xffff, vme_cyc(4));", "0x8555"),
+      ("  .pe0 { .top = { count: 4 }; .spad[2] = top0; .write = { count: 4, cyc: auto }; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(6));", "0x5855"),
+      ("  Agu(2) w = { count: 4, offset: 8 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), agu_mode(2), 0x808);", "0x5585"),
     ]
     for body, expected_mode, expected_icn in cases:
       with self.subTest(body=body):
@@ -504,7 +504,8 @@ class SpadRedirectTest(unittest.TestCase):
     lines = agu_array_lines("  for i in 0..1 {\n    pe[i] { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[(i + 1) % 4] = top[i]; }\n  }")
     self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x800, vme_cyc(4));", lines)
     self.assertIn("vme_pe1(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", lines)
-    self.assertIn("vme_icn(AGU_WRITE, 0x4984);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x6986);", lines)
+    self.assertIn("vme_icn(AGU_TOP, 0x6610);", lines)
 
   def test_invalid_spad_redirections_are_rejected(self):
     cases = [
