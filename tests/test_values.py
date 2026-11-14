@@ -480,3 +480,29 @@ class SpadRedirectTest(unittest.TestCase):
     messages = [message for _, message in warnings]
     self.assertEqual(messages, ["pe3 has an operation but no .write is bound in this kernel"])
 
+  def test_single_named_write_agu_is_allowed_with_redirected_spad(self):
+    lines = agu_array_lines("  Agu w = { count: 4, cyc: 4 };\n  .pe2 { .top = { count: 4 }; .write = w; .spad[1] = top2; }")
+    self.assertIn("vme_pe2(agu_write(MODE), VME_DEF_MODE, 0x800, vme_cyc(4));", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x44a4);", lines)
+
+  def test_automatic_write_offset_combines_base_and_user_offset(self):
+    cases = [
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", "0x4844"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: 16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x810, vme_cyc(4));", "0x4484"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: -16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x7f0, vme_cyc(4));", "0x4484"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: OFF, cyc: 4 }; .spad[3] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, (0x1800 + OFF) & 0xffff, vme_cyc(4));", "0x8444"),
+      ("  .pe0 { .top = { count: 4 }; .spad[2] = top0; .write = { count: 4, cyc: auto }; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(6));", "0x4844"),
+      ("  Agu(2) w = { count: 4, offset: 8 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), agu_mode(2), 0x808);", "0x4484"),
+    ]
+    for body, expected_mode, expected_icn in cases:
+      with self.subTest(body=body):
+        lines = agu_array_lines(body)
+        self.assertIn(expected_mode, lines)
+        self.assertIn(f"vme_icn(AGU_WRITE, {expected_icn});", lines)
+
+  def test_for_loop_unrolls_redirected_spad_and_write_offsets(self):
+    lines = agu_array_lines("  for i in 0..1 {\n    pe[i] { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[(i + 1) % 4] = top[i]; }\n  }")
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x800, vme_cyc(4));", lines)
+    self.assertIn("vme_pe1(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x4984);", lines)
+
