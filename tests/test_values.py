@@ -450,3 +450,33 @@ class ForLoopTest(unittest.TestCase):
           int_lines("  Int a[5];\n  " + clause + "\n  Agu t = { count: 1 };\n  Agu w = { count: 3 };\n  .pe0 { .top = t; .write = w; .spad = top0 + top0; }")
         self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
 
+
+class SpadRedirectTest(unittest.TestCase):
+  def test_redirected_spad_derives_extended_write_icn_and_unused_buffers_stay_4(self):
+    lines = agu_array_lines("  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
+    self.assertIn("vme_icn(AGU_WRITE, 0x444b);", lines)
+    self.assertIn("vme_pe3(agu_write(MODE), VME_DEF_MODE, vme_cyc(4));", lines)
+
+  def test_dotted_statement_and_self_extended_spad_are_supported(self):
+    lines = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; }\n  .pe0.spad[0] = top0;")
+    self.assertIn("vme_icn(AGU_WRITE, 0x4448);", lines)
+
+  def test_swapped_redirected_outputs_derive_crossbar_without_clobbering(self):
+    lines = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[3] = top0; }\n  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
+    self.assertIn("vme_icn(AGU_WRITE, 0x844b);", lines)
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1800, vme_cyc(4));", lines)
+    self.assertIn("vme_pe3(agu_write(MODE), VME_DEF_MODE, vme_cyc(4));", lines)
+
+  def test_regs_write_routing_follows_source_order(self):
+    after = agu_array_lines("  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }\n  .regs { .icn { .write = 0x1234; } }")
+    self.assertIn("vme_icn(AGU_WRITE, 0x1234);", after)
+    before = agu_array_lines("  .regs { .icn { .write = 0x1111; } }\n  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
+    self.assertIn("vme_icn(AGU_WRITE, 0x111b);", before)
+
+  def test_missing_write_warns_when_redirected_spad_has_no_write(self):
+    text = ".kernel k direct {\n  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[1] = top0; }\n  .pe3 { .top = { count: 4 }; .spad[0] = top3; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    warnings = []
+    generate(text, find_blocks(text)[0], warnings)
+    messages = [message for _, message in warnings]
+    self.assertEqual(messages, ["pe3 has an operation but no .write is bound in this kernel"])
+
