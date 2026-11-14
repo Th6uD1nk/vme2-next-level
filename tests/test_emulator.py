@@ -1007,5 +1007,43 @@ class CrossbarRedirectTest(unittest.TestCase):
       self.assertEqual([neg.scratchpad.read(BASE_OFFSET + buf * BUFFER_WORDS + i) for i in range(4)], [99, 99, 99, 99])
 
 
+class WriteRoutingAndErrorTest(unittest.TestCase):
+  def run_write_case(self, write_routing=0x4440, mode=0x84060000, count=7, format0=0, format1=0):
+    emulator = Emulator()
+    registers = emulator.registers
+    registers[:] = [0] * 106
+    registers[ROUTING_REGISTERS["top"]] = 0x4440
+    registers[ROUTING_REGISTERS["base"]] = 0x4444
+    registers[ROUTING_REGISTERS["write"]] = write_routing
+    registers[fu_register(0, "primary")] = (0 << 27) | (0x024 << 12)
+    registers[agu_register(0, "top", "mode")] = 0x84000000
+    registers[agu_register(0, "top", "count")] = 0x10000 | 7
+    registers[agu_register(0, "write", "mode")] = mode
+    registers[agu_register(0, "write", "count")] = 0x10000 | count
+    registers[agu_register(0, "write", "format0")] = format0
+    registers[agu_register(0, "write", "format1")] = format1
+    emulator.scratchpad.transfer(TOP_OFFSET, [1, 2, 3, 4, 5, 6, 7, 8])
+    emulator.trigger()
+    return emulator
+
+  def test_write_routing_direct_wraps_while_extended_ignores_foreign_banks(self):
+    direct = self.run_write_case(0x4440, 0x84060000 | 2044)
+    self.assertEqual([direct.scratchpad.read(BASE_OFFSET + 2044 + i) for i in range(4)], [1, 2, 3, 4])
+    self.assertEqual([direct.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [5, 6, 7, 8])
+    self.assertEqual([direct.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [0, 0, 0, 0])
+    extended = self.run_write_case(0x4448, 0x84060000 | 2044)
+    self.assertEqual([extended.scratchpad.read(BASE_OFFSET + 2044 + i) for i in range(4)], [1, 2, 3, 4])
+    self.assertEqual([extended.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [0, 0, 0, 0])
+    self.assertEqual([extended.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [0, 0, 0, 0])
+
+  def test_write_agu_errors_reject_invalid_sync_format_and_mode(self):
+    with self.assertRaisesRegex(ValueError, "needs 6 - cyc \\+ bubbles of at least 7"):
+      self.run_write_case(mode=0x84020000, format1=0x200000)
+    with self.assertRaisesRegex(ValueError, "write AGU of pe0 are not modeled"):
+      self.run_write_case(format0=0x1000)
+    with self.assertRaisesRegex(ValueError, "write AGU of pe0 is not modeled"):
+      self.run_write_case(mode=0x80000000)
+
+
 if __name__ == "__main__":
   unittest.main()
