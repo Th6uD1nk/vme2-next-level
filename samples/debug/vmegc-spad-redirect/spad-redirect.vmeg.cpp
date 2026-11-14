@@ -50,3 +50,72 @@ volatile Buffer sharedFill[16] = {
   0x5555, 0x5555, 0x5555, 0x5555,
   0x5555, 0x5555, 0x5555, 0x5555,
 };
+
+void meLibOnProcess(void) {
+  meCoreDcacheWritebackInvalidateAll();
+  meLibExceptionHandlerInit(0);
+  vmeLibEnable();
+  vmeLibWipe();
+
+  {
+    vmeLibStart();
+    vmeLibFinish();
+    vmeDebugFillWith(VME_BASE_BUFFERS);
+  }
+
+  while (1) {
+    meCounter += 1;
+  }
+}
+
+int main() {
+  scePowerSetClockFrequency(333, 333, 166);
+  vmeDebugSetupBuffers();
+
+  meLibDefaultInit();
+
+  pspDebugScreenInit();
+  SceCtrlData ctl;
+  do {
+    sceCtrlPeekBufferPositive(&ctl, 1);
+
+    {
+      const int x = 1;
+      const int y = 1;
+
+      pspDebugScreenSetXY(x, y);
+      pspDebugScreenPrintf("Result of the 4 Processing Elements (Spad Redirect):");
+
+      pspDebugScreenSetXY(x, y + 2);
+      pspDebugScreenPrintf("BASE_0:");
+      vmeDebugDisplayBuffer(VME_DEBUG_DIGIT_4, VME_DBG_IDX_BASE_0, x, y + 3);
+
+      pspDebugScreenSetXY(x + 34, y + 2);
+      pspDebugScreenPrintf("BASE_1:");
+      vmeDebugDisplayBuffer(VME_DEBUG_DIGIT_4, VME_DBG_IDX_BASE_1, x + 34, y + 3);
+
+      pspDebugScreenSetXY(x, y + 12);
+      pspDebugScreenPrintf("BASE_2:");
+      vmeDebugDisplayBuffer(VME_DEBUG_DIGIT_4, VME_DBG_IDX_BASE_2, x, y + 13);
+
+      pspDebugScreenSetXY(x + 34, y + 12);
+      pspDebugScreenPrintf("BASE_3:");
+      vmeDebugDisplayBuffer(VME_DEBUG_DIGIT_4, VME_DBG_IDX_BASE_3, x + 34, y + 13);
+    }
+
+    pspDebugScreenSetXY(1, 24);
+    pspDebugScreenPrintf("meCounter: 0x%lx", meCounter);
+
+    sceDisplayWaitVblank();
+
+  } while (!(ctl.Buttons & PSP_CTRL_HOME));
+
+  sceKernelDelayThread(100000);
+
+  vmeDebugTouch();
+  vmeDebugDumpBuffers();
+  vmeDebugFreeBuffers();
+
+  sceKernelExitGame();
+  return 0;
+}
