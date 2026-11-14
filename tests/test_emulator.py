@@ -865,6 +865,47 @@ class RoutingHardwareTest(unittest.TestCase):
     for unused in (0, 1, 3):
       self.assertEqual(neg_isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
 
+  def test_upper_half_extended_f_and_top_read_gating_nibbles(self):
+    def setup_444f(values):
+      values[ROUTING_REGISTERS["top"]] = 0x3444
+      values[ROUTING_REGISTERS["write"]] = 0x444f
+      self.configure_pe_add_cst(values, 3, 1020, 7, 1020, 5)
+
+    res_444f = self.run_configured(setup_444f)
+    self.assertEqual(res_444f[0][1020:1024], [self.SENTINEL] * 4)
+    self.assertEqual(res_444f[0][1024:1028], [0x4000 + i + 5 for i in range(1024, 1028)])
+    for unused in (1, 2, 3):
+      self.assertEqual(res_444f[unused], [self.SENTINEL] * BUFFER_WORDS)
+
+    def setup_ffff_low(values):
+      values[ROUTING_REGISTERS["top"]] = 0x3444
+      values[ROUTING_REGISTERS["write"]] = 0xffff
+      self.configure_pe_add_cst(values, 3, 0, 7, 0, 5)
+
+    res_ffff = self.run_configured(setup_ffff_low)
+    for buf in range(4):
+      self.assertEqual(res_ffff[buf], [self.SENTINEL] * BUFFER_WORDS)
+
+    def setup_f444_bank3(values):
+      values[ROUTING_REGISTERS["top"]] = 0x3444
+      values[ROUTING_REGISTERS["write"]] = 0xf444
+      self.configure_pe_add_cst(values, 3, 1020, 7, 3 * BUFFER_WORDS + 1020, 5)
+
+    res_f444 = self.run_configured(setup_f444_bank3)
+    self.assertEqual(res_f444[3][1020:1024], [self.SENTINEL] * 4)
+    self.assertEqual(res_f444[3][1024:1028], [0x4000 + i + 5 for i in range(1024, 1028)])
+    for other in (0, 1, 2):
+      self.assertEqual(res_f444[other], [self.SENTINEL] * BUFFER_WORDS)
+
+    def setup_top_upper_half(values):
+      values[ROUTING_REGISTERS["top"]] = 0x4444
+      values[ROUTING_REGISTERS["write"]] = 0x5550
+      self.configure_pe_add_cst(values, 0, 1020, 7, 0, 5)
+
+    res_top4 = self.run_configured(setup_top_upper_half)
+    self.assertEqual(res_top4[0][:4], [5, 5, 5, 5])
+    self.assertEqual(res_top4[0][4:8], [0x1000 + i + 5 for i in range(1024, 1028)])
+
 
 if __name__ == "__main__":
   unittest.main()
