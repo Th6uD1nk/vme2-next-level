@@ -107,6 +107,25 @@ void runSpadRedirectRun(void) {
 void runRotateSpadRun(void) {
 }
 
+@emulate "offset-pos"
+.kernel runOffsetPos direct {
+  Transfer t1 = { memory: sharedTop1, count: 7 };
+  Transfer tf = { memory: sharedFill, count: 15 };
+
+  .load { .transfer = t1; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = tf; .scope = global; .offsets { .base0 = 0; .base1 = 0; .base2 = 0; .base3 = 0; } }
+
+  .pe1 {
+    .top = { count: 7 };
+    .write = { count: 7, offset: 8, cyc: auto };
+    .spad[3] = top1 + 5;
+  }
+}
+
+@kernel runOffsetPos config | exec
+void runOffsetPosRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
