@@ -28,6 +28,17 @@ def target_pe(target, env):
   return pe
 
 
+def target_spad(dest, env):
+  if dest is None:
+    return None
+  index = fold(dest, env)
+  if index[0] != "num":
+    raise ValueError("spad destination index must be a number")
+  if not 0 <= index[1] <= 3:
+    raise ValueError(f"spad[{index[1]}]: buffer out of range (spad[0] to spad[3])")
+  return index[1]
+
+
 def constant(expr, what):
   if expr[0] != "num":
     raise ValueError(f"{what} must be a number")
@@ -651,6 +662,16 @@ def place(state, lines, pe, operations, line):
   return number, depth
 
 
+def next_write_seq(state):
+  seq = state["write_seq"]
+  state["write_seq"] += 1
+  return seq
+
+
+def record_write(state, pe, driver, ref, line):
+  state["writes"][pe] = {"driver": driver, "ref": ref, "line": line, "seq": next_write_seq(state)}
+
+
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "int":
@@ -702,6 +723,8 @@ def emit_statement(statement, env, lines, state):
         state["swen_raw"] = True
       else:
         state["routing"][name] = [value[1] >> 4 * pe & 0xf for pe in range(4)]
+        if name == "write":
+          state["write_reg_seq"] = next_write_seq(state)
   elif kind == "icn":
     for icn, value in statement[1]:
       if icn in state["icn"]:
@@ -710,8 +733,11 @@ def emit_statement(statement, env, lines, state):
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(full_value(value, env))});")
   elif kind == "agu":
     pe = target_pe(statement[1], env)
-    claim(state, pe, statement[1][2], statement[-1])
-    state["routing"][statement[1][2]][pe] = pe
+    slot = statement[1][2]
+    claim(state, pe, slot, statement[-1])
+    if slot == "write":
+      record_write(state, pe, pe, None, statement[-1])
+    state["routing"][slot][pe] = pe
     lines.extend(generate_agu(statement[1], statement[2], env, state, len(lines), statement[-1]))
   elif kind == "agudecl":
     keys = declare_keys(statement[1], "Agu", env, state)
@@ -815,15 +841,19 @@ def emit_statement(statement, env, lines, state):
       lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1], variable["mode"]))
     if any(key == "cyc" and has_auto(value) for key, value in variable["params"][1]):
       state["sharers"].setdefault(ref, []).append((pe, statement[-1]))
+    if slot == "write":
+      record_write(state, pe, variable["owners"][slot], ref, statement[-1])
     state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "operation":
     pe = target_pe(statement[1], env)
+    dest = target_spad(statement[1][3] if len(statement[1]) > 3 else None, env)
     if (pe, "operation") in state["set"]:
       raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
     last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state), state["compat"]), statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
     state["depths"][pe] = depth
+    state["write_targets"][pe] = {"dest": dest, "line": statement[-1], "seq": next_write_seq(state)}
     if last == 1:
       state["secondary"].add(pe)
     else:
@@ -886,7 +916,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_seq": 0, "write_reg_seq": -1}
 
 
 def new_env(macros=None):
