@@ -85,13 +85,14 @@ def decode_routing(value):
   return [value >> (4 * n) & 0xf for n in range(4)]
 
 
+def decode_routing_nibble(nibble):
+  return {"nibble": nibble, "driver": nibble & 3, "upper_half": bool(nibble & 4), "extended": bool(nibble & 8)}
+
+
 def routing_view(registers, kind):
   if kind not in ROUTING_REGISTERS:
     raise ValueError(f"unknown routing '{kind}' ({', '.join(ROUTING_REGISTERS)})")
-  nibbles = decode_routing(registers[ROUTING_REGISTERS[kind]])
-  if kind == "write":
-    return nibbles
-  return [nibble if nibble < 4 else "clear" for nibble in nibbles]
+  return [decode_routing_nibble(nibble) for nibble in decode_routing(registers[ROUTING_REGISTERS[kind]])]
 
 
 def fu_register(pe, kind):

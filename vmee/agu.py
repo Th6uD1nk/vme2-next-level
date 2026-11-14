@@ -13,17 +13,17 @@ AGU_MODES = {4: mode4_offsets, 2: mode4_offsets}
 
 
 def write_agu(registers, pe):
-  driver = routing_view(registers, "write")[pe]
-  if driver == 4:
-    return None
-  if driver > 4:
-    raise ValueError(f"the write routing {driver} of the output of pe{pe} is not modeled (modeled: 0 to 3 and 4, nothing writes)")
+  route = routing_view(registers, "write")[pe]
+  driver = route["driver"]
   view = agu_view(registers, driver, "write")
   if not view["enabled"]:
     return None
   if view["format0_other"] or view["repeat"] or view["format1"] not in (0, END_TOKEN):
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 12 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
   view["sync"] = view["format1"] == END_TOKEN
+  view["upper_half"] = route["upper_half"]
+  view["extended"] = route["extended"]
+  view["nibble"] = route["nibble"]
   if view["sync"] and 6 - view["cyc"] + view["bubbles"] < SYNC_MINIMUM:
     raise ValueError(f"the sync of the write AGU of pe{driver} needs 6 - cyc + bubbles of at least {SYNC_MINIMUM}, it has {6 - view['cyc'] + view['bubbles']}")
   return driver, view
@@ -55,12 +55,16 @@ def read_view(registers, kind, buffer):
     raise ValueError(f"unknown read agu '{kind}' (top, base)")
   if not 0 <= buffer <= 3:
     raise ValueError(f"{kind}{buffer}: buffer out of range ({kind}0 to {kind}3)")
-  driver = routing_view(registers, kind)[buffer]
-  if driver == "clear":
-    return None
+  route = routing_view(registers, kind)[buffer]
+  driver = route["driver"]
   view = agu_view(registers, driver, kind)
   if not view["enabled"]:
+    if route["upper_half"] or route["extended"]:
+      return None
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
+  view["upper_half"] = route["upper_half"]
+  view["extended"] = route["extended"]
+  view["nibble"] = route["nibble"]
   label = f"the {kind} AGU of pe{driver}"
   if view["bubbles"] or view["format0_other"] or view["format1"]:
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of {label} are not modeled (modeled: 0 and {RING_TOKEN:#x} for the first, 0 for the second)")
