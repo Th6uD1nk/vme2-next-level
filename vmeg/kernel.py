@@ -256,10 +256,20 @@ def has_auto(expr):
   return any(has_auto(part) for part in expr[1:] if isinstance(part, tuple))
 
 
+def format_agu_offset(folded, pe, agu):
+  if folded[0] == "num":
+    if not -32768 <= folded[1] <= 32767:
+      raise ValueError(f"pe{pe}.{agu}: the offset {folded[1]} is outside -32768 to 32767")
+    return to_c(("num", folded[1] & 0xffff))
+  text = to_c(folded)
+  return f"{text if folded[0] != 'name' else '(' + text + ')'} & 0xffff"
+
+
 def generate_agu(target, params, env, state, at, line, mode=4):
   pe = target_pe(target, env)
   agu = target[2]
   values = {}
+  raw_offset = None
   for key, value in params[1]:
     if key == "mode":
       raise ValueError(f"pe{pe}.{agu}: the mode of an Agu is its type, write Agu(4) or Agu(2)")
@@ -289,24 +299,22 @@ def generate_agu(target, params, env, state, at, line, mode=4):
     if key == "bubbles":
       values[key] = to_c(folded) if folded[0] == "num" else f"{to_c(folded) if folded[0] != 'name' else '(' + to_c(folded) + ')'} & 0xfff"
       continue
-    if key == "offset" and folded[0] == "num" and not -32768 <= folded[1] <= 32767:
-      raise ValueError(f"pe{pe}.{agu}: the offset {folded[1]} is outside -32768 to 32767")
     if key == "offset":
-      if folded[0] == "num":
-        values[key] = to_c(("num", folded[1] & 0xffff))
-      else:
-        text = to_c(folded)
-        values[key] = f"{text if folded[0] != 'name' else '(' + text + ')'} & 0xffff"
+      values[key] = format_agu_offset(folded, pe, agu)
+      raw_offset = folded
     else:
       values[key] = to_c(folded)
   if "count" not in values:
     raise ValueError(f"pe{pe}.{agu}: 'count' is required")
   two = mode == 2
-  mode = "agu_mode(2)" if two else "VME_DEF_MODE"
+  mode_arg = "agu_mode(2)" if two else "VME_DEF_MODE"
+  cyc_part = f", vme_cyc({values['cyc']})" if "cyc" in values else ""
+  if agu == "write":
+    state["write_modes"][pe] = {"at": at, "mode_arg": mode_arg, "offset": raw_offset, "cyc": cyc_part, "line": line}
+  mode = mode_arg
   if "offset" in values:
     mode += f", {values['offset']}"
-  if "cyc" in values:
-    mode += f", vme_cyc({values['cyc']})"
+  mode += cyc_part
   step = f"agu_step({values['step']})" if "step" in values else "VME_DEF_STEP"
   lines = [
     f"vme_pe{pe}(agu_{agu}(MODE), {mode});",
@@ -918,7 +926,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_seq": 0, "write_reg_seq": -1}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_modes": {}, "write_seq": 0, "write_reg_seq": -1}
 
 
 def new_env(macros=None):
