@@ -86,7 +86,12 @@ class Emulator:
 
   def simulate_fus(self, cache):
     needed = {}
-    pending = [(output_fu(self.active[SWEN_REGISTER], pe), pe) for pe in range(4) if write_agu(self.active, pe) is not None]
+    pending = []
+    for pe in range(4):
+      found = write_agu(self.active, pe)
+      if found is not None:
+        source_pe = found[1]["source_pe"]
+        pending.append((output_fu(self.active[SWEN_REGISTER], source_pe), source_pe))
     while pending:
       key = pending.pop()
       if key in needed:
@@ -122,19 +127,25 @@ class Emulator:
         previous = self.staging_read(staging, slot - 1) if cycle else None
         self.staging_write(staging, slot, execute(fu, back, front, a, b, previous, state))
 
-  def collect_writes(self):
-    writes = []
+  def active_writes(self):
+    items = []
     for pe in range(4):
       found = write_agu(self.active, pe)
       if found is None:
         continue
       driver, view = found
       first = BASE_OFFSET + pe * BUFFER_WORDS
-      offsets = agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")
-      staging = pe + FU_KINDS[output_fu(self.active[SWEN_REGISTER], pe)]
-      for j, inside in enumerate(offsets):
+      staging = view["source_pe"] + FU_KINDS[output_fu(self.active[SWEN_REGISTER], view["source_pe"])]
+      offsets = [(j, first + inside) for j, inside in enumerate(agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes"))]
+      items.append((staging, view, offsets))
+    return items
+
+  def collect_writes(self):
+    writes = []
+    for staging, view, offsets in self.active_writes():
+      for j, address in offsets:
         slot = view["cyc"] + j - view["bubbles"] - STAGING_LAG
-        writes.append((first + inside, self.staging_read(staging, slot) if j >= view["bubbles"] and slot >= 0 else 0))
+        writes.append((address, self.staging_read(staging, slot) if j >= view["bubbles"] and slot >= 0 else 0))
     return writes
 
   def trigger(self):
@@ -261,15 +272,11 @@ class Emulator:
 
   def synced_words(self):
     words = {}
-    for pe in range(4):
-      found = write_agu(self.active, pe)
-      if found is None or not found[1]["sync"]:
+    for staging, view, offsets in self.active_writes():
+      if not view["sync"]:
         continue
-      driver, view = found
-      first = BASE_OFFSET + pe * BUFFER_WORDS
-      staging = pe + FU_KINDS[output_fu(self.active[SWEN_REGISTER], pe)]
-      for j, inside in enumerate(agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes")):
-        words[first + inside] = (staging, view, j)
+      for j, address in offsets:
+        words[address] = (staging, view, j)
     return words
 
   def synced_reader(self, words):

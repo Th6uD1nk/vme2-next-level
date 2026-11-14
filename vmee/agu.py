@@ -24,6 +24,7 @@ def write_agu(registers, pe):
   view["upper_half"] = route["upper_half"]
   view["extended"] = route["extended"]
   view["nibble"] = route["nibble"]
+  view["source_pe"] = driver if route["extended"] else pe
   if view["sync"] and 6 - view["cyc"] + view["bubbles"] < SYNC_MINIMUM:
     raise ValueError(f"the sync of the write AGU of pe{driver} needs 6 - cyc + bubbles of at least {SYNC_MINIMUM}, it has {6 - view['cyc'] + view['bubbles']}")
   return driver, view
