@@ -377,6 +377,8 @@ for kind, fallback in FAT_FALLBACKS.items():
   if "opcode" in fallback and fallback["opcode"] not in OPCODES:
     OPCODES[fallback["opcode"]] = (HANDLERS[kind], fallback.get("operands", OPERATIONS[kind]["operands"]))
 
+OPCODES[0x000] = (lambda back, front, fu, a, b, previous, state: 0, ())
+
 ROUNDED.add(0x028)
 
 
