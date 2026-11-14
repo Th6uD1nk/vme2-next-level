@@ -930,10 +930,18 @@ CROSSBAR_PROGRAM = (
   "  .pe0 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: 2044 }; .spad = top0 + 1; }\n"
   "  .pe2 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: 6140 }; .spad = top2 + 2; }\n"
   "}\n"
+  ".kernel k_align direct {\n"
+  "  .pe0 { .top = { count: 3 }; .write = { count: 3, cyc: auto, offset: 4 }; .spad[2] = top0 + 1; }\n"
+  "}\n"
+  ".kernel k_neg direct {\n"
+  "  .pe0 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: -4 }; .spad[2] = top0 + 3; }\n"
+  "}\n"
   "void meLibOnProcess(void) {\n"
   f"  @emulate \"redirect\" {{\n    @kernel k_redirect config {{\n{PRELOAD}    }}\n    @kernel k_redirect exec {{ }}\n  }}\n"
   f"  @emulate \"swap\" {{\n    @kernel k_swap config {{\n{PRELOAD}    }}\n    @kernel k_swap exec {{ }}\n  }}\n"
   f"  @emulate \"double\" {{\n    @kernel k_double config {{\n{PRELOAD}    }}\n    @kernel k_double exec {{ }}\n  }}\n"
+  f"  @emulate \"align\" {{\n    @kernel k_align config {{\n{PRELOAD}    }}\n    @kernel k_align exec {{ }}\n  }}\n"
+  f"  @emulate \"neg\" {{\n    @kernel k_neg config {{\n{PRELOAD}    }}\n    @kernel k_neg exec {{ }}\n  }}\n"
   "}\n"
 )
 
@@ -959,6 +967,21 @@ class CrossbarRedirectTest(unittest.TestCase):
     dbl = run_emulation(CROSSBAR_PROGRAM, "double")
     self.assertEqual([dbl.scratchpad.read(BASE_OFFSET + 2044 + i) for i in range(8)], [11, 21, 31, 41, 51, 61, 71, 81])
     self.assertEqual([dbl.scratchpad.read(BASE_OFFSET + 6140 + i) for i in range(8)], [102, 202, 302, 402, 502, 602, 702, 802])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_redirected_spad_positive_offset_alignment(self):
+    align = run_emulation(CROSSBAR_PROGRAM, "align")
+    self.assertEqual([align.scratchpad.read(BASE_OFFSET + 2 * BUFFER_WORDS + 4 + i) for i in range(4)], [11, 21, 31, 41])
+    for buf in range(4):
+      self.assertEqual([align.scratchpad.read(BASE_OFFSET + buf * BUFFER_WORDS + i) for i in range(4)], [99, 99, 99, 99])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_redirected_spad_negative_offset_alignment(self):
+    neg = run_emulation(CROSSBAR_PROGRAM, "neg")
+    self.assertEqual([neg.scratchpad.read(BASE_OFFSET + 2 * BUFFER_WORDS + i) for i in range(4)], [53, 63, 73, 83])
+    self.assertEqual([neg.scratchpad.read(BASE_OFFSET + 2 * BUFFER_WORDS - 4 + i) for i in range(4)], [0, 0, 0, 0])
+    for buf in (0, 1, 3):
+      self.assertEqual([neg.scratchpad.read(BASE_OFFSET + buf * BUFFER_WORDS + i) for i in range(4)], [99, 99, 99, 99])
 
 
 if __name__ == "__main__":
