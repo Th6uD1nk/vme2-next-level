@@ -507,6 +507,33 @@ class SpadRedirectTest(unittest.TestCase):
     self.assertIn("vme_icn(AGU_WRITE, 0x6986);", lines)
     self.assertIn("vme_icn(AGU_TOP, 0x6610);", lines)
 
+  def test_unused_nibbles_isolate_pe0_above_1024_while_keeping_4_when_idle(self):
+    pe0_long = agu_array_lines("  .pe0 { .top = { count: 1500 }; .write = { count: 1500, cyc: 4 }; .spad[2] = top0; }")
+    self.assertIn("vme_icn(AGU_TOP, 0x5550);", pe0_long)
+    self.assertIn("vme_icn(AGU_BASE, 0x4444);", pe0_long)
+    self.assertIn("vme_icn(AGU_WRITE, 0x5855);", pe0_long)
+    pe1_long = agu_array_lines("  .pe1 { .top = { count: 1500 }; .write = { count: 1500, cyc: 4 }; .spad[2] = top1; }")
+    self.assertIn("vme_icn(AGU_TOP, 0x4414);", pe1_long)
+    self.assertIn("vme_icn(AGU_BASE, 0x4444);", pe1_long)
+    self.assertIn("vme_icn(AGU_WRITE, 0x4944);", pe1_long)
+    pe3_base = agu_array_lines("  .pe3 { .base = { count: 1500 }; .write = { count: 1500, cyc: 4 }; .spad = base3; }")
+    self.assertIn("vme_icn(AGU_TOP, 0x4444);", pe3_base)
+    self.assertIn("vme_icn(AGU_BASE, 0x3444);", pe3_base)
+    self.assertIn("vme_icn(AGU_WRITE, 0x3444);", pe3_base)
+
+  def test_idle_selection_handles_multiple_active_pes_and_preserves_warnings(self):
+    three_pes = agu_array_lines("  .pe0 { .top = { count: 4 }; .base = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[3] = top0 + base0; }\n  .pe1 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[1] = top1; }\n  .pe2 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top2; }")
+    self.assertIn("vme_icn(AGU_TOP, 0x7210);", three_pes)
+    self.assertIn("vme_icn(AGU_BASE, 0x5550);", three_pes)
+    self.assertIn("vme_icn(AGU_WRITE, 0x8a97);", three_pes)
+    pe0_pe2 = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }\n  .pe2 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top2; }")
+    self.assertIn("vme_icn(AGU_TOP, 0x5250);", pe0_pe2)
+    self.assertIn("vme_icn(AGU_WRITE, 0x585a);", pe0_pe2)
+    text = ".kernel k direct {\n  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad = top0 + top1; }\n}\n@kernel k config | exec\nvoid f() { }\n"
+    warnings = []
+    generate(text, find_blocks(text)[0], warnings)
+    self.assertEqual([message for _, message in warnings], ["top1 is read but no .top is bound in pe1 of this kernel"])
+
   def test_invalid_spad_redirections_are_rejected(self):
     cases = [
       (".pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[4] = top0; }", "line 2: spad[4]: buffer out of range (spad[0] to spad[3])"),
