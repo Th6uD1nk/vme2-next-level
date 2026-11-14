@@ -907,5 +907,32 @@ class RoutingHardwareTest(unittest.TestCase):
     self.assertEqual(res_top4[0][4:8], [0x1000 + i + 5 for i in range(1024, 1028)])
 
 
+PRELOAD = (
+  "      Transfer t0 = { memory: src0, count: 7 }, p = { memory: fill, count: 3 };\n"
+  "      .load { .transfer = t0; .scope = global; .offsets { .top0 = 0; } }\n"
+  "      .load { .transfer = p; .scope = global; .offsets { .base0 = 0; .base1 = 0; .base2 = 0; .base3 = 0; } }\n"
+)
+
+CROSSBAR_PROGRAM = (
+  "volatile Buffer src0[8] = { 10, 20, 30, 40, 50, 60, 70, 80 };\n"
+  "volatile Buffer fill[4] = { 99, 99, 99, 99 };\n"
+  ".kernel k_redirect direct {\n"
+  "  .pe0 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad[2] = top0 + 1; }\n"
+  "}\n"
+  "void meLibOnProcess(void) {\n"
+  f"  @emulate \"redirect\" {{\n    @kernel k_redirect config {{\n{PRELOAD}    }}\n    @kernel k_redirect exec {{ }}\n  }}\n"
+  "}\n"
+)
+
+
+class CrossbarRedirectTest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_redirected_spad_writes_only_target_buffer(self):
+    redirect = run_emulation(CROSSBAR_PROGRAM, "redirect")
+    self.assertEqual([redirect.scratchpad.read(BASE_OFFSET + 2 * BUFFER_WORDS + i) for i in range(4)], [11, 21, 31, 41])
+    for buf in (0, 1, 3):
+      self.assertEqual([redirect.scratchpad.read(BASE_OFFSET + buf * BUFFER_WORDS + i) for i in range(4)], [99, 99, 99, 99])
+
+
 if __name__ == "__main__":
   unittest.main()
