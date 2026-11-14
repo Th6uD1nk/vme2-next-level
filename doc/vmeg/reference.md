@@ -41,7 +41,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `a, b` (several declarations at once) | [2.2.1](language.md#221-declaring-several-at-once) |
 | `@declare { }` | [2.2.3](language.md#223-the-declare-block) |
 | `.transfer = { ...name, field: value };` | [9.1.2](transfers.md#912-the-spread) |
-| `pe[i]`, `top[i]`, `base[i]` | [2.3](language.md#23-accesses-by-index) |
+| `pe[i]`, `top[i]`, `base[i]`, `.spad[i]` | [2.3](language.md#23-accesses-by-index) |
 | `Int name = expression;` | [2.4](language.md#24-int) |
 | expressions | [2.5](language.md#25-expressions) |
 | macros, unknown names | [2.6](language.md#26-numbers-macros-and-unknown-names) |
@@ -76,7 +76,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | Element | Section |
 |---|---|
 | `.pe0` to `.pe3`, `pe[p]` | [5.1](pe.md#51-the-pe-block) |
-| `.spad = …;`, `s = …;` | [5.2](pe.md#52-what-a-block-holds) |
+| `.spad = …;`, `.spad[n] = …;`, `s = …;` | [5.2](pe.md#52-what-a-block-holds) |
 | two operations in a pe | [5.3](pe.md#53-operations-in-a-pe) |
 | `.remap` | [5.4](pe.md#54-remapping-an-opcode) |
 
