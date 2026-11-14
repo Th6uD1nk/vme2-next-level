@@ -737,7 +737,8 @@ def emit_statement(statement, env, lines, state):
     claim(state, pe, slot, statement[-1])
     if slot == "write":
       record_write(state, pe, pe, None, statement[-1])
-    state["routing"][slot][pe] = pe
+    else:
+      state["routing"][slot][pe] = pe
     lines.extend(generate_agu(statement[1], statement[2], env, state, len(lines), statement[-1]))
   elif kind == "agudecl":
     keys = declare_keys(statement[1], "Agu", env, state)
@@ -843,7 +844,8 @@ def emit_statement(statement, env, lines, state):
       state["sharers"].setdefault(ref, []).append((pe, statement[-1]))
     if slot == "write":
       record_write(state, pe, variable["owners"][slot], ref, statement[-1])
-    state["routing"][slot][pe] = variable["owners"][slot]
+    else:
+      state["routing"][slot][pe] = variable["owners"][slot]
   elif kind == "operation":
     pe = target_pe(statement[1], env)
     dest = target_spad(statement[1][3] if len(statement[1]) > 3 else None, env)
@@ -934,6 +936,17 @@ def check_shared_auto(state):
         warn(state, line, f"pe{pe} shares the write Agu '{name}' with pe{owner} but its operations need another delay, cyc: auto follows pe{owner}")
 
 
+def resolve_write_routing(state):
+  for pe, write in state["writes"].items():
+    target = state["write_targets"].get(pe)
+    last_seq = max(write["seq"], target["seq"] if target is not None else -1)
+    if last_seq < state["write_reg_seq"]:
+      continue
+    dest = target["dest"] if target is not None else None
+    buf = pe if dest is None else dest
+    state["routing"]["write"][buf] = write["driver"] if dest is None else (8 | write["driver"])
+
+
 def resolve_auto(lines, state):
   for pending in state["autos"]:
     pe = pending["pe"]
@@ -951,6 +964,7 @@ def run_statements(statements, macros=None, owner=None, compat=None):
   state = new_state(macros, owner, compat)
   for statement in statements:
     emit(statement, env, lines, state)
+  resolve_write_routing(state)
   resolve_auto(lines, state)
   return lines, state
 
@@ -1022,7 +1036,9 @@ def build_kernel(text, block, compat):
     if state["routing"][slot][int(number)] == 4:
       warn(state, line, f"{slot}{number} is read but no .{slot} is bound in pe{number} of this kernel")
   for pe, line in state["outputs"].items():
-    if state["routing"]["write"][pe] == 4:
+    target = state["write_targets"].get(pe)
+    buf = target["dest"] if target is not None and target["dest"] is not None else pe
+    if (pe not in state["writes"] and state["write_reg_seq"] < 0) or state["routing"]["write"][buf] == 4:
       warn(state, line, f"pe{pe} has an operation but no .write is bound in this kernel")
   for slot, nibbles in state["routing"].items():
     lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
