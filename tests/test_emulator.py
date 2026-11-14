@@ -14,7 +14,7 @@ from vmee.fu import execute, fu_operands, opcode_entry
 from vmee.host import build_program, run_program
 from vmee.listing import defines, emulations, format_listing
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
-from vmee.registers import CONTEXT_WORDS, FU_OPERAND_REGISTERS, agu_register, fu_register
+from vmee.registers import CONTEXT_WORDS, DATAPATH_BASE, FU_OPERAND_REGISTERS, ROUTING_REGISTERS, agu_register, fu_register
 from vmee.run import run_emulation
 from vmee.trace import replay
 from vmee.machine import Emulator
@@ -786,6 +786,49 @@ class AddressPointerTest(unittest.TestCase):
       emulator = run_emulation(EDRAM.replace("LAST", last), "edram")
       self.assertEqual([emulator.scratchpad.read(BASE_OFFSET + i) for i in range(4)], expected)
       self.assertEqual(emulator.warnings, [])
+
+
+class RoutingHardwareTest(unittest.TestCase):
+  SENTINEL = 0x555555
+
+  def run_configured(self, setup):
+    emulator = Emulator()
+    for pe in range(4):
+      emulator.scratchpad.transfer(TOP_OFFSET + pe * BUFFER_WORDS, [(pe + 1) * 0x1000 + i for i in range(BUFFER_WORDS)])
+      emulator.scratchpad.transfer(BASE_OFFSET + pe * BUFFER_WORDS, [self.SENTINEL] * BUFFER_WORDS)
+    values = {
+      ROUTING_REGISTERS["top"]: 0x4444,
+      ROUTING_REGISTERS["base"]: 0x4444,
+      ROUTING_REGISTERS["write"]: 0x4444,
+    }
+    setup(values)
+    for register, value in values.items():
+      emulator.write(DATAPATH_BASE + register * 4, value)
+    emulator.write(0x440ff008, 0x18)
+    return [
+      [emulator.scratchpad.read(BASE_OFFSET + pe * BUFFER_WORDS + i) for i in range(BUFFER_WORDS)]
+      for pe in range(4)
+    ]
+
+  def configure_pe_add_cst(self, values, pe, top_offset, count, write_offset, constant):
+    values[fu_register(pe, "primary")] = ((2 * pe) << 22) | (0x024 << 12)
+    values[FU_OPERAND_REGISTERS["primary"] + 2 * pe + 1] = constant
+    values[agu_register(pe, "top", "mode")] = 0x84000000 | (top_offset & 0xffff)
+    values[agu_register(pe, "top", "count")] = 0x10000 | count
+    values[agu_register(pe, "write", "mode")] = 0x84000000 | (6 << 16) | (write_offset & 0xffff)
+    values[agu_register(pe, "write", "count")] = 0x10000 | count
+
+  def test_5550_keeps_idle_buffers_untouched_across_1500_writes(self):
+    def setup(values):
+      values[ROUTING_REGISTERS["top"]] = 0x5550
+      values[ROUTING_REGISTERS["write"]] = 0x5550
+      self.configure_pe_add_cst(values, 0, 0, 1499, 0, 10)
+
+    buffers = self.run_configured(setup)
+    self.assertEqual(buffers[0][:1500], [0x1000 + i + 10 for i in range(1500)])
+    self.assertEqual(buffers[0][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
+    for unused in (1, 2, 3):
+      self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
 
 
 if __name__ == "__main__":
