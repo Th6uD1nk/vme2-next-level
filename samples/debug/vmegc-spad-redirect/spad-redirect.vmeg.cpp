@@ -51,6 +51,37 @@ volatile Buffer sharedFill[16] = {
   0x5555, 0x5555, 0x5555, 0x5555,
 };
 
+@emulate "spad-redirect"
+.kernel runSpadRedirect direct {
+  Int count = 16 - 1;
+
+  Transfer t0 = { memory: sharedTop0, count };
+  Transfer t3 = { memory: sharedTop3, count };
+  Transfer tf = { memory: sharedFill, count };
+
+  .load { .transfer = t0; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = t3; .scope = global; .offsets { .top3 = 0; } }
+  .load { .transfer = tf; .scope = global; .offsets { .base0 = 0; .base1 = 0; .base2 = 0; .base3 = 0; } }
+
+  Agu top = { count };
+
+  .pe0 {
+    .top = top;
+    .write = { count, cyc: auto };
+    .spad[2] = top0 + 1;
+  }
+
+  .pe3 {
+    .top = top;
+    .write = { count, cyc: auto };
+    .spad[0] = top3 + 2;
+  }
+}
+
+@kernel runSpadRedirect config | exec
+void runSpadRedirectRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
@@ -59,6 +90,7 @@ void meLibOnProcess(void) {
 
   {
     vmeLibStart();
+    runSpadRedirectRun();
     vmeLibFinish();
     vmeDebugFillWith(VME_BASE_BUFFERS);
   }
