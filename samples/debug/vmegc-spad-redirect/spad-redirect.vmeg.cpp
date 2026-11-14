@@ -126,6 +126,25 @@ void runRotateSpadRun(void) {
 void runOffsetPosRun(void) {
 }
 
+@emulate "offset-neg"
+.kernel runOffsetNeg direct {
+  Transfer t0 = { memory: sharedTop0, count: 11 };
+  Transfer tf = { memory: sharedFill, count: 15 };
+
+  .load { .transfer = t0; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tf; .scope = global; .offsets { .base0 = 0; .base1 = 0; .base2 = 0; .base3 = 0; } }
+
+  .pe0 {
+    .top = { count: 11 };
+    .write = { count: 11, offset: -4, cyc: auto };
+    .spad[2] = top0 + 3;
+  }
+}
+
+@kernel runOffsetNeg config | exec
+void runOffsetNegRun(void) {
+}
+
 void meLibOnProcess(void) {
   meCoreDcacheWritebackInvalidateAll();
   meLibExceptionHandlerInit(0);
