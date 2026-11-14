@@ -570,10 +570,14 @@ def parse_staging_declaration(p):
 
 
 def parse_output(p, index):
+  dest = None
+  if p.accept("["):
+    dest = parse_expr(p)
+    p.expect("]")
   p.expect("=")
   expr = parse_expr(p)
   p.expect(";")
-  return ("operation", ("target", index, "operation"), expr)
+  return ("operation", ("target", index, "operation", dest), expr)
 
 
 def parse_remap(p, index):
@@ -630,10 +634,10 @@ def parse_pe_block(p, index):
       body.append(("stageset", ("target", index, "stage"), name, expr, line))
       continue
     p.expect(".")
-    if p.peek()[1] == "spad":
+    if p.peek() is not None and p.peek()[1] == "spad":
       p.ident()
       body.append(parse_output(p, index) + (line,))
-    elif p.peek()[1] == "remap":
+    elif p.peek() is not None and p.peek()[1] == "remap":
       p.ident()
       body.append(parse_remap(p, index) + (line,))
     else:
