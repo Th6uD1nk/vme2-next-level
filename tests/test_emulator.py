@@ -908,19 +908,32 @@ class RoutingHardwareTest(unittest.TestCase):
 
 
 PRELOAD = (
-  "      Transfer t0 = { memory: src0, count: 7 }, p = { memory: fill, count: 3 };\n"
+  "      Transfer t0 = { memory: src0, count: 7 }, t2 = { memory: src2, count: 7 }, p = { memory: fill, count: 3 };\n"
   "      .load { .transfer = t0; .scope = global; .offsets { .top0 = 0; } }\n"
+  "      .load { .transfer = t2; .scope = global; .offsets { .top2 = 0; .top3 = 0; } }\n"
   "      .load { .transfer = p; .scope = global; .offsets { .base0 = 0; .base1 = 0; .base2 = 0; .base3 = 0; } }\n"
 )
 
 CROSSBAR_PROGRAM = (
   "volatile Buffer src0[8] = { 10, 20, 30, 40, 50, 60, 70, 80 };\n"
+  "volatile Buffer src2[8] = { 100, 200, 300, 400, 500, 600, 700, 800 };\n"
   "volatile Buffer fill[4] = { 99, 99, 99, 99 };\n"
   ".kernel k_redirect direct {\n"
   "  .pe0 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad[2] = top0 + 1; }\n"
   "}\n"
+  ".kernel k_swap direct {\n"
+  "  .pe0 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad[3] = top0 + 1; }\n"
+  "  .pe3 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad[0] = top3 + 2; }\n"
+  "}\n"
+  ".kernel k_double direct {\n"
+  "  .regs { .icn { .write = 0xaa88; } }\n"
+  "  .pe0 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: 2044 }; .spad = top0 + 1; }\n"
+  "  .pe2 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: 6140 }; .spad = top2 + 2; }\n"
+  "}\n"
   "void meLibOnProcess(void) {\n"
   f"  @emulate \"redirect\" {{\n    @kernel k_redirect config {{\n{PRELOAD}    }}\n    @kernel k_redirect exec {{ }}\n  }}\n"
+  f"  @emulate \"swap\" {{\n    @kernel k_swap config {{\n{PRELOAD}    }}\n    @kernel k_swap exec {{ }}\n  }}\n"
+  f"  @emulate \"double\" {{\n    @kernel k_double config {{\n{PRELOAD}    }}\n    @kernel k_double exec {{ }}\n  }}\n"
   "}\n"
 )
 
@@ -932,6 +945,20 @@ class CrossbarRedirectTest(unittest.TestCase):
     self.assertEqual([redirect.scratchpad.read(BASE_OFFSET + 2 * BUFFER_WORDS + i) for i in range(4)], [11, 21, 31, 41])
     for buf in (0, 1, 3):
       self.assertEqual([redirect.scratchpad.read(BASE_OFFSET + buf * BUFFER_WORDS + i) for i in range(4)], [99, 99, 99, 99])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_swapped_crossbar_outputs(self):
+    swap = run_emulation(CROSSBAR_PROGRAM, "swap")
+    self.assertEqual([swap.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [102, 202, 302, 402])
+    self.assertEqual([swap.scratchpad.read(BASE_OFFSET + 3 * BUFFER_WORDS + i) for i in range(4)], [11, 21, 31, 41])
+    for buf in (1, 2):
+      self.assertEqual([swap.scratchpad.read(BASE_OFFSET + buf * BUFFER_WORDS + i) for i in range(4)], [99, 99, 99, 99])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_double_buffer_linear_boundary_crossing(self):
+    dbl = run_emulation(CROSSBAR_PROGRAM, "double")
+    self.assertEqual([dbl.scratchpad.read(BASE_OFFSET + 2044 + i) for i in range(8)], [11, 21, 31, 41, 51, 61, 71, 81])
+    self.assertEqual([dbl.scratchpad.read(BASE_OFFSET + 6140 + i) for i in range(8)], [102, 202, 302, 402, 502, 602, 702, 802])
 
 
 if __name__ == "__main__":
