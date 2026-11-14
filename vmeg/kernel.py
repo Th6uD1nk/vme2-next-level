@@ -937,6 +937,30 @@ def check_shared_auto(state):
 
 
 def resolve_write_routing(state):
+  ref_pes = {}
+  for pe, write in state["writes"].items():
+    if write["ref"] is not None:
+      ref_pes.setdefault(write["ref"], []).append(pe)
+  for ref, pes in ref_pes.items():
+    if len(pes) > 1:
+      for pe in pes:
+        target = state["write_targets"].get(pe)
+        if target is not None and target["dest"] is not None:
+          raise ValueError(f"line {target['line']}: pe{pe} cannot share the write Agu '{ref}' with .spad[{target['dest']}]")
+  owners = {}
+  claimed = sorted(
+    set(state["writes"]) | set(state["write_targets"]),
+    key=lambda pe: (state["write_targets"][pe]["seq"] if pe in state["write_targets"] else state["writes"][pe]["seq"], pe),
+  )
+  for pe in claimed:
+    write = state["writes"].get(pe)
+    target = state["write_targets"].get(pe)
+    dest = target["dest"] if target is not None else None
+    buf = pe if dest is None else dest
+    line = target["line"] if target is not None else write["line"]
+    if buf in owners:
+      raise ValueError(f"line {line}: base{buf} is written by both pe{owners[buf]} and pe{pe}")
+    owners[buf] = pe
   for pe, write in state["writes"].items():
     target = state["write_targets"].get(pe)
     last_seq = max(write["seq"], target["seq"] if target is not None else -1)
