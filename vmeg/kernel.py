@@ -979,6 +979,26 @@ def resolve_write_routing(state):
     state["routing"]["write"][buf] = write["driver"] if dest is None else (8 | write["driver"])
 
 
+def resolve_write_offsets(lines, state):
+  for pe, info in state["write_modes"].items():
+    target = state["write_targets"].get(pe)
+    if target is None or target["dest"] is None or target["dest"] == 0:
+      continue
+    base = target["dest"] * 2048
+    user_offset = info["offset"]
+    if user_offset is None:
+      combined = ("num", base)
+    elif user_offset[0] == "num":
+      combined = ("num", base + user_offset[1])
+    else:
+      combined = ("bin", "+", ("num", base), user_offset)
+    try:
+      offset_text = format_agu_offset(combined, pe, "write")
+    except ValueError as e:
+      raise ValueError(f"line {info['line']}: {e}") from None
+    lines[info["at"]] = f"vme_pe{pe}(agu_write(MODE), {info['mode_arg']}, {offset_text}{info['cyc']});"
+
+
 def resolve_auto(lines, state):
   for pending in state["autos"]:
     pe = pending["pe"]
@@ -997,6 +1017,7 @@ def run_statements(statements, macros=None, owner=None, compat=None):
   for statement in statements:
     emit(statement, env, lines, state)
   resolve_write_routing(state)
+  resolve_write_offsets(lines, state)
   resolve_auto(lines, state)
   return lines, state
 
