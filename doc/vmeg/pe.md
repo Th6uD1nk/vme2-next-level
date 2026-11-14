@@ -47,7 +47,7 @@ Staging s;
 **Explanation of the code above:**
 
 - The bindings of the AGUs: `.top`, `.base` and `.write` ([4.3](agu.md#43-binding-an-agu-to-a-pe)).
-- The operation of the pe, which is the member `.spad`: its result leaves on the write AGU (`.spad = clamp(s, 0, 255);`). A pe has one.
+- The operation of the pe, which is the member `.spad` (`.spad = clamp(s, 0, 255);`), or `.spad[n]` (`.spad[2] = clamp(s, 0, 255);`) to redirect the write to base buffer `n` (`0` to `3`). A pe has one. When `.spad[n]` is used, `vmegc` routes `baseN` from that pe and automatically adds `n * 2048` to its `.write` AGU `offset` (added to any `offset` given on `.write`; for `n = 0`, nothing is added). Two pes cannot write to the same destination buffer in a kernel, and a `.write` `Agu` variable cannot be shared across pes if any uses `.spad[n]`.
 - An operation kept in a `Staging` variable or element, which starts with the name of the variable (`s = top1 + top2;` or `s[p] = top1 + top2;`): the result stays in the pe and another operation can read it.
 - The declaration of an `Agu` or of a `Staging` variable for this block, including `Staging s[N];` arrays declared in the kernel ([2.2.4](language.md#224-array-declarations)).
 - Currently not supported: `Int` and loops inside a pe block, write them around the block.
@@ -164,6 +164,10 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `expected ';'` | an operation or an assignment of a pe without its `;` (`.spad = top0 + top1` or `s = top0 + 1`) |
 | [5.2](#52-what-a-block-holds) | `pe0.top is already set at line N` | the same member (`.top`, `.base`, `.write`) set twice in a pe |
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
+| [5.2](#52-what-a-block-holds) | `spad destination index must be a number` | a `.spad[...]` index that does not fold to an integer |
+| [5.2](#52-what-a-block-holds) | `spad[4]: buffer out of range (spad[0] to spad[3])` | a `.spad[n]` index outside `0` to `3` |
+| [5.2](#52-what-a-block-holds) | `base2 is written by both pe0 and pe1` | two pes redirecting or writing to the same destination base buffer |
+| [5.2](#52-what-a-block-holds) | `pe0 cannot share the write Agu 'w' with .spad[2]` | a write `Agu` variable shared across pes when a pe uses `.spad[n]` |
 | [5.2](#52-what-a-block-holds) | `s[2]: index out of range (0 to 1)` | a Staging array index outside bounds |
 | [5.2](#52-what-a-block-holds) | `'s' is an array, write s[...]` | a Staging array name used without bracket index |
 | [5.2](#52-what-a-block-holds) | `'s' is not an array` | index brackets used on a scalar Staging variable |
