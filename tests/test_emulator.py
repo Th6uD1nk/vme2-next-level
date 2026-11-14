@@ -258,6 +258,29 @@ class SyncTest(unittest.TestCase):
     self.assertEqual(self.run_kernel(True), [0] * 7 + [101, 102, 103, 104, 105])
     self.assertEqual(self.run_kernel(False), [0] * 12)
 
+  def run_extended(self, sync):
+    emulator = Emulator()
+    registers = emulator.registers
+    registers[:] = [0] * 106
+    registers[ROUTING_REGISTERS["top"]] = 0x4410
+    registers[ROUTING_REGISTERS["base"]] = 0x3210
+    registers[ROUTING_REGISTERS["write"]] = 0x8818
+    registers[fu_register(0, "primary")] = (0 << 27) | (0x024 << 12)
+    registers[fu_register(1, "primary")] = (12 << 27) | (2 << 22) | (0x010 << 12)
+    for pe, agu, mode, count in ((0, "top", 0x84000000, 7), (1, "top", 0x84000000, 11), (2, "base", 0x84000000, 11), (0, "write", 0x84000000 | 4096, 14), (1, "write", 0x84060000, 11)):
+      registers[agu_register(pe, agu, "mode")] = mode
+      registers[agu_register(pe, agu, "count")] = 0x10000 | count
+    registers[agu_register(0, "write", "format0")] = 1
+    registers[agu_register(0, "write", "format1")] = 0x200000 if sync else 0
+    emulator.scratchpad.transfer(TOP_OFFSET, [1, 2, 3, 4, 5, 6, 7, 8])
+    emulator.scratchpad.transfer(TOP_OFFSET + BUFFER_WORDS, [100] * 12)
+    emulator.trigger()
+    return [emulator.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(12)]
+
+  def test_extended_mode_write_sync_respects_end_token(self):
+    self.assertEqual(self.run_extended(True), [100] * 7 + [101, 102, 103, 104, 105])
+    self.assertEqual(self.run_extended(False), [100] * 12)
+
 
 class IterationTest(unittest.TestCase):
   def test_groups_on_the_way_in_and_gap_on_the_way_out(self):
