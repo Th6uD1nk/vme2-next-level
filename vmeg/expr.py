@@ -72,6 +72,9 @@ def fold_params(items, env):
 
 
 def substitute_target(target, env):
+  if len(target) > 3:
+    dest = None if target[3] is None else fold(target[3], env)
+    return ("target", fold(target[1], env), target[2], dest)
   return ("target", fold(target[1], env), target[2])
 
 
