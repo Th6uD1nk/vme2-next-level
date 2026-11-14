@@ -731,6 +731,7 @@ def emit_statement(statement, env, lines, state):
         state["swen_raw"] = True
       else:
         state["routing"][name] = [value[1] >> 4 * pe & 0xf for pe in range(4)]
+        state["routing_regs"].add(name)
         if name == "write":
           state["write_reg_seq"] = next_write_seq(state)
   elif kind == "icn":
@@ -747,6 +748,7 @@ def emit_statement(statement, env, lines, state):
       record_write(state, pe, pe, None, statement[-1])
     else:
       state["routing"][slot][pe] = pe
+      state["routing_bound"][slot].add(pe)
     lines.extend(generate_agu(statement[1], statement[2], env, state, len(lines), statement[-1]))
   elif kind == "agudecl":
     keys = declare_keys(statement[1], "Agu", env, state)
@@ -854,6 +856,7 @@ def emit_statement(statement, env, lines, state):
       record_write(state, pe, variable["owners"][slot], ref, statement[-1])
     else:
       state["routing"][slot][pe] = variable["owners"][slot]
+      state["routing_bound"][slot].add(pe)
   elif kind == "operation":
     pe = target_pe(statement[1], env)
     dest = target_spad(statement[1][3] if len(statement[1]) > 3 else None, env)
@@ -926,7 +929,7 @@ def emit_statement(statement, env, lines, state):
 
 
 def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_modes": {}, "write_seq": 0, "write_reg_seq": -1}
+  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4, 4, 4, 4] for slot in ("top", "base", "write")}, "routing_bound": {slot: set() for slot in ("top", "base", "write")}, "routing_regs": set(), "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_modes": {}, "write_seq": 0, "write_reg_seq": -1}
 
 
 def new_env(macros=None):
@@ -977,6 +980,19 @@ def resolve_write_routing(state):
     dest = target["dest"] if target is not None else None
     buf = pe if dest is None else dest
     state["routing"]["write"][buf] = write["driver"] if dest is None else (8 | write["driver"])
+    state["routing_bound"]["write"].add(buf)
+
+
+def resolve_idle_routing(state):
+  for slot, nibbles in state["routing"].items():
+    bound = state["routing_bound"][slot]
+    if slot in state["routing_regs"] or not bound or len(bound) == 4:
+      continue
+    drivers = {nibbles[buf] & 3 for buf in bound}
+    idle = min(set(range(4)) - drivers)
+    for buf in range(4):
+      if buf not in bound:
+        nibbles[buf] = 4 | idle
 
 
 def resolve_write_offsets(lines, state):
@@ -1093,6 +1109,7 @@ def build_kernel(text, block, compat):
     buf = target["dest"] if target is not None and target["dest"] is not None else pe
     if (pe not in state["writes"] and state["write_reg_seq"] < 0) or state["routing"]["write"][buf] == 4:
       warn(state, line, f"pe{pe} has an operation but no .write is bound in this kernel")
+  resolve_idle_routing(state)
   for slot, nibbles in state["routing"].items():
     lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):04x});")
   if state["secondary"] or state["swen_raw"]:
