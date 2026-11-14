@@ -39,16 +39,23 @@ def run_length(registers):
   return length
 
 
-def agu_inside_offsets(view, label, buffer, verb):
+def write_offsets(pe, driver, view):
+  label = f"the write AGU of pe{driver}"
   if view["mode"] not in AGU_MODES:
     raise ValueError(f"the mode {view['mode']} of {label} is not modeled (modeled: {', '.join(str(mode) for mode in AGU_MODES)})")
   offsets = AGU_MODES[view["mode"]](view)
   if view["reverse"]:
     offsets = offsets[::-1]
-  for inside in offsets:
-    if not 0 <= inside < BUFFER_WORDS:
-      raise ValueError(f"{label} {verb} the word {inside} of {buffer}, outside the buffer, the circular mode is not modeled")
-  return offsets
+  first = BASE_OFFSET + pe * BUFFER_WORDS
+  result = []
+  for j, raw in enumerate(offsets):
+    if view["extended"] and (raw >> 11 & 3) != pe:
+      continue
+    inside = raw & (BUFFER_WORDS - 1)
+    if view["upper_half"] and not (inside & (BUFFER_WORDS // 2)):
+      continue
+    result.append((j, first + inside))
+  return result
 
 
 def read_view(registers, kind, buffer):
@@ -141,7 +148,7 @@ def stream_offsets(registers, kind, buffer, warn=lambda message: None):
   for inside in offsets:
     if inside >= BUFFER_WORDS:
       raise ValueError(f"{label} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
-  return [first + inside if first + inside >= group else None for inside in offsets]
+  return [None if (view["upper_half"] and not (inside & (BUFFER_WORDS // 2))) or first + inside < group else first + inside for inside in offsets]
 
 
 def stream_at(emulator, kind, buffer, cycle, cache, synced=None):

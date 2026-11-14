@@ -1,4 +1,4 @@
-from vmee.agu import agu_inside_offsets, run_length, stream_at, stream_offsets, write_agu
+from vmee.agu import run_length, stream_at, stream_offsets, write_agu, write_offsets
 from vmee.dmac import CLEAR_LOCAL_BUFFER, CONTEXT_TRANSFER_BITS, CONTEXT_TRANSFER_MASK, DMAC_BASE, DMAC_CONTROL, DMAC_COUNT, DMAC_GROUP_SIZE, DMAC_GROUP_STEPS, DMAC_ITERATION_STEP, DMAC_MEMORY_ADDRESS, DMAC_REGISTER_COUNT, DMAC_SCRATCHPAD_OFFSET, ITERATE_TO_MEMORY, ITERATE_TO_SCRATCHPAD, ITERATION_STEP_BYTES, MEM_FROM_16, MEM_TO_16, PRELOAD_CONTEXT, RING_TO_MEMORY, RING_TO_SCRATCHPAD, TRIGGER
 from vmee.fu import execute, fu_operands, opcode_entry
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, EDRAM_BYTES, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad
@@ -134,10 +134,8 @@ class Emulator:
       if found is None:
         continue
       driver, view = found
-      first = BASE_OFFSET + pe * BUFFER_WORDS
       staging = view["source_pe"] + FU_KINDS[output_fu(self.active[SWEN_REGISTER], view["source_pe"])]
-      offsets = [(j, first + inside) for j, inside in enumerate(agu_inside_offsets(view, f"the write AGU of pe{driver}", f"base{pe}", "writes"))]
-      items.append((staging, view, offsets))
+      items.append((staging, view, write_offsets(pe, driver, view)))
     return items
 
   def collect_writes(self):
