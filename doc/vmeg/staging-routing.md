@@ -56,6 +56,9 @@ Agu t = { count: 15 };
 
 - `vmegc` connects the AGUs, the buffers and the results from the bindings and the operations. Nothing is written for it.
 - A buffer `topN` or `baseN` needs the AGU `.top` or `.base` bound in `peN`.
+- By default the result of a pe leaves on its write AGU into its own `base` buffer (`AGU_WRITE` nibble `pe`). Writing `.spad[n] = …;` redirects the result of a pe to `base[n]` (`AGU_WRITE` nibble `8 | driver`) and automatically adds `n * 2048` to that pe's write AGU `offset` ([5.2](pe.md#52-what-a-block-holds)).
+- Each 4-bit nibble `n` of `AGU_WRITE` configures buffer `base[n]` with `driver = nibble & 3`, `upper_half = nibble & 4` (bit 2, gating writes whose local index `& 1024 == 0`), and `extended = nibble & 8` (bit 3, selecting linear bank addressing across `0..8191` filtered to `(addr >> 11) & 3 == n` instead of wrapping `& 2047`).
+- When a kernel binds fewer than four banks of a routing register (`AGU_TOP`, `AGU_BASE` or `AGU_WRITE`), `vmegc` sets unbound nibbles to `4 | idle_pe` using the lowest unused driver pe (`pe0` first) rather than `0x4444`, preventing active writes from leaking into idle buffers.
 - The result of a pe leaves on its write AGU. A result kept in a `Staging` variable stays in the pe.
 - The registers of the interconnect that are written by hand are `xpcr` and `skew` ([3.4](kernel.md#34-interconnect-registers)).
 
