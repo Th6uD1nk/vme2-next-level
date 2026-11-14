@@ -830,6 +830,41 @@ class RoutingHardwareTest(unittest.TestCase):
     for unused in (1, 2, 3):
       self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
 
+  def test_4844_reproduces_1024_leak_and_5855_isolates_it_for_1500_and_neg_offset(self):
+    def run_pe0_to_spad2(write_icn, write_offset, count):
+      def setup(values):
+        values[ROUTING_REGISTERS["top"]] = 0x5550
+        values[ROUTING_REGISTERS["write"]] = write_icn
+        self.configure_pe_add_cst(values, 0, 0, count, write_offset, 10)
+      return self.run_configured(setup)
+
+    leaked = run_pe0_to_spad2(0x4844, 4096, 1499)
+    self.assertEqual(leaked[2][:1500], [0x1000 + i + 10 for i in range(1500)])
+    self.assertEqual(leaked[2][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
+    self.assertEqual(leaked[0][:1024], [self.SENTINEL] * 1024)
+    self.assertEqual(leaked[0][1024:1500], [0x1000 + i + 10 for i in range(1024, 1500)])
+    self.assertEqual(leaked[0][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
+    for passive in (1, 3):
+      self.assertEqual(leaked[passive][:1024], [self.SENTINEL] * 1024)
+      self.assertEqual(leaked[passive][1024:1500], [0] * 476)
+      self.assertEqual(leaked[passive][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
+
+    isolated = run_pe0_to_spad2(0x5855, 4096, 1499)
+    self.assertEqual(isolated[2][:1500], [0x1000 + i + 10 for i in range(1500)])
+    for unused in (0, 1, 3):
+      self.assertEqual(isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
+
+    neg_leaked = run_pe0_to_spad2(0x4844, 4092, 11)
+    self.assertEqual(neg_leaked[2][:8], [0x1000 + (i + 4) + 10 for i in range(8)])
+    for leaked_buf in (0, 1, 3):
+      self.assertEqual(neg_leaked[leaked_buf][2044:], [0x1000 + i + 10 for i in range(4)] if leaked_buf == 0 else [0] * 4)
+
+    neg_isolated = run_pe0_to_spad2(0x5855, 4092, 11)
+    self.assertEqual(neg_isolated[2][:8], [0x1000 + (i + 4) + 10 for i in range(8)])
+    self.assertEqual(neg_isolated[2][8:], [self.SENTINEL] * (BUFFER_WORDS - 8))
+    for unused in (0, 1, 3):
+      self.assertEqual(neg_isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
+
 
 if __name__ == "__main__":
   unittest.main()
