@@ -506,3 +506,21 @@ class SpadRedirectTest(unittest.TestCase):
     self.assertIn("vme_pe1(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", lines)
     self.assertIn("vme_icn(AGU_WRITE, 0x4984);", lines)
 
+  def test_invalid_spad_redirections_are_rejected(self):
+    cases = [
+      (".pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[4] = top0; }", "line 2: spad[4]: buffer out of range (spad[0] to spad[3])"),
+      (".pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[-1] = top0; }", "line 2: spad[-1]: buffer out of range (spad[0] to spad[3])"),
+      (".pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[X] = top0; }", "line 2: spad destination index must be a number"),
+      (".pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }\n  .pe2 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad = top2; }", "line 3: base2 is written by both pe0 and pe2"),
+      (".pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[1] = top0; }\n  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[1] = top3; }", "line 3: base1 is written by both pe0 and pe3"),
+      (".pe0 { .top = { count: 4 }; .spad[2] = top0; }\n  .pe2 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad = top2; }", "line 3: base2 is written by both pe0 and pe2"),
+      ("Agu w = { count: 4, cyc: 4 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad = top0; }\n  .pe1 { .top = { count: 4 }; .write = w; .spad[2] = top1; }", "line 4: pe1 cannot share the write Agu 'w' with .spad[2]"),
+      ("Agu w = { count: 4, cyc: 4 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad[2] = top0; }\n  .pe1 { .top = { count: 4 }; .write = w; .spad = top1; }", "line 3: pe0 cannot share the write Agu 'w' with .spad[2]"),
+      (".pe0 { .top = { count: 4 }; .write = { count: 4, offset: 32000, cyc: 4 }; .spad[1] = top0; }", "line 2: pe0.write: the offset 34048 is outside -32768 to 32767"),
+    ]
+    for body, message in cases:
+      with self.subTest(body=body):
+        with self.assertRaises(ValueError) as ctx:
+          agu_array_lines("  " + body)
+        self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+
