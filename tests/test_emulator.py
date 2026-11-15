@@ -853,7 +853,7 @@ class RoutingHardwareTest(unittest.TestCase):
     for unused in (1, 2, 3):
       self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
 
-  def test_4844_leaks_upper_half_and_40444844_isolates_1500_and_neg_offset(self):
+  def test_4844_leaks_upper_half_and_d8d1d8dd_isolates_1500_and_neg_offset(self):
     def run_pe0_to_spad2(write_icn, write_offset, count):
       def setup(values):
         values[ROUTING_REGISTERS["top"]] = 0x44404440
@@ -872,13 +872,13 @@ class RoutingHardwareTest(unittest.TestCase):
       self.assertEqual(leaked[passive][1024:1500], [0] * 476)
       self.assertEqual(leaked[passive][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
 
-    isolated = run_pe0_to_spad2(0x40444844, 4096, 1499)
+    isolated = run_pe0_to_spad2(0xd8d1d8dd, 4096, 1499)
     self.assertEqual(isolated[2][:1500], [0x1000 + i + 10 for i in range(1500)])
     self.assertEqual(isolated[2][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
     for unused in (0, 1, 3):
       self.assertEqual(isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
 
-    neg_isolated = run_pe0_to_spad2(0x40444844, 4092, 11)
+    neg_isolated = run_pe0_to_spad2(0xd8d1d8dd, 4092, 11)
     self.assertEqual(neg_isolated[2][:8], [0x1000 + i + 14 for i in range(8)])
     self.assertEqual(neg_isolated[2][8:], [self.SENTINEL] * (BUFFER_WORDS - 8))
     for unused in (0, 1, 3):
@@ -908,16 +908,7 @@ class RoutingHardwareTest(unittest.TestCase):
       for buf in range(4):
         self.assertEqual(res_dead[buf], [self.SENTINEL] * BUFFER_WORDS)
 
-    def setup_f444_bank3(values):
-      values[ROUTING_REGISTERS["top"]] = 0x3444
-      values[ROUTING_REGISTERS["write"]] = 0xf444
-      self.configure_pe_add_cst(values, 3, 1020, 7, 3 * BUFFER_WORDS + 1020, 5)
-
-    res_f444 = self.run_configured(setup_f444_bank3)
-    self.assertEqual(res_f444[3][1020:1024], [self.SENTINEL] * 4)
-    self.assertEqual(res_f444[3][1024:1028], [0x4000 + i + 5 for i in range(1024, 1028)])
-    for other in (0, 1, 2):
-      self.assertEqual(res_f444[other], [self.SENTINEL] * BUFFER_WORDS)
+    assert_upper_only(run_write_case(0xbcc0fccc, 3 * BUFFER_WORDS + 1020), 3)
 
     def setup_top_clamping(top_icn):
       def setup(values):
@@ -929,6 +920,21 @@ class RoutingHardwareTest(unittest.TestCase):
     self.assertEqual(setup_top_clamping(0x44404444), [0x13ff + 5] * 4 + [0x1400 + i + 5 for i in range(4)])
     self.assertEqual(setup_top_clamping(0x44444440), [0x1000 + 1020 + i + 5 for i in range(4)] + [0x17ff + 5] * 4)
     self.assertEqual(setup_top_clamping(0x44444444), [0x13ff + 5] * 4 + [0x17ff + 5] * 4)
+    self.assertEqual(setup_top_clamping(0x8888888c), [0x13ff + 5] * 4 + [0x1400 + i + 5 for i in range(4)])
+    self.assertEqual(setup_top_clamping(0x888c8888), [0x1000 + 1020 + i + 5 for i in range(4)] + [0x17ff + 5] * 4)
+
+  def test_mixed_direct_and_fullrange_write_without_0x4(self):
+    def setup(values):
+      values[ROUTING_REGISTERS["top"]] = 0x44104410
+      values[ROUTING_REGISTERS["write"]] = 0x8e128e1e
+      self.configure_pe_add_cst(values, 0, 0, 7, 3 * BUFFER_WORDS, 5)
+      self.configure_pe_add_cst(values, 1, 0, 7, 0, 9)
+
+    buffers = self.run_configured(setup)
+    self.assertEqual(buffers[1][:8], [0x2000 + i + 9 for i in range(8)])
+    self.assertEqual(buffers[3][:8], [0x1000 + i + 5 for i in range(8)])
+    for unused in (0, 2):
+      self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
 
 
 PRELOAD = (
