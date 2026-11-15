@@ -2,7 +2,7 @@ from functools import lru_cache
 import re
 
 from vmee.memory import BUFFER_WORDS
-from vmeg.blocks import decorator_calls, decorator_names, find_blocks, header_words, kernel_name
+from vmeg.blocks import decorator_calls, decorator_names, find_blocks, kernel_mode, kernel_name
 from vmeg.host import declared_buffer_names, enclosing_function_tokens, file_buffer_names, function_buffer_names, visible_buffer_names
 from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.macros import evaluate, known_macros, macro_events
@@ -60,7 +60,7 @@ def mark_steps(mode):
 def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, memories=None, sequences=None, after=None, bodies=None):
   names = list(dict.fromkeys(name for name, _ in steps))
   pieces = {name: kernel_pieces(text, blocks, name, id_) for name in names}
-  modes = {name: next((word for word in header_words(text, pieces[name][0])[2:] if word in ("direct", "memory")), None) for name in names}
+  modes = {name: kernel_mode(text, pieces[name][0]) for name in names}
   written = [record for sequence in sequences or [] for record in sequence]
   loads = [load for name in names for load in pieces[name][1]] + [record for record in written if record["kind"] == "load"]
   stores = [store for name in names for store in pieces[name][2]] + [record for record in written if record["kind"] == "store"]
@@ -169,12 +169,18 @@ def buffer_lines(entries, notes, qualifier, way="from"):
   return lines
 
 
-BUFFERS = [f"{kind}_{n}" for kind in ("TOP", "BASE") for n in range(4)]
+def buffer_slots(limit):
+  return [f"{kind}_{n}" for kind in ("TOP", "BASE") for n in range(limit)]
+
+
+BUFFERS = buffer_slots(4)
+EXTENDED_BUFFERS = buffer_slots(8)
 
 
 def full_lines(emulation, notes, way="from", empty=True):
   lines = []
-  for buffer in BUFFERS:
+  extended = emulation.get("mode") == "extended" or "extended" in (emulation.get("modes") or {}).values()
+  for buffer in (EXTENDED_BUFFERS if extended else BUFFERS):
     links = [(qualifier, index, entry) for qualifier in ("global", "local") for index, entry in enumerate(emulation[qualifier]) if entry[0] == buffer]
     if not links and empty:
       lines.append(f"  {buffer:<8}not linked")
@@ -188,7 +194,7 @@ def format_listing(found, definitions, full=False):
   lines = []
   for emulation in found:
     notes = link_notes(emulation, definitions)
-    stored = dict(emulation["stores"], declared=emulation["declared"])
+    stored = dict(emulation["stores"], declared=emulation["declared"], mode=emulation.get("mode"), modes=emulation.get("modes"))
     store_notes = link_notes(stored, definitions, overlaps=False)
     has_stores = bool(stored["global"] or stored["local"])
     mode = f"{emulation['mode']}, " if emulation.get("mode") else ""

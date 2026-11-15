@@ -1,4 +1,4 @@
-from vmeg.blocks import decorator_calls, find_blocks, header_words, kernel_name
+from vmeg.blocks import decorator_calls, find_blocks, kernel_mode, kernel_name
 from vmeg.host import declarator_names, is_pointer, kernel_sources
 from vmeg.kernel import block_statement_records, kernel_transfers
 from vmeg.macros import known_macros
@@ -68,9 +68,8 @@ def kernel_definitions(path, text):
     if block[0] != "kernel":
       continue
     statements = kernel_statements(text, block, {})
-    words = header_words(text, block)
-    direct = "direct" in words[2:]
-    mode = next((word for word in words[2:] if word in ("direct", "memory")), None)
+    mode = kernel_mode(text, block)
+    direct = mode in ("direct", "extended")
     loads, stores = kernel_transfers(statements, known_macros(text, block[1]), kernel_name(text, block)) if mode else ([], [])
     found.append({
       "name": kernel_name(text, block),

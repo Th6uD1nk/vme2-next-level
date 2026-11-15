@@ -203,7 +203,7 @@ def check_decorators(text, blocks, registry):
       if not known[name][0]["mode"]:
         raise ValueError(f"line {line}: kernel '{name}' needs the option direct or memory")
       if "build" in actions and known[name][0]["mode"] != "memory":
-        raise ValueError(f"line {line}: build is for a memory kernel, kernel '{name}' is direct")
+        raise ValueError(f"line {line}: build is for a memory kernel, kernel '{name}' is {known[name][0]['mode']}")
       if "config" in actions and known[name][0]["mode"] == "memory" and not any(name == call["name"] and "build" in call["actions"] for call in registry["calls"]):
         raise ValueError(f"line {line}: kernel '{name}' is configured but never built, add a build")
       if "async" in actions and "config" not in actions and known[name][0]["stores"]:
@@ -506,7 +506,7 @@ def memories_by_kernel(text, blocks, call_memories, registry):
       value = given[i] if i < len(given) else "auto"
       definitions = registry["kernels"].get(name)
       if value != "auto" and definitions and definitions[0]["mode"] != "memory":
-        raise ValueError(f"line {line}: the kernel '{name}' is direct, it has no memory config, its .memory is auto")
+        raise ValueError(f"line {line}: the kernel '{name}' is {definitions[0]['mode']}, it has no memory config, its .memory is auto")
       entries.append((name, None if value == "auto" else value))
     found[block[1]] = entries
   return found
