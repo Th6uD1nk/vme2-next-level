@@ -58,8 +58,12 @@ def constant(expr, what):
 def resolve_staging_value(key, value):
   if value is None:
     raise ValueError(f"the Staging variable '{key}' is read before it is set")
-  if isinstance(value, tuple) and value[0] == "cross_pass":
-    raise ValueError(f"the Staging variable '{key}' is set in pe{value[1]} and cannot be read in pe{value[2]} (different pass)")
+  if isinstance(value, tuple):
+    if value[0] == "cross_back":
+      raise ValueError(f"the Staging variable '{key}' is set in pe{value[1]} and cannot be read in pe{value[2]} (different pass)")
+    if value[0] == "cross_forward":
+      value[1]["exported"] = True
+      return f"BASE_{value[1]['pe'] & 3}"
   return value
 
 
@@ -620,8 +624,10 @@ def staging_refs(state, pe=0):
   for name, variable in state["stagings"].items():
     if "pe" not in variable:
       refs[name] = None
-    elif (variable["pe"] >> 2) != (pe >> 2):
-      refs[name] = ("cross_pass", variable["pe"], pe)
+    elif (variable["pe"] >> 2) > (pe >> 2):
+      refs[name] = ("cross_back", variable["pe"], pe)
+    elif (variable["pe"] >> 2) < (pe >> 2):
+      refs[name] = ("cross_forward", variable, pe)
     else:
       refs[name] = f"STAGING_{(variable['pe'] & 3) + 4 * variable['unit']}"
   return refs
