@@ -956,7 +956,7 @@ CROSSBAR_PROGRAM = (
   "  .pe3 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad[0] = top3 + 2; }\n"
   "}\n"
   ".kernel k_double direct {\n"
-  "  .regs { .icn { .write = 0xaa88; } }\n"
+  "  .regs { .icn { .write = 0xaa80aa88; } }\n"
   "  .pe0 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: 2044 }; .spad = top0 + 1; }\n"
   "  .pe2 { .top = { count: 7 }; .write = { count: 7, cyc: auto, offset: 6140 }; .spad = top2 + 2; }\n"
   "}\n"

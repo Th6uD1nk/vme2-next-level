@@ -347,8 +347,9 @@ class RawRegistersTest(unittest.TestCase):
       code = generate(text, find_blocks(text)[0], [], None)
       return [line.strip() for line in code.splitlines() if "vme_icn" in line]
     pe = ".pe0 { .spad = top0 + base0; }"
-    self.assertEqual(icn(pe), ["vme_icn(AGU_TOP, 0x4444);", "vme_icn(AGU_BASE, 0x4444);", "vme_icn(AGU_WRITE, 0x4444);"])
-    self.assertEqual(icn(".regs { .icn { .top = 0x3210; } }\n" + pe)[0], "vme_icn(AGU_TOP, 0x3210);")
+    self.assertEqual(icn(pe), ["vme_icn(AGU_TOP, 0x44444444);", "vme_icn(AGU_BASE, 0x44444444);", "vme_icn(AGU_WRITE, 0x44444444);"])
+    self.assertEqual(icn(".regs { .icn { .top = 0x3210; } }\n" + pe)[0], "vme_icn(AGU_TOP, 0x00003210);")
+    self.assertEqual(icn(".regs { .icn { .top = 0x32103210; } }\n" + pe)[0], "vme_icn(AGU_TOP, 0x32103210);")
     self.assertEqual(icn(".regs { .icn { .swen = 0b1111; } }\n" + pe)[-1], "vme_icn(SWEN, fu_on(0b0111));")
     self.assertEqual(icn(pe + "\n.regs { .icn { .swen = 0b1111; } }")[-1], "vme_icn(SWEN, fu_on(0b1111));")
     self.assertEqual(icn(".regs { .icn { .swen = 0b1000; } }\n.regs { .icn { .swen = 0b0100; } }\n" + pe)[-1], "vme_icn(SWEN, fu_on(0b0100));")
