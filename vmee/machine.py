@@ -73,8 +73,8 @@ class Emulator:
   def staging_slot(self, index, slot):
     if not 0 <= index < STAGING_COUNT:
       raise ValueError(f"STAGING_{index}: staging out of range (STAGING_0 to STAGING_{STAGING_COUNT - 1})")
-    if not 0 <= slot < STAGING_WORDS:
-      raise ValueError(f"STAGING_{index}: slot {slot} out of range (0 to {STAGING_WORDS - 1})")
+    if not 0 <= slot < len(self.staging[index]):
+      raise ValueError(f"STAGING_{index}: slot {slot} out of range (0 to {len(self.staging[index]) - 1})")
     return self.staging[index]
 
   def staging_read(self, index, slot):
@@ -119,7 +119,7 @@ class Emulator:
         back = operand(fu["back"], cycle) if "back" in uses else 0
         front = operand(fu["front"], cycle) if "front" in uses else 0
         slot = cycle + STAGING_LAG
-        if slot >= STAGING_WORDS:
+        if slot >= len(self.staging[0]):
           raise ValueError(f"the run is longer than the staging, the slot {slot} does not exist")
         staging = pe + FU_KINDS[kind]
         previous = self.staging_read(staging, slot - 1) if cycle else None
@@ -146,6 +146,11 @@ class Emulator:
 
   def run(self):
     self.cycles = run_length(self.active)
+    needed = self.cycles + STAGING_LAG
+    if needed > len(self.staging[0]):
+      extra = needed - len(self.staging[0])
+      for lane in self.staging:
+        lane.extend([0] * extra)
     self.simulate_fus({})
     for offset, value in self.collect_writes():
       self.scratchpad.write(offset, value)
