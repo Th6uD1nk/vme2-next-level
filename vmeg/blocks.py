@@ -7,6 +7,8 @@ EMULATE_ID = re.compile(r'"[A-Za-z0-9_-]+"')
 
 ACTIONS = ("build", "config", "exec", "async")
 
+KERNEL_MODES = ("direct", "memory", "extended")
+
 
 def read_kernel_list(items, last, line):
   while True:
@@ -319,6 +321,10 @@ def kernel_name(text, block):
 def header_words(text, block):
   words = [value for _, value, _, _ in tokens(text[block[1]:block[2]])]
   return words[1:] if words[0] == "." else words
+
+
+def kernel_mode(text, block):
+  return next((word for word in header_words(text, block)[2:] if word in KERNEL_MODES), None)
 
 
 def decorator_calls(text, block):

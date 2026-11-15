@@ -1,6 +1,6 @@
 import re
 
-from vmeg.blocks import body_tokens, visible_declares
+from vmeg.blocks import body_tokens, kernel_mode, visible_declares
 
 ICN_NAMES = {
   "xpcr": "XPCR",
@@ -30,16 +30,17 @@ TRANSFER_SCOPES = ("local", "global")
 
 PE_NAME = re.compile(r"pe([0-9]+)$")
 
-BUFFER_NAME = re.compile(r"(top|base)([0-3])$")
+BUFFER_NAME = re.compile(r"(top|base)([0-7])$")
 
 
 class Parser:
-  def __init__(self, text, toks, limit):
+  def __init__(self, text, toks, limit, extended=False):
     self.text = text
     self.toks = toks
     self.limit = limit
     self.i = 0
     self.in_call = False
+    self.extended = extended
 
   def error(self, message, token=None):
     if token is not None:
@@ -275,11 +276,12 @@ def parse_pe_index(p):
     index = parse_expr(p)
     p.expect("]")
     return index
+  limit = 7 if p.extended else 3
   m = PE_NAME.match(tok[1]) if tok is not None else None
   if m is None:
-    p.error("expected a processing element (pe0 to pe3)")
-  if int(m.group(1)) > 3:
-    p.error("processing element out of range (pe0 to pe3)")
+    p.error(f"expected a processing element (pe0 to pe{limit})")
+  if int(m.group(1)) > limit:
+    p.error(f"processing element out of range (pe0 to pe{limit})")
   p.ident()
   return ("num", int(m.group(1)))
 
@@ -459,6 +461,7 @@ def parse_transfer_declaration(p):
 
 def parse_offsets(p):
   entries = []
+  limit = 7 if p.extended else 3
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
@@ -466,13 +469,13 @@ def parse_offsets(p):
     if p.accept("."):
       name = p.ident()
       m = BUFFER_NAME.match(name)
-      if m is None:
-        p.error(f"unknown offset '.{name}' (.top0 to .top3, .base0 to .base3)", start)
+      if m is None or int(m.group(2)) > limit:
+        p.error(f"unknown offset '.{name}' (.top0 to .top{limit}, .base0 to .base{limit})", start)
       kind, index = m.group(1), ("num", int(m.group(2)))
     else:
       kind = p.ident()
       if kind not in ("top", "base"):
-        p.error("expected .top0 to .top3, .base0 to .base3, top[...] or base[...]", start)
+        p.error(f"expected .top0 to .top{limit}, .base0 to .base{limit}, top[...] or base[...]", start)
       p.expect("[")
       index = parse_expr(p)
       p.expect("]")
@@ -572,6 +575,8 @@ def parse_staging_declaration(p):
 def parse_output(p, index):
   dest = None
   if p.accept("["):
+    if p.extended:
+      p.error(".spad[dest] redirection is not allowed in an extended kernel")
     dest = parse_expr(p)
     p.expect("]")
   p.expect("=")
@@ -673,17 +678,17 @@ def parse_for_header(p):
   return ("for", var, low, high, step)
 
 
-def buffer_ref(expr):
+def buffer_ref(expr, limit=3):
   if expr[0] == "name":
     m = BUFFER_NAME.match(expr[1])
-    if m:
+    if m and int(m.group(2)) <= limit:
       return f"{m.group(1).upper()}_{m.group(2)}"
     return None
   if expr[0] == "index" and expr[1] in ("top", "base"):
     if expr[2][0] != "num":
       raise ValueError(f"{expr[1]}[...]: buffer index must be a number")
-    if not 0 <= expr[2][1] <= 3:
-      raise ValueError(f"{expr[1]}[{expr[2][1]}]: buffer index out of range (0 to 3)")
+    if not 0 <= expr[2][1] <= limit:
+      raise ValueError(f"{expr[1]}[{expr[2][1]}]: buffer index out of range (0 to {limit})")
     return f"{expr[1].upper()}_{expr[2][1]}"
   return None
 
@@ -876,5 +881,5 @@ def kernel_statements(text, block, cache):
   statements = cache.get(block[1])
   if statements is None:
     body, limit = body_tokens(text, block)
-    statements = cache[block[1]] = declared_statements(text, block[1]) + parse_body(Parser(text, body, limit))
+    statements = cache[block[1]] = declared_statements(text, block[1]) + parse_body(Parser(text, body, limit, kernel_mode(text, block) == "extended"))
   return statements
