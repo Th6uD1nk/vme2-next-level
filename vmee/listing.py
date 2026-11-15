@@ -37,7 +37,7 @@ def kernel_pieces(text, blocks, name, id_):
   kernel = next((block for block in blocks if block[0] == "kernel" and kernel_name(text, block) == name), None)
   if kernel is None:
     raise ValueError(f"the kernel {name} of the @emulate \"{id_}\" is not defined in this file")
-  loads, stores = kernel_transfers(kernel_statements(text, kernel, {}), known_macros(text, kernel[1]), name)
+  loads, stores = kernel_transfers(kernel_statements(text, kernel, {}), known_macros(text, kernel[1]), name, kernel_mode(text, kernel) == "extended")
   return kernel, loads, stores
 
 
