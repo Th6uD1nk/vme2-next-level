@@ -55,12 +55,18 @@ def constant(expr, what):
   return expr[1]
 
 
+def resolve_staging_value(key, value):
+  if value is None:
+    raise ValueError(f"the Staging variable '{key}' is read before it is set")
+  if isinstance(value, tuple) and value[0] == "cross_pass":
+    raise ValueError(f"the Staging variable '{key}' is set in pe{value[1]} and cannot be read in pe{value[2]} (different pass)")
+  return value
+
+
 def source_ref(expr, stagings, limit=3):
   if expr[0] == "name":
     if expr[1] in stagings:
-      if stagings[expr[1]] is None:
-        raise ValueError(f"the Staging variable '{expr[1]}' is read before it is set")
-      return stagings[expr[1]]
+      return resolve_staging_value(expr[1], stagings[expr[1]])
     if f"{expr[1]}[0]" in stagings:
       raise ValueError(f"'{expr[1]}' is an array, write {expr[1]}[...]")
   if expr[0] == "index" and expr[1] not in ("top", "base"):
@@ -73,9 +79,7 @@ def source_ref(expr, stagings, limit=3):
       if key not in stagings:
         size = sum(1 for name in stagings if name.startswith(expr[1] + "["))
         raise ValueError(f"{key}: index out of range (0 to {size - 1})")
-      if stagings[key] is None:
-        raise ValueError(f"the Staging variable '{key}' is read before it is set")
-      return stagings[key]
+      return resolve_staging_value(key, stagings[key])
   return buffer_ref(expr, limit)
 
 
@@ -611,17 +615,29 @@ def resolve_var(target, env, state):
   return target
 
 
-def staging_refs(state):
-  return {name: f"STAGING_{variable['pe'] + 4 * variable['unit']}" if "pe" in variable else None for name, variable in state["stagings"].items()}
+def staging_refs(state, pe=0):
+  refs = {}
+  for name, variable in state["stagings"].items():
+    if "pe" not in variable:
+      refs[name] = None
+    elif (variable["pe"] >> 2) != (pe >> 2):
+      refs[name] = ("cross_pass", variable["pe"], pe)
+    else:
+      refs[name] = f"STAGING_{(variable['pe'] & 3) + 4 * variable['unit']}"
+  return refs
 
 
-def staging_depths(state):
-  return {f"STAGING_{variable['pe'] + 4 * variable['unit']}": variable["depth"] for variable in state["stagings"].values() if "pe" in variable}
+def staging_depths(state, pass_id=0):
+  return {
+    f"STAGING_{(variable['pe'] & 3) + 4 * variable['unit']}": variable["depth"]
+    for variable in state["stagings"].values()
+    if "pe" in variable and (variable["pe"] >> 2) == pass_id
+  }
 
 
 def place(state, lines, pe, operations, line):
   used = state["fus"].get(pe, 0)
-  depths = staging_depths(state)
+  depths = staging_depths(state, state.get("pe_offset", 0) >> 2)
   depth = 0
   if used + len(operations) > 2:
     raise ValueError(f"a pe holds two operations at most, this pe needs {used + len(operations)}")
@@ -875,7 +891,7 @@ def emit_statement(statement, env, lines, state):
     if (pe, "operation") in state["set"]:
       raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
     claim(state, pe, "operation", statement[-1])
-    last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state), state["compat"]), statement[-1])
+    last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state, pe), state["compat"]), statement[-1])
     state["outputs"].setdefault(pe, statement[-1])
     state["depths"][pe] = depth
     state["write_targets"][pe] = {"dest": dest, "line": statement[-1], "seq": next_write_seq(state)}
@@ -926,7 +942,7 @@ def emit_statement(statement, env, lines, state):
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
     pe = target_pe(statement[1], env)
-    last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state), state["compat"]), statement[-1])
+    last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state, pe), state["compat"]), statement[-1])
     variable.update({"pe": pe, "unit": last, "line": statement[-1], "depth": depth})
   elif kind == "peblock":
     for inner in sorted(statement[1], key=lambda item: item[0] != "remap"):
