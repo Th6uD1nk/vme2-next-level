@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from vmeg.blocks import find_blocks
 from vmeg.kernel import generate, parameter_names, replace_names, transfer_names
+from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
 from vmegc import render
 from vmee.listing import defines, emulations, format_listing
@@ -231,6 +232,36 @@ class OffsetsOfATransferTest(unittest.TestCase):
     self.assertIn("kTLoad(arr, VME_TOP_BUFF0_WOFF + 4);", out)
     self.assertIn("kTLoad(arr, VME_BASE_BUFF2_WOFF - 1);", out)
     self.assertIn("kTLoad(arr, VME_TOP_BUFF2_WOFF + (3 - UNKNOWN));", out)
+
+  def test_extended_slots_4_to_7_add_0x400_in_render_registry_and_listing(self):
+    text = (
+      "volatile Buffer arr[16], dst[16];\n"
+      "@emulate \"ext_xfer\"\n"
+      ".kernel k extended {\n"
+      "  Transfer t = { memory: arr, count: 3 };\n"
+      "  .load { .transfer = t; .scope = global; .offsets { .top4 = 0; .base7 = 8; .top5 = -4; } }\n"
+      "}\n"
+      "void f() {\n"
+      "  @emulate \"ext_blk\" {\n"
+      "    @kernel k config | exec {\n"
+      "      Transfer s = { memory: dst, count: 3 };\n"
+      "      .store { .transfer = s; .scope = global; .offsets { .base6 = 4; } }\n"
+      "    }\n"
+      "  }\n"
+      "}\n"
+    )
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    self.assertIn("kTLoad(arr, VME_TOP_BUFF0_WOFF + 0x400);", out)
+    self.assertIn("kTLoad(arr, VME_BASE_BUFF3_WOFF + 0x408);", out)
+    self.assertIn("kTLoad(arr, VME_TOP_BUFF1_WOFF + 0x3fc);", out)
+    self.assertIn("fSStore(dst, VME_BASE_BUFF2_WOFF + 0x404);", out)
+    defs = kernel_definitions("t.vmeg.c", text)
+    self.assertEqual(defs[0]["mode"], "extended")
+    self.assertIn("VME_TOP_BUFF0_WOFF + 0x400", defs[0]["loads"][0]["calls"][0])
+    emus = emulations(text)
+    self.assertEqual(emus[0]["mode"], "extended")
+    self.assertEqual([entry[:2] for entry in emus[0]["global"]], [("TOP_4", 4), ("BASE_7", 4), ("TOP_5", 4)])
+    self.assertEqual([entry[:2] for entry in emus[1]["stores"]["global"]], [("BASE_6", 4)])
 
 
 class NamesOfATransferTest(unittest.TestCase):
