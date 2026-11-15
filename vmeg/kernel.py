@@ -1,6 +1,6 @@
 import re
 
-from vmeg.blocks import body_tokens
+from vmeg.blocks import body_tokens, decorator_names, kernel_mode, kernel_name
 from vmeg.host import block_owners
 from vmeg.macros import known_macros
 from vmeg.expr import fold, substitute, to_c
@@ -400,10 +400,11 @@ def transfer_control(transfer, direction):
 
 
 def transfer_destination(buffer, slot, offset):
-  name = f"VME_{buffer.upper()}_BUFF{slot}_WOFF"
-  if offset[0] == "num" and offset[1] < 0:
-    return f"{name} - {to_c(('num', -offset[1]))}"
-  return name + (f" + {offset_text(offset)}" if offset_text(offset) else "")
+  name = f"VME_{buffer.upper()}_BUFF{slot & 3}_WOFF"
+  effective = add_offset(0x400, offset) if slot > 3 else offset
+  if effective[0] == "num" and effective[1] < 0:
+    return f"{name} - {to_c(('num', -effective[1]))}"
+  return name + (f" + {offset_text(effective)}" if offset_text(effective) else "")
 
 
 def transfer_destinations(targets):
@@ -781,10 +782,11 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f".{kind} needs a .transfer = name;")
     seen = set()
     targets = []
+    limit = 7 if state.get("extended") else 3
     for buffer, index, value in items.get("offsets", ("offsets", []))[1]:
       slot = fold(index, env)
-      if slot[0] != "num" or not 0 <= slot[1] <= 3:
-        raise ValueError(f"{buffer}[...]: buffer index must be a number from 0 to 3")
+      if slot[0] != "num" or not 0 <= slot[1] <= limit:
+        raise ValueError(f"{buffer}[...]: buffer index must be a number from 0 to {limit}")
       if (buffer, slot[1]) in seen:
         raise ValueError(f"{buffer}{slot[1]} is already set in this .{kind}")
       seen.add((buffer, slot[1]))
@@ -938,8 +940,8 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
-def new_state(macros=None, owner=None, compat=None):
-  return {"owner": owner, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4] * 8 for slot in ("top", "base", "write")}, "routing_bound": {slot: set() for slot in ("top", "base", "write")}, "routing_regs": set(), "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_modes": {}, "write_seq": 0, "write_reg_seq": -1}
+def new_state(macros=None, owner=None, compat=None, extended=False):
+  return {"owner": owner, "extended": extended, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4] * 8 for slot in ("top", "base", "write")}, "routing_bound": {slot: set() for slot in ("top", "base", "write")}, "routing_regs": set(), "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_modes": {}, "write_seq": 0, "write_reg_seq": -1}
 
 
 def new_env(macros=None):
@@ -1040,10 +1042,10 @@ def resolve_auto(lines, state):
   check_shared_auto(state)
 
 
-def run_statements(statements, macros=None, owner=None, compat=None):
+def run_statements(statements, macros=None, owner=None, compat=None, extended=False):
   lines = []
   env = new_env(macros)
-  state = new_state(macros, owner, compat)
+  state = new_state(macros, owner, compat, extended)
   for statement in statements:
     emit(statement, env, lines, state)
   resolve_write_routing(state)
@@ -1060,10 +1062,11 @@ def block_statement_records(text, blocks):
   state = None
   env = None
   owners = block_owners(text, blocks)
+  extended_owners = {kernel_name(text, block) for block in blocks if block[0] == "kernel" and kernel_mode(text, block) == "extended"}
   for block in blocks:
     if block[0] == "kernel-block":
       macros = known_macros(text, block[1])
-      state = new_state(macros, owners[block[1]])
+      state = new_state(macros, owners[block[1]], extended=decorator_names(text, block)[0] in extended_owners)
       env = new_env(macros)
       for statement in declared_statements(text, block[1]):
         emit(statement, env, [], state)
@@ -1075,7 +1078,7 @@ def block_statement_records(text, blocks):
       _, start, _, end = block
       toks = [(kind, value, s + start, e + start) for kind, value, s, e in tokens(text[start:end])]
       before = len(state["sequence"])
-      parser = Parser(text, toks, end)
+      parser = Parser(text, toks, end, state["extended"])
       parser.in_call = True
       for statement in parse_body(parser):
         if statement[0] == "paramsuse":
@@ -1088,8 +1091,8 @@ def block_statement_records(text, blocks):
   return found, per_block, call_params, call_memories
 
 
-def kernel_transfers(statements, macros=None, owner=None):
-  state = run_statements(statements, macros, owner)[1]
+def kernel_transfers(statements, macros=None, owner=None, extended=False):
+  state = run_statements(statements, macros, owner, None, extended)[1]
   return state["loads"], state["stores"]
 
 
@@ -1110,10 +1113,10 @@ def build_kernel(text, block, compat):
       raise ValueError(f"line {line}: a kernel is either direct or memory, not both")
     options.append(word)
   toks, limit = body_tokens(text, block)
-  statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit))
+  statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit, options == ["extended"]))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
-  lines, state = run_statements(statements, known_macros(text, start), name, compat)
+  lines, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"])
   for ref, line in state["reads"].items():
     slot, number = ref.lower().split("_")
     if state["routing"][slot][int(number)] == 4:
