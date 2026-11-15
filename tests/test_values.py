@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import find_blocks
-from vmeg.kernel import generate, parameter_names, replace_names, transfer_names
+from vmeg.kernel import generate, new_state, parameter_names, replace_names, source_ref, staging_depths, staging_refs, transfer_names
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
 from vmegc import render
@@ -582,4 +582,37 @@ class SpadRedirectTest(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
           agu_array_lines("  " + body)
         self.assertTrue(str(ctx.exception).endswith(message), str(ctx.exception))
+
+
+class ExtendedStagingTest(unittest.TestCase):
+  def test_cross_pass_forward_routes_through_base_and_backward_raises(self):
+    state = new_state(extended=True)
+    state["stagings"] = {
+      "p1_fu0": {"pe": 0, "unit": 0, "depth": 1, "line": 2},
+      "p1_fu1": {"pe": 2, "unit": 1, "depth": 2, "line": 3},
+      "p2_fu0": {"pe": 5, "unit": 0, "depth": 1, "line": 4},
+      "p2_fu1": {"pe": 7, "unit": 1, "depth": 3, "line": 5},
+    }
+    pass2_refs = staging_refs(state, pe=4)
+    self.assertEqual(source_ref(("name", "p1_fu0"), pass2_refs, 7), "BASE_0")
+    self.assertEqual(source_ref(("name", "p1_fu1"), pass2_refs, 7), "BASE_2")
+    self.assertEqual(source_ref(("name", "p2_fu0"), pass2_refs, 7), "STAGING_1")
+    self.assertEqual(source_ref(("name", "p2_fu1"), pass2_refs, 7), "STAGING_7")
+    self.assertTrue(state["stagings"]["p1_fu0"]["exported"])
+    self.assertTrue(state["stagings"]["p1_fu1"]["exported"])
+    self.assertNotIn("exported", state["stagings"]["p2_fu0"])
+    pass1_refs = staging_refs(state, pe=1)
+    self.assertEqual(source_ref(("name", "p1_fu0"), pass1_refs, 7), "STAGING_0")
+    with self.assertRaisesRegex(ValueError, "set in pe5 and cannot be read in pe1"):
+      source_ref(("name", "p2_fu0"), pass1_refs, 7)
+
+  def test_staging_depths_are_isolated_per_pass(self):
+    state = new_state(extended=True)
+    state["stagings"] = {
+      "a": {"pe": 0, "unit": 0, "depth": 2, "line": 2},
+      "b": {"pe": 4, "unit": 0, "depth": 5, "line": 3},
+      "c": {"pe": 6, "unit": 1, "depth": 4, "line": 4},
+    }
+    self.assertEqual(staging_depths(state, 0), {"STAGING_0": 2})
+    self.assertEqual(staging_depths(state, 1), {"STAGING_0": 5, "STAGING_6": 4})
 
