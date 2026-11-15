@@ -283,52 +283,55 @@ def format_agu_offset(folded, pe, agu):
   return f"{text if folded[0] != 'name' else '(' + text + ')'} & 0xffff"
 
 
-def generate_agu(target, params, env, state, at, line, mode=4):
+def generate_agu(target, params, env, pass_state, at, line, mode=4):
   pe = target_pe(target, env)
+  label = pass_state["pe_offset"] + pe
   agu = target[2]
   values = {}
   raw_offset = None
   for key, value in params[1]:
     if key == "mode":
-      raise ValueError(f"pe{pe}.{agu}: the mode of an Agu is its type, write Agu(4) or Agu(2)")
+      raise ValueError(f"pe{label}.{agu}: the mode of an Agu is its type, write Agu(4) or Agu(2)")
     if key not in AGU_PARAMS[mode][agu]:
-      raise ValueError(f"pe{pe}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[mode][agu])})")
+      raise ValueError(f"pe{label}.{agu}: unknown parameter '{key}' ({', '.join(AGU_PARAMS[mode][agu])})")
     if key in values:
-      raise ValueError(f"pe{pe}.{agu}: duplicate parameter '{key}'")
+      raise ValueError(f"pe{label}.{agu}: duplicate parameter '{key}'")
     if key == "inner0":
-      values[key] = check_inner(pe, agu, key, value, env)
+      values[key] = check_inner(label, agu, key, value, env)
       continue
     if value[0] == "params":
-      raise ValueError(f"pe{pe}.{agu}: '{key}' takes a value, not parameters between braces")
+      raise ValueError(f"pe{label}.{agu}: '{key}' takes a value, not parameters between braces")
     if has_auto(value):
       if key != "cyc":
-        raise ValueError(f"pe{pe}.{agu}: auto is only for cyc")
+        raise ValueError(f"pe{label}.{agu}: auto is only for cyc")
       values[key] = AUTO
-      state["autos"].append({"pe": pe, "expr": value, "env": env, "at": at, "line": line})
+      pass_state["autos"].append({"pe": pe, "expr": value, "env": env, "at": at, "line": line})
       continue
     folded = full_value(value, env)
     if key in ("reverse", "repeat", "sync"):
       if folded[0] != "num" or folded[1] not in (0, 1):
-        raise ValueError(f"pe{pe}.{agu}: {key} takes true or false")
+        raise ValueError(f"pe{label}.{agu}: {key} takes true or false")
       values[key] = folded[1]
       continue
     if key == "bubbles" and folded[0] == "num" and not 0 <= folded[1] <= 4095:
-      raise ValueError(f"pe{pe}.{agu}: the bubbles {folded[1]} are outside 0 to 4095")
+      raise ValueError(f"pe{label}.{agu}: the bubbles {folded[1]} are outside 0 to 4095")
     if key == "bubbles":
       values[key] = to_c(folded) if folded[0] == "num" else f"{to_c(folded) if folded[0] != 'name' else '(' + to_c(folded) + ')'} & 0xfff"
       continue
     if key == "offset":
-      values[key] = format_agu_offset(folded, pe, agu)
+      values[key] = format_agu_offset(folded, label, agu)
       raw_offset = folded
     else:
       values[key] = to_c(folded)
   if "count" not in values:
-    raise ValueError(f"pe{pe}.{agu}: 'count' is required")
+    raise ValueError(f"pe{label}.{agu}: 'count' is required")
   two = mode == 2
   mode_arg = "agu_mode(2)" if two else "VME_DEF_MODE"
   cyc_part = f", vme_cyc({values['cyc']})" if "cyc" in values else ""
+  pass_state["agu_modes"][(pe, agu)] = {"at": at, "mode_arg": mode_arg, "offset": raw_offset, "cyc": cyc_part, "line": line}
+  pass_state["agu_specs"][(pe, agu)] = (params, mode, dict(env))
   if agu == "write":
-    state["write_modes"][pe] = {"at": at, "mode_arg": mode_arg, "offset": raw_offset, "cyc": cyc_part, "line": line}
+    pass_state["write_modes"][pe] = pass_state["agu_modes"][(pe, agu)]
   mode = mode_arg
   if "offset" in values:
     mode += f", {values['offset']}"
@@ -564,11 +567,11 @@ def warn(state, line, message):
   state["warnings"].append((line, message))
 
 
-def claim(state, pe, name, line):
+def claim(pass_state, pe, name, line):
   key = (pe, name)
-  if key in state["set"]:
-    raise ValueError(f"pe{pe}.{name} is already set at line {state['set'][key]}")
-  state["set"][key] = line
+  if key in pass_state["set"]:
+    raise ValueError(f"pe{pass_state['pe_offset'] + pe}.{name} is already set at line {pass_state['set'][key]}")
+  pass_state["set"][key] = line
 
 
 def base_name(target):
