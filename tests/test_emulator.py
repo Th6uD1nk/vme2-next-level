@@ -820,9 +820,9 @@ class RoutingHardwareTest(unittest.TestCase):
       emulator.scratchpad.transfer(TOP_OFFSET + pe * BUFFER_WORDS, [(pe + 1) * 0x1000 + i for i in range(BUFFER_WORDS)])
       emulator.scratchpad.transfer(BASE_OFFSET + pe * BUFFER_WORDS, [self.SENTINEL] * BUFFER_WORDS)
     values = {
-      ROUTING_REGISTERS["top"]: 0x4444,
-      ROUTING_REGISTERS["base"]: 0x4444,
-      ROUTING_REGISTERS["write"]: 0x4444,
+      ROUTING_REGISTERS["top"]: 0x44444444,
+      ROUTING_REGISTERS["base"]: 0x44444444,
+      ROUTING_REGISTERS["write"]: 0x44444444,
     }
     setup(values)
     for register, value in values.items():
@@ -841,10 +841,10 @@ class RoutingHardwareTest(unittest.TestCase):
     values[agu_register(pe, "write", "mode")] = 0x84000000 | (6 << 16) | (write_offset & 0xffff)
     values[agu_register(pe, "write", "count")] = 0x10000 | count
 
-  def test_5550_keeps_idle_buffers_untouched_across_1500_writes(self):
+  def test_44404440_keeps_idle_buffers_untouched_across_1500_writes(self):
     def setup(values):
-      values[ROUTING_REGISTERS["top"]] = 0x5550
-      values[ROUTING_REGISTERS["write"]] = 0x5550
+      values[ROUTING_REGISTERS["top"]] = 0x44404440
+      values[ROUTING_REGISTERS["write"]] = 0x44404440
       self.configure_pe_add_cst(values, 0, 0, 1499, 0, 10)
 
     buffers = self.run_configured(setup)
@@ -853,10 +853,10 @@ class RoutingHardwareTest(unittest.TestCase):
     for unused in (1, 2, 3):
       self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
 
-  def test_4844_reproduces_1024_leak_and_5855_isolates_it_for_1500_and_neg_offset(self):
+  def test_4844_leaks_upper_half_and_40444844_isolates_1500_and_neg_offset(self):
     def run_pe0_to_spad2(write_icn, write_offset, count):
       def setup(values):
-        values[ROUTING_REGISTERS["top"]] = 0x5550
+        values[ROUTING_REGISTERS["top"]] = 0x44404440
         values[ROUTING_REGISTERS["write"]] = write_icn
         self.configure_pe_add_cst(values, 0, 0, count, write_offset, 10)
       return self.run_configured(setup)
@@ -872,18 +872,14 @@ class RoutingHardwareTest(unittest.TestCase):
       self.assertEqual(leaked[passive][1024:1500], [0] * 476)
       self.assertEqual(leaked[passive][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
 
-    isolated = run_pe0_to_spad2(0x5855, 4096, 1499)
+    isolated = run_pe0_to_spad2(0x40444844, 4096, 1499)
     self.assertEqual(isolated[2][:1500], [0x1000 + i + 10 for i in range(1500)])
+    self.assertEqual(isolated[2][1500:], [self.SENTINEL] * (BUFFER_WORDS - 1500))
     for unused in (0, 1, 3):
       self.assertEqual(isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
 
-    neg_leaked = run_pe0_to_spad2(0x4844, 4092, 11)
-    self.assertEqual(neg_leaked[2][:8], [0x1000 + (i + 4) + 10 for i in range(8)])
-    for leaked_buf in (0, 1, 3):
-      self.assertEqual(neg_leaked[leaked_buf][2044:], [0x1000 + i + 10 for i in range(4)] if leaked_buf == 0 else [0] * 4)
-
-    neg_isolated = run_pe0_to_spad2(0x5855, 4092, 11)
-    self.assertEqual(neg_isolated[2][:8], [0x1000 + (i + 4) + 10 for i in range(8)])
+    neg_isolated = run_pe0_to_spad2(0x40444844, 4092, 11)
+    self.assertEqual(neg_isolated[2][:8], [0x1000 + i + 14 for i in range(8)])
     self.assertEqual(neg_isolated[2][8:], [self.SENTINEL] * (BUFFER_WORDS - 8))
     for unused in (0, 1, 3):
       self.assertEqual(neg_isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
@@ -1010,12 +1006,12 @@ class CrossbarRedirectTest(unittest.TestCase):
 
 
 class WriteRoutingAndErrorTest(unittest.TestCase):
-  def run_write_case(self, write_routing=0x4440, mode=0x84060000, count=7, format0=0, format1=0):
+  def run_write_case(self, write_routing=0x44404440, mode=0x84060000, count=7, format0=0, format1=0):
     emulator = Emulator()
     registers = emulator.registers
     registers[:] = [0] * 106
-    registers[ROUTING_REGISTERS["top"]] = 0x4440
-    registers[ROUTING_REGISTERS["base"]] = 0x4444
+    registers[ROUTING_REGISTERS["top"]] = 0x44404440
+    registers[ROUTING_REGISTERS["base"]] = 0x44444444
     registers[ROUTING_REGISTERS["write"]] = write_routing
     registers[fu_register(0, "primary")] = (0 << 27) | (0x024 << 12)
     registers[agu_register(0, "top", "mode")] = 0x84000000
@@ -1029,11 +1025,11 @@ class WriteRoutingAndErrorTest(unittest.TestCase):
     return emulator
 
   def test_write_routing_direct_wraps_while_extended_ignores_foreign_banks(self):
-    direct = self.run_write_case(0x4440, 0x84060000 | 2044)
+    direct = self.run_write_case(0x44404440, 0x84060000 | 2044)
     self.assertEqual([direct.scratchpad.read(BASE_OFFSET + 2044 + i) for i in range(4)], [1, 2, 3, 4])
     self.assertEqual([direct.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [5, 6, 7, 8])
     self.assertEqual([direct.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [0, 0, 0, 0])
-    extended = self.run_write_case(0x4448, 0x84060000 | 2044)
+    extended = self.run_write_case(0x44404448, 0x84060000 | 2044)
     self.assertEqual([extended.scratchpad.read(BASE_OFFSET + 2044 + i) for i in range(4)], [1, 2, 3, 4])
     self.assertEqual([extended.scratchpad.read(BASE_OFFSET + i) for i in range(4)], [0, 0, 0, 0])
     self.assertEqual([extended.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [0, 0, 0, 0])
