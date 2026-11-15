@@ -1,4 +1,4 @@
-from vmee.agu import run_length, stream_at, stream_offsets, write_agu, write_offsets
+from vmee.agu import run_length, stream_at, stream_offsets, write_offsets, write_routes
 from vmee.dmac import CLEAR_LOCAL_BUFFER, CONTEXT_TRANSFER_BITS, CONTEXT_TRANSFER_MASK, DMAC_BASE, DMAC_CONTROL, DMAC_COUNT, DMAC_GROUP_SIZE, DMAC_GROUP_STEPS, DMAC_ITERATION_STEP, DMAC_MEMORY_ADDRESS, DMAC_REGISTER_COUNT, DMAC_SCRATCHPAD_OFFSET, ITERATE_TO_MEMORY, ITERATE_TO_SCRATCHPAD, ITERATION_STEP_BYTES, MEM_FROM_16, MEM_TO_16, PRELOAD_CONTEXT, RING_TO_MEMORY, RING_TO_SCRATCHPAD, TRIGGER
 from vmee.fu import execute, fu_operands, opcode_entry
 from vmee.memory import BASE_OFFSET, BUFFER_WORDS, EDRAM_BYTES, PHYSICAL_MASK, SCRATCHPAD_BASE, STAGING_COUNT, STAGING_LAG, STAGING_WORDS, Scratchpad
@@ -87,11 +87,9 @@ class Emulator:
   def simulate_fus(self, cache):
     needed = {}
     pending = []
-    for pe in range(4):
-      found = write_agu(self.active, pe)
-      if found is not None:
-        source_pe = found[1]["source_pe"]
-        pending.append((output_fu(self.active[SWEN_REGISTER], source_pe), source_pe))
+    for _, _, view in write_routes(self.active):
+      source_pe = view["source_pe"]
+      pending.append((output_fu(self.active[SWEN_REGISTER], source_pe), source_pe))
     while pending:
       key = pending.pop()
       if key in needed:
@@ -129,13 +127,9 @@ class Emulator:
 
   def active_writes(self):
     items = []
-    for pe in range(4):
-      found = write_agu(self.active, pe)
-      if found is None:
-        continue
-      driver, view = found
+    for bank, driver, view in write_routes(self.active):
       staging = view["source_pe"] + FU_KINDS[output_fu(self.active[SWEN_REGISTER], view["source_pe"])]
-      items.append((staging, view, write_offsets(pe, driver, view)))
+      items.append((staging, view, write_offsets(bank, driver, view)))
     return items
 
   def collect_writes(self):
