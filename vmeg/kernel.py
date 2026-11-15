@@ -14,17 +14,27 @@ from vmeg.vmecalls import DISABLE, wait_marker
 
 AUTO = "@auto@"
 
-KERNEL_OPTIONS = ("direct", "memory")
+KERNEL_OPTIONS = ("direct", "memory", "extended")
 
 ROUTING_NAMES = {"top": "AGU_TOP", "base": "AGU_BASE", "write": "AGU_WRITE"}
 
-def target_pe(target, env):
+
+def phys_ref(name):
+  head, number = name.rsplit("_", 1)
+  return f"{head}_{int(number) & 3}" if head in ("TOP", "BASE") else name
+
+
+def add_offset(base, offset):
+  return ("num", base + offset[1]) if offset[0] == "num" else ("binop", "+", ("num", base), offset)
+
+
+def target_pe(target, env, limit=3):
   index = fold(target[1], env)
   if index[0] != "num":
     raise ValueError("processing element index must be a number")
   pe = index[1]
-  if not 0 <= pe <= 3:
-    raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe3)")
+  if not 0 <= pe <= limit:
+    raise ValueError(f"pe{pe}: processing element out of range (pe0 to pe{limit})")
   return pe
 
 
@@ -45,7 +55,7 @@ def constant(expr, what):
   return expr[1]
 
 
-def source_ref(expr, stagings):
+def source_ref(expr, stagings, limit=3):
   if expr[0] == "name":
     if expr[1] in stagings:
       if stagings[expr[1]] is None:
@@ -66,18 +76,18 @@ def source_ref(expr, stagings):
       if stagings[key] is None:
         raise ValueError(f"the Staging variable '{key}' is read before it is set")
       return stagings[key]
-  return buffer_ref(expr)
+  return buffer_ref(expr, limit)
 
 
-def operand(expr, stagings):
-  ref = source_ref(expr, stagings)
+def operand(expr, stagings, limit=3):
+  ref = source_ref(expr, stagings, limit)
   if ref is None:
-    raise ValueError("an operand must be a buffer (top0 to top3, base0 to base3) or a Staging variable")
+    raise ValueError(f"an operand must be a buffer (top0 to top{limit}, base0 to base{limit}) or a Staging variable")
   return ref
 
 
-def split_source(expr, stagings, compat):
-  ref = source_ref(expr, stagings)
+def split_source(expr, stagings, compat, limit=3):
+  ref = source_ref(expr, stagings, limit)
   if ref is not None:
     return ref, []
   return None, flatten(expr, stagings, compat)
@@ -96,25 +106,25 @@ def check_arguments(name, args):
     raise ValueError(f"{name} takes {len(names)} argument{'' if len(names) == 1 else 's'} ({', '.join(names)})")
 
 
-def table_operands(label, specification, args, stagings, compat):
+def table_operands(label, specification, args, stagings, compat, limit=3):
   given = [(kind, expr) for (_, kind), expr in zip(specification["arguments"], args) if kind != "number"]
   if not given:
     return {"source": None}, []
   if len(specification["operands"]) == 2:
-    return {slot: operand(expr, stagings) for slot, (_, expr) in zip(specification["operands"], given)}, []
-  source, operations = split_source(given[0][1], stagings, compat)
+    return {slot: operand(expr, stagings, limit) for slot, (_, expr) in zip(specification["operands"], given)}, []
+  source, operations = split_source(given[0][1], stagings, compat, limit)
   if operations and given[0][0] == "operand":
     raise ValueError(f"{label} takes a buffer or a Staging variable")
   return {"source": source}, operations
 
 
-def table_operation(kind, label, args, stagings, compat):
+def table_operation(kind, label, args, stagings, compat, limit=3):
   specification = OPERATIONS[kind]
   numbers = {}
   for (argument, argument_kind), expr_argument in zip(specification["arguments"], args):
     if argument_kind == "number":
       numbers[argument] = constant(expr_argument, f"{label} {argument}")
-  operands, operations = table_operands(label, specification, args, stagings, compat)
+  operands, operations = table_operands(label, specification, args, stagings, compat, limit)
   operation = {"kind": kind, **operands, "numbers": numbers, "sat": None}
   if "shift" in specification:
     if not 0 <= numbers[specification["shift"]] <= 63:
