@@ -884,26 +884,29 @@ class RoutingHardwareTest(unittest.TestCase):
     for unused in (0, 1, 3):
       self.assertEqual(neg_isolated[unused], [self.SENTINEL] * BUFFER_WORDS)
 
-  def test_upper_half_extended_f_and_top_read_gating_nibbles(self):
-    def setup_444f(values):
-      values[ROUTING_REGISTERS["top"]] = 0x3444
-      values[ROUTING_REGISTERS["write"]] = 0x444f
-      self.configure_pe_add_cst(values, 3, 1020, 7, 1020, 5)
+  def test_half_gating_write_disable_bit19_and_top_read_clamping(self):
+    def run_write_case(write_icn, write_offset=1020):
+      def setup(values):
+        values[ROUTING_REGISTERS["top"]] = 0x34443444
+        values[ROUTING_REGISTERS["write"]] = write_icn
+        self.configure_pe_add_cst(values, 3, 1020, 7, write_offset, 5)
+      return self.run_configured(setup)
 
-    res_444f = self.run_configured(setup_444f)
-    self.assertEqual(res_444f[0][1020:1024], [self.SENTINEL] * 4)
-    self.assertEqual(res_444f[0][1024:1028], [0x4000 + i + 5 for i in range(1024, 1028)])
-    for unused in (1, 2, 3):
-      self.assertEqual(res_444f[unused], [self.SENTINEL] * BUFFER_WORDS)
+    def assert_upper_only(res, target_bank):
+      self.assertEqual(res[target_bank][1020:1024], [self.SENTINEL] * 4)
+      self.assertEqual(res[target_bank][1024:1028], [0x4000 + i + 5 for i in range(1024, 1028)])
+      for unused in range(4):
+        if unused != target_bank:
+          self.assertEqual(res[unused], [self.SENTINEL] * BUFFER_WORDS)
 
-    def setup_ffff_low(values):
-      values[ROUTING_REGISTERS["top"]] = 0x3444
-      values[ROUTING_REGISTERS["write"]] = 0xffff
-      self.configure_pe_add_cst(values, 3, 0, 7, 0, 5)
+    assert_upper_only(run_write_case(0x34447444), 3)
+    assert_upper_only(run_write_case(0xccc3cccf), 0)
+    self.assertEqual(run_write_case(0xccc3cccb)[0][1020:1028], [0x4000 + i + 5 for i in range(1020, 1028)])
 
-    res_ffff = self.run_configured(setup_ffff_low)
-    for buf in range(4):
-      self.assertEqual(res_ffff[buf], [self.SENTINEL] * BUFFER_WORDS)
+    for dead_icn, off in ((0xcccbcccb, 1020), (0xffffffff, 3 * BUFFER_WORDS + 1020)):
+      res_dead = run_write_case(dead_icn, off)
+      for buf in range(4):
+        self.assertEqual(res_dead[buf], [self.SENTINEL] * BUFFER_WORDS)
 
     def setup_f444_bank3(values):
       values[ROUTING_REGISTERS["top"]] = 0x3444
@@ -919,7 +922,7 @@ class RoutingHardwareTest(unittest.TestCase):
     def setup_top_clamping(top_icn):
       def setup(values):
         values[ROUTING_REGISTERS["top"]] = top_icn
-        values[ROUTING_REGISTERS["write"]] = 0x5550
+        values[ROUTING_REGISTERS["write"]] = 0x44404440
         self.configure_pe_add_cst(values, 0, 1020, 7, 1020, 5)
       return self.run_configured(setup)[0][1020:1028]
 
