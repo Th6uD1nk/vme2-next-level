@@ -780,11 +780,12 @@ def emit_statement(statement, env, lines, state):
         if name == "write":
           state["write_reg_seq"] = next_write_seq(state)
   elif kind == "icn":
+    target = pass_for(state, state["active_pass"] * 4)
     for icn, value in statement[1]:
-      if icn in state["icn"]:
+      if icn in target["icn"]:
         raise ValueError(f"duplicate interconnect '{icn}'")
-      state["icn"].add(icn)
-      lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(full_value(value, env))});")
+      target["icn"].add(icn)
+      target["lines"].append(f"vme_icn({ICN_NAMES[icn]}, {to_c(full_value(value, env))});")
   elif kind == "agu":
     _, phys, target = pe_pass(statement[1], env, state)
     slot = statement[1][2]
@@ -923,11 +924,11 @@ def emit_statement(statement, env, lines, state):
       raise ValueError("the parameters of the kernel are declared twice")
     state["params"] = statement[1]
   elif kind == "remap":
-    pe = target_pe(statement[1], env)
+    pe, phys, pass_state = pe_pass(statement[1], env, state)
     operator = statement[2]
     if not any(operator in operators for operators in PATTERN_OPERATORS.values()):
       raise ValueError(f"unknown operator '{operator}' in .remap")
-    remaps = state["remaps"].setdefault(pe, {})
+    remaps = pass_state["remaps"].setdefault(phys, {})
     if operator in remaps:
       raise ValueError(f"the operator '{operator}' is remapped twice in pe{pe}")
     units = {}
@@ -960,8 +961,8 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"unknown Staging variable '{base}'")
     if "pe" in variable:
       raise ValueError(f"the Staging variable '{name}' is already set at line {variable['line']}")
-    pe = target_pe(statement[1], env)
-    last, depth = place(state, lines, pe, flatten(fold(statement[3], env), staging_refs(state, pe), state["compat"]), statement[-1])
+    pe, phys, target = pe_pass(statement[1], env, state)
+    last, depth = place(state, target["lines"], phys, flatten(fold(statement[3], env), staging_refs(state, pe), state["compat"], 7 if state["extended"] else 3), statement[-1], target)
     variable.update({"pe": pe, "unit": last, "line": statement[-1], "depth": depth})
   elif kind == "peblock":
     for inner in sorted(statement[1], key=lambda item: item[0] != "remap"):
