@@ -962,8 +962,45 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
+def new_pass_state(pe_offset=0):
+  return {
+    "pe_offset": pe_offset,
+    "halves": (1,) if pe_offset else (0,),
+    "lines": [],
+    "secondary": set(),
+    "set": {},
+    "fus": {},
+    "routing": {slot: [4] * 8 for slot in ("top", "base", "write")},
+    "routing_bound": {slot: set() for slot in ("top", "base", "write")},
+    "routing_regs": set(),
+    "reads": {},
+    "outputs": {},
+    "depths": {},
+    "autos": [],
+    "icn": set(),
+    "swen_raw": False,
+    "sharers": {},
+    "remaps": {},
+    "writes": {},
+    "write_targets": {},
+    "write_modes": {},
+    "agu_modes": {},
+    "agu_specs": {},
+    "write_seq": 0,
+    "write_reg_seq": -1,
+    "bank_halves": None,
+  }
+
+
+def pass_for(state, pe=0):
+  return state["passes"][pe >> 2]
+
+
 def new_state(macros=None, owner=None, compat=None, extended=False):
-  return {"owner": owner, "extended": extended, "macros": set(macros or ()), "secondary": set(), "set": {}, "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "fus": {}, "routing": {slot: [4] * 8 for slot in ("top", "base", "write")}, "routing_bound": {slot: set() for slot in ("top", "base", "write")}, "routing_regs": set(), "warnings": [], "reads": {}, "outputs": {}, "depths": {}, "autos": [], "icn": set(), "swen_raw": False, "sharers": {}, "compat": compat, "operations": [], "remaps": {}, "params": None, "writes": {}, "write_targets": {}, "write_modes": {}, "write_seq": 0, "write_reg_seq": -1}
+  passes = [new_pass_state(0), new_pass_state(4)] if extended else [new_pass_state(0)]
+  state = {"owner": owner, "extended": extended, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": 0}
+  state.update(passes[0])
+  return state
 
 
 def new_env(macros=None):
