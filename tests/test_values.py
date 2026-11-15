@@ -4,8 +4,9 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from vmeg.blocks import find_blocks
-from vmeg.kernel import generate, new_state, parameter_names, replace_names, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.blocks import body_tokens, find_blocks
+from vmeg.kernel import generate, new_state, parameter_names, replace_names, run_statements, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.parser import Parser, parse_body
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
 from vmegc import render
@@ -615,4 +616,42 @@ class ExtendedStagingTest(unittest.TestCase):
     }
     self.assertEqual(staging_depths(state, 0), {"STAGING_0": 2})
     self.assertEqual(staging_depths(state, 1), {"STAGING_0": 5, "STAGING_6": 4})
+
+  def run_extended(self, body):
+    text = f".kernel k extended {{\n{body}\n}}\n"
+    toks, limit = body_tokens(text, find_blocks(text)[0])
+    return run_statements(parse_body(Parser(text, toks, limit, True)), extended=True)
+
+  def test_passes_isolate_pe_hardware_state_and_agu_sharing(self):
+    _, state = self.run_extended(
+      "  Agu a = { count: 4 };\n"
+      "  Staging s;\n"
+      "  .pe0 { .top = a; s = top0; .write = { count: 4, cyc: auto }; .spad = s; }\n"
+      "  .pe5 { .top = a; .spad = top5 + s; }\n"
+    )
+    self.assertEqual(state["passes"][0]["agu_specs"][(0, "top")][:2], (("params", [("count", ("num", 4))]), 4))
+    self.assertEqual(state["passes"][1]["agu_specs"][(1, "top")][:2], (("params", [("count", ("num", 4))]), 4))
+    self.assertIn(0, state["passes"][0]["outputs"])
+    self.assertNotIn(1, state["passes"][0]["outputs"])
+    self.assertIn(1, state["passes"][1]["outputs"])
+    self.assertTrue(any(line.startswith("vme_pe1(agu_top(") for line in state["passes"][1]["lines"]))
+    self.assertFalse(any("vme_pe5" in line for line in state["passes"][1]["lines"]))
+    self.assertEqual(state["stagings"]["s"]["pe"], 0)
+    self.assertTrue(state["stagings"]["s"]["exported"])
+    with self.assertRaisesRegex(ValueError, "pe5 has two outputs on the same write"):
+      self.run_extended("  .pe5 { .top = { count: 2 }; .spad = top5; .spad = top5; }")
+
+  def test_leading_regs_and_icn_follow_target_pass_lookahead(self):
+    _, state = self.run_extended(
+      "  .regs { .icn { .swen = 0b0101; } }\n"
+      "  icn xpcr = 1;\n"
+      "  for i in 4..4 {\n"
+      "    pe[i] { .top = { count: 2 }; .spad = top4; }\n"
+      "  }\n"
+    )
+    self.assertTrue(state["passes"][1]["swen_raw"])
+    self.assertEqual(state["passes"][1]["secondary"], {1, 3})
+    self.assertIn("xpcr", state["passes"][1]["icn"])
+    self.assertFalse(state["passes"][0]["swen_raw"])
+    self.assertEqual(state["passes"][0]["icn"], set())
 
