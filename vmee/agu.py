@@ -5,6 +5,9 @@ from vmee.memory import BASE_OFFSET, BUFFER_WORDS, TOP_OFFSET
 from vmee.registers import END_TOKEN, RING_TOKEN, SYNC_MINIMUM, agu_view, routing_view
 
 
+HALF_WORDS = BUFFER_WORDS // 2
+
+
 def mode4_offsets(view):
   return [view["offset"] + i * view["step"] for i in range(view["elements"])]
 
@@ -58,25 +61,34 @@ def write_offsets(pe, driver, view):
   return result
 
 
-def read_view(registers, kind, buffer):
-  if kind not in ("top", "base"):
-    raise ValueError(f"unknown read agu '{kind}' (top, base)")
-  if not 0 <= buffer <= 3:
-    raise ValueError(f"{kind}{buffer}: buffer out of range ({kind}0 to {kind}3)")
-  route = routing_view(registers, kind)[buffer]
+def half_read_view(registers, kind, buffer, route):
   driver = route["driver"]
   view = agu_view(registers, driver, kind)
   if not view["enabled"]:
     if route["upper_half"] or route["extended"]:
       return None
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
-  view["upper_half"] = route["upper_half"]
-  view["extended"] = route["extended"]
-  view["nibble"] = route["nibble"]
   label = f"the {kind} AGU of pe{driver}"
   if view["bubbles"] or view["format0_other"] or view["format1"]:
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of {label} are not modeled (modeled: 0 and {RING_TOKEN:#x} for the first, 0 for the second)")
   return label, view
+
+
+def read_view(registers, kind, buffer):
+  if kind not in ("top", "base"):
+    raise ValueError(f"unknown read agu '{kind}' (top, base)")
+  if not 0 <= buffer <= 3:
+    raise ValueError(f"{kind}{buffer}: buffer out of range ({kind}0 to {kind}3)")
+  routes = routing_view(registers, kind)
+  halves = (routes[buffer], routes[4 + buffer])
+  for route in halves:
+    if not route["upper_half"]:
+      return half_read_view(registers, kind, buffer, route)
+  for route in halves:
+    found = half_read_view(registers, kind, buffer, route)
+    if found is not None:
+      return found
+  return None
 
 
 def ring_offsets(view):
@@ -148,7 +160,18 @@ def stream_offsets(registers, kind, buffer, warn=lambda message: None):
   for inside in offsets:
     if inside >= BUFFER_WORDS:
       raise ValueError(f"{label} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
-  return [None if (view["upper_half"] and not (inside & (BUFFER_WORDS // 2))) or first + inside < group else first + inside for inside in offsets]
+  routes = routing_view(registers, kind)
+  low_disabled = routes[buffer]["upper_half"]
+  high_disabled = routes[4 + buffer]["upper_half"]
+  result = []
+  for inside in offsets:
+    if first + inside < group:
+      result.append(None)
+    elif inside < HALF_WORDS:
+      result.append(first + (HALF_WORDS - 1 if low_disabled else inside))
+    else:
+      result.append(first + (BUFFER_WORDS - 1 if high_disabled else inside))
+  return result
 
 
 def stream_at(emulator, kind, buffer, cycle, cache, synced=None):
