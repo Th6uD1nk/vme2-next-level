@@ -25,7 +25,9 @@ def phys_ref(name):
 
 
 def add_offset(base, offset):
-  return ("num", base + offset[1]) if offset[0] == "num" else ("binop", "+", ("num", base), offset)
+  if offset is None:
+    return ("num", base)
+  return ("num", base + offset[1]) if offset[0] == "num" else ("bin", "+", ("num", base), offset)
 
 
 def target_pe(target, env, limit=3):
@@ -977,10 +979,10 @@ def emit_statement(statement, env, lines, state):
       emit(inner, env, lines, state)
 
 
-def new_pass_state(pe_offset=0):
+def new_pass_state(pe_offset=0, halves=(0, 1)):
   return {
     "pe_offset": pe_offset,
-    "halves": (1,) if pe_offset else (0,),
+    "halves": halves,
     "lines": [],
     "secondary": set(),
     "set": {},
@@ -1012,7 +1014,7 @@ def pass_for(state, pe=0):
 
 
 def new_state(macros=None, owner=None, compat=None, extended=False):
-  passes = [new_pass_state(0), new_pass_state(4)] if extended else [new_pass_state(0)]
+  passes = [new_pass_state(0, (0,)), new_pass_state(4, (1,))] if extended else [new_pass_state(0)]
   state = {"owner": owner, "extended": extended, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": None}
   state.update(passes[0])
   return state
@@ -1069,7 +1071,9 @@ def resolve_write_routing(state):
     state["routing_bound"]["write"].add(buf)
 
 
-def resolve_idle_routing(state):
+def resolve_idle_routing(state, bank_halves=None):
+  halves = state.get("halves", (0, 1))
+  per_bank = state.get("bank_halves") if bank_halves is None else bank_halves
   for slot, nibbles in state["routing"].items():
     bound = state["routing_bound"][slot]
     if slot in state["routing_regs"] or not bound:
@@ -1083,6 +1087,15 @@ def resolve_idle_routing(state):
           nibbles[buf] = idle
     nibbles[4] = (nibbles[0] & 3) if extended else nibbles[0]
     nibbles[5:8] = nibbles[1:4]
+    if halves != (0, 1) or per_bank:
+      for buf in range(4):
+        base = nibbles[buf]
+        if buf not in bound:
+          nibbles[4 + buf] = base
+          continue
+        active = (per_bank or {}).get((slot, buf), halves)
+        nibbles[buf] = (base & 0xb) if 0 in active else (base | 4)
+        nibbles[4 + buf] = (base & 0xb) if 1 in active else (base | 4)
 
 
 def resolve_write_offsets(lines, state):
