@@ -719,6 +719,12 @@ def record_write(state, pe, driver, ref, line):
   state["writes"][pe] = {"driver": driver, "ref": ref, "line": line, "seq": next_write_seq(state)}
 
 
+def pe_pass(target, env, state):
+  pe = target_pe(target, env, 7 if state["extended"] else 3)
+  state["active_pass"] = pe >> 2
+  return pe, pe & 3, pass_for(state, pe)
+
+
 def emit_statement(statement, env, lines, state):
   kind = statement[0]
   if kind == "int":
@@ -780,15 +786,15 @@ def emit_statement(statement, env, lines, state):
       state["icn"].add(icn)
       lines.append(f"vme_icn({ICN_NAMES[icn]}, {to_c(full_value(value, env))});")
   elif kind == "agu":
-    pe = target_pe(statement[1], env)
+    _, phys, target = pe_pass(statement[1], env, state)
     slot = statement[1][2]
-    claim(state, pe, slot, statement[-1])
+    claim(target, phys, slot, statement[-1])
     if slot == "write":
-      record_write(state, pe, pe, None, statement[-1])
+      record_write(target, phys, phys, None, statement[-1])
     else:
-      state["routing"][slot][pe] = pe
-      state["routing_bound"][slot].add(pe)
-    lines.extend(generate_agu(statement[1], statement[2], env, state, len(lines), statement[-1]))
+      target["routing"][slot][phys] = phys
+      target["routing_bound"][slot].add(phys)
+    target["lines"].extend(generate_agu(("target", ("num", phys), slot), statement[2], env, target, len(target["lines"]), statement[-1]))
   elif kind == "agudecl":
     keys = declare_keys(statement[1], "Agu", env, state)
     if isinstance(statement[1], tuple):
@@ -881,22 +887,23 @@ def emit_statement(statement, env, lines, state):
       raise ValueError(f"unknown Agu variable '{base_name(statement[2][1])}'")
     if variable["params"] is None:
       raise ValueError(f"the Agu variable '{ref}' is read before it is set")
-    pe = target_pe(statement[1], env)
+    pe, phys, target = pe_pass(statement[1], env, state)
     slot = statement[1][2]
-    for bound in variable["owners"]:
+    for _, bound in variable["owners"]:
       if bound != slot:
         raise ValueError(f"the Agu variable '{ref}' is already bound to .{bound}, it cannot be bound to .{slot}")
-    claim(state, pe, slot, statement[-1])
-    if slot not in variable["owners"]:
-      variable["owners"][slot] = pe
-      lines.extend(generate_agu(("target", ("num", pe), slot), variable["params"], env, state, len(lines), statement[-1], variable["mode"]))
+    claim(target, phys, slot, statement[-1])
+    owner = (pe >> 2, slot)
+    if owner not in variable["owners"]:
+      variable["owners"][owner] = phys
+      target["lines"].extend(generate_agu(("target", ("num", phys), slot), variable["params"], env, target, len(target["lines"]), statement[-1], variable["mode"]))
     if any(key == "cyc" and has_auto(value) for key, value in variable["params"][1]):
-      state["sharers"].setdefault(ref, []).append((pe, statement[-1]))
+      target["sharers"].setdefault(ref, []).append((phys, statement[-1]))
     if slot == "write":
-      record_write(state, pe, variable["owners"][slot], ref, statement[-1])
+      record_write(target, phys, variable["owners"][owner], ref, statement[-1])
     else:
-      state["routing"][slot][pe] = variable["owners"][slot]
-      state["routing_bound"][slot].add(pe)
+      target["routing"][slot][phys] = variable["owners"][owner]
+      target["routing_bound"][slot].add(phys)
   elif kind == "operation":
     pe = target_pe(statement[1], env)
     dest = target_spad(statement[1][3] if len(statement[1]) > 3 else None, env)
@@ -1108,11 +1115,13 @@ def resolve_auto(lines, state):
 
 
 def run_statements(statements, macros=None, owner=None, compat=None, extended=False):
-  lines = []
   env = new_env(macros)
   state = new_state(macros, owner, compat, extended)
+  lines = state["passes"][0]["lines"]
   for statement in statements:
     emit(statement, env, lines, state)
+  state["passes"][0]["write_seq"] = state["write_seq"]
+  state["passes"][0]["write_reg_seq"] = state["write_reg_seq"]
   resolve_write_routing(state)
   resolve_write_offsets(lines, state)
   resolve_auto(lines, state)
