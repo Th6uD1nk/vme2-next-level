@@ -390,7 +390,7 @@ class AguArrayTest(unittest.TestCase):
 
   def test_an_element_can_be_shared_between_pes(self):
     lines = agu_array_lines("  Agu t[2] = { { count: 10 }, { count: 20 } };\n  Agu w = { count: 3 };\n  .pe0 { .top = t[0]; .write = w; .spad = top0 + top0; }\n  .pe1 { .top = t[0]; .write = w; .spad = top1 + top1; }")
-    self.assertIn("vme_icn(AGU_TOP, 0x5500);", lines)
+    self.assertIn("vme_icn(AGU_TOP, 0x55005500);", lines)
 
   def test_the_misuse_of_an_array_is_refused_with_the_line(self):
     cases = [
@@ -454,24 +454,24 @@ class ForLoopTest(unittest.TestCase):
 class SpadRedirectTest(unittest.TestCase):
   def test_redirected_spad_derives_extended_write_icn_and_unused_buffers_stay_4(self):
     lines = agu_array_lines("  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
-    self.assertIn("vme_icn(AGU_WRITE, 0x444b);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0xccc3cccb);", lines)
     self.assertIn("vme_pe3(agu_write(MODE), VME_DEF_MODE, vme_cyc(4));", lines)
 
   def test_dotted_statement_and_self_extended_spad_are_supported(self):
     lines = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; }\n  .pe0.spad[0] = top0;")
-    self.assertIn("vme_icn(AGU_WRITE, 0x5558);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0xddd0ddd8);", lines)
 
   def test_swapped_redirected_outputs_derive_crossbar_without_clobbering(self):
     lines = agu_array_lines("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[3] = top0; }\n  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
-    self.assertIn("vme_icn(AGU_WRITE, 0x855b);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x8dd38ddb);", lines)
     self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1800, vme_cyc(4));", lines)
     self.assertIn("vme_pe3(agu_write(MODE), VME_DEF_MODE, vme_cyc(4));", lines)
 
   def test_regs_write_routing_follows_source_order(self):
     after = agu_array_lines("  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }\n  .regs { .icn { .write = 0x1234; } }")
-    self.assertIn("vme_icn(AGU_WRITE, 0x1234);", after)
+    self.assertIn("vme_icn(AGU_WRITE, 0x00001234);", after)
     before = agu_array_lines("  .regs { .icn { .write = 0x1111; } }\n  .pe3 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[0] = top3; }")
-    self.assertIn("vme_icn(AGU_WRITE, 0x111b);", before)
+    self.assertIn("vme_icn(AGU_WRITE, 0x0000111b);", before)
 
   def test_missing_write_warns_when_redirected_spad_has_no_write(self):
     text = ".kernel k direct {\n  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[1] = top0; }\n  .pe3 { .top = { count: 4 }; .spad[0] = top3; }\n}\n@kernel k config | exec\nvoid f() { }\n"
@@ -483,16 +483,16 @@ class SpadRedirectTest(unittest.TestCase):
   def test_single_named_write_agu_is_allowed_with_redirected_spad(self):
     lines = agu_array_lines("  Agu w = { count: 4, cyc: 4 };\n  .pe2 { .top = { count: 4 }; .write = w; .spad[1] = top2; }")
     self.assertIn("vme_pe2(agu_write(MODE), VME_DEF_MODE, 0x800, vme_cyc(4));", lines)
-    self.assertIn("vme_icn(AGU_WRITE, 0x44a4);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0xcca0ccac);", lines)
 
   def test_automatic_write_offset_combines_base_and_user_offset(self):
     cases = [
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", "0x5855"),
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: 16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x810, vme_cyc(4));", "0x5585"),
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: -16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x7f0, vme_cyc(4));", "0x5585"),
-      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: OFF, cyc: 4 }; .spad[3] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, (0x1800 + OFF) & 0xffff, vme_cyc(4));", "0x8555"),
-      ("  .pe0 { .top = { count: 4 }; .spad[2] = top0; .write = { count: 4, cyc: auto }; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(6));", "0x5855"),
-      ("  Agu(2) w = { count: 4, offset: 8 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), agu_mode(2), 0x808);", "0x5585"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: 4 }; .spad[2] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(4));", "0xd8d1d8dd"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: 16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x810, vme_cyc(4));", "0xdd81dd8d"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: -16, cyc: 4 }; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x7f0, vme_cyc(4));", "0xdd81dd8d"),
+      ("  .pe0 { .top = { count: 4 }; .write = { count: 4, offset: OFF, cyc: 4 }; .spad[3] = top0; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, (0x1800 + OFF) & 0xffff, vme_cyc(4));", "0x8dd18ddd"),
+      ("  .pe0 { .top = { count: 4 }; .spad[2] = top0; .write = { count: 4, cyc: auto }; }", "vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x1000, vme_cyc(6));", "0xd8d1d8dd"),
+      ("  Agu(2) w = { count: 4, offset: 8 };\n  .pe0 { .top = { count: 4 }; .write = w; .spad[1] = top0; }", "vme_pe0(agu_write(MODE), agu_mode(2), 0x808);", "0xdd81dd8d"),
     ]
     for body, expected_mode, expected_icn in cases:
       with self.subTest(body=body):
