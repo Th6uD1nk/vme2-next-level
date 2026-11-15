@@ -90,11 +90,11 @@ def split_source(expr, stagings, compat, limit=3):
   ref = source_ref(expr, stagings, limit)
   if ref is not None:
     return ref, []
-  return None, flatten(expr, stagings, compat)
+  return None, flatten(expr, stagings, compat, limit)
 
 
-def operations_of(expr, stagings, compat):
-  source, operations = split_source(expr, stagings, compat)
+def operations_of(expr, stagings, compat, limit=3):
+  source, operations = split_source(expr, stagings, compat, limit)
   if source is not None:
     return [{"kind": "pass", "source": source, "numbers": {}, "sat": None}]
   return operations
@@ -133,7 +133,7 @@ def table_operation(kind, label, args, stagings, compat, limit=3):
   return operations + [operation]
 
 
-def flatten(expr, stagings, compat):
+def flatten(expr, stagings, compat, limit=3):
   kind = expr[0]
   if kind == "call":
     name, args = expr[1], expr[2]
@@ -143,7 +143,7 @@ def flatten(expr, stagings, compat):
       bits = constant(args[1], "sat bits")
       if not 0 <= bits <= 31:
         raise ValueError("sat bits out of range (0 to 31)")
-      operations = operations_of(args[0], stagings, compat)
+      operations = operations_of(args[0], stagings, compat, limit)
       if operations[-1]["sat"] is not None:
         raise ValueError("an operation takes only one sat")
       if operations[-1].get("shift") is not None:
@@ -153,31 +153,31 @@ def flatten(expr, stagings, compat):
     if name == "round":
       if len(args) != 1:
         raise ValueError("round takes 1 argument (value)")
-      operations = operations_of(args[0], stagings, compat)
+      operations = operations_of(args[0], stagings, compat, limit)
       if operations[-1].get("round"):
         raise ValueError("an operation takes only one round")
       operations[-1]["round"] = True
       return operations
     if name in FUNCTIONS:
       check_arguments(name, args)
-      return table_operation(FUNCTIONS[name], name, args, stagings, compat)
+      return table_operation(FUNCTIONS[name], name, args, stagings, compat, limit)
     raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', 'round', *FUNCTIONS])})")
   if kind == "not":
     found = choose_opcode(expr, compat)
     if found is None:
-      return table_operation("not", "not", [expr[1]], stagings, compat)
+      return table_operation("not", "not", [expr[1]], stagings, compat, limit)
     kind, bound, _ = found
-    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat, limit)
   if kind == "bin":
     if expr[1] in (">>", "<<", ">>>", "<<<") and expr[2][0] not in OPERATION_NODES:
       found = choose_opcode(expr, compat)
       if found is not None:
         kind, bound, _ = found
-        return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+        return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat, limit)
     if expr[1] in (">>", "<<"):
       if expr[2][0] == "num" and expr[3][0] != "num":
         raise ValueError("no opcode covers this expression: a number shifted by a buffer must be from -0x800000 to 0xffffff")
-      operations = operations_of(expr[2], stagings, compat)
+      operations = operations_of(expr[2], stagings, compat, limit)
       amount = constant(expr[3], "the shift")
       if not 0 <= amount <= 63:
         raise ValueError("the shift must be 0 to 63")
@@ -191,17 +191,17 @@ def flatten(expr, stagings, compat):
     if found is None:
       raise ValueError("no opcode covers this expression")
     kind, bound, _ = found
-    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat, limit)
   if kind == "cond":
     found = choose_opcode(expr, compat)
     if found is None:
       raise ValueError("no opcode covers this expression")
     kind, bound, _ = found
-    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat)
+    return table_operation(kind, kind, [bound[name] for name, _ in OPERATIONS[kind]["arguments"]], stagings, compat, limit)
   if kind == "num":
-    return table_operation("cst", "cst", [expr], stagings, compat)
-  if source_ref(expr, stagings) is not None:
-    return operations_of(expr, stagings, compat)
+    return table_operation("cst", "cst", [expr], stagings, compat, limit)
+  if source_ref(expr, stagings, limit) is not None:
+    return operations_of(expr, stagings, compat, limit)
   raise ValueError("an operation is expected (an addition, sat or clamp)")
 
 
