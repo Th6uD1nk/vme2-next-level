@@ -82,7 +82,7 @@ def output_fu(value, pe):
 
 
 def decode_routing(value):
-  return [value >> (4 * n) & 0xf for n in range(4)]
+  return [value >> (4 * n) & 0xf for n in range(8)]
 
 
 def decode_routing_nibble(nibble):
