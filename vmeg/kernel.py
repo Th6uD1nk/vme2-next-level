@@ -765,6 +765,7 @@ def emit_statement(statement, env, lines, state):
     else:
       raise ValueError(f"'{name}' is a {array_kind} variable, only an Int variable can receive an assignment")
   elif kind == "regs":
+    target = pass_for(state, state["active_pass"] * 4)
     for name, value in statement[1]:
       if value[0] != "num":
         raise ValueError(f".{name} takes a number")
@@ -772,13 +773,13 @@ def emit_statement(statement, env, lines, state):
       if not 0 <= value[1] <= limit:
         raise ValueError(f".{name} takes a number from 0 to 0x{limit:x}")
       if name == "swen":
-        state["secondary"] = {pe for pe in range(4) if value[1] >> (3 - pe) & 1}
-        state["swen_raw"] = True
+        target["secondary"] = {pe for pe in range(4) if value[1] >> (3 - pe) & 1}
+        target["swen_raw"] = True
       else:
-        state["routing"][name] = [value[1] >> 4 * n & 0xf for n in range(8)]
-        state["routing_regs"].add(name)
+        target["routing"][name] = [value[1] >> 4 * n & 0xf for n in range(8)]
+        target["routing_regs"].add(name)
         if name == "write":
-          state["write_reg_seq"] = next_write_seq(state)
+          target["write_reg_seq"] = next_write_seq(target)
   elif kind == "icn":
     target = pass_for(state, state["active_pass"] * 4)
     for icn, value in statement[1]:
@@ -906,19 +907,19 @@ def emit_statement(statement, env, lines, state):
       target["routing"][slot][phys] = variable["owners"][owner]
       target["routing_bound"][slot].add(phys)
   elif kind == "operation":
-    pe = target_pe(statement[1], env)
+    pe, phys, target = pe_pass(statement[1], env, state)
     dest = target_spad(statement[1][3] if len(statement[1]) > 3 else None, env)
-    if (pe, "operation") in state["set"]:
-      raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {state['set'][(pe, 'operation')]}")
-    claim(state, pe, "operation", statement[-1])
-    last, depth = place(state, lines, pe, flatten(fold(statement[2], env), staging_refs(state, pe), state["compat"]), statement[-1])
-    state["outputs"].setdefault(pe, statement[-1])
-    state["depths"][pe] = depth
-    state["write_targets"][pe] = {"dest": dest, "line": statement[-1], "seq": next_write_seq(state)}
+    if (phys, "operation") in target["set"]:
+      raise ValueError(f"pe{pe} has two outputs on the same write, the first one is at line {target['set'][(phys, 'operation')]}")
+    claim(target, phys, "operation", statement[-1])
+    last, depth = place(state, target["lines"], phys, flatten(fold(statement[2], env), staging_refs(state, pe), state["compat"], 7 if state["extended"] else 3), statement[-1], target)
+    target["outputs"].setdefault(phys, statement[-1])
+    target["depths"][phys] = depth
+    target["write_targets"][phys] = {"dest": dest, "line": statement[-1], "seq": next_write_seq(target)}
     if last == 1:
-      state["secondary"].add(pe)
+      target["secondary"].add(phys)
     else:
-      state["secondary"].discard(pe)
+      target["secondary"].discard(phys)
   elif kind == "paramsdef":
     if state["params"] is not None:
       raise ValueError("the parameters of the kernel are declared twice")
@@ -1121,8 +1122,7 @@ def run_statements(statements, macros=None, owner=None, compat=None, extended=Fa
   lines = state["passes"][0]["lines"]
   for statement in statements:
     emit(statement, env, lines, state)
-  state["passes"][0]["write_seq"] = state["write_seq"]
-  state["passes"][0]["write_reg_seq"] = state["write_reg_seq"]
+  state.update(state["passes"][0])
   resolve_write_routing(state)
   resolve_write_offsets(lines, state)
   resolve_auto(lines, state)
