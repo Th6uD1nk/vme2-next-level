@@ -644,21 +644,23 @@ def staging_depths(state, pass_id=0):
   }
 
 
-def place(state, lines, pe, operations, line):
-  used = state["fus"].get(pe, 0)
-  depths = staging_depths(state, state.get("pe_offset", 0) >> 2)
+def place(state, lines, pe, operations, line, pass_state=None):
+  target = pass_state or state
+  used = target["fus"].get(pe, 0)
+  depths = staging_depths(state, target["pe_offset"] >> 2)
+  logical = target["pe_offset"] + pe
   depth = 0
   if used + len(operations) > 2:
     raise ValueError(f"a pe holds two operations at most, this pe needs {used + len(operations)}")
   for operation in operations:
-    number = state["fus"].get(pe, 0)
-    state["fus"][pe] = number + 1
+    number = target["fus"].get(pe, 0)
+    target["fus"][pe] = number + 1
     unit = "PRIMARY" if number == 0 else "SECONDARY"
     specification = OPERATIONS[operation["kind"]]
-    state["operations"].append(dict(operation, pe=pe, line=line))
-    remap = state["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
+    state["operations"].append(dict(operation, pe=logical, line=line))
+    remap = target["remaps"].get(pe, {}).get(ROOT_OPERATORS[operation["kind"]], {})
     if specification["units"] == "primary" and number != 0 and unit.lower() not in remap:
-      warn(state, line, f"{operation['kind']} is the second operation of pe{pe}, it is not known to run in the second unit")
+      warn(state, line, f"{operation['kind']} is the second operation of pe{logical}, it is not known to run in the second unit")
     encoding = specification
     if state.get("compat") == "fat" and operation["kind"] in FAT_FALLBACKS:
       encoding = {**specification, **FAT_FALLBACKS[operation["kind"]]}
@@ -669,19 +671,20 @@ def place(state, lines, pe, operations, line):
     code = encoding["code"]
     operands = encoding.get("operands", specification["operands"])
     if len(operands) == 2:
-      mux = f"vme_mux({operation['front']}, {operation['back']})"
+      mux = f"vme_mux({phys_ref(operation['front'])}, {phys_ref(operation['back'])})"
       reads = (operation["front"], operation["back"])
     elif operands == ("front",):
       source = operation["source"] or f"STAGING_{pe}"
-      mux = f"vme_mux({source})"
+      mux = f"vme_mux({phys_ref(source)})"
       reads = (operation["source"],) if operation["source"] else ()
     else:
       source = operation["source"] or f"STAGING_{pe}"
-      mux = f"vme_mux(NONE, {source})"
+      mux = f"vme_mux(NONE, {phys_ref(source)})"
       reads = (operation["source"],) if operation["source"] else ()
+    target.setdefault("unit_reads", {}).setdefault((pe, number), set()).update(reads)
     for ref in reads:
       if not ref.startswith("STAGING"):
-        state["reads"].setdefault(ref, line)
+        target["reads"].setdefault(ref, line)
     depth = max([depth] + [depths.get(ref, 0) for ref in reads]) + 1
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
     if operation.get("shift"):
