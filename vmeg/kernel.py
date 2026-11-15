@@ -765,7 +765,7 @@ def emit_statement(statement, env, lines, state):
     else:
       raise ValueError(f"'{name}' is a {array_kind} variable, only an Int variable can receive an assignment")
   elif kind == "regs":
-    target = pass_for(state, state["active_pass"] * 4)
+    target = pass_for(state, (state["active_pass"] or 0) * 4)
     for name, value in statement[1]:
       if value[0] != "num":
         raise ValueError(f".{name} takes a number")
@@ -781,7 +781,7 @@ def emit_statement(statement, env, lines, state):
         if name == "write":
           target["write_reg_seq"] = next_write_seq(target)
   elif kind == "icn":
-    target = pass_for(state, state["active_pass"] * 4)
+    target = pass_for(state, (state["active_pass"] or 0) * 4)
     for icn, value in statement[1]:
       if icn in target["icn"]:
         raise ValueError(f"duplicate interconnect '{icn}'")
@@ -1013,7 +1013,7 @@ def pass_for(state, pe=0):
 
 def new_state(macros=None, owner=None, compat=None, extended=False):
   passes = [new_pass_state(0), new_pass_state(4)] if extended else [new_pass_state(0)]
-  state = {"owner": owner, "extended": extended, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": 0}
+  state = {"owner": owner, "extended": extended, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": None}
   state.update(passes[0])
   return state
 
@@ -1116,11 +1116,28 @@ def resolve_auto(lines, state):
   check_shared_auto(state)
 
 
+def target_pass(statement, env, limit):
+  kind = statement[0]
+  try:
+    if kind in ("agu", "aguref", "operation", "remap", "stageset"):
+      return target_pe(statement[1], env, limit) >> 2
+    if kind in ("peblock", "for"):
+      inner_env = dict(env, **{statement[1]: fold(statement[2], env)}) if kind == "for" else env
+      body = statement[1] if kind == "peblock" else statement[-2]
+      return next((p for inner in body if (p := target_pass(inner, inner_env, limit)) is not None), None)
+  except ValueError:
+    return None
+  return None
+
+
 def run_statements(statements, macros=None, owner=None, compat=None, extended=False):
   env = new_env(macros)
   state = new_state(macros, owner, compat, extended)
   lines = state["passes"][0]["lines"]
-  for statement in statements:
+  limit = 7 if extended else 3
+  for i, statement in enumerate(statements):
+    if state["active_pass"] is None and statement[0] in ("regs", "icn"):
+      state["active_pass"] = next((p for s in statements[i + 1:] if (p := target_pass(s, env, limit)) is not None), 0)
     emit(statement, env, lines, state)
   state.update(state["passes"][0])
   resolve_write_routing(state)
