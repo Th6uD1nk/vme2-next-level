@@ -15,31 +15,44 @@ def mode4_offsets(view):
 AGU_MODES = {4: mode4_offsets, 2: mode4_offsets}
 
 
-def write_agu(registers, pe):
-  route = routing_view(registers, "write")[pe]
-  driver = route["driver"]
+def write_agu(registers, bank, half=0):
+  routes = routing_view(registers, "write")
+  if routes[4]["extended"]:
+    return None
+  low = routes[bank]
+  gate = routes[bank + 4 * half]
+  if gate["disabled"]:
+    return None
+  driver = low["driver"]
   view = agu_view(registers, driver, "write")
   if not view["enabled"]:
     return None
   if view["format0_other"] or view["repeat"] or view["format1"] not in (0, END_TOKEN):
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 12 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
   view["sync"] = view["format1"] == END_TOKEN
-  view["disabled"] = route["disabled"]
-  view["extended"] = route["extended"]
-  view["nibble"] = route["nibble"]
-  view["source_pe"] = driver if route["extended"] else pe
+  view["half"] = half
+  view["extended"] = low["extended"]
+  view["nibble"] = gate["nibble"]
+  view["source_pe"] = driver if low["extended"] else bank
   if view["sync"] and 6 - view["cyc"] + view["bubbles"] < SYNC_MINIMUM:
     raise ValueError(f"the sync of the write AGU of pe{driver} needs 6 - cyc + bubbles of at least {SYNC_MINIMUM}, it has {6 - view['cyc'] + view['bubbles']}")
   return driver, view
 
 
+def write_routes(registers):
+  if routing_view(registers, "write")[4]["extended"]:
+    return []
+  routes = []
+  for bank in range(4):
+    for half in (0, 1):
+      found = write_agu(registers, bank, half)
+      if found is not None:
+        routes.append((bank, *found))
+  return routes
+
+
 def run_length(registers):
-  length = 0
-  for pe in range(4):
-    found = write_agu(registers, pe)
-    if found is not None:
-      length = max(length, found[1]["cyc"] + found[1]["elements"])
-  return length
+  return max((view["cyc"] + view["elements"] for _, _, view in write_routes(registers)), default=0)
 
 
 def write_offsets(pe, driver, view):
@@ -50,12 +63,13 @@ def write_offsets(pe, driver, view):
   if view["reverse"]:
     offsets = offsets[::-1]
   first = BASE_OFFSET + pe * BUFFER_WORDS
+  half = bool(view["half"])
   result = []
   for j, raw in enumerate(offsets):
     if view["extended"] and (raw >> 11 & 3) != pe:
       continue
     inside = raw & (BUFFER_WORDS - 1)
-    if view["disabled"] and not (inside & (BUFFER_WORDS // 2)):
+    if (inside >= HALF_WORDS) != half:
       continue
     result.append((j, first + inside))
   return result
