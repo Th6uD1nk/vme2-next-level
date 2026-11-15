@@ -920,14 +920,16 @@ class RoutingHardwareTest(unittest.TestCase):
     for other in (0, 1, 2):
       self.assertEqual(res_f444[other], [self.SENTINEL] * BUFFER_WORDS)
 
-    def setup_top_upper_half(values):
-      values[ROUTING_REGISTERS["top"]] = 0x4444
-      values[ROUTING_REGISTERS["write"]] = 0x5550
-      self.configure_pe_add_cst(values, 0, 1020, 7, 0, 5)
+    def setup_top_clamping(top_icn):
+      def setup(values):
+        values[ROUTING_REGISTERS["top"]] = top_icn
+        values[ROUTING_REGISTERS["write"]] = 0x5550
+        self.configure_pe_add_cst(values, 0, 1020, 7, 1020, 5)
+      return self.run_configured(setup)[0][1020:1028]
 
-    res_top4 = self.run_configured(setup_top_upper_half)
-    self.assertEqual(res_top4[0][:4], [5, 5, 5, 5])
-    self.assertEqual(res_top4[0][4:8], [0x1000 + i + 5 for i in range(1024, 1028)])
+    self.assertEqual(setup_top_clamping(0x44404444), [0x13ff + 5] * 4 + [0x1400 + i + 5 for i in range(4)])
+    self.assertEqual(setup_top_clamping(0x44444440), [0x1000 + 1020 + i + 5 for i in range(4)] + [0x17ff + 5] * 4)
+    self.assertEqual(setup_top_clamping(0x44444444), [0x13ff + 5] * 4 + [0x17ff + 5] * 4)
 
 
 PRELOAD = (
