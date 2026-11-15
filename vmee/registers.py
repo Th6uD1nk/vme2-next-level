@@ -86,7 +86,7 @@ def decode_routing(value):
 
 
 def decode_routing_nibble(nibble):
-  return {"nibble": nibble, "driver": nibble & 3, "upper_half": bool(nibble & 4), "extended": bool(nibble & 8)}
+  return {"nibble": nibble, "driver": nibble & 3, "disabled": bool(nibble & 4), "extended": bool(nibble & 8)}
 
 
 def routing_view(registers, kind):

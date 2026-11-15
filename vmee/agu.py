@@ -24,7 +24,7 @@ def write_agu(registers, pe):
   if view["format0_other"] or view["repeat"] or view["format1"] not in (0, END_TOKEN):
     raise ValueError(f"the formats {view['format0']:#x}, {view['format1']:#x} of the write AGU of pe{driver} are not modeled (modeled: only the 12 low bits of the first, the bubbles, and 0 or {END_TOKEN:#x}, the sync, for the second)")
   view["sync"] = view["format1"] == END_TOKEN
-  view["upper_half"] = route["upper_half"]
+  view["disabled"] = route["disabled"]
   view["extended"] = route["extended"]
   view["nibble"] = route["nibble"]
   view["source_pe"] = driver if route["extended"] else pe
@@ -55,7 +55,7 @@ def write_offsets(pe, driver, view):
     if view["extended"] and (raw >> 11 & 3) != pe:
       continue
     inside = raw & (BUFFER_WORDS - 1)
-    if view["upper_half"] and not (inside & (BUFFER_WORDS // 2)):
+    if view["disabled"] and not (inside & (BUFFER_WORDS // 2)):
       continue
     result.append((j, first + inside))
   return result
@@ -65,7 +65,7 @@ def half_read_view(registers, kind, buffer, route):
   driver = route["driver"]
   view = agu_view(registers, driver, kind)
   if not view["enabled"]:
-    if route["upper_half"] or route["extended"]:
+    if route["disabled"] or route["extended"]:
       return None
     raise ValueError(f"the {kind} AGU of pe{driver}, that drives {kind}{buffer}, is not enabled")
   label = f"the {kind} AGU of pe{driver}"
@@ -82,7 +82,7 @@ def read_view(registers, kind, buffer):
   routes = routing_view(registers, kind)
   halves = (routes[buffer], routes[4 + buffer])
   for route in halves:
-    if not route["upper_half"]:
+    if not route["disabled"]:
       return half_read_view(registers, kind, buffer, route)
   for route in halves:
     found = half_read_view(registers, kind, buffer, route)
@@ -161,8 +161,8 @@ def stream_offsets(registers, kind, buffer, warn=lambda message: None):
     if inside >= BUFFER_WORDS:
       raise ValueError(f"{label} reads the word {inside} of {kind}{buffer}, outside the buffer, the circular mode is not modeled")
   routes = routing_view(registers, kind)
-  low_disabled = routes[buffer]["upper_half"]
-  high_disabled = routes[4 + buffer]["upper_half"]
+  low_disabled = routes[buffer]["disabled"]
+  high_disabled = routes[4 + buffer]["disabled"]
   result = []
   for inside in offsets:
     if first + inside < group:

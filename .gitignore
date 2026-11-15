@@ -1,6 +1,5 @@
 *notes.txt
 findings-notes.txt
-saturate-clamp.c
 build
 __pycache__/
 *.pyc
@@ -9,3 +8,4 @@ hardware-unknowns.txt
 VMEGC.md
 EMU.md
 samples/usbhostfs_pc
+*PRIVATE.md
