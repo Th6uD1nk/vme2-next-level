@@ -936,6 +936,17 @@ class RoutingHardwareTest(unittest.TestCase):
     for unused in (0, 2):
       self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
 
+  def test_fullrange_2048_words_extends_staging_without_overflow(self):
+    def setup(values):
+      values[ROUTING_REGISTERS["top"]] = 0x55505550
+      values[ROUTING_REGISTERS["write"]] = 0xd8d1d8dd
+      self.configure_pe_add_cst(values, 0, 0, BUFFER_WORDS - 1, 2 * BUFFER_WORDS, 10)
+
+    buffers = self.run_configured(setup)
+    self.assertEqual(buffers[2], [0x1000 + i + 10 for i in range(BUFFER_WORDS)])
+    for unused in (0, 1, 3):
+      self.assertEqual(buffers[unused], [self.SENTINEL] * BUFFER_WORDS)
+
 
 PRELOAD = (
   "      Transfer t0 = { memory: src0, count: 7 }, t2 = { memory: src2, count: 7 }, p = { memory: fill, count: 3 };\n"
