@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, find_free_pe, flatten_flow, flow_operand, lower_child_op, lower_flow_call, op_refs, place_in_pass, unpack_compound, unpack_cond, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, find_free_pe, flatten_flow, flow_operand, lower_child_op, lower_flow_call, op_refs, place_in_pass, try_place_with_delays, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
 
@@ -309,6 +309,21 @@ class PipelineSchedulerTest(unittest.TestCase):
     self.assertTrue(place_in_pass({"id": 9, "kind": "add_cst", "source": ("op_ref", 6), "numbers": {"c": 1}, "sat": None}, pes, in_pass))
     self.assertIsNone(find_free_pe(cst, pes))
     self.assertFalse(place_in_pass({"id": 10, "kind": "add_cst", "source": "TOP_0", "numbers": {"c": 1}, "sat": None}, pes, in_pass))
+
+  def test_try_place_with_delays(self):
+    op0 = {"id": 0, "kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None}
+    op1 = {"id": 1, "kind": "mul", "front": ("op_ref", 0), "back": "BASE_0", "numbers": {}, "sat": None}
+    op2 = {"id": 2, "kind": "add", "front": "BASE_1", "back": ("op_ref", 1), "numbers": {}, "sat": None}
+    pes, in_pass, next_id = [], {}, [10]
+    self.assertTrue(try_place_with_delays(op0, pes, in_pass, next_id) and next_id == [10])
+    self.assertTrue(try_place_with_delays(op1, pes, in_pass, next_id) and next_id == [11])
+    self.assertEqual((pes[0]["secondary"]["kind"], pes[0]["secondary"]["delay"], pes[1]["primary"]["back"], in_pass[1]), ("pass", True, ("op_ref", 10), 2))
+    self.assertTrue(try_place_with_delays(op2, pes, in_pass, next_id) and next_id == [13])
+    self.assertEqual((pes[1]["secondary"]["id"], pes[2]["primary"]["id"], pes[2]["secondary"]["id"], in_pass[2]), (11, 12, 2, 3))
+    pes.append({"primary": {"id": 90, "kind": "cst", "source": None, "numbers": {"c": 0}, "sat": None}, "secondary": None})
+    snap = ([dict(pe) for pe in pes], dict(in_pass), list(next_id))
+    self.assertFalse(try_place_with_delays({"id": 3, "kind": "add", "front": "TOP_2", "back": ("op_ref", 2), "numbers": {}, "sat": None}, pes, in_pass, next_id))
+    self.assertEqual((pes, in_pass, next_id), snap)
 
 
 if __name__ == "__main__":
