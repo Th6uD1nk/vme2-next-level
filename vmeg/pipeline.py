@@ -468,3 +468,42 @@ def export_lifetimes(passes, out_id):
       consumers.setdefault(imp, []).append(p)
       last_use[imp] = max(last_use.get(imp, -1), p)
   return consumers, last_use, base_reads
+
+
+def slot_free(bank, half, op_id, p, used_banks, busy, consumers, base_reads, passes, alloc):
+  if bank in used_banks or busy.get((bank, half), -1) >= p:
+    return False
+  for q in consumers.get(op_id, ()):
+    if bank in base_reads[q] or any(alloc[imp][0] == bank for imp in passes[q]["imports"] if imp in alloc and imp != op_id):
+      return False
+  return True
+
+
+def assign_flow_buffers(schedule, loads=None):
+  count, passes, out_id = schedule["count"], schedule["passes"], schedule["output"]
+  if not 0 <= count <= 1023:
+    raise ValueError("pipeline flow count must be 0 to 1023 (max 1024 words)")
+  load_offsets, reserved = load_reservations(loads)
+  for name in schedule["inputs"]:
+    off, _ = load_offsets.get(name, (0, 0))
+    if isinstance(off, int) and (off < 0 or off >= 2048 or (off & 1023) + count + 1 > 1024):
+      raise ValueError(f"{name.lower()}: .load offset {off} and flow count {count} exceed a 1024-word half")
+  consumers, last_use, base_reads = export_lifetimes(passes, out_id)
+  busy, alloc, out_passes = {slot: len(passes) for slot in reserved}, {}, []
+  for p, rec in enumerate(passes):
+    pref, used_banks, exports_alloc = p & 1, set(), {}
+    own = {pe_rec["pe"] for pe_rec in rec["pes"] if pe_rec["export"] is not None}
+    for pe_rec in rec["pes"]:
+      pe, op_id = pe_rec["pe"], pe_rec["export"]
+      if op_id is None:
+        continue
+      banks = [pe] + [b for b in range(4) if b != pe and b not in own] + [b for b in range(4) if b != pe and b in own]
+      chosen = next(((b, h) for b in banks for h in (pref, 1 - pref) if slot_free(b, h, op_id, p, used_banks, busy, consumers, base_reads, passes, alloc)), None)
+      if chosen is None:
+        raise ValueError("pipeline kernel needs more than 8 scratchpad half-buffers across passes")
+      alloc[op_id] = chosen
+      used_banks.add(chosen[0])
+      busy[chosen] = last_use.get(op_id, p)
+      exports_alloc[pe] = {"op": op_id, "bank": chosen[0], "half": chosen[1]}
+    out_passes.append(dict(rec, exports_alloc=exports_alloc, extended_write=any(info["bank"] != pe for pe, info in exports_alloc.items())))
+  return {"count": count, "inputs": schedule["inputs"], "output": out_id, "output_buffer": alloc[out_id], "alloc": alloc, "load_offsets": load_offsets, "passes": out_passes}
