@@ -34,6 +34,7 @@ Staging s;
 - A `Staging` variable is set once, and set before it is read: the statements are read in order.
 - It is read like a buffer, as an operand of an operator or of a function ([6.1](operations.md#61-operands-and-results)).
 - The operation that sets it counts in the pe ([5.3](pe.md#53-operations-in-a-pe)).
+- In an `extended` kernel ([3.2.3](kernel.md#323-extended)), a `Staging` variable set in Pass 1 (`pe0`..`pe3`) can be read in Pass 2 (`pe4`..`pe7`): `vmegc` writes it out through the low half of the matching `base` buffer (`0x000`) and reads it back in Pass 2 automatically (`baseN` cannot simultaneously hold a user binding in Pass 2). Each Pass 1 pe can export at most one cross-pass `Staging`, and Pass 2 `Staging` variables cannot be read in Pass 1.
 
 ## 7.2 The routing
 
@@ -58,6 +59,7 @@ Agu t = { count: 15 };
 - A buffer `topN` or `baseN` needs the AGU `.top` or `.base` bound in `peN`.
 - By default the result of a pe leaves on its write AGU into its own `base` buffer. Writing `.spad[n] = …;` redirects the result of a pe to `base[n]` and automatically adds `n * 2048` to that pe's write AGU `offset` ([5.2](pe.md#52-what-a-block-holds)).
 - When a kernel binds fewer than four buffers, `vmegc` automatically routes the unused buffers so active transfers do not overwrite idle banks.
+- In an `extended` kernel, `pe0`..`pe3` read and write the low scratchpad halves (`0` to `1023`), while `pe4`..`pe7` automatically receive `+ 0x400` on their `.top`, `.base` and `.write` AGUs to target the high halves (`1024` to `2047`). Reads of low-half buffers `top0`..`top3` or `base0`..`base3` from Pass 2 stay in the low half (`+ 0`).
 - The result of a pe leaves on its write AGU. A result kept in a `Staging` variable stays in the pe.
 - The registers of the interconnect that are written by hand are `xpcr` and `skew` ([3.4](kernel.md#34-interconnect-registers)).
 
@@ -110,3 +112,6 @@ The messages start with `line N:`, left out here.
 | [7.1](#71-staging-variables) | `'a' is an Agu variable, only a Staging variable can receive an operation` | an operation assigned to an `Agu` |
 | [7.1](#71-staging-variables) | `the Staging variable 's' is already set at line N` | a `Staging` (or element `s[i]`) set twice |
 | [7.1](#71-staging-variables) | `the Staging variable 's' is read before it is set` | a `Staging` (or element `s[i]`) read before the statement that sets it |
+| [7.1](#71-staging-variables) | `the Staging variable 's' is set in pe4 and cannot be read in pe0 (different pass)` | reading a Pass 2 `Staging` variable in Pass 1 of an `extended` kernel |
+| [7.1](#71-staging-variables) | `pe0 can only export one Staging across passes ('s0' is already exported)` | exporting more than one cross-pass `Staging` from the same Pass 1 pe |
+| [7.1](#71-staging-variables) | `Staging 's' has no input AGU to infer write count from` | cross-pass export with no input AGU count in its Pass 1 chain |

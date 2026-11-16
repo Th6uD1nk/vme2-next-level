@@ -12,7 +12,7 @@
 
 ## 5.1 The pe block
 
-A kernel has four processing elements, `pe0` to `pe3`. Each one is described in a block:
+A kernel has four processing elements, `pe0` to `pe3` (or eight, `pe0` to `pe7`, in an `extended` kernel where `pe0`..`pe3` run in Pass 1 and `pe4`..`pe7` in Pass 2). Each one is described in a block:
 
 ```c
 .pe0 { .top = t; .write = w; .spad = top0 + top0; }
@@ -47,7 +47,7 @@ Staging s;
 **Explanation of the code above:**
 
 - The bindings of the AGUs: `.top`, `.base` and `.write` ([4.3](agu.md#43-binding-an-agu-to-a-pe)).
-- The operation of the pe, which is the member `.spad` (`.spad = clamp(s, 0, 255);`), or `.spad[n]` (`.spad[2] = clamp(s, 0, 255);`) to redirect the write to base buffer `n` (`0` to `3`). A pe has one. When `.spad[n]` is used, `vmegc` routes `baseN` from that pe and automatically adds `n * 2048` to its `.write` AGU `offset` (added to any `offset` given on `.write`; for `n = 0`, nothing is added). Two pes cannot write to the same destination buffer in a kernel, and a `.write` `Agu` variable cannot be shared across pes if any uses `.spad[n]`.
+- The operation of the pe, which is the member `.spad` (`.spad = clamp(s, 0, 255);`), or `.spad[n]` (`.spad[2] = clamp(s, 0, 255);`) to redirect the write to base buffer `n` (`0` to `3`, not allowed in `extended` kernels). A pe has one. When `.spad[n]` is used, `vmegc` routes `baseN` from that pe and automatically adds `n * 2048` to its `.write` AGU `offset` (added to any `offset` given on `.write`; for `n = 0`, nothing is added). Two pes cannot write to the same destination buffer in a kernel, and a `.write` `Agu` variable cannot be shared across pes if any uses `.spad[n]`.
 - An operation kept in a `Staging` variable or element, which starts with the name of the variable (`s = top1 + top2;` or `s[p] = top1 + top2;`): the result stays in the pe and another operation can read it.
 - The declaration of an `Agu` or of a `Staging` variable for this block, including `Staging s[N];` arrays declared in the kernel ([2.2.4](language.md#224-array-declarations)).
 - Currently not supported: `Int` and loops inside a pe block, write them around the block.
@@ -158,7 +158,7 @@ The messages start with `line N:`, left out here.
 
 | Section | Message | Cause |
 |---|---|---|
-| [5.1](#51-the-pe-block) | `processing element out of range (pe0 to pe3)` | a pe above 3, written `.pe4`. With an index that is computed, the message starts with the pe (`pe6: …`) |
+| [5.1](#51-the-pe-block) | `processing element out of range (pe0 to pe3)` | a pe above 3 (`7` in `extended`), written `.pe4`. With an index that is computed, the message starts with the pe (`pe6: …`) |
 | [5.1](#51-the-pe-block) | `pe[...] is an access by index, it takes no dot` | `.pe[1]` instead of `pe[1]` |
 | [5.2](#52-what-a-block-holds) | `expected '='` | in a pe block, an operation that leaves written without `.spad =` (`top0 + top1;`), or an `Int` or a loop in the block (currently not supported) |
 | [5.2](#52-what-a-block-holds) | `expected ';'` | an operation or an assignment of a pe without its `;` (`.spad = top0 + top1` or `s = top0 + 1`) |
@@ -166,6 +166,7 @@ The messages start with `line N:`, left out here.
 | [5.2](#52-what-a-block-holds) | `pe0 has two outputs on the same write, the first one is at line N` | two operations that leave in the same pe |
 | [5.2](#52-what-a-block-holds) | `spad destination index must be a number` | a `.spad[...]` index that does not fold to an integer |
 | [5.2](#52-what-a-block-holds) | `spad[4]: buffer out of range (spad[0] to spad[3])` | a `.spad[n]` index outside `0` to `3` |
+| [5.2](#52-what-a-block-holds) | `.spad[dest] redirection is not allowed in an extended kernel` | `.spad[n]` used inside an `extended` kernel |
 | [5.2](#52-what-a-block-holds) | `base2 is written by both pe0 and pe1` | two pes redirecting or writing to the same destination base buffer |
 | [5.2](#52-what-a-block-holds) | `pe0 cannot share the write Agu 'w' with .spad[2]` | a write `Agu` variable shared across pes when a pe uses `.spad[n]` |
 | [5.2](#52-what-a-block-holds) | `s[2]: index out of range (0 to 1)` | a Staging array index outside bounds |
