@@ -1027,12 +1027,13 @@ def new_env(macros=None):
   return env
 
 
-def check_shared_auto(state):
-  for name, sharers in state["sharers"].items():
+def check_shared_auto(pass_state, root=None):
+  offset = pass_state["pe_offset"]
+  for name, sharers in pass_state["sharers"].items():
     owner = sharers[0][0]
     for pe, line in sharers[1:]:
-      if pe in state["depths"] and state["depths"][pe] != state["depths"][owner]:
-        warn(state, line, f"pe{pe} shares the write Agu '{name}' with pe{owner} but its operations need another delay, cyc: auto follows pe{owner}")
+      if pe in pass_state["depths"] and pass_state["depths"][pe] != pass_state["depths"][owner]:
+        warn(root or pass_state, line, f"pe{offset + pe} shares the write Agu '{name}' with pe{offset + owner} but its operations need another delay, cyc: auto follows pe{offset + owner}")
 
 
 def resolve_write_routing(state):
@@ -1215,15 +1216,16 @@ def resolve_cross_stagings(state):
       pass2["bank_halves"][("base", pe)] = (0,)
 
 
-def resolve_auto(lines, state):
-  for pending in state["autos"]:
+def resolve_auto(lines, pass_state, root=None):
+  for pending in pass_state["autos"]:
     pe = pending["pe"]
-    if pe not in state["depths"]:
-      raise ValueError(f"line {pending['line']}: pe{pe}.write: cyc auto needs an operation in pe{pe}")
+    label = pass_state["pe_offset"] + pe
+    if pe not in pass_state["depths"]:
+      raise ValueError(f"line {pending['line']}: pe{label}.write: cyc auto needs an operation in pe{label}")
     env = dict(pending["env"])
-    env["auto"] = ("num", 3 + 3 * state["depths"][pe])
+    env["auto"] = ("num", 3 + 3 * pass_state["depths"][pe])
     lines[pending["at"]] = lines[pending["at"]].replace(AUTO, to_c(full_value(pending["expr"], env)))
-  check_shared_auto(state)
+  check_shared_auto(pass_state, root)
 
 
 def target_pass(statement, env, limit):
@@ -1238,6 +1240,33 @@ def target_pass(statement, env, limit):
   except ValueError:
     return None
   return None
+
+
+def pass_active(pass_state):
+  return any(pass_state[k] for k in ("lines", "writes", "outputs", "reads", "secondary", "swen_raw", "routing_regs"))
+
+
+def finalize_pass(state, pass_state):
+  lines = pass_state["lines"]
+  resolve_extended_offsets(pass_state)
+  resolve_write_routing(pass_state)
+  resolve_write_offsets(lines, pass_state)
+  resolve_auto(lines, pass_state, state)
+  for ref, line in pass_state["reads"].items():
+    slot, number = ref.lower().split("_")
+    if pass_state["routing"][slot][int(number) & 3] == 4:
+      warn(state, line, f"{slot}{number} is read but no .{slot} is bound in pe{number} of this kernel")
+  for pe, line in pass_state["outputs"].items():
+    target = pass_state["write_targets"].get(pe)
+    buf = target["dest"] if target is not None and target["dest"] is not None else pe
+    if (pe not in pass_state["writes"] and pass_state["write_reg_seq"] < 0) or pass_state["routing"]["write"][buf] == 4:
+      warn(state, line, f"pe{pass_state['pe_offset'] + pe} has an operation but no .write is bound in this kernel")
+  resolve_idle_routing(pass_state)
+  for slot, nibbles in pass_state["routing"].items():
+    lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):08x});")
+  if pass_state["secondary"] or pass_state["swen_raw"]:
+    lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(pass_state['secondary']):04b}));")
+  return lines
 
 
 def run_statements(statements, macros=None, owner=None, compat=None, extended=False):
