@@ -1098,24 +1098,44 @@ def resolve_idle_routing(state, bank_halves=None):
         nibbles[4 + buf] = (base & 0xb) if 1 in active else (base | 4)
 
 
+def rewrite_agu_offset(lines, pe, label, slot, info, base):
+  try:
+    offset_text = format_agu_offset(add_offset(base, info["offset"]), label, slot)
+  except ValueError as e:
+    raise ValueError(f"line {info['line']}: {e}") from None
+  lines[info["at"]] = f"vme_pe{pe}(agu_{slot}(MODE), {info['mode_arg']}, {offset_text}{info['cyc']});"
+
+
 def resolve_write_offsets(lines, state):
   for pe, info in state["write_modes"].items():
     target = state["write_targets"].get(pe)
-    if target is None or target["dest"] is None or target["dest"] == 0:
+    if target is not None and target["dest"]:
+      rewrite_agu_offset(lines, pe, pe, "write", info, target["dest"] * 2048)
+
+
+def resolve_extended_offsets(pass_state):
+  if not pass_state["pe_offset"]:
+    return
+  lines = pass_state["lines"]
+  reads = pass_state["reads"]
+  for (pe, slot), info in pass_state["agu_modes"].items():
+    label = pass_state["pe_offset"] + pe
+    if slot == "write":
+      rewrite_agu_offset(lines, pe, label, slot, info, 0x400)
       continue
-    base = target["dest"] * 2048
-    user_offset = info["offset"]
-    if user_offset is None:
-      combined = ("num", base)
-    elif user_offset[0] == "num":
-      combined = ("num", base + user_offset[1])
+    nibbles = pass_state["routing"][slot]
+    driven = [buf for buf in pass_state["routing_bound"][slot] if (nibbles[buf] & 3) == pe] or [pe]
+    low = [buf for buf in driven if f"{slot.upper()}_{buf}" in reads]
+    high = [buf for buf in driven if f"{slot.upper()}_{buf + 4}" in reads]
+    if low and high:
+      raise ValueError(f"line {info['line']}: pe{label}.{slot} cannot read both {slot}{low[0]} and {slot}{high[0] + 4}")
+    if low:
+      if pass_state["bank_halves"] is None:
+        pass_state["bank_halves"] = {}
+      for buf in driven:
+        pass_state["bank_halves"][(slot, buf)] = (0,)
     else:
-      combined = ("bin", "+", ("num", base), user_offset)
-    try:
-      offset_text = format_agu_offset(combined, pe, "write")
-    except ValueError as e:
-      raise ValueError(f"line {info['line']}: {e}") from None
-    lines[info["at"]] = f"vme_pe{pe}(agu_write(MODE), {info['mode_arg']}, {offset_text}{info['cyc']});"
+      rewrite_agu_offset(lines, pe, label, slot, info, 0x400)
 
 
 def resolve_auto(lines, state):
