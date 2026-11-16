@@ -1106,6 +1106,30 @@ class ExtendedKernelE2ETest(unittest.TestCase):
     self.assertEqual([single.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + 1024 + i) for i in range(4)], [109, 209, 309, 409])
     self.assertEqual([single.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [77, 77, 77, 77])
 
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_loop07_with_staging_writes_all_eight_halves(self):
+    buffers = "".join(f"volatile Buffer in{i}[4] = {{ {10 * i}, {10 * i + 1}, {10 * i + 2}, {10 * i + 3} }};\n" for i in range(8))
+    program = (
+      buffers
+      + "@emulate \"loop07\"\n.kernel loop07 extended {\n"
+      + loads(*( ("global", f"top{i}", 4, 0, f"in{i}") for i in range(8) ))
+      + "  Staging s[8];\n  for i in 0..7 {\n    pe[i] {\n      .top = { count: 3 };\n      .write = { count: 3, cyc: auto };\n      s[i] = top[i] + (i + 1);\n      .spad = s[i] + 10;\n    }\n  }\n}\n"
+    )
+    emu = run_emulation(program, "loop07")
+    for i in range(8):
+      half = 1024 if i >= 4 else 0
+      self.assertEqual([emu.scratchpad.read(BASE_OFFSET + (i & 3) * BUFFER_WORDS + half + k) for k in range(4)], [10 * i + k + i + 11 for k in range(4)])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_sample_extended_two_pass_emulates(self):
+    sample_path = os.path.join(os.path.dirname(__file__), "..", "samples", "cpp", "vmegc-extended-two-pass", "extended-two-pass.vmeg.cpp")
+    with open(sample_path, encoding="utf-8") as handle:
+      source = handle.read().replace(".kernel twoPass extended", "@emulate \"twoPass\"\n.kernel twoPass extended", 1)
+    emu = run_emulation(source, "twoPass")
+    for b in range(4):
+      expected = [100 * (b + 1) + k + (b + 1) * (k + 2) for k in range(16)]
+      self.assertEqual([emu.scratchpad.read(BASE_OFFSET + b * BUFFER_WORDS + 1024 + k) for k in range(16)], expected)
+
 
 if __name__ == "__main__":
   unittest.main()
