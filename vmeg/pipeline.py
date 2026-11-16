@@ -435,3 +435,36 @@ def schedule_flow(flow):
     passes.append(rec)
     pending = next_pending
   return {"count": flow["count"], "inputs": flow["inputs"], "output": flow["output"], "passes": passes}
+
+
+def load_reservations(loads):
+  reserved, offsets = set(), {}
+  for record in loads or ():
+    for slot, words, off_text, _, _ in record.get("links", ()):
+      if "_" not in slot:
+        continue
+      try:
+        off = 0 if off_text == "" else int(off_text, 0)
+      except ValueError:
+        off = None
+      bank = int(slot.split("_")[1])
+      if slot.startswith("BASE_"):
+        if off is None:
+          reserved.update(((bank, 0), (bank, 1)))
+        else:
+          if off < 1024:
+            reserved.add((bank, 0))
+          if off >= 1024 or (isinstance(words, int) and off + words > 1024):
+            reserved.add((bank, 1))
+      offsets[slot] = (0 if off_text == "" else (off if off is not None else off_text), 1 if off is not None and off >= 1024 else 0)
+  return offsets, reserved
+
+
+def export_lifetimes(passes, out_id):
+  consumers, last_use, base_reads = {}, {out_id: len(passes) - 1}, []
+  for p, rec in enumerate(passes):
+    base_reads.append({int(r.split("_")[1]) for r in rec["inputs"] if r.startswith("BASE_")})
+    for imp in rec["imports"]:
+      consumers.setdefault(imp, []).append(p)
+      last_use[imp] = max(last_use.get(imp, -1), p)
+  return consumers, last_use, base_reads
