@@ -1,4 +1,9 @@
+from vmeg.kernel import source_ref
 from vmeg.operations import OPERATIONS
+from vmeg.parser import BUFFER_NAME
+from vmeg.pattern import rebuild
+
+PIPELINE_FORBIDDEN_KINDS = (("agus", "Agu"), ("stagings", "Staging"), ("transfers", "Transfer"))
 
 PIPELINE_LEFT_SHIFT_OPS = {"<<": "shl_cst", "<<<": "shl_cst_u"}
 
@@ -31,3 +36,34 @@ def make_shift_operation(source, op, amount, round_flag=False, sat_bits=None):
     return {"kind": "mul_cst", "source": source, "numbers": {"c": 1}, "sat": sat_bits, "shift": amount, "round": True}
   bias = (1 << (amount - 1)) if round_flag else 0
   return {"kind": "add_cst", "source": source, "numbers": {"c": bias}, "sat": sat_bits, "shift": amount}
+
+
+def check_flow_var(name, state, line):
+  array_kind = state["arrays"].get(name, {}).get("kind")
+  for store, kind in PIPELINE_FORBIDDEN_KINDS:
+    if name in state[store] or array_kind == kind:
+      article = "an" if kind[0] in "AEIOU" else "a"
+      raise ValueError(f"line {line}: '{name}' is {article} {kind} variable and cannot be used in .flow")
+
+
+def resolve_flow_expr(expr, slots, cursor, inputs, state, line):
+  kind = expr[0]
+  if kind == "num":
+    return expr
+  if kind in ("name", "index"):
+    name = expr[1]
+    if kind == "name" and name == "slot":
+      if cursor is None:
+        raise ValueError(f"line {line}: 'slot' is read before any .slot assignment")
+      return cursor
+    check_flow_var(name, state, line)
+    ref = source_ref(expr, slots, 3, "Slot")
+    if isinstance(ref, tuple):
+      return ref
+    if isinstance(ref, str):
+      inputs.add(ref)
+      return ("name", ref.lower().replace("_", ""))
+    if kind == "name" and BUFFER_NAME.match(name):
+      raise ValueError(f"line {line}: {name} is out of range (top0 to top3, base0 to base3)")
+    raise ValueError(f"line {line}: unknown {'array' if kind == 'index' else 'variable'} '{name}' in .flow")
+  return rebuild(expr, lambda child: resolve_flow_expr(child, slots, cursor, inputs, state, line))
