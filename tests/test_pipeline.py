@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flow_operand, lower_child_op, unpack_compound, unpack_cond, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flow_operand, lower_child_op, lower_flow_call, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
 
@@ -237,6 +237,31 @@ class PipelineMicroOpBuilderTest(unittest.TestCase):
     self.assertEqual(unpack_cond(("cond", a1, ("num", 2), ("num", 3)), ops, slots, None, stub_lower), ("cond", ("op_ref", 4), ("num", 2), ("num", 3)))
     self.assertEqual(choose_opcode(unpack_compound(("not", ("bin", "&", a1, ("name", "base1"))), ops, slots, None, stub_lower), None)[0], "nand")
     self.assertEqual(choose_opcode(unpack_compound(("bin", "*", a1, b2), ops, slots, None, stub_lower), None)[0], "mul")
+
+  def test_lower_flow_call(self):
+    def stub_lower(expr, cur_ops, cur_slots, compat):
+      return emit_pipeline_op(cur_ops, {"kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None})
+    ops = []
+    slots = {0: emit_pipeline_op(ops, {"kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None})}
+    add_e = ("bin", "+", ("name", "top0"), ("name", "top1"))
+    self.assertEqual(ops[lower_flow_call(("call", "sat", [("name", "top0"), ("num", 8)]), ops, slots, None, stub_lower)[1]], {"id": 1, "kind": "pass", "source": "TOP_0", "numbers": {}, "sat": 8})
+    self.assertEqual(ops[lower_flow_call(("call", "round", [("bin", ">>", add_e, ("num", 2))]), ops, slots, None, stub_lower)[1]]["shift"], 2)
+    self.assertTrue(ops[2]["round"])
+    self.assertTrue(ops[lower_flow_call(("call", "round", [add_e]), ops, slots, None, stub_lower)[1]]["round"])
+    r_pipe = lower_flow_call(("call", "round", [("pipe_ref", 0)]), ops, slots, None, stub_lower)
+    self.assertEqual((ops[r_pipe[1]]["kind"], "round" in ops[r_pipe[1]], "round" in ops[0]), ("pass", False, False))
+    r_clp = lower_flow_call(("call", "clamp", [add_e, ("num", -5), ("num", 5)]), ops, slots, None, stub_lower)
+    self.assertEqual((ops[r_clp[1]]["kind"], ops[r_clp[1]]["source"][0], ops[r_clp[1]]["numbers"]), ("clamp", "op_ref", {"low": -5, "high": 5}))
+    r_shrcst = lower_flow_call(("call", "shrcst", [("name", "top0"), ("num", 3)]), ops, slots, None, stub_lower)
+    self.assertEqual((ops[r_shrcst[1]]["kind"], ops[r_shrcst[1]]["numbers"]), ("shr_cst", {"c": 3}))
+    for bad, msg in (
+      (("call", "round", []), "1 argument"),
+      (("call", "round", [("call", "round", [("name", "top0")])]), "only one round"),
+      (("call", "clamp", [("name", "top0")]), "clamp takes 3 arguments"),
+      (("call", "bogus", [("name", "top0")]), "unknown operation 'bogus'"),
+    ):
+      with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, msg):
+        lower_flow_call(bad, ops, slots, None, stub_lower)
 
 
 if __name__ == "__main__":
