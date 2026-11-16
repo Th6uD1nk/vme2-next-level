@@ -14,7 +14,7 @@ from vmeg.vmecalls import DISABLE, wait_marker
 
 AUTO = "@auto@"
 
-KERNEL_OPTIONS = ("direct", "memory", "extended")
+KERNEL_OPTIONS = ("direct", "memory", "extended", "pipeline")
 
 ROUTING_NAMES = {"top": "AGU_TOP", "base": "AGU_BASE", "write": "AGU_WRITE"}
 
@@ -830,6 +830,9 @@ def emit_statement(statement, env, lines, state):
       seen.add((buffer, slot[1]))
       offset = full_value(value, env)
       targets.append((buffer, slot[1], offset))
+    auto_store = kind == "store" and state.get("pipeline") and not targets
+    if auto_store:
+      targets = [("base", 0, ("num", 0))]
     spread = items["transfer"] if items["transfer"][0] == "spread" else None
     ref = resolve_var(spread[1] if spread else items["transfer"][1], env, state)
     if ref not in state["transfers"]:
@@ -852,7 +855,7 @@ def emit_statement(statement, env, lines, state):
     function = shared_transfer_name(transfer["type"], kind) if shared else camel(state["owner"], ref, kind.capitalize()) if state["owner"] else None
     definition = shared_transfer_function(transfer["type"], kind) if shared else transfer_function(function, transfer, kind) if function else None
     calls = shared_transfer_calls(function, shared, targets, transfer["type"], assignments) if shared else transfer_calls(function, transfer, targets) if function else None
-    record = {"function": function, "definition": definition, "calls": calls, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets)}
+    record = {"function": function, "definition": definition, "calls": calls, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets), "auto_store": auto_store}
     state[kind + "s"].append(record)
     state["sequence"].append(record)
   elif kind in ("transferdecl", "declaredtransfer"):
@@ -1013,9 +1016,9 @@ def pass_for(state, pe=0):
   return state["passes"][pe >> 2]
 
 
-def new_state(macros=None, owner=None, compat=None, extended=False):
+def new_state(macros=None, owner=None, compat=None, extended=False, pipeline=False):
   passes = [new_pass_state(0, (0,)), new_pass_state(4, (1,))] if extended else [new_pass_state(0)]
-  state = {"owner": owner, "extended": extended, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": None}
+  state = {"owner": owner, "extended": extended, "pipeline": pipeline, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": None}
   state.update(passes[0])
   return state
 
@@ -1291,9 +1294,9 @@ def register_delta(pass1, pass2):
   return out
 
 
-def run_statements(statements, macros=None, owner=None, compat=None, extended=False):
+def run_statements(statements, macros=None, owner=None, compat=None, extended=False, pipeline=False):
   env = new_env(macros)
-  state = new_state(macros, owner, compat, extended)
+  state = new_state(macros, owner, compat, extended, pipeline)
   lines = state["passes"][0]["lines"]
   limit = 7 if extended else 3
   for i, statement in enumerate(statements):
@@ -1341,8 +1344,8 @@ def block_statement_records(text, blocks):
   return found, per_block, call_params, call_memories
 
 
-def kernel_transfers(statements, macros=None, owner=None, extended=False):
-  state = run_statements(statements, macros, owner, None, extended)[1]
+def kernel_transfers(statements, macros=None, owner=None, extended=False, pipeline=False):
+  state = run_statements(statements, macros, owner, None, extended, pipeline)[1]
   return state["loads"], state["stores"]
 
 
@@ -1363,10 +1366,10 @@ def build_kernel(text, block, compat):
       raise ValueError(f"line {line}: a kernel is either direct or memory, not both")
     options.append(word)
   toks, limit = body_tokens(text, block)
-  statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit, options == ["extended"]))
+  statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit, options == ["extended"], options == ["pipeline"]))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
-  _, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"])
+  _, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"], options == ["pipeline"])
   resolve_cross_stagings(state)
   active = [pass_state for pass_state in state["passes"] if pass_active(pass_state)] or [state["passes"][0]]
   finalized = [finalize_pass(state, pass_state) for pass_state in active]

@@ -69,8 +69,8 @@ def kernel_definitions(path, text):
       continue
     statements = kernel_statements(text, block, {})
     mode = kernel_mode(text, block)
-    direct = mode in ("direct", "extended")
-    loads, stores = kernel_transfers(statements, known_macros(text, block[1]), kernel_name(text, block), mode == "extended") if mode else ([], [])
+    direct = mode in ("direct", "extended", "pipeline")
+    loads, stores = kernel_transfers(statements, known_macros(text, block[1]), kernel_name(text, block), mode == "extended", mode == "pipeline") if mode else ([], [])
     found.append({
       "name": kernel_name(text, block),
       "path": path,
