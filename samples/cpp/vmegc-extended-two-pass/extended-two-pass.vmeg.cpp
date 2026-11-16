@@ -33,7 +33,51 @@ volatile Buffer out1[16] = { 0 };
 volatile Buffer out2[16] = { 0 };
 volatile Buffer out3[16] = { 0 };
 
+.kernel twoPass extended {
+  Staging s[4];
+  Transfer p1[4] = {
+    { memory: pass1In0, count: 15 }, { memory: pass1In1, count: 15 },
+    { memory: pass1In2, count: 15 }, { memory: pass1In3, count: 15 }
+  };
+  Transfer p2[4] = {
+    { memory: pass2In0, count: 15 }, { memory: pass2In1, count: 15 },
+    { memory: pass2In2, count: 15 }, { memory: pass2In3, count: 15 }
+  };
+  Transfer dst[4] = {
+    { memory: out0, count: 15 }, { memory: out1, count: 15 },
+    { memory: out2, count: 15 }, { memory: out3, count: 15 }
+  };
+  .load { .transfer = p1[0]; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = p1[1]; .scope = global; .offsets { .top1 = 0; } }
+  .load { .transfer = p1[2]; .scope = global; .offsets { .top2 = 0; } }
+  .load { .transfer = p1[3]; .scope = global; .offsets { .top3 = 0; } }
+  .load { .transfer = p2[0]; .scope = global; .offsets { .top4 = 0; } }
+  .load { .transfer = p2[1]; .scope = global; .offsets { .top5 = 0; } }
+  .load { .transfer = p2[2]; .scope = global; .offsets { .top6 = 0; } }
+  .load { .transfer = p2[3]; .scope = global; .offsets { .top7 = 0; } }
+  for i in 0..3 {
+    pe[i] {
+      .top = { count: 15 };
+      s[i] = top[i] + (i + 1);
+    }
+  }
+  for i in 4..7 {
+    pe[i] {
+      .top = { count: 15 };
+      .write = { count: 15, cyc: auto };
+      .spad = top[i] + s[i - 4];
+    }
+  }
+  .store { .transfer = dst[0]; .scope = global; .offsets { .base4 = 0; } }
+  .store { .transfer = dst[1]; .scope = global; .offsets { .base5 = 0; } }
+  .store { .transfer = dst[2]; .scope = global; .offsets { .base6 = 0; } }
+  .store { .transfer = dst[3]; .scope = global; .offsets { .base7 = 0; } }
+}
+
 void meLibOnProcess(void) {
+  @kernel twoPass config | exec {
+    for (int i = 0; i < 4; ++i) vmeDebugFillAtWith(i, VME_BASE_BUFF0_WOFF + i * 0x800 + 0x400);
+  }
   while (1) {
     meCounter += 1;
   }
@@ -41,6 +85,7 @@ void meLibOnProcess(void) {
 
 int main() {
   scePowerSetClockFrequency(333, 333, 166);
+  vmeDebugSetupBuffers();
   meLibDefaultInit();
   pspDebugScreenInit();
 
@@ -49,10 +94,14 @@ int main() {
     sceCtrlPeekBufferPositive(&ctl, 1);
     pspDebugScreenSetXY(1, 1);
     pspDebugScreenPrintf("Extended two-pass VME sample (meCounter: 0x%lx)", meCounter);
+    for (int i = 0; i < 4; ++i) vmeDebugDisplayBuffer(VME_DEBUG_DIGIT_4, i, (i & 1) ? 35 : 1, (i >> 1) ? 9 : 3);
     sceDisplayWaitVblank();
   } while (!(ctl.Buttons & PSP_CTRL_HOME));
 
   sceKernelDelayThread(100000);
+  vmeDebugTouch();
+  vmeDebugDumpBuffers();
+  vmeDebugFreeBuffers();
   sceKernelExitGame();
   return 0;
 }
