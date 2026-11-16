@@ -296,3 +296,35 @@ def flatten_flow(flow, compat=None):
       ops[ref[1]].setdefault("target", step["target"])
     slot_refs[step["id"]] = ref
   return {"count": flow["count"], "inputs": flow["inputs"], "operations": ops, "output": slot_refs[flow["output"]][1], "slot_outputs": slot_refs}
+
+
+def op_refs(op):
+  keys = ("front", "back") if len(OPERATIONS[op["kind"]]["operands"]) == 2 else ("source",)
+  return [(key, op[key]) for key in keys if op.get(key) is not None]
+
+
+def find_free_pe(op, pes):
+  if OPERATIONS[op["kind"]]["units"] == "any":
+    deps = {ref[1] for _, ref in op_refs(op) if isinstance(ref, tuple)}
+    for match_producer in (True, False):
+      for pe in pes:
+        if pe["secondary"] is None and (not match_producer or pe["primary"]["id"] in deps):
+          return pe, "secondary"
+  if len(pes) < 4:
+    pe = {"primary": None, "secondary": None}
+    pes.append(pe)
+    return pe, "primary"
+  return None
+
+
+def place_in_pass(op, pes, in_pass):
+  depths = [0 if isinstance(ref, str) or ref[1] not in in_pass else in_pass[ref[1]] for _, ref in op_refs(op)]
+  slot = find_free_pe(op, pes)
+  if slot is None:
+    return False
+  pe, unit = slot
+  depth = max(depths, default=0) + 1
+  placed = dict(op, depth=depth)
+  pe[unit] = placed
+  in_pass[placed["id"]] = depth
+  return True
