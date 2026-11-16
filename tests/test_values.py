@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import body_tokens, find_blocks
-from vmeg.kernel import generate, new_state, parameter_names, replace_names, run_statements, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.kernel import generate, new_state, parameter_names, replace_names, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
 from vmeg.parser import Parser, parse_body
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
@@ -654,4 +654,33 @@ class ExtendedStagingTest(unittest.TestCase):
     self.assertIn("xpcr", state["passes"][1]["icn"])
     self.assertFalse(state["passes"][0]["swen_raw"])
     self.assertEqual(state["passes"][0]["icn"], set())
+
+  def test_resolve_idle_routing_gates_inactive_halves_and_honors_bank_halves(self):
+    _, state = self.run_extended(
+      "  Agu w = { count: 4, cyc: 4 };\n"
+      "  .pe0 { .top = { count: 4 }; .write = w; .spad = top0; }\n"
+      "  .pe4 { .top = { count: 4 }; .base = { count: 4 }; .write = w; .spad = top4 + base0; }\n"
+      "  .pe5 { .write = w; .spad = base5; }\n"
+    )
+    icn = lambda p: {s: sum(n << 4 * i for i, n in enumerate(v)) for s, v in p["routing"].items()}
+    resolve_idle_routing(state["passes"][0])
+    self.assertEqual(icn(state["passes"][0]), {"top": 0x55545550, "base": 0x44444444, "write": 0x55545550})
+    resolve_extended_offsets(state["passes"][1])
+    resolve_write_routing(state["passes"][1])
+    resolve_idle_routing(state["passes"][1])
+    self.assertEqual(icn(state["passes"][1]), {"top": 0x55505554, "base": 0x55545550, "write": 0x55005544})
+
+  def test_resolve_extended_offsets_adds_0x400_and_infers_low_half_reads(self):
+    _, state = self.run_extended(
+      "  .pe4 { .top = { count: 4, offset: 8 }; .base = { count: 4 }; .write = { count: 4, offset: OFF, cyc: auto }; .spad = top4 + base0; }\n",
+    )
+    p2 = state["passes"][1]
+    resolve_extended_offsets(p2)
+    self.assertIn("vme_pe0(agu_top(MODE), VME_DEF_MODE, 0x408);", p2["lines"])
+    self.assertIn("vme_pe0(agu_base(MODE), VME_DEF_MODE);", p2["lines"])
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, (0x400 + OFF) & 0xffff, vme_cyc(@auto@));", p2["lines"])
+    self.assertEqual(p2["bank_halves"], {("base", 0): (0,)})
+    _, mixed = self.run_extended("  .pe4 { .top = { count: 4 }; .spad = top0 + top4; }\n")
+    with self.assertRaisesRegex(ValueError, "pe4.top cannot read both top0 and top4"):
+      resolve_extended_offsets(mixed["passes"][1])
 
