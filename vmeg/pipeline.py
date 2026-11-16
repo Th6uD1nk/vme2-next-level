@@ -176,3 +176,29 @@ def apply_sat_op(expr, ops, slot_refs, compat, lower):
     return emit_pipeline_op(ops, {"kind": "pass", "source": ref, "numbers": {}, "sat": bits})
   ops[ref[1]]["sat"] = bits
   return ref
+
+
+def compile_shift_op(expr, ops, slot_refs, compat, lower, round_flag=False):
+  _, op, left, right = expr
+  left, inner_round = unwrap_round(left)
+  if round_flag and inner_round:
+    raise ValueError("an operation takes only one round")
+  round_flag = round_flag or inner_round
+  if right[0] != "num":
+    if round_flag:
+      raise ValueError("the shift must be a number")
+    return None
+  amount = right[1]
+  if op == ">>" and left[0] not in ("name", "pipe_ref", "num"):
+    if not 0 <= amount <= 63:
+      raise ValueError("the shift must be 0 to 63")
+    src = lower(left, ops, slot_refs, compat)
+    target = ops[src[1]]
+    if target.get("shift") is None and can_encode_k_shift(target["kind"], op, round_flag):
+      target["shift"] = amount
+      if round_flag:
+        target["round"] = True
+      return src
+  else:
+    src = flow_operand(left, ops, slot_refs, compat, lower)
+  return emit_pipeline_op(ops, make_shift_operation(src, op, amount, round_flag))
