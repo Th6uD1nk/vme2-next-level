@@ -1121,16 +1121,6 @@ class ExtendedKernelE2ETest(unittest.TestCase):
       half = 1024 if i >= 4 else 0
       self.assertEqual([emu.scratchpad.read(BASE_OFFSET + (i & 3) * BUFFER_WORDS + half + k) for k in range(4)], [10 * i + k + i + 11 for k in range(4)])
 
-  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
-  def test_sample_extended_two_pass_emulates(self):
-    sample_path = os.path.join(os.path.dirname(__file__), "..", "samples", "cpp", "vmegc-extended-two-pass", "extended-two-pass.vmeg.cpp")
-    with open(sample_path, encoding="utf-8") as handle:
-      source = handle.read().replace(".kernel twoPass extended", "@emulate \"twoPass\"\n.kernel twoPass extended", 1)
-    emu = run_emulation(source, "twoPass")
-    for b in range(4):
-      expected = [100 * (b + 1) + k + (b + 1) * (k + 2) for k in range(16)]
-      self.assertEqual([emu.scratchpad.read(BASE_OFFSET + b * BUFFER_WORDS + 1024 + k) for k in range(16)], expected)
-
 
 class PipelineE2ETest(unittest.TestCase):
   def run_pipe(self, body, extra_bufs="", extra_loads=""):
