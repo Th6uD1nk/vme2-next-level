@@ -148,3 +148,31 @@ def build_table_op(kind, bound, ops, slot_refs, compat, lower, label=None):
       raise ValueError("the shift must be 0 to 63")
     op["shift"] = numbers[spec["shift"]]
   return emit_pipeline_op(ops, op)
+
+
+def unwrap_round(expr):
+  if expr[0] == "call" and expr[1] == "round":
+    if len(expr[2]) != 1:
+      raise ValueError("round takes 1 argument (value)")
+    inner = expr[2][0]
+    if inner[0] == "call" and inner[1] == "round":
+      raise ValueError("an operation takes only one round")
+    return inner, True
+  if expr[0] == "call" and expr[1] == "sat" and len(expr[2]) == 2 and expr[2][0][0] == "call" and expr[2][0][1] == "round":
+    inner, round_flag = unwrap_round(expr[2][0])
+    return ("call", "sat", [inner, expr[2][1]]), round_flag
+  return expr, False
+
+
+def apply_sat_op(expr, ops, slot_refs, compat, lower):
+  if len(expr[2]) != 2:
+    raise ValueError("sat takes 2 arguments (value, bits)")
+  bits = constant(expr[2][1], "sat bits")
+  if not 0 <= bits <= 31:
+    raise ValueError("sat bits out of range (0 to 31)")
+  inner = expr[2][0]
+  ref = flow_operand(inner, ops, slot_refs, compat, lower)
+  if inner[0] in ("name", "pipe_ref") or ops[ref[1]]["sat"] is not None:
+    return emit_pipeline_op(ops, {"kind": "pass", "source": ref, "numbers": {}, "sat": bits})
+  ops[ref[1]]["sat"] = bits
+  return ref
