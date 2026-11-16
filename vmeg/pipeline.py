@@ -3,6 +3,7 @@ from vmeg.kernel import base_name, constant, emit_statement, resolve_var, source
 from vmeg.operations import OPERATIONS
 from vmeg.parser import BUFFER_NAME, buffer_ref
 from vmeg.pattern import rebuild
+from vmeg.selector import OPERATION_NODES
 
 PIPELINE_FORBIDDEN_KINDS = (("agus", "Agu"), ("stagings", "Staging"), ("transfers", "Transfer"))
 
@@ -202,3 +203,34 @@ def compile_shift_op(expr, ops, slot_refs, compat, lower, round_flag=False):
   else:
     src = flow_operand(left, ops, slot_refs, compat, lower)
   return emit_pipeline_op(ops, make_shift_operation(src, op, amount, round_flag))
+
+
+def lower_child_op(expr, ops, slot_refs, compat, lower):
+  return lower(expr, ops, slot_refs, compat) if expr[0] in OPERATION_NODES else expr
+
+
+def unpack_cond(expr, ops, slot_refs, compat, lower):
+  cond, arm_t, arm_f = expr[1], expr[2], expr[3]
+  if cond[0] == "bin" and cond[1] == "&" and cond[3][0] == "num":
+    f_expr, mask = cond[2], cond[3]
+    f_ref = lower_child_op(f_expr, ops, slot_refs, compat, lower)
+    if arm_t == ("neg", arm_f) or arm_f == ("neg", arm_t):
+      neg_t = arm_t == ("neg", arm_f)
+      base = arm_f if neg_t else arm_t
+      ref = f_ref if base == f_expr else lower_child_op(base, ops, slot_refs, compat, lower)
+      return ("cond", ("bin", "&", f_ref, mask), ("neg", ref) if neg_t else ref, ref if neg_t else ("neg", ref))
+    if arm_t[0] == "bin" and arm_f[0] == "bin" and arm_t[1] in ("+", "-") and arm_f[1] in ("+", "-") and arm_t[2] == arm_f[2] == f_expr:
+      return ("cond", ("bin", "&", f_ref, mask), ("bin", arm_t[1], f_ref, arm_t[3]), ("bin", arm_f[1], f_ref, arm_f[3]))
+    t_val = f_ref if arm_t == f_expr else lower_child_op(arm_t, ops, slot_refs, compat, lower)
+    f_val = f_ref if arm_f == f_expr else lower_child_op(arm_f, ops, slot_refs, compat, lower)
+    return ("cond", ("bin", "&", f_ref, mask), t_val, f_val)
+  return rebuild(expr, lambda child: lower_child_op(child, ops, slot_refs, compat, lower))
+
+
+def unpack_compound(expr, ops, slot_refs, compat, lower):
+  if expr[0] == "not" and expr[1][0] == "bin" and expr[1][1] in ("&", "|", "^"):
+    op, left, right = expr[1][1], expr[1][2], expr[1][3]
+    return ("not", ("bin", op, lower_child_op(left, ops, slot_refs, compat, lower), lower_child_op(right, ops, slot_refs, compat, lower)))
+  if expr[0] == "cond":
+    return unpack_cond(expr, ops, slot_refs, compat, lower)
+  return rebuild(expr, lambda child: lower_child_op(child, ops, slot_refs, compat, lower))
