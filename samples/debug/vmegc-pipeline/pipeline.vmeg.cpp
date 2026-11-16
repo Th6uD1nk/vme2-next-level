@@ -25,6 +25,7 @@ volatile Buffer out1[16] = { 0 };
 volatile Buffer out2[16] = { 0 };
 volatile Buffer out3[16] = { 0 };
 
+@emulate "slot-dag"
 .kernel pipeSlotDag pipeline {
   Transfer ta = { memory: in0, count: 15 }, tb = { memory: in1, count: 15 };
   Transfer dst = { memory: out0, count: 15 };
@@ -41,6 +42,7 @@ volatile Buffer out3[16] = { 0 };
   .store { .transfer = dst; .scope = global; }
 }
 
+@emulate "four-pass"
 .kernel pipeFourPass pipeline {
   Transfer tc = { memory: in2, count: 15 }, td = { memory: in3, count: 15 };
   Transfer dst = { memory: out1, count: 15 };
