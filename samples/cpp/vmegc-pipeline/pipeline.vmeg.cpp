@@ -25,7 +25,26 @@ volatile Buffer out1[16] = { 0 };
 volatile Buffer out2[16] = { 0 };
 volatile Buffer out3[16] = { 0 };
 
+.kernel pipeSlotDag pipeline {
+  Transfer ta = { memory: in0, count: 15 }, tb = { memory: in1, count: 15 };
+  Transfer dst = { memory: out0, count: 15 };
+  .load { .transfer = ta; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = tb; .scope = global; .offsets { .base0 = 0; } }
+  .flow {
+    .count = 15;
+    Slot tap = (base0 & 0xff) >> 1;
+    .slot = (top0 & 0xff) + tap;
+    .slot = slot * 2;
+    for i in 0..6 { .slot = slot + 1; }
+    .slot = slot + tap;
+  }
+  .store { .transfer = dst; .scope = global; }
+}
+
 void meLibOnProcess(void) {
+  @kernel pipeSlotDag config | exec {
+    meCoreMemcpy((void*)&vmeDebugBuffers[0], (void*)out0, 64);
+  }
   while (1) meCounter += 1;
 }
 
