@@ -1138,6 +1138,44 @@ def resolve_extended_offsets(pass_state):
       rewrite_agu_offset(lines, pe, label, slot, info, 0x400)
 
 
+def input_agu_count(pass_state, pe, unit, name, line):
+  counts = []
+  seen = set()
+  stack = [(pe, unit)]
+  unit_reads = pass_state.get("unit_reads", {})
+  while stack:
+    cur_pe, cur_unit = stack.pop()
+    if (cur_pe, cur_unit) in seen:
+      continue
+    seen.add((cur_pe, cur_unit))
+    reads = unit_reads.get((cur_pe, cur_unit), set())
+    if not reads and cur_unit == 1:
+      stack.append((cur_pe, 0))
+    for ref in reads:
+      if ref.startswith("STAGING_"):
+        idx = int(ref.split("_")[1])
+        stack.append((idx & 3, idx >> 2))
+        continue
+      slot, num = ref.lower().split("_")
+      buf = int(num)
+      if buf not in pass_state["routing_bound"][slot]:
+        continue
+      driver = pass_state["routing"][slot][buf] & 3
+      spec = pass_state["agu_specs"].get((driver, slot))
+      if spec is not None:
+        params, _, agu_env = spec
+        count = next(value for key, value in params[1] if key == "count")
+        counts.append(full_value(count, agu_env))
+  if not counts:
+    raise ValueError(f"line {line}: Staging '{name}' has no input AGU to infer write count from")
+  if all(item[0] == "num" for item in counts):
+    return ("num", max(item[1] for item in counts))
+  unique = {repr(item): item for item in counts}
+  if len(unique) == 1:
+    return counts[0]
+  raise ValueError(f"line {line}: Staging '{name}' combines non-constant counts, set pe{pe}.write explicitly")
+
+
 def resolve_auto(lines, state):
   for pending in state["autos"]:
     pe = pending["pe"]
