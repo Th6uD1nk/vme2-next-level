@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import body_tokens, find_blocks
-from vmeg.kernel import generate, input_agu_count, new_state, parameter_names, replace_names, resolve_cross_stagings, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.kernel import finalize_pass, generate, input_agu_count, new_state, parameter_names, pass_active, replace_names, resolve_cross_stagings, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
 from vmeg.parser import Parser, parse_body
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
@@ -749,4 +749,31 @@ class ExtendedStagingTest(unittest.TestCase):
     )
     with self.assertRaisesRegex(ValueError, "pe0 can only export one Staging"):
       resolve_cross_stagings(dup)
+
+  def test_finalize_pass_resolves_pass2_offsets_auto_icns_and_warnings(self):
+    _, state = self.run_extended(
+      "  Agu w = { count: 4, cyc: auto };\n"
+      "  .pe4 { .top = { count: 4 }; .write = w; .spad = top4 + top5; }\n"
+      "  .pe5 { .top = { count: 4 }; .write = w; .spad = clamp(top5 + top5, 0, 9); }\n"
+    )
+    p0, p1 = state["passes"]
+    self.assertFalse(pass_active(p0))
+    self.assertTrue(pass_active(p1))
+    lines = finalize_pass(state, p1)
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x400, vme_cyc(6));", lines)
+    self.assertIn("vme_icn(AGU_TOP, 0x66106654);", lines)
+    self.assertIn("vme_icn(AGU_BASE, 0x44444444);", lines)
+    self.assertIn("vme_icn(AGU_WRITE, 0x55005544);", lines)
+    self.assertIn("vme_icn(SWEN, fu_on(0b0100));", lines)
+    self.assertTrue(any("pe5 shares the write Agu 'w' with pe4" in msg for _, msg in state["warnings"]))
+
+  def test_finalize_pass_reports_missing_op_and_unbound_write_with_logical_pe(self):
+    _, missing_op = self.run_extended("  .pe5 { .write = { count: 4, cyc: auto }; }\n")
+    with self.assertRaisesRegex(ValueError, "pe5.write: cyc auto needs an operation in pe5"):
+      finalize_pass(missing_op, missing_op["passes"][1])
+    _, unbound = self.run_extended("  .pe6 { .top = { count: 4 }; .spad = top6 + base7; }\n")
+    finalize_pass(unbound, unbound["passes"][1])
+    messages = [msg for _, msg in unbound["warnings"]]
+    self.assertIn("base7 is read but no .base is bound in pe7 of this kernel", messages)
+    self.assertIn("pe6 has an operation but no .write is bound in this kernel", messages)
 
