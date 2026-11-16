@@ -33,6 +33,7 @@ volatile Buffer out1[16] = { 0 };
 volatile Buffer out2[16] = { 0 };
 volatile Buffer out3[16] = { 0 };
 
+@emulate "two-pass"
 .kernel twoPass extended {
   Staging s[4];
   Transfer p1[4] = {

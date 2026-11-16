@@ -18,3 +18,9 @@ cmake --build build
 ```
 
 This produces `build/EBOOT.PBP`. On exit, `./log.txt` starts each buffer with `0x0066` (`102`), `0x00cc` (`204`), `0x0132` (`306`), and `0x0198` (`408`).
+
+## Check (PSP vs `vmee`)
+
+```bash
+python3 samples/debug/vmegc-extended-two-pass/check.py
+```
