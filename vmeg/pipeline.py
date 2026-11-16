@@ -1,8 +1,9 @@
 from vmeg.expr import fold
-from vmeg.kernel import base_name, check_arguments, constant, emit_statement, resolve_var, source_ref, unrolled
+from vmeg.kernel import base_name, check_arguments, constant, emit_statement, generate_agu, resolve_var, source_ref, unrolled
 from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
-from vmeg.parser import BUFFER_NAME, buffer_ref
+from vmeg.parser import BUFFER_NAME, Parser, buffer_ref, parse_expr
 from vmeg.pattern import rebuild
+from vmeg.scanner import tokens
 from vmeg.selector import OPERATION_NODES, choose_opcode
 
 PIPELINE_FORBIDDEN_KINDS = (("agus", "Agu"), ("stagings", "Staging"), ("transfers", "Transfer"))
@@ -507,3 +508,38 @@ def assign_flow_buffers(schedule, loads=None):
       exports_alloc[pe] = {"op": op_id, "bank": chosen[0], "half": chosen[1]}
     out_passes.append(dict(rec, exports_alloc=exports_alloc, extended_write=any(info["bank"] != pe for pe, info in exports_alloc.items())))
   return {"count": count, "inputs": schedule["inputs"], "output": out_id, "output_buffer": alloc[out_id], "alloc": alloc, "load_offsets": load_offsets, "passes": out_passes}
+
+
+def emit_pipeline_read_agu(slot, bank, off, half, count, ps, line):
+  params = [("count", ("num", count))]
+  if off:
+    offset_ast = ("num", off) if isinstance(off, int) else parse_expr(Parser(off, list(tokens(off)), len(off)))
+    params.append(("offset", offset_ast))
+  ps["routing"][slot][bank] = bank
+  ps["routing_bound"][slot].add(bank)
+  if ps["bank_halves"] is None:
+    ps["bank_halves"] = {}
+  ps["bank_halves"][(slot, bank)] = (half,)
+  ps["lines"].extend(generate_agu(("target", ("num", bank), slot), ("params", params), {}, ps, len(ps["lines"]), line, 4))
+
+
+def emit_pipeline_agus(pass_rec, alloc, load_offsets, count, ps, line=1):
+  for name in sorted(r for r in pass_rec["inputs"] if r.startswith("TOP_")):
+    bank = int(name.split("_")[1])
+    off, half = load_offsets.get(name, (0, 0))
+    emit_pipeline_read_agu("top", bank, off, half, count, ps, line)
+  base_reads = {int(r.split("_")[1]): load_offsets.get(r, (0, 0)) for r in pass_rec["inputs"] if r.startswith("BASE_")}
+  for imp in pass_rec["imports"]:
+    bank, half = alloc[imp]
+    base_reads[bank] = (0x400 if half else 0, half)
+  for bank, (off, half) in sorted(base_reads.items()):
+    emit_pipeline_read_agu("base", bank, off, half, count, ps, line)
+  for pe_rec in pass_rec["pes"]:
+    if pe_rec["export"] is None:
+      continue
+    pe = pe_rec["pe"]
+    info = pass_rec["exports_alloc"][pe]
+    op = pe_rec[pe_rec["output_unit"]]
+    off = (info["bank"] * 2048 if pass_rec["extended_write"] else 0) + (0x400 if info["half"] else 0)
+    params = [("count", ("num", count))] + ([("offset", ("num", off))] if off else []) + [("cyc", ("num", 3 + 3 * op["depth"]))]
+    ps["lines"].extend(generate_agu(("target", ("num", pe), "write"), ("params", params), {}, ps, len(ps["lines"]), line, 4))
