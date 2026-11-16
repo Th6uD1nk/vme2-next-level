@@ -26,11 +26,11 @@ An attribute is a named member of a kernel. It starts with a dot. Its content is
 | Attribute | Opens | Page |
 |---|---|---|
 | `.kernel name mode { }` | a kernel | [The kernel](kernel.md) |
-| `.pe0 { }` to `.pe3 { }` | a processing element | [Processing elements](pe.md) |
+| `.pe0 { }` to `.pe3 { }` (`.pe7` in `extended`) | a processing element | [Processing elements](pe.md) |
 | `.load { }`, `.store { }` | a DMAC transfer | [Transfers](transfers.md) |
 | `.offsets { }` | the scratchpad offsets of a transfer | [Transfers](transfers.md) |
 
-A member of an attribute has one of two forms: `.member = variable;` or `.member { … }`. The operation of a pe whose result leaves on the write is the member `.spad` (`.spad = top0 + base0;`), or `.spad[n]` (`.spad[2] = top0 + base0;`) to redirect the write to base buffer `n` (`0` to `3`); an operation kept in a `Staging` variable is set by its name (`s = top0 + base0;`). A variable can be replaced by its fields written in place.
+A member of an attribute has one of two forms: `.member = variable;` or `.member { … }`. The operation of a pe whose result leaves on the write is the member `.spad` (`.spad = top0 + base0;`), or `.spad[n]` (`.spad[2] = top0 + base0;`) to redirect the write to base buffer `n` (`0` to `3`, not allowed in `extended` kernels); an operation kept in a `Staging` variable is set by its name (`s = top0 + base0;`). A variable can be replaced by its fields written in place.
 
 ```c
 .pe0 { .top = t; .write = { count: 15 }; .spad = top0 + base0; }
@@ -133,13 +133,13 @@ Transfer in[2] = { { memory: bufA, count: 7 }, { memory: bufB, count: 15 } };
 
 ## 2.3 Accesses by index
 
-An access by index starts with no dot (`pe[p]`, `top[t]`, `base[b]`, or an element of a variable array `name[i]`), except `.spad[n]` which keeps its dot to redirect the output of a pe. The index is an integer number, an `Int`, a loop variable or a compile-time expression of those.
+An access by index starts with no dot (`pe[p]`, `top[t]`, `base[b]`, or an element of a variable array `name[i]`), except `.spad[n]` which keeps its dot to redirect the output of a pe. The index is an integer number, an `Int`, a loop variable or a compile-time expression of those. In `extended` kernels ([3.2.3](kernel.md#323-extended)), `pe[4]` to `pe[7]` run in Pass 2 and `top[4]`..`top[7]`, `base[4]`..`base[7]` target the high halves (`+ 0x400`).
 
 | Written | Same as |
 |---|---|
 | `pe[1] { … }` | `.pe1 { … }` |
 | `pe[1].top = t;` | `.pe1.top = t;` |
-| `top[2] = 8;` in a `.offsets` | `.top2 = 8;` |
+| `top[2] = 8;` in a `.offsets` | `.top2 = 8;` (`0` to `3`, or `0` to `7` in `extended`) |
 | `.spad[2] = top0 + 1;` | redirect write to `base2` (`0` to `3`) and add `2 * 2048` to write `offset` |
 | `s[p]` | element `p` of Staging array `s` |
 | `a[p]` | element `p` of Int array `a` |
@@ -323,8 +323,8 @@ The block form `@context name config { }` inside a function is currently not sup
 | [2.2.3](#223-the-declare-block) | `'x' is defined twice` | an `Int` of a kernel or of a block with the name of an `Int` of a `@declare` that serves it |
 | [2.2.4](#224-array-declarations) | `name[...]: array size must be a number of 1 or more` | an array size of 0 or negative |
 | [2.2.4](#224-array-declarations) | `name[...]: too many initializers (M for size N)` | more initializers in braces than the declared size |
-| [2.3](#23-accesses-by-index) | `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 |
-| [2.3](#23-accesses-by-index) | `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 |
+| [2.3](#23-accesses-by-index) | `pe4: processing element out of range (pe0 to pe3)` | a pe index above 3 (`7` in `extended`) |
+| [2.3](#23-accesses-by-index) | `top[...]: buffer index must be a number from 0 to 3` | a buffer index outside 0 to 3 (`7` in `extended`) |
 | [2.3](#23-accesses-by-index) | `name[i]: index out of range (0 to N - 1)` | array index outside bounds |
 | [2.3](#23-accesses-by-index) | `'name' is an array, write name[...]` | array variable used without bracket index |
 | [2.3](#23-accesses-by-index) | `'name' is not an array` | index brackets used on a scalar variable |

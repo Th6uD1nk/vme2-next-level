@@ -53,7 +53,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | Element | Section |
 |---|---|
 | `.kernel name mode { }` | [3.1](kernel.md#31-header) |
-| `direct`, `memory` | [3.2](kernel.md#32-modes) |
+| `direct`, `memory`, `extended` | [3.2](kernel.md#32-modes) |
 | statements of the body | [3.3.1](kernel.md#331-statements) |
 | `.params { }` | [3.3.4](kernel.md#334-parameters) |
 | `icn xpcr = …, skew = …;` | [3.4](kernel.md#34-interconnect-registers) |
@@ -75,7 +75,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 
 | Element | Section |
 |---|---|
-| `.pe0` to `.pe3`, `pe[p]` | [5.1](pe.md#51-the-pe-block) |
+| `.pe0` to `.pe3` (`.pe7` in `extended`), `pe[p]` | [5.1](pe.md#51-the-pe-block) |
 | `.spad = …;`, `.spad[n] = …;`, `s = …;` | [5.2](pe.md#52-what-a-block-holds) |
 | two operations in a pe | [5.3](pe.md#53-operations-in-a-pe) |
 | `.remap` | [5.4](pe.md#54-remapping-an-opcode) |
@@ -84,7 +84,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 
 | Element | Section |
 |---|---|
-| `top0` to `top3`, `base0` to `base3` | [6.1](operations.md#61-operands-and-results) |
+| `top0` to `top3`, `base0` to `base3` (`top4`..`base7` in `extended`) | [6.1](operations.md#61-operands-and-results) |
 | `+`, `-`, `*`, `&`, `\|`, `^` | [6.2](operations.md#62-operators) |
 | `~` | [6.2.1](operations.md#621-the-complement) |
 | an operator with a number | [6.2.2](operations.md#622-operators-with-a-number) |
@@ -137,7 +137,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `group.size`, `group.outer`, `group.inner` | [9.2.3](transfers.md#923-the-group) |
 | `step: 0` | [9.2.4](transfers.md#924-step-0) |
 | `.load { }`, `.store { }`, `.transfer`, `.scope` | [9.3](transfers.md#93-load-and-store) |
-| `.offsets { }`, `.top0` to `.base3` | [9.4](transfers.md#94-the-offsets) |
+| `.offsets { }`, `.top0` to `.base3` (`.top4`..`.base7` in `extended`) | [9.4](transfers.md#94-the-offsets) |
 | unknown names | [9.5](transfers.md#95-unknown-names-in-a-transfer) |
 
 ## 15.10 Call of a kernel
