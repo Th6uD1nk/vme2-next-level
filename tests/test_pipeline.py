@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import build_table_op, emit_pipeline_op, expand_flow, flow_operand
+from vmeg.pipeline import apply_sat_op, build_table_op, emit_pipeline_op, expand_flow, flow_operand, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 
 def parse_kernel(source):
@@ -151,6 +151,37 @@ class PipelineMicroOpBuilderTest(unittest.TestCase):
       build_table_op("clamp", {"x": ("name", "top0"), "low": ("name", "top1"), "high": ("num", 5)}, ops, slot_refs, None, stub_lower, label="clamp")
     with self.assertRaisesRegex(ValueError, "the shift must be 0 to 63"):
       build_table_op("bak_shr", {"x": ("name", "top0"), "n": ("num", 64)}, ops, slot_refs, None, stub_lower)
+
+  def test_unwrap_round_and_apply_sat_op(self):
+    inner = ("bin", "+", ("name", "top0"), ("name", "top1"))
+    self.assertEqual(unwrap_round(inner), (inner, False))
+    self.assertEqual(unwrap_round(("call", "round", [inner])), (inner, True))
+    self.assertEqual(unwrap_round(("call", "sat", [("call", "round", [inner]), ("num", 8)])), (("call", "sat", [inner, ("num", 8)]), True))
+    ops = []
+    def stub_add(expr, cur_ops, cur_slots, compat):
+      return emit_pipeline_op(cur_ops, {"kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None})
+    def nested_sat(expr, cur_ops, cur_slots, compat):
+      return apply_sat_op(expr, cur_ops, cur_slots, compat, stub_add)
+    slots = {0: emit_pipeline_op(ops, {"kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None})}
+    self.assertEqual(apply_sat_op(("call", "sat", [("name", "top0"), ("num", 8)]), ops, slots, None, stub_add), ("op_ref", 1))
+    self.assertEqual((ops[1]["kind"], ops[1]["source"], ops[1]["sat"]), ("pass", "TOP_0", 8))
+    self.assertEqual(apply_sat_op(("call", "sat", [("pipe_ref", 0), ("num", 6)]), ops, slots, None, stub_add), ("op_ref", 2))
+    self.assertIsNone(ops[0]["sat"])
+    self.assertEqual((ops[2]["kind"], ops[2]["source"], ops[2]["sat"]), ("pass", ("op_ref", 0), 6))
+    self.assertEqual(ops[apply_sat_op(("call", "sat", [("num", 12), ("num", 5)]), ops, slots, None, stub_add)[1]]["kind"], "cst")
+    self.assertEqual(ops[3]["sat"], 5)
+    self.assertEqual(ops[apply_sat_op(("call", "sat", [inner, ("num", 7)]), ops, slots, None, stub_add)[1]]["sat"], 7)
+    self.assertEqual(apply_sat_op(("call", "sat", [("call", "sat", [inner, ("num", 8)]), ("num", 4)]), ops, slots, None, nested_sat), ("op_ref", 6))
+    self.assertEqual((ops[5]["sat"], ops[6]["kind"], ops[6]["source"], ops[6]["sat"]), (8, "pass", ("op_ref", 5), 4))
+    for bad, fn, msg in (
+      (("call", "round", []), unwrap_round, "round takes 1 argument"),
+      (("call", "round", [("call", "round", [inner])]), unwrap_round, "an operation takes only one round"),
+      (("call", "sat", [inner]), lambda e: apply_sat_op(e, ops, slots, None, stub_add), "sat takes 2 arguments"),
+      (("call", "sat", [inner, ("name", "top0")]), lambda e: apply_sat_op(e, ops, slots, None, stub_add), "sat bits must be a number"),
+      (("call", "sat", [inner, ("num", 32)]), lambda e: apply_sat_op(e, ops, slots, None, stub_add), "sat bits out of range"),
+    ):
+      with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, msg):
+        fn(bad)
 
 
 if __name__ == "__main__":
