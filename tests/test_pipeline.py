@@ -8,6 +8,7 @@ from vmeg.parser import declare_statements, kernel_statements
 from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, evict_pass_ops, expand_flow, finalize_flow_pass, find_free_pe, flatten_flow, flow_operand, live_exports, lower_child_op, lower_flow_call, op_refs, place_in_pass, try_place_with_delays, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
+from vmegc import render
 
 def parse_kernel(source):
   block = next(item for item in find_blocks(source) if item[0] == "kernel")
@@ -357,6 +358,44 @@ class PipelineSchedulerTest(unittest.TestCase):
     rec2 = finalize_flow_pass(full, 5, pend2, {**ops_map, 3: op3, 4: op4, 5: op5}, 1)
     self.assertEqual((pend2, full[0]["secondary"], rec2["exports"], rec2["imports"]), ([1, 2], None, [0, 5], [99]))
     self.assertEqual((full[3]["primary"]["pass"], full[3]["primary"]["pe"], full[3]["primary"]["unit"]), (1, 3, "primary"))
+
+
+class PipelineCodegenTest(unittest.TestCase):
+  def render_pipe(self, body, loads=".top0 = 0;", count=7):
+    src = (
+      f"volatile Buffer a[{count + 1}], out[{count + 1}];\n.kernel p pipeline {{\n"
+      f"  Transfer tin = {{ memory: a, count: {count} }}, tout = {{ memory: out, count: {count} }};\n"
+      f"  .load {{ .transfer = tin; .scope = global; .offsets {{ {loads} }} }}\n"
+      f"  .flow {{\n    .count = {count};\n{body}\n  }}\n  .store {{ .transfer = tout; .scope = global; }}\n}}\n"
+      "@kernel p config | exec\nvoid run(void) { }\n"
+    )
+    return render(src, find_blocks(src), "t.vmeg.c")
+
+  def test_one_pass_logic_shift_packing_agus_and_auto_store(self):
+    out = self.render_pipe("    .slot = (top0 & 0xff) >> 1;")
+    fn = out.partition("void p() {")[2].partition("}")[0]
+    self.assertNotIn("VME_BASE_ADDR", fn)
+    for expected in (
+      "vme_pe0(vme_fu(PRIMARY), vme_mux(NONE, TOP_0), fu_code(OP_AND_CST));",
+      "vme_pe0(vme_fu(SECONDARY), vme_mux(NONE, STAGING_0), fu_code(OP_ADD_CST), 1);",
+      "vme_pe0(agu_top(MODE), VME_DEF_MODE);", "vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(9));",
+      "vme_icn(AGU_TOP, 0x55545550);", "vme_icn(AGU_WRITE, 0x55545550);", "vme_icn(SWEN, fu_on(0b1000));",
+      "  vmeLibStart();\n", "  vmeLibProcessAsync();\n  vmeLibFinishAsync();\n",
+    ):
+      self.assertIn(expected, fn)
+    self.assertIn("pToutStore(out, VME_BASE_BUFF0_WOFF);", out)
+
+  def test_multipass_balanced_pairs_deltas_and_pingpong_store(self):
+    for n, pairs, mids, procd, store in ((8, 1, 1, 2, "VME_BASE_BUFF1_WOFF + 0x400"), (16, 2, 1, 3, "VME_BASE_BUFF1_WOFF"), (24, 2, 2, 4, "VME_BASE_BUFF1_WOFF + 0x400")):
+      with self.subTest(n=n):
+        out = self.render_pipe("    .slot = ((top0 & 0xff) >> 1) + 1;\n" + "".join("    .slot = slot + 1;\n" for _ in range(n)))
+        fn = out.partition("void p() {")[2].partition("}")[0]
+        self.assertEqual((fn.count("  vmeLibStart();"), fn.count("  _vmeLibStart();"), fn.count("  vmeLibProcessAsync();"), fn.count("  vmeLibFinishAsync();")), (pairs, mids, procd, pairs))
+        self.assertIn(f"pToutStore(out, {store});", out)
+        if n == 8:
+          delta = fn.partition("_vmeLibStart();")[2]
+          self.assertIn("vme_pe3(vme_fu(PRIMARY), 0);", delta)
+          self.assertIn("vme_icn(SWEN, fu_on(0b0000));", delta)
 
 
 if __name__ == "__main__":
