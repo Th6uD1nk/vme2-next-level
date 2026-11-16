@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, emit_pipeline_op, expand_flow, flow_operand, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flow_operand, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 
 def parse_kernel(source):
@@ -182,6 +182,39 @@ class PipelineMicroOpBuilderTest(unittest.TestCase):
     ):
       with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, msg):
         fn(bad)
+
+  def test_compile_shift_op(self):
+    def stub_lower(expr, cur_ops, cur_slots, compat):
+      if expr[0] == "call" and expr[1] == "sat":
+        return apply_sat_op(expr, cur_ops, cur_slots, compat, stub_lower)
+      if expr[1] == "&":
+        return emit_pipeline_op(cur_ops, {"kind": "and_cst", "source": "TOP_0", "numbers": {"c": 255}, "sat": None})
+      if expr[3] == ("num", 5):
+        return emit_pipeline_op(cur_ops, {"kind": "add_cst", "source": "TOP_0", "numbers": {"c": 5}, "sat": None})
+      return emit_pipeline_op(cur_ops, {"kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None})
+    ops = []
+    slots = {0: emit_pipeline_op(ops, {"kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None})}
+    add_e, and_e, cst_e = ("bin", "+", ("name", "top0"), ("name", "top1")), ("bin", "&", ("name", "top0"), ("num", 255)), ("bin", "+", ("name", "top0"), ("num", 5))
+    self.assertEqual(compile_shift_op(("bin", ">>", ("call", "sat", [("call", "round", [add_e]), ("num", 8)]), ("num", 2)), ops, slots, None, stub_lower), ("op_ref", 1))
+    self.assertEqual((ops[1]["kind"], ops[1]["sat"], ops[1]["shift"], ops[1]["round"]), ("add", 8, 2, True))
+    self.assertEqual(compile_shift_op(("bin", ">>", and_e, ("num", 2)), ops, slots, None, stub_lower), ("op_ref", 3))
+    self.assertEqual((ops[2]["kind"], ops[3]["kind"], ops[3]["source"], ops[3]["numbers"], ops[3]["shift"]), ("and_cst", "add_cst", ("op_ref", 2), {"c": 0}, 2))
+    self.assertEqual(compile_shift_op(("bin", ">>", cst_e, ("num", 2)), ops, slots, None, stub_lower, round_flag=True), ("op_ref", 5))
+    self.assertEqual((ops[4].get("shift"), ops[5]["kind"], ops[5]["numbers"], ops[5]["shift"]), (None, "add_cst", {"c": 2}, 2))
+    self.assertEqual(ops[compile_shift_op(("bin", "<<", add_e, ("num", 3)), ops, slots, None, stub_lower)[1]]["kind"], "shl_cst")
+    self.assertEqual(ops[compile_shift_op(("bin", ">>>", add_e, ("num", 1)), ops, slots, None, stub_lower)[1]]["kind"], "shr_cst_u")
+    self.assertEqual(ops[compile_shift_op(("bin", ">>", ("pipe_ref", 0), ("num", 4)), ops, slots, None, stub_lower)[1]]["source"], ("op_ref", 0))
+    self.assertIsNone(ops[0].get("shift"))
+    self.assertIsNone(compile_shift_op(("bin", "<<", ("name", "top0"), ("name", "top1")), ops, slots, None, stub_lower))
+    for bad, rf, msg in (
+      (("bin", ">>", ("call", "round", [add_e]), ("num", 2)), True, "only one round"),
+      (("bin", ">>", ("name", "top0"), ("name", "top1")), True, "must be a number"),
+      (("bin", ">>", add_e, ("num", 64)), False, "0 to 63"),
+      (("bin", "<<", add_e, ("num", 2)), True, "not left shift"),
+      (("bin", ">>>", add_e, ("num", 2)), True, "not >>>"),
+    ):
+      with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, msg):
+        compile_shift_op(bad, ops, slots, None, stub_lower, rf)
 
 
 if __name__ == "__main__":
