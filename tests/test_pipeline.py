@@ -5,8 +5,9 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flow_operand, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flow_operand, lower_child_op, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
+from vmeg.selector import choose_opcode
 
 def parse_kernel(source):
   block = next(item for item in find_blocks(source) if item[0] == "kernel")
@@ -215,6 +216,27 @@ class PipelineMicroOpBuilderTest(unittest.TestCase):
     ):
       with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, msg):
         compile_shift_op(bad, ops, slots, None, stub_lower, rf)
+
+  def test_unpack_cond_and_compound(self):
+    ops, slots, calls = [], {}, []
+    def stub_lower(expr, cur_ops, cur_slots, compat):
+      calls.append(expr)
+      return emit_pipeline_op(cur_ops, {"kind": "stub", "expr": expr})
+    self.assertEqual(lower_child_op(("name", "top0"), ops, slots, None, stub_lower), ("name", "top0"))
+    self.assertEqual(lower_child_op(("num", 7), ops, slots, None, stub_lower), ("num", 7))
+    self.assertEqual(len(calls), 0)
+    a1, b2 = ("bin", "+", ("name", "top0"), ("num", 1)), ("bin", "*", ("name", "base0"), ("num", 2))
+    neg_u = unpack_cond(("cond", ("bin", "&", a1, ("num", 4)), ("neg", b2), b2), ops, slots, None, stub_lower)
+    self.assertEqual(neg_u, ("cond", ("bin", "&", ("op_ref", 0), ("num", 4)), ("neg", ("op_ref", 1)), ("op_ref", 1)))
+    self.assertEqual(choose_opcode(neg_u, None)[0], "sel_neg")
+    calls.clear()
+    ads_u = unpack_cond(("cond", ("bin", "&", a1, ("num", 4)), ("bin", "-", a1, ("num", 3)), ("bin", "+", a1, ("num", 3))), ops, slots, None, stub_lower)
+    self.assertEqual((len(calls), choose_opcode(ads_u, None)[0]), (1, "sel_ads"))
+    zer_u = unpack_cond(("cond", ("bin", "&", a1, ("num", 4)), ("num", 0), ("num", 9)), ops, slots, None, stub_lower)
+    self.assertEqual(choose_opcode(zer_u, None)[0], "sel_cst_zer")
+    self.assertEqual(unpack_cond(("cond", a1, ("num", 2), ("num", 3)), ops, slots, None, stub_lower), ("cond", ("op_ref", 4), ("num", 2), ("num", 3)))
+    self.assertEqual(choose_opcode(unpack_compound(("not", ("bin", "&", a1, ("name", "base1"))), ops, slots, None, stub_lower), None)[0], "nand")
+    self.assertEqual(choose_opcode(unpack_compound(("bin", "*", a1, b2), ops, slots, None, stub_lower), None)[0], "mul")
 
 
 if __name__ == "__main__":
