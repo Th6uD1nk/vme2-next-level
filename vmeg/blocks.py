@@ -7,7 +7,7 @@ EMULATE_ID = re.compile(r'"[A-Za-z0-9_-]+"')
 
 ACTIONS = ("build", "config", "exec", "async")
 
-KERNEL_MODES = ("direct", "memory", "extended")
+KERNEL_MODES = ("direct", "memory", "extended", "pipeline")
 
 
 def read_kernel_list(items, last, line):

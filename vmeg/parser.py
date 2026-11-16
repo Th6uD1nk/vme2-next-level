@@ -32,15 +32,23 @@ PE_NAME = re.compile(r"pe([0-9]+)$")
 
 BUFFER_NAME = re.compile(r"(top|base)([0-7])$")
 
+PIPELINE_FORBIDDEN = {
+  "Agu": "Agu declarations are not allowed in a pipeline kernel",
+  "Staging": "Staging declarations are not allowed in a pipeline kernel",
+  "icn": "icn is not allowed in a pipeline kernel",
+  "pe": "pe blocks are not allowed in a pipeline kernel",
+}
+
 
 class Parser:
-  def __init__(self, text, toks, limit, extended=False):
+  def __init__(self, text, toks, limit, extended=False, pipeline=False):
     self.text = text
     self.toks = toks
     self.limit = limit
     self.i = 0
     self.in_call = False
     self.extended = extended
+    self.pipeline = pipeline
 
   def error(self, message, token=None):
     if token is not None:
@@ -552,6 +560,8 @@ def parse_transfer_use(p):
     if any(item[0] == name for item in items):
       p.error(f".{name} is already written in this .{direction}", start)
     if name == "offsets":
+      if p.pipeline and direction == "store":
+        p.error(".offsets is not allowed on .store in a pipeline kernel", start)
       p.expect("{")
       items.append((name, parse_offsets(p)))
       continue
@@ -815,6 +825,8 @@ def parse_statement(p):
   tok = p.peek()
   line = p.text.count("\n", 0, tok[2]) + 1
   if tok[0] == "ident":
+    if p.pipeline and tok[1] in PIPELINE_FORBIDDEN:
+      p.error(PIPELINE_FORBIDDEN[tok[1]], tok)
     if tok[1] == "for":
       return parse_for(p) + (line,)
     if tok[1] == "icn":
@@ -834,6 +846,8 @@ def parse_statement(p):
       return parse_element_assignment(p) + (line,)
   if tok[0] == "punct" and tok[1] == ".":
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+    if following is not None and following[0] == "ident" and p.pipeline and (PE_NAME.match(following[1]) or following[1] in ("regs", "params", "pe")):
+      p.error(f".{following[1]} is not allowed in a pipeline kernel", following)
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
       p.i += 1
       return parse_pe_statement(p) + (line,)
@@ -881,5 +895,6 @@ def kernel_statements(text, block, cache):
   statements = cache.get(block[1])
   if statements is None:
     body, limit = body_tokens(text, block)
-    statements = cache[block[1]] = declared_statements(text, block[1]) + parse_body(Parser(text, body, limit, kernel_mode(text, block) == "extended"))
+    mode = kernel_mode(text, block)
+    statements = cache[block[1]] = declared_statements(text, block[1]) + parse_body(Parser(text, body, limit, mode == "extended", mode == "pipeline"))
   return statements
