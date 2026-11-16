@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flow_operand, lower_child_op, lower_flow_call, unpack_compound, unpack_cond, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flatten_flow, flow_operand, lower_child_op, lower_flow_call, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
 
@@ -262,6 +262,30 @@ class PipelineMicroOpBuilderTest(unittest.TestCase):
     ):
       with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, msg):
         lower_flow_call(bad, ops, slots, None, stub_lower)
+
+  def test_flatten_flow_nested_dag_and_pipeline_splits(self):
+    dag_src = (
+      ".kernel p pipeline {\n  .flow {\n    .count = 15;\n"
+      "    Slot a = (top0 + top1) * (base0 - base1);\n    Slot b = (a & 0xff) >> 2;\n"
+      "    .slot = (b << 3) + round((top0 + top1) >> 1);\n    .slot = slot;\n  }\n}\n"
+    )
+    dag = flatten_flow(expand_kernel(dag_src))
+    self.assertEqual([op["kind"] for op in dag["operations"]], ["add", "sub", "mul", "and_cst", "add_cst", "shl_cst", "add", "add"])
+    self.assertEqual((dag["operations"][2]["target"], dag["operations"][4]["target"], dag["output"]), ("a", "b", 7))
+    self.assertEqual((dag["operations"][4]["numbers"], dag["operations"][4]["shift"], dag["operations"][6]["shift"], dag["operations"][6]["round"]), ({"c": 0}, 2, 1, True))
+    self.assertEqual([op["kind"] for op in flatten_flow(expand_kernel(".kernel p pipeline { .flow { .count = 7; .slot = ~(((top0 + 1) & 4) ? -(top1 * 2) : (top1 * 2)) >> 2; } }\n"))["operations"]], ["add_cst", "mul_cst", "sel_neg", "not", "add_cst"])
+    self.assertEqual(flatten_flow(expand_kernel(".kernel p pipeline { .flow { .count = 3; .slot = -top0; } }\n"))["operations"][0]["numbers"], {"c": 0})
+    self.assertEqual([op["kind"] for op in flatten_flow(expand_kernel(".kernel p pipeline { .flow { .count = 3; .slot = top0 << (base0 & 7); } }\n"))["operations"]], ["and_cst", "shl_reg"])
+    self.assertEqual(flatten_flow(expand_kernel(".kernel p pipeline { .flow { .count = 3; .slot = top0; } }\n"))["operations"][0]["kind"], "pass")
+    self.assertEqual(flatten_flow(expand_kernel(".kernel p pipeline { .flow { .count = 3; .slot = 7; } }\n"))["operations"][0]["kind"], "cst")
+    self.assertEqual([op["kind"] for op in flatten_flow(expand_kernel(".kernel p pipeline { .flow { .count = 3; .slot = (top0 & 0xff) >> 2; } }\n"), "fat")["operations"]], ["and_cst", "add_cst"])
+    for expr, msg in (
+      ("top0 / 2", "unsupported operator '/'"),
+      ("top0 == 0", "no opcode covers this expression"),
+      ("((top0 + 1) & 4) ? top1 : base0", "no opcode covers this expression"),
+    ):
+      with self.subTest(expr=expr), self.assertRaisesRegex(ValueError, msg):
+        flatten_flow(expand_kernel(f".kernel p pipeline {{ .flow {{ .count = 1; .slot = {expr}; }} }}\n"))
 
 
 if __name__ == "__main__":
