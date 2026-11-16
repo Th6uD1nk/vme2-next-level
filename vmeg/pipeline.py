@@ -1,6 +1,6 @@
 from vmeg.expr import fold
-from vmeg.kernel import base_name, constant, emit_statement, resolve_var, source_ref, unrolled
-from vmeg.operations import OPERATIONS
+from vmeg.kernel import base_name, check_arguments, constant, emit_statement, resolve_var, source_ref, unrolled
+from vmeg.operations import FUNCTIONS, OPERATIONS
 from vmeg.parser import BUFFER_NAME, buffer_ref
 from vmeg.pattern import rebuild
 from vmeg.selector import OPERATION_NODES
@@ -234,3 +234,29 @@ def unpack_compound(expr, ops, slot_refs, compat, lower):
   if expr[0] == "cond":
     return unpack_cond(expr, ops, slot_refs, compat, lower)
   return rebuild(expr, lambda child: lower_child_op(child, ops, slot_refs, compat, lower))
+
+
+def lower_flow_call(expr, ops, slot_refs, compat, lower):
+  name, args = expr[1], expr[2]
+  if name == "sat":
+    return apply_sat_op(expr, ops, slot_refs, compat, lower)
+  if name == "round":
+    if len(args) != 1:
+      raise ValueError("round takes 1 argument (value)")
+    inner = args[0]
+    if inner[0] == "call" and inner[1] == "round":
+      raise ValueError("an operation takes only one round")
+    if inner[0] == "bin" and inner[1] in (">>", "<<", ">>>", "<<<"):
+      return compile_shift_op(inner, ops, slot_refs, compat, lower, round_flag=True)
+    ref = flow_operand(inner, ops, slot_refs, compat, lower)
+    if inner[0] in ("name", "pipe_ref"):
+      ref = emit_pipeline_op(ops, {"kind": "pass", "source": ref, "numbers": {}, "sat": None})
+    if OPERATIONS[ops[ref[1]]["kind"]]["k_round"]:
+      ops[ref[1]]["round"] = True
+    return ref
+  if name in FUNCTIONS:
+    check_arguments(name, args)
+    kind = FUNCTIONS[name]
+    bound = {arg: val for (arg, _), val in zip(OPERATIONS[kind]["arguments"], args)}
+    return build_table_op(kind, bound, ops, slot_refs, compat, lower, label=name)
+  raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', 'round', *FUNCTIONS])})")
