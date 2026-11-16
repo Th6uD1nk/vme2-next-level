@@ -582,6 +582,20 @@ def parse_staging_declaration(p):
   return parse_declarators(p, "Staging", "stagingdecl")
 
 
+def parse_slot_declaration(p):
+  p.expect("Slot")
+  members = []
+  while True:
+    target = parse_declared_name(p)
+    members.append(("slotdecl", target))
+    if not isinstance(target, tuple) and p.accept("="):
+      members.append(("slotset", target, parse_expr(p)))
+    if not p.accept(","):
+      break
+  p.expect(";")
+  return ("declarations", members)
+
+
 def parse_output(p, index):
   dest = None
   if p.accept("["):
@@ -703,14 +717,18 @@ def buffer_ref(expr, limit=3):
   return None
 
 
-def parse_for(p):
-  _, var, low, high, step = parse_for_header(p)
+def parse_block_items(p, item_parser):
   body = []
   while not p.accept("}"):
     if p.peek() is None:
       p.error("expected '}'")
-    add_statement(body, parse_statement(p))
-  return ("for", var, low, high, step, body)
+    add_statement(body, item_parser(p))
+  return body
+
+
+def parse_for(p, inner=None):
+  _, var, low, high, step = parse_for_header(p)
+  return ("for", var, low, high, step, parse_block_items(p, inner or parse_statement))
 
 
 def parse_params_definition(p):
@@ -835,6 +853,10 @@ def parse_statement(p):
       return parse_agu_declaration(p) + (line,)
     if tok[1] == "Staging":
       return parse_staging_declaration(p) + (line,)
+    if tok[1] == "Slot":
+      if not p.pipeline:
+        p.error("Slot is only allowed in a pipeline kernel", tok)
+      return parse_slot_declaration(p) + (line,)
     if tok[1] == "Transfer":
       return parse_transfer_declaration(p) + (line,)
     if tok[1] == "Int":
