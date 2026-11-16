@@ -64,24 +64,30 @@ def unwrap(tree):
       return tree
 
 
-def cost(kind, bound, operations):
+def cost(kind, bound, operations, memo=None):
   specification = operations[kind]
   total = slots(specification)
   for name, role in specification["arguments"]:
     if role == "source" and bound[name][0] in OPERATION_NODES:
-      inner = select(unwrap(bound[name]), operations)
+      inner = select(unwrap(bound[name]), operations, memo)
       if inner is None:
         return None
       total += inner[2]
   return total
 
 
-def select(tree, operations=OPERATIONS):
+def select(tree, operations=OPERATIONS, memo=None):
+  if memo is None:
+    memo = {}
+  key = id(tree)
+  if key in memo:
+    return memo[key]
   best = None
   for kind, bound in candidates(tree, operations):
-    total = cost(kind, bound, operations)
+    total = cost(kind, bound, operations, memo)
     if total is not None and (best is None or total < best[2]):
       best = (kind, bound, total)
+  memo[key] = best
   return best
 
 
