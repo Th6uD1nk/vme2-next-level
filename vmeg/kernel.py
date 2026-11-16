@@ -1176,6 +1176,45 @@ def input_agu_count(pass_state, pe, unit, name, line):
   raise ValueError(f"line {line}: Staging '{name}' combines non-constant counts, set pe{pe}.write explicitly")
 
 
+def resolve_cross_stagings(state):
+  if not state["extended"]:
+    return
+  pass1, pass2 = state["passes"]
+  exported = {}
+  for name, variable in state["stagings"].items():
+    if not variable.get("exported"):
+      continue
+    pe = variable["pe"] & 3
+    if pe in exported:
+      raise ValueError(f"line {variable['line']}: pe{pe} can only export one Staging across passes ('{exported[pe][0]}' is already exported)")
+    exported[pe] = (name, variable)
+  for pe, (name, variable) in exported.items():
+    line = variable["line"]
+    need_write = pe not in pass1["writes"]
+    need_base = pe not in pass2["routing_bound"]["base"]
+    count = input_agu_count(pass1, pe, variable["unit"], name, line) if (need_write or need_base) else None
+    if pe not in pass1["outputs"] and not pass1["swen_raw"]:
+      if variable["unit"] == 1:
+        pass1["secondary"].add(pe)
+      else:
+        pass1["secondary"].discard(pe)
+    if need_write:
+      claim(pass1, pe, "write", line)
+      record_write(pass1, pe, pe, None, line)
+      params = ("params", [("count", count), ("cyc", ("num", 3 + 3 * variable["depth"]))])
+      pass1["lines"].extend(generate_agu(("target", ("num", pe), "write"), params, {}, pass1, len(pass1["lines"]), line))
+    else:
+      pass1["depths"].setdefault(pe, variable["depth"])
+    if need_base:
+      claim(pass2, pe, "base", line)
+      pass2["routing"]["base"][pe] = pe
+      pass2["routing_bound"]["base"].add(pe)
+      pass2["lines"].extend(generate_agu(("target", ("num", pe), "base"), ("params", [("count", count)]), {}, pass2, len(pass2["lines"]), line))
+      if pass2["bank_halves"] is None:
+        pass2["bank_halves"] = {}
+      pass2["bank_halves"][("base", pe)] = (0,)
+
+
 def resolve_auto(lines, state):
   for pending in state["autos"]:
     pe = pending["pe"]
