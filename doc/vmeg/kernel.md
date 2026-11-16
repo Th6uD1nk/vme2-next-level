@@ -9,6 +9,7 @@
   - [3.2.1 direct](#321-direct)
   - [3.2.2 memory](#322-memory)
   - [3.2.3 extended](#323-extended)
+  - [3.2.4 pipeline](#324-pipeline)
 - [3.3 Body](#33-body)
   - [3.3.1 Statements](#331-statements)
   - [3.3.2 Scope of the variables](#332-scope-of-the-variables)
@@ -28,19 +29,19 @@
 **Explanation of the code above:**
 
 - `name` is the name of the kernel. It is unique in the project: two kernels with the same name, in the same file or in two files, are an error.
-- `mode` is `direct`, `memory` or `extended` ([3.2](#32-modes)). It is compulsory and there is only one.
+- `mode` is `direct`, `memory`, `extended` or `pipeline` ([3.2](#32-modes)). It is compulsory and there is only one.
 - A kernel is written at the top level of a file, not inside a function. `.context` is a synonym of `.kernel` ([2.8](language.md#28-synonyms)).
 - A kernel that no `@kernel` calls, in any file of the project, is an error: see [Calling a kernel](calling.md).
 
 ## 3.2 Modes
 
-The body of a kernel is the same across modes, except `.pe4` to `.pe7` and `top4`..`top7` / `base4`..`base7` which are only valid in `extended`. The mode says where the registers of the kernel are written.
+The body of a kernel is the same across `direct`, `memory` and `extended` (except `.pe4`..`.pe7` and `top4`..`base7` in `extended`), while `pipeline` replaces PE blocks with a `.flow { … }` block ([3.2.4](#324-pipeline)). The mode says where the registers of the kernel are written.
 
-| | `direct` | `memory` | `extended` |
-|---|---|---|---|
-| The registers are written | in the VME | in a context in RAM, which is then sent to the VME | in the VME across up to two chained passes |
-| The VME gets them | when the kernel is called with `config` | when the context is sent, by `config` after `build` | when called with `config`, chaining Pass 1 and Pass 2 automatically |
-| A register that the kernel does not write | keeps its value | is 0: a loaded context replaces all the registers | keeps its value, while Pass 1 registers unused in Pass 2 are reset to 0 between passes |
+| | `direct` | `memory` | `extended` | `pipeline` |
+|---|---|---|---|---|
+| The registers are written | in the VME | in a context in RAM, which is then sent to the VME | in the VME across up to two chained passes | in the VME across 1 to N passes in balanced 2-pass pairs |
+| The VME gets them | when the kernel is called with `config` | when the context is sent, by `config` after `build` | when called with `config`, chaining Pass 1 and Pass 2 automatically | when called with `config \| exec`, running all passes automatically |
+| A register that the kernel does not write | keeps its value | is 0: a loaded context replaces all the registers | keeps its value, while Pass 1 registers unused in Pass 2 are reset to 0 between passes | is reset to 0 between passes when unused in the next pass |
 
 ```c
 .kernel add direct {
@@ -68,6 +69,27 @@ An extended kernel compiles as a `direct` kernel across up to two chained passes
 - When both passes are active, `vmegc` emits `vmeLibProcessAsync();` and `_vmeLibStart();` between Pass 1 and the Pass 2 register delta. Calling `@kernel name config | exec` emits `vmeLibStart();` before the kernel call and closes with `vmeLibProcessAsync();` and `vmeLibFinishAsync();`.
 - `Staging` variables written in Pass 1 can be read in Pass 2 (`vmegc` bridges them through the low half of `base0`..`base3` automatically); reading Pass 2 staging values from Pass 1 and redirecting outputs with `.spad[n]` are rejected.
 
+### 3.2.4 pipeline
+
+A pipeline kernel schedules a dataflow graph inside a single `.flow { … }` block across as many hardware passes as needed:
+
+```c
+.kernel pipe pipeline {
+  Transfer ta = { memory: in0, count: 15 }, dst = { memory: out0, count: 15 };
+  .load { .transfer = ta; .scope = global; .offsets { .top0 = 0; } }
+  .flow {
+    .count = 15;
+    Slot tap = (top0 & 0xff) >> 1;
+    .slot = top0 + tap;
+    for i in 0..7 { .slot = slot + 1; }
+  }
+  .store { .transfer = dst; .scope = global; }
+}
+```
+- `.flow` requires `.count = N` (`0` to `1023`, up to 1024 words) and at least one `.slot = expr;` statement (`slot` reads the previous `.slot`; `Slot` variables and `Slot` arrays hold named intermediates).
+- `vmegc` packs operations into `PRIMARY` and `SECONDARY` FUs across `pe0`..`pe3`, synthesizes mode-4 read/write AGUs (`cyc: auto`), ping-pongs cross-pass values between low (`0x000`) and high (`0x400`) `base` halves, and emits balanced 2-pass pairs (`vmeLibStart()` .. `vmeLibFinishAsync()`).
+- Manual `Agu`, `Staging`, `.pe0`..`.pe7`, `pe[i]`, `.regs`, `.params` and `icn` are rejected in `pipeline` mode, and `.store` has no `.offsets` (`vmegc` targets the final `.slot` buffer and half automatically).
+
 ## 3.3 Body
 
 The body of a kernel (.kernel) describes what the VME computes and moves. It holds vmeg statements only, no C.
@@ -81,6 +103,8 @@ The body of a kernel (.kernel) describes what the VME computes and moves. It hol
 | `Staging name;` | declares a result kept in a pe | [Staging, routing and warnings](staging-routing.md) |
 | `Transfer name = { … };`, `Transfer(Words) name = { … };` | declares a DMAC transfer, basic or with the AGUs of the DMAC on | [Transfers](transfers.md) |
 | `.pe0 { … }` to `.pe3 { … }` (`.pe7` in `extended`), `pe[i] { … }` | describes a processing element | [Processing elements](pe.md) |
+| `.flow { .count = …; .slot = …; }` | describes the dataflow of a `pipeline` kernel | [3.2.4](#324-pipeline) |
+| `Slot name;`, `Slot name = …;` | declares a named intermediate in a `pipeline` kernel | [2.2](language.md#22-variables) |
 | `.load { … }`, `.store { … }` | moves data between the RAM and the scratchpad | [Transfers](transfers.md) |
 | `icn xpcr = …, skew = …;` | writes the interconnect registers | [3.4](#34-interconnect-registers) |
 | `.params { … }` | declares the parameters of the kernel | [3.3.4](#334-parameters) |
@@ -156,7 +180,7 @@ icn xpcr = 5, skew = 0x10;
 |---|---|---|
 | [3.1](#31-header) | `the kernel 'k' is already defined at file line N` | two kernels with the same name in the project |
 | [3.1](#31-header) | `kernel 'k' is never called, add a function marked with @kernel k config \| exec …` | no `@kernel` calls the kernel |
-| [3.2](#32-modes) | `unknown kernel option 'wrong' (direct, memory, extended)` | a mode other than `direct`, `memory` or `extended` |
+| [3.2](#32-modes) | `unknown kernel option 'wrong' (direct, memory, extended, pipeline)` | a mode other than `direct`, `memory`, `extended` or `pipeline` |
 | [3.2](#32-modes) | `duplicate kernel option 'direct'` | the same mode written twice |
 | [3.2](#32-modes) | `a kernel is either direct or memory, not both` | both modes |
 | [3.2](#32-modes) | `kernel 'k' needs the option direct or memory` | no mode |
