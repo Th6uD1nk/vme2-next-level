@@ -328,3 +328,28 @@ def place_in_pass(op, pes, in_pass):
   pe[unit] = placed
   in_pass[placed["id"]] = depth
   return True
+
+
+def try_place_with_delays(op, pes, in_pass, next_id):
+  saved_pes, saved_in, saved_next = [dict(pe) for pe in pes], dict(in_pass), next_id[0]
+  refs = op_refs(op)
+  chain = []
+  placed = dict(op)
+  if len(refs) == 2:
+    (k0, r0), (k1, r1) = refs
+    d0 = 0 if isinstance(r0, str) or r0[1] not in in_pass else in_pass[r0[1]]
+    d1 = 0 if isinstance(r1, str) or r1[1] not in in_pass else in_pass[r1[1]]
+    low_key, cur, low_d, high_d = (k0, r0, d0, d1) if d0 < d1 else (k1, r1, d1, d0)
+    for _ in range(high_d - low_d):
+      delay = {"id": next_id[0], "kind": "pass", "source": cur, "numbers": {}, "sat": None, "delay": True}
+      next_id[0] += 1
+      chain.append(delay)
+      cur = ("op_ref", delay["id"])
+    placed[low_key] = cur
+  chain.append(placed)
+  if all(place_in_pass(item, pes, in_pass) for item in chain):
+    return True
+  pes[:], next_id[0] = saved_pes, saved_next
+  in_pass.clear()
+  in_pass.update(saved_in)
+  return False
