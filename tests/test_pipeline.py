@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, evict_pass_ops, expand_flow, find_free_pe, flatten_flow, flow_operand, live_exports, lower_child_op, lower_flow_call, op_refs, place_in_pass, try_place_with_delays, unpack_compound, unpack_cond, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, evict_pass_ops, expand_flow, finalize_flow_pass, find_free_pe, flatten_flow, flow_operand, live_exports, lower_child_op, lower_flow_call, op_refs, place_in_pass, try_place_with_delays, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
 
@@ -339,6 +339,24 @@ class PipelineSchedulerTest(unittest.TestCase):
     evicted = evict_pass_ops(1, pes, ops_map)
     self.assertEqual(set(evicted), {1, 2})
     self.assertEqual(pes, [{"primary": op0, "secondary": None}, {"primary": op3, "secondary": None}])
+
+  def test_finalize_flow_pass(self):
+    op0 = {"id": 0, "kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None, "depth": 1}
+    op1 = {"id": 1, "kind": "sub", "front": "BASE_0", "back": "BASE_1", "numbers": {}, "sat": None, "depth": 1}
+    op2 = {"id": 2, "kind": "add", "front": ("op_ref", 0), "back": ("op_ref", 1), "numbers": {}, "sat": None}
+    ops_map = {0: op0, 1: op1, 2: op2}
+    pes, pend = [{"primary": dict(op0), "secondary": dict(op1)}], [2]
+    rec = finalize_flow_pass(pes, 2, pend, ops_map, 0)
+    self.assertEqual((len(pes), pend, pes[0]["output_unit"], pes[1]["output_unit"]), (2, [2], "primary", "primary"))
+    self.assertEqual((rec["exports"], rec["imports"], rec["inputs"]), ([0, 1], [], ["BASE_0", "BASE_1", "TOP_0", "TOP_1"]))
+    op3 = {"id": 3, "kind": "add", "front": ("op_ref", 99), "back": "TOP_2", "numbers": {}, "sat": None, "depth": 1}
+    op4 = {"id": 4, "kind": "add_cst", "source": "TOP_3", "numbers": {"c": 1}, "sat": None, "depth": 1}
+    op5 = {"id": 5, "kind": "add_cst", "source": "BASE_2", "numbers": {"c": 2}, "sat": None, "depth": 1}
+    full = [{"primary": dict(op0), "secondary": dict(op1)}, {"primary": dict(op3), "secondary": None}, {"primary": dict(op4), "secondary": None}, {"primary": dict(op5), "secondary": None}]
+    pend2 = [2]
+    rec2 = finalize_flow_pass(full, 5, pend2, {**ops_map, 3: op3, 4: op4, 5: op5}, 1)
+    self.assertEqual((pend2, full[0]["secondary"], rec2["exports"], rec2["imports"]), ([1, 2], None, [0, 5], [99]))
+    self.assertEqual((full[3]["primary"]["pass"], full[3]["primary"]["pe"], full[3]["primary"]["unit"]), (1, 3, "primary"))
 
 
 if __name__ == "__main__":
