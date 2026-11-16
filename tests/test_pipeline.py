@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import expand_flow
+from vmeg.pipeline import build_table_op, emit_pipeline_op, expand_flow, flow_operand
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 
 def parse_kernel(source):
@@ -126,6 +126,31 @@ class PipelineFlowExpansionTest(unittest.TestCase):
     for source, expected in cases:
       with self.subTest(source=source), self.assertRaisesRegex(ValueError, re.escape(expected)):
         expand_kernel(source)
+
+
+class PipelineMicroOpBuilderTest(unittest.TestCase):
+  def test_emit_flow_operand_and_build_table_op(self):
+    ops, slot_refs, seen = [], {0: ("op_ref", 7)}, []
+    def stub_lower(expr, cur_ops, cur_slots, compat):
+      seen.append(expr)
+      return ("op_ref", 9)
+    self.assertEqual(emit_pipeline_op(ops, {"kind": "pass", "source": "TOP_0", "numbers": {}, "sat": None}), ("op_ref", 0))
+    self.assertEqual(ops[0]["id"], 0)
+    self.assertEqual(flow_operand(("op_ref", 2), ops, slot_refs, None, stub_lower), ("op_ref", 2))
+    self.assertEqual(flow_operand(("pipe_ref", 0), ops, slot_refs, None, stub_lower), ("op_ref", 7))
+    self.assertEqual(flow_operand(("name", "base2"), ops, slot_refs, None, stub_lower), "BASE_2")
+    self.assertEqual(flow_operand(("num", 99), ops, slot_refs, None, stub_lower), ("op_ref", 1))
+    self.assertEqual(ops[1], {"id": 1, "kind": "cst", "source": None, "numbers": {"c": 99}, "sat": None})
+    self.assertEqual(flow_operand(("bin", "+", ("name", "top0"), ("num", 1)), ops, slot_refs, None, stub_lower), ("op_ref", 9))
+    self.assertEqual(len(seen), 1)
+    ref_shf = build_table_op("add_shf", {"a": ("pipe_ref", 0), "b": ("name", "top1"), "n": ("num", 3)}, ops, slot_refs, None, stub_lower)
+    self.assertEqual((ref_shf, ops[2]["back"], ops[2]["front"], ops[2]["numbers"]), (("op_ref", 2), ("op_ref", 7), "TOP_1", {"n": 3}))
+    self.assertEqual(ops[build_table_op("bak_shr", {"x": ("name", "top0"), "n": ("num", 4)}, ops, slot_refs, None, stub_lower)[1]]["shift"], 4)
+    self.assertEqual(ops[build_table_op("cst", {"c": ("num", 12)}, ops, slot_refs, None, stub_lower)[1]]["source"], None)
+    with self.assertRaisesRegex(ValueError, "clamp low must be a number"):
+      build_table_op("clamp", {"x": ("name", "top0"), "low": ("name", "top1"), "high": ("num", 5)}, ops, slot_refs, None, stub_lower, label="clamp")
+    with self.assertRaisesRegex(ValueError, "the shift must be 0 to 63"):
+      build_table_op("bak_shr", {"x": ("name", "top0"), "n": ("num", 64)}, ops, slot_refs, None, stub_lower)
 
 
 if __name__ == "__main__":
