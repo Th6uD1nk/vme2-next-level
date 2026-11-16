@@ -1,9 +1,9 @@
 from vmeg.expr import fold
 from vmeg.kernel import base_name, check_arguments, constant, emit_statement, resolve_var, source_ref, unrolled
-from vmeg.operations import FUNCTIONS, OPERATIONS
+from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
 from vmeg.parser import BUFFER_NAME, buffer_ref
 from vmeg.pattern import rebuild
-from vmeg.selector import OPERATION_NODES
+from vmeg.selector import OPERATION_NODES, choose_opcode
 
 PIPELINE_FORBIDDEN_KINDS = (("agus", "Agu"), ("stagings", "Staging"), ("transfers", "Transfer"))
 
@@ -260,3 +260,39 @@ def lower_flow_call(expr, ops, slot_refs, compat, lower):
     bound = {arg: val for (arg, _), val in zip(OPERATIONS[kind]["arguments"], args)}
     return build_table_op(kind, bound, ops, slot_refs, compat, lower, label=name)
   raise ValueError(f"unknown operation '{name}' ({', '.join(['sat', 'round', *FUNCTIONS])})")
+
+
+def lower_flow_expr(expr, ops, slot_refs, compat):
+  kind = expr[0]
+  if kind in ("op_ref", "pipe_ref", "name", "num"):
+    ref = flow_operand(expr, ops, slot_refs, compat, lower_flow_expr)
+    return emit_pipeline_op(ops, {"kind": "pass", "source": ref, "numbers": {}, "sat": None}) if kind == "name" else ref
+  if kind == "call":
+    return lower_flow_call(expr, ops, slot_refs, compat, lower_flow_expr)
+  if kind == "bin":
+    shifted = compile_shift_op(expr, ops, slot_refs, compat, lower_flow_expr) if expr[1] in (">>", "<<", ">>>", "<<<") else None
+    if shifted is not None:
+      return shifted
+    if expr[1] not in OPERATORS:
+      raise ValueError(f"unsupported operator '{expr[1]}' ({', '.join(OPERATORS)})")
+  found = choose_opcode(expr, compat)
+  if found is None and kind == "neg":
+    return lower_flow_expr(("bin", "-", ("num", 0), expr[1]), ops, slot_refs, compat)
+  if found is None:
+    found = choose_opcode(unpack_compound(expr, ops, slot_refs, compat, lower_flow_expr), compat)
+  if found is None:
+    raise ValueError("no opcode covers this expression")
+  return build_table_op(found[0], found[1], ops, slot_refs, compat, lower_flow_expr)
+
+
+def flatten_flow(flow, compat=None):
+  ops, slot_refs = [], {}
+  for step in flow["steps"]:
+    start = len(ops)
+    ref = lower_flow_expr(step["expr"], ops, slot_refs, compat)
+    for op in ops[start:]:
+      op.update(line=step["line"], step=step["id"])
+    if step["target"] is not None:
+      ops[ref[1]].setdefault("target", step["target"])
+    slot_refs[step["id"]] = ref
+  return {"count": flow["count"], "inputs": flow["inputs"], "operations": ops, "output": slot_refs[flow["output"]][1], "slot_outputs": slot_refs}
