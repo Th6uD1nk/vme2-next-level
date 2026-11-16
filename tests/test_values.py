@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import body_tokens, find_blocks
-from vmeg.kernel import generate, input_agu_count, new_state, parameter_names, replace_names, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.kernel import generate, input_agu_count, new_state, parameter_names, replace_names, resolve_cross_stagings, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
 from vmeg.parser import Parser, parse_body
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
@@ -712,4 +712,41 @@ class ExtendedStagingTest(unittest.TestCase):
     ve = empty["stagings"]["s"]
     with self.assertRaisesRegex(ValueError, "has no input AGU"):
       input_agu_count(empty["passes"][0], ve["pe"] & 3, ve["unit"], "s", ve["line"])
+
+  def test_resolve_cross_stagings_synthesizes_swen_write_and_base(self):
+    _, state = self.run_extended(
+      "  Staging a, x, b;\n"
+      "  .pe0 { .top = { count: 4 }; a = top0; }\n"
+      "  .pe1 { .top = { count: 3 }; .base = { count: 7 }; x = top1; b = x + base1; }\n"
+      "  .pe4 { .top = { count: 4 }; .spad = top4 + a; }\n"
+      "  .pe5 { .top = { count: 7 }; .spad = top5 + b; }\n"
+    )
+    resolve_cross_stagings(state)
+    p1, p2 = state["passes"]
+    self.assertEqual(p1["secondary"], {1})
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(6));", p1["lines"])
+    self.assertIn("vme_pe0(agu_write(COUNT), VME_DEF_STEP, 4);", p1["lines"])
+    self.assertIn("vme_pe1(agu_write(MODE), VME_DEF_MODE, vme_cyc(9));", p1["lines"])
+    self.assertIn("vme_pe1(agu_write(COUNT), VME_DEF_STEP, 7);", p1["lines"])
+    self.assertIn("vme_pe0(agu_base(MODE), VME_DEF_MODE);", p2["lines"])
+    self.assertIn("vme_pe1(agu_base(COUNT), VME_DEF_STEP, 7);", p2["lines"])
+    self.assertEqual(p2["bank_halves"], {("base", 0): (0,), ("base", 1): (0,)})
+
+  def test_resolve_cross_stagings_honors_explicit_agus_and_rejects_two_exports_per_pe(self):
+    _, explicit = self.run_extended(
+      "  Staging a;\n"
+      "  .pe0 { .top = { count: 4 }; .write = { count: 5, cyc: 4 }; a = top0; }\n"
+      "  .pe4 { .base = { count: 5 }; .spad = a; }\n"
+    )
+    resolve_cross_stagings(explicit)
+    self.assertEqual(explicit["passes"][0]["depths"][0], 1)
+    self.assertEqual(sum("agu_write(MODE)" in line for line in explicit["passes"][0]["lines"]), 1)
+    self.assertEqual(sum("agu_base(MODE)" in line for line in explicit["passes"][1]["lines"]), 1)
+    _, dup = self.run_extended(
+      "  Staging a, b;\n"
+      "  .pe0 { .top = { count: 4 }; a = top0; b = top0; }\n"
+      "  .pe4 { .spad = a + b; }\n"
+    )
+    with self.assertRaisesRegex(ValueError, "pe0 can only export one Staging"):
+      resolve_cross_stagings(dup)
 
