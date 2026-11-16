@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, flatten_flow, flow_operand, lower_child_op, lower_flow_call, unpack_compound, unpack_cond, unwrap_round
+from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, expand_flow, find_free_pe, flatten_flow, flow_operand, lower_child_op, lower_flow_call, op_refs, place_in_pass, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
 
@@ -286,6 +286,29 @@ class PipelineMicroOpBuilderTest(unittest.TestCase):
     ):
       with self.subTest(expr=expr), self.assertRaisesRegex(ValueError, msg):
         flatten_flow(expand_kernel(f".kernel p pipeline {{ .flow {{ .count = 1; .slot = {expr}; }} }}\n"))
+
+
+class PipelineSchedulerTest(unittest.TestCase):
+  def test_op_refs_and_place_in_pass(self):
+    cst = {"id": 0, "kind": "cst", "source": None, "numbers": {"c": 1}, "sat": None}
+    add = {"id": 1, "kind": "add", "front": "TOP_0", "back": "TOP_1", "numbers": {}, "sat": None}
+    mul = {"id": 2, "kind": "mul_cst", "source": ("op_ref", 1), "numbers": {"c": 3}, "sat": None}
+    sec = {"id": 3, "kind": "add_cst", "source": ("op_ref", 2), "numbers": {"c": 1}, "sat": None}
+    ind = {"id": 4, "kind": "and_cst", "source": "BASE_0", "numbers": {"c": 255}, "sat": None}
+    self.assertEqual((op_refs(cst), op_refs(add), op_refs(sec)), ([], [("front", "TOP_0"), ("back", "TOP_1")], [("source", ("op_ref", 2))]))
+    pes, in_pass = [], {}
+    for op in (add, mul, sec, ind):
+      self.assertTrue(place_in_pass(op, pes, in_pass))
+    self.assertEqual((len(pes), pes[0]["primary"]["id"], pes[0]["secondary"]["id"], pes[1]["primary"]["id"], pes[1]["secondary"]["id"]), (2, 1, 4, 2, 3))
+    self.assertEqual((in_pass[1], in_pass[2], in_pass[3], in_pass[4]), (1, 2, 3, 1))
+    self.assertTrue(place_in_pass({"id": 5, "kind": "mul_cst", "source": "TOP_0", "numbers": {"c": 2}, "sat": None}, pes, in_pass))
+    self.assertTrue(place_in_pass({"id": 6, "kind": "mul_cst", "source": "TOP_1", "numbers": {"c": 2}, "sat": None}, pes, in_pass))
+    self.assertFalse(place_in_pass({"id": 7, "kind": "mul_cst", "source": "TOP_2", "numbers": {"c": 2}, "sat": None}, pes, in_pass))
+    self.assertTrue(place_in_pass({"id": 8, "kind": "add_cst", "source": ("op_ref", 5), "numbers": {"c": 1}, "sat": None}, pes, in_pass))
+    self.assertEqual(pes[2]["secondary"]["id"], 8)
+    self.assertTrue(place_in_pass({"id": 9, "kind": "add_cst", "source": ("op_ref", 6), "numbers": {"c": 1}, "sat": None}, pes, in_pass))
+    self.assertIsNone(find_free_pe(cst, pes))
+    self.assertFalse(place_in_pass({"id": 10, "kind": "add_cst", "source": "TOP_0", "numbers": {"c": 1}, "sat": None}, pes, in_pass))
 
 
 if __name__ == "__main__":
