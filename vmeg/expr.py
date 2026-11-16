@@ -120,6 +120,14 @@ def substitute(statement, env):
     return ("stageset", substitute_target(statement[1], env), substitute_decl_name(statement[2], env), fold(statement[3], env), line)
   if kind == "stagingdecl":
     return ("stagingdecl", substitute_decl_name(statement[1], env), line)
+  if kind == "slotdecl":
+    return ("slotdecl", substitute_decl_name(statement[1], env), line)
+  if kind == "slotset":
+    return ("slotset", substitute_decl_name(statement[1], env), fold(statement[2], env), line)
+  if kind in ("flowcount", "flowslot"):
+    return (kind, fold(statement[1], env), line)
+  if kind == "flow":
+    return ("flow", [substitute(inner, env) for inner in statement[1]], line)
   if kind == "paramsdef":
     return statement
   if kind in ("transferdecl", "declaredtransfer"):

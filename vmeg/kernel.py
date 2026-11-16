@@ -974,12 +974,16 @@ def emit_statement(statement, env, lines, state):
     for inner in sorted(statement[1], key=lambda item: item[0] != "remap"):
       emit(inner, env, lines, state)
   elif kind == "for":
-    if len(statement) == 6:
-      loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), ("num", 1), statement[4], statement[5])
-    else:
-      loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), fold(statement[4], env), statement[5], statement[6])
-    for inner in unroll(loop):
+    for inner in unrolled(statement, env):
       emit(inner, env, lines, state)
+
+
+def unrolled(statement, env):
+  if len(statement) == 6:
+    loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), ("num", 1), statement[4], statement[5])
+  else:
+    loop = ("for", statement[1], fold(statement[2], env), fold(statement[3], env), fold(statement[4], env), statement[5], statement[6])
+  return unroll(loop)
 
 
 def new_pass_state(pe_offset=0, halves=(0, 1)):
