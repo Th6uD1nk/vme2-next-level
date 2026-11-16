@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import body_tokens, find_blocks
-from vmeg.kernel import finalize_pass, generate, input_agu_count, new_state, parameter_names, pass_active, replace_names, resolve_cross_stagings, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.kernel import finalize_pass, generate, input_agu_count, new_state, parameter_names, pass_active, reg_key, register_delta, replace_names, resolve_cross_stagings, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
 from vmeg.parser import Parser, parse_body
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
@@ -776,4 +776,31 @@ class ExtendedStagingTest(unittest.TestCase):
     messages = [msg for _, msg in unbound["warnings"]]
     self.assertIn("base7 is read but no .base is bound in pe7 of this kernel", messages)
     self.assertIn("pe6 has an operation but no .write is bound in this kernel", messages)
+
+  def test_reg_key_and_register_delta_reset_absent_pass1_and_diff_swen(self):
+    self.assertEqual(reg_key("vme_pe0(fu_reg(PRIMARY, K), 5);"), "vme_pe0(fu_reg(PRIMARY, K)")
+    self.assertEqual(reg_key("vme_pe0(agu_top(MODE), VME_DEF_MODE);"), "vme_pe0(agu_top(MODE)")
+    _, state = self.run_extended(
+      "  .pe0 { .top = { count: 4 }; .base = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = clamp(top0 + base0, 0, 9); }\n"
+      "  .pe1 { .top = { count: 4 }; .spad = top1; }\n"
+      "  .pe4 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = top4; }\n"
+    )
+    p1, p2 = state["passes"]
+    finalize_pass(state, p1)
+    finalize_pass(state, p2)
+    delta = register_delta(p1, p2)
+    self.assertIn("vme_pe0(agu_base(MODE), 0);", delta)
+    self.assertIn("vme_pe0(vme_fu(SECONDARY), 0);", delta)
+    self.assertIn("vme_pe0(fu_reg(SECONDARY, A), 0);", delta)
+    self.assertIn("vme_pe1(agu_top(MODE), 0);", delta)
+    self.assertIn("vme_pe1(vme_fu(PRIMARY), 0);", delta)
+    self.assertNotIn("vme_pe0(agu_top(COUNT), VME_DEF_STEP, 4);", delta)
+    self.assertIn("vme_icn(SWEN, fu_on(0b0000));", delta)
+    _, same_swen = self.run_extended(
+      "  .pe0 { .top = { count: 4 }; .spad = clamp(top0 + top0, 0, 9); }\n"
+      "  .pe4 { .top = { count: 4 }; .spad = clamp(top4 + top4, 0, 9); }\n"
+    )
+    finalize_pass(same_swen, same_swen["passes"][0])
+    finalize_pass(same_swen, same_swen["passes"][1])
+    self.assertFalse(any("SWEN" in line for line in register_delta(same_swen["passes"][0], same_swen["passes"][1])))
 
