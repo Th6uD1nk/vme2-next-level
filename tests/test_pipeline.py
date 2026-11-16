@@ -3,12 +3,21 @@ import os, re, sys, unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
+from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
+from vmeg.pipeline import expand_flow
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 
 def parse_kernel(source):
   block = next(item for item in find_blocks(source) if item[0] == "kernel")
   return kernel_mode(source, block), kernel_statements(source, block, {})
+
+def expand_kernel(source):
+  _, statements = parse_kernel(source)
+  state, env = new_state(pipeline=True), new_env()
+  for stmt in statements:
+    emit_statement(stmt, env, [], state)
+  return expand_flow(state, env)
 
 class PipelineParserTest(unittest.TestCase):
   def test_pipeline_mode_and_flow_parsing(self):
@@ -68,6 +77,24 @@ class PipelineRegistryAndListingTest(unittest.TestCase):
     self.assertIn("kernel p (pipeline,", listed)
     self.assertIn("BASE_0  16 words  to out", listed)
     self.assertNotIn("<--", listed)
+
+
+class PipelineFlowExpansionTest(unittest.TestCase):
+  def test_expand_flow_unrolls_for_and_threads_slots_and_inputs(self):
+    src = (
+      "volatile Buffer buf[16];\n.kernel p pipeline {\n  Int base_k = 2;\n  Slot pre;\n"
+      "  Transfer t = { memory: buf, count: 7 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; .base2 = 0; } }\n"
+      "  .flow {\n    .count = base_k + 5;\n    Slot arr[2], tag = top0 + base_k;\n"
+      "    for i in 0..1 { arr[i] = tag + i; }\n    pre = arr[0] + arr[1];\n"
+      "    .slot = pre * base2;\n    .slot = slot + arr[1];\n  }\n}\n"
+    )
+    flow = expand_kernel(src)
+    self.assertEqual((flow["count"], flow["inputs"], flow["output"]), (7, ["BASE_2", "TOP_0"], 5))
+    self.assertEqual([step["target"] for step in flow["steps"]], ["tag", "arr[0]", "arr[1]", "pre", None, None])
+    self.assertEqual(flow["steps"][0]["expr"], ("bin", "+", ("name", "top0"), ("num", 2)))
+    self.assertEqual(flow["steps"][5]["expr"], ("bin", "+", ("pipe_ref", 4), ("pipe_ref", 2)))
+    self.assertEqual(expand_kernel(".kernel p pipeline { .flow { .count = 0; .slot = top0; } }\n")["count"], 0)
+    self.assertEqual(expand_kernel(".kernel p pipeline { .flow { .count = 1023; .slot = top3; } }\n")["count"], 1023)
 
 
 if __name__ == "__main__":
