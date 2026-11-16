@@ -1063,5 +1063,49 @@ class WriteRoutingAndErrorTest(unittest.TestCase):
       self.run_write_case(mode=0x80000000)
 
 
+EXTENDED_PROGRAM = (
+  "volatile Buffer src0[4] = { 10, 20, 30, 40 };\n"
+  "volatile Buffer srcb[4] = { 1, 2, 3, 4 };\n"
+  "volatile Buffer hi4[4] = { 100, 200, 300, 400 };\n"
+  "volatile Buffer keep[4] = { 77, 77, 77, 77 };\n"
+  ".kernel k_ext extended {\n"
+  "  Transfer t0 = { memory: src0, count: 3 }, tb = { memory: srcb, count: 3 }, th = { memory: hi4, count: 3 }, tk = { memory: keep, count: 3 };\n"
+  "  .load { .transfer = t0; .scope = global; .offsets { .top0 = 0; .top1 = 0; } }\n"
+  "  .load { .transfer = tb; .scope = global; .offsets { .base0 = 0; } }\n"
+  "  .load { .transfer = th; .scope = global; .offsets { .top4 = 0; } }\n"
+  "  .load { .transfer = tk; .scope = global; .offsets { .base4 = 0; .base5 = 0; } }\n"
+  "  Staging tmp, s;\n"
+  "  .pe0 { .top = { count: 3 }; .base = { count: 3 }; tmp = top0 + base0; s = tmp + 1; }\n"
+  "  .pe1 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad = top1 + 5; }\n"
+  "  .pe4 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad = top4 + s; }\n"
+  "}\n"
+  ".kernel k_single extended {\n"
+  "  Transfer th = { memory: hi4, count: 3 }, tk = { memory: keep, count: 3 };\n"
+  "  .load { .transfer = th; .scope = global; .offsets { .top5 = 0; } }\n"
+  "  .load { .transfer = tk; .scope = global; .offsets { .base1 = 0; } }\n"
+  "  .pe5 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad = top5 + 9; }\n"
+  "}\n"
+  "void meLibOnProcess(void) {\n"
+  "  @emulate \"ext\" {\n    @kernel k_ext config | exec { }\n  }\n"
+  "  @emulate \"single\" {\n    @kernel k_single config | exec { }\n  }\n"
+  "}\n"
+)
+
+
+class ExtendedKernelE2ETest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_two_pass_extended_chains_cross_staging_and_zeroes_pass1(self):
+    ext = run_emulation(EXTENDED_PROGRAM, "ext")
+    self.assertEqual([ext.scratchpad.read(BASE_OFFSET + 1024 + i) for i in range(4)], [112, 223, 334, 445])
+    self.assertEqual([ext.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [15, 25, 35, 45])
+    self.assertEqual([ext.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + 1024 + i) for i in range(4)], [77, 77, 77, 77])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_single_pass_extended_runs_pass2_without_touching_low_half(self):
+    single = run_emulation(EXTENDED_PROGRAM, "single")
+    self.assertEqual([single.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + 1024 + i) for i in range(4)], [109, 209, 309, 409])
+    self.assertEqual([single.scratchpad.read(BASE_OFFSET + BUFFER_WORDS + i) for i in range(4)], [77, 77, 77, 77])
+
+
 if __name__ == "__main__":
   unittest.main()
