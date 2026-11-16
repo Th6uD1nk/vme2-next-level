@@ -1,5 +1,5 @@
 from vmeg.expr import fold
-from vmeg.kernel import base_name, check_arguments, constant, emit_statement, generate_agu, resolve_var, source_ref, unrolled
+from vmeg.kernel import ROUTING_NAMES, base_name, check_arguments, constant, emit_statement, generate_agu, new_pass_state, new_state, place, resolve_idle_routing, resolve_var, source_ref, swen_mask, unrolled
 from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
 from vmeg.parser import BUFFER_NAME, Parser, buffer_ref, parse_expr
 from vmeg.pattern import rebuild
@@ -572,3 +572,31 @@ def pipeline_fullrange_write(exports_alloc):
       low.append((8 | pe) if half == 0 else (12 | pe))
       high.append(pe if bank == 0 else ((12 | pe) if half == 0 else (8 | pe)))
   return low + high
+
+
+def build_pipeline_pass(pass_rec, alloc, load_offsets, count, state=None, line=1):
+  root = new_state(pipeline=True) if state is None else state
+  ps = new_pass_state(0)
+  ps["bank_halves"] = {}
+  in_loc = {op["id"]: (op["pe"], op["unit"]) for op in pass_rec["operations"]}
+  for pe_rec in pass_rec["pes"]:
+    pe = pe_rec["pe"]
+    ops = [pipeline_physical_op(op, in_loc, alloc) for op in (pe_rec["primary"], pe_rec["secondary"]) if op is not None]
+    place(root, ps["lines"], pe, ops, ops[-1].get("line", line), ps)
+    if pe_rec["output_unit"] == "secondary":
+      ps["secondary"].add(pe)
+  emit_pipeline_agus(pass_rec, alloc, load_offsets, count, ps, line)
+  if pass_rec["extended_write"]:
+    ps["routing"]["write"] = pipeline_fullrange_write(pass_rec["exports_alloc"])
+    ps["routing_regs"].add("write")
+  else:
+    for pe, info in pass_rec["exports_alloc"].items():
+      ps["routing"]["write"][pe] = pe
+      ps["routing_bound"]["write"].add(pe)
+      ps["bank_halves"][("write", pe)] = (info["half"],)
+  resolve_idle_routing(ps)
+  for slot, nibbles in ps["routing"].items():
+    ps["lines"].append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):08x});")
+  if ps["secondary"]:
+    ps["lines"].append(f"vme_icn(SWEN, fu_on(0b{swen_mask(ps['secondary']):04b}));")
+  return ps
