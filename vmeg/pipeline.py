@@ -384,3 +384,34 @@ def evict_pass_ops(root_id, pes, ops_map):
       kept.append({"primary": pri, "secondary": sec})
   pes[:] = kept
   return [oid for oid in dead if oid in ops_map]
+
+
+def finalize_flow_pass(pes, out_id, pending, ops_map, pass_id):
+  while True:
+    exports = live_exports(pes, out_id, pending, ops_map)
+    conflict = next((pe for pe in pes if pe["secondary"] is not None and pe["primary"]["id"] in exports and pe["secondary"]["id"] in exports), None)
+    if conflict is None:
+      break
+    if len(pes) < 4:
+      pes.append({"primary": conflict["secondary"], "secondary": None})
+      conflict["secondary"] = None
+    else:
+      pending[:] = sorted([*pending, *evict_pass_ops(conflict["secondary"]["id"], pes, ops_map)])
+  exports = live_exports(pes, out_id, pending, ops_map)
+  pass_ops, pass_exports, imports, inputs = [], [], set(), set()
+  for idx, pe in enumerate(pes):
+    pe["pe"] = idx
+    pe["output_unit"] = next((u for u in ("primary", "secondary") if pe[u] is not None and pe[u]["id"] in exports), None)
+    pe["export"] = pe[pe["output_unit"]]["id"] if pe["output_unit"] else None
+    if pe["export"] is not None:
+      pass_exports.append(pe["export"])
+    for unit in ("primary", "secondary"):
+      op = pe[unit]
+      if op is not None:
+        op.update({"pass": pass_id, "pe": idx, "unit": unit})
+        pass_ops.append(op)
+  pass_ids = {op["id"] for op in pass_ops}
+  for op in pass_ops:
+    for _, ref in op_refs(op):
+      (imports if isinstance(ref, tuple) else inputs).add(ref[1] if isinstance(ref, tuple) else ref)
+  return {"pass_id": pass_id, "pes": pes, "operations": pass_ops, "exports": pass_exports, "imports": sorted(imports - pass_ids), "inputs": sorted(inputs)}
