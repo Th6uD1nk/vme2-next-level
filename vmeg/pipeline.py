@@ -1,7 +1,7 @@
 from vmeg.expr import fold
-from vmeg.kernel import base_name, emit_statement, resolve_var, source_ref, unrolled
+from vmeg.kernel import base_name, constant, emit_statement, resolve_var, source_ref, unrolled
 from vmeg.operations import OPERATIONS
-from vmeg.parser import BUFFER_NAME
+from vmeg.parser import BUFFER_NAME, buffer_ref
 from vmeg.pattern import rebuild
 
 PIPELINE_FORBIDDEN_KINDS = (("agus", "Agu"), ("stagings", "Staging"), ("transfers", "Transfer"))
@@ -113,3 +113,38 @@ def expand_flow(state, env):
   if ctx["count"] is None or ctx["cursor"] is None:
     raise ValueError(f"line {state['flow'][-1]}: .flow needs .count and at least one .slot assignment")
   return {"count": ctx["count"], "steps": ctx["steps"], "inputs": sorted(ctx["inputs"]), "output": ctx["cursor"][1]}
+
+
+def emit_pipeline_op(ops, operation):
+  ops.append(dict(operation, id=len(ops)))
+  return ("op_ref", len(ops) - 1)
+
+
+def flow_operand(expr, ops, slot_refs, compat, lower):
+  kind = expr[0]
+  if kind == "op_ref":
+    return expr
+  if kind == "pipe_ref":
+    return slot_refs[expr[1]]
+  if kind == "name":
+    return buffer_ref(expr, 3)
+  if kind == "num":
+    return emit_pipeline_op(ops, {"kind": "cst", "source": None, "numbers": {"c": expr[1]}, "sat": None})
+  return lower(expr, ops, slot_refs, compat)
+
+
+def build_table_op(kind, bound, ops, slot_refs, compat, lower, label=None):
+  spec = OPERATIONS[kind]
+  args = [bound[name] for name, _ in spec["arguments"]]
+  numbers = {arg: constant(val, f"{label or kind} {arg}") for (arg, role), val in zip(spec["arguments"], args) if role == "number"}
+  given = [val for (_, role), val in zip(spec["arguments"], args) if role != "number"]
+  if len(spec["operands"]) == 2:
+    operands = {slot: flow_operand(val, ops, slot_refs, compat, lower) for slot, val in zip(spec["operands"], given)}
+  else:
+    operands = {"source": flow_operand(given[0], ops, slot_refs, compat, lower) if given else None}
+  op = {"kind": kind, **operands, "numbers": numbers, "sat": None}
+  if "shift" in spec:
+    if not 0 <= numbers[spec["shift"]] <= 63:
+      raise ValueError("the shift must be 0 to 63")
+    op["shift"] = numbers[spec["shift"]]
+  return emit_pipeline_op(ops, op)
