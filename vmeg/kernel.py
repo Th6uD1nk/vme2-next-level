@@ -1269,6 +1269,28 @@ def finalize_pass(state, pass_state):
   return lines
 
 
+def reg_key(line):
+  depth = 0
+  for i, ch in enumerate(line):
+    if ch == "(":
+      depth += 1
+    elif ch == ")":
+      depth -= 1
+    elif ch == "," and depth == 1:
+      return line[:i]
+  return line
+
+
+def register_delta(pass1, pass2):
+  prev = {reg_key(line): line for line in pass1["lines"]}
+  next_keys = {reg_key(line) for line in pass2["lines"]}
+  out = [f"{key}, 0);" for key in prev if key.startswith("vme_pe") and key not in next_keys]
+  out.extend(line for line in pass2["lines"] if prev.get(reg_key(line)) != line)
+  if "vme_icn(SWEN" in prev and "vme_icn(SWEN" not in next_keys and swen_mask(pass1["secondary"]) != swen_mask(pass2["secondary"]):
+    out.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(pass2['secondary']):04b}));")
+  return out
+
+
 def run_statements(statements, macros=None, owner=None, compat=None, extended=False):
   env = new_env(macros)
   state = new_state(macros, owner, compat, extended)
