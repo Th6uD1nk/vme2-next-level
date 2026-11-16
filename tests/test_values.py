@@ -804,3 +804,36 @@ class ExtendedStagingTest(unittest.TestCase):
     finalize_pass(same_swen, same_swen["passes"][1])
     self.assertFalse(any("SWEN" in line for line in register_delta(same_swen["passes"][0], same_swen["passes"][1])))
 
+  def test_extended_kernel_chains_two_passes_with_cross_staging_and_zeroing(self):
+    text = (
+      ".kernel ext extended {\n"
+      "  Staging a, s;\n"
+      "  .pe0 { .top = { count: 4 }; a = top0 + 1; s = a + top0; }\n"
+      "  .pe1 { .top = { count: 3 }; .spad = top1; }\n"
+      "  .pe4 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = top4 + s; }\n"
+      "}\n@kernel ext config | exec\nvoid f() { }\n"
+    )
+    out = render(text, find_blocks(text), "t.vmeg.c")
+    p1, sep, p2 = out.partition("  _vmeLibFinish();\n  _vmeLibStart();\n")
+    self.assertTrue(sep)
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(9));", p1)
+    self.assertIn("vme_icn(SWEN, fu_on(0b1000));", p1)
+    self.assertIn("vme_pe1(agu_top(MODE), 0);", p2)
+    self.assertIn("vme_pe1(vme_fu(PRIMARY), 0);", p2)
+    self.assertIn("vme_pe0(vme_fu(SECONDARY), 0);", p2)
+    self.assertNotIn("vme_pe0(agu_top(COUNT), VME_DEF_STEP, 4);", p2)
+    self.assertIn("vme_pe0(agu_base(MODE), VME_DEF_MODE);", p2)
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x400, vme_cyc(6));", p2)
+    self.assertIn("vme_icn(AGU_BASE, 0x55545550);", p2)
+    self.assertIn("vme_icn(SWEN, fu_on(0b0000));", p2)
+
+  def test_single_pass_extended_and_explicit_write_auto_staging(self):
+    single = ".kernel s extended {\n  .pe4 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = top4; }\n}\n@kernel s config | exec\nvoid f() { }\n"
+    out_single = render(single, find_blocks(single), "s.vmeg.c")
+    self.assertNotIn("_vmeLibFinish", out_single)
+    self.assertIn("vme_pe0(agu_top(MODE), VME_DEF_MODE, 0x400);", out_single)
+    self.assertIn("vme_icn(AGU_TOP, 0x55505554);", out_single)
+    explicit = ".kernel e extended {\n  Staging s;\n  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; s = top0; }\n  .pe4 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = top4 + s; }\n}\n@kernel e config | exec\nvoid f() { }\n"
+    out_exp = render(explicit, find_blocks(explicit), "e.vmeg.c")
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(6));", out_exp.partition("_vmeLibFinish")[0])
+
