@@ -1300,10 +1300,7 @@ def run_statements(statements, macros=None, owner=None, compat=None, extended=Fa
     if state["active_pass"] is None and statement[0] in ("regs", "icn"):
       state["active_pass"] = next((p for s in statements[i + 1:] if (p := target_pass(s, env, limit)) is not None), 0)
     emit(statement, env, lines, state)
-  state.update(state["passes"][0])
-  resolve_write_routing(state)
-  resolve_write_offsets(lines, state)
-  resolve_auto(lines, state)
+  resolve_write_routing(state["passes"][0])
   return lines, state
 
 
@@ -1369,21 +1366,11 @@ def build_kernel(text, block, compat):
   statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit, options == ["extended"]))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
-  lines, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"])
-  for ref, line in state["reads"].items():
-    slot, number = ref.lower().split("_")
-    if state["routing"][slot][int(number)] == 4:
-      warn(state, line, f"{slot}{number} is read but no .{slot} is bound in pe{number} of this kernel")
-  for pe, line in state["outputs"].items():
-    target = state["write_targets"].get(pe)
-    buf = target["dest"] if target is not None and target["dest"] is not None else pe
-    if (pe not in state["writes"] and state["write_reg_seq"] < 0) or state["routing"]["write"][buf] == 4:
-      warn(state, line, f"pe{pe} has an operation but no .write is bound in this kernel")
-  resolve_idle_routing(state)
-  for slot, nibbles in state["routing"].items():
-    lines.append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):08x});")
-  if state["secondary"] or state["swen_raw"]:
-    lines.append(f"vme_icn(SWEN, fu_on(0b{swen_mask(state['secondary']):04b}));")
+  _, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"])
+  resolve_cross_stagings(state)
+  active = [pass_state for pass_state in state["passes"] if pass_active(pass_state)] or [state["passes"][0]]
+  finalized = [finalize_pass(state, pass_state) for pass_state in active]
+  lines = finalized[0] + ["_vmeLibFinish();", "_vmeLibStart();"] + register_delta(active[0], active[1]) if len(active) == 2 else finalized[0]
   return name, options, lines, state
 
 
