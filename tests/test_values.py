@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from vmeg.blocks import body_tokens, find_blocks
-from vmeg.kernel import generate, new_state, parameter_names, replace_names, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
+from vmeg.kernel import generate, input_agu_count, new_state, parameter_names, replace_names, resolve_extended_offsets, resolve_idle_routing, resolve_write_routing, run_statements, source_ref, staging_depths, staging_refs, transfer_names
 from vmeg.parser import Parser, parse_body
 from vmeg.registry import kernel_definitions
 from vmeg.transfers import TRANSFER_KINDS
@@ -683,4 +683,33 @@ class ExtendedStagingTest(unittest.TestCase):
     _, mixed = self.run_extended("  .pe4 { .top = { count: 4 }; .spad = top0 + top4; }\n")
     with self.assertRaisesRegex(ValueError, "pe4.top cannot read both top0 and top4"):
       resolve_extended_offsets(mixed["passes"][1])
+
+  def test_input_agu_count_picks_max_numeric_and_chains_stagings(self):
+    _, state = self.run_extended(
+      "  Agu a = { count: 9 };\n"
+      "  Staging x, y, z;\n"
+      "  .pe1 { .top = a; x = top1; }\n"
+      "  .pe0 { .top = { count: 4 }; y = top0 + x; }\n"
+      "  .pe2 { .top = { count: 3 }; .base = { count: 7 }; z = sat(top2 + base2, 8); }\n"
+    )
+    vy, vz = state["stagings"]["y"], state["stagings"]["z"]
+    self.assertEqual(input_agu_count(state["passes"][0], vy["pe"] & 3, vy["unit"], "y", vy["line"]), ("num", 9))
+    self.assertEqual(input_agu_count(state["passes"][0], vz["pe"] & 3, vz["unit"], "z", vz["line"]), ("num", 7))
+
+  def test_input_agu_count_handles_symbolic_and_missing_agus(self):
+    _, same = self.run_extended(
+      "  Agu t = { count: N };\n"
+      "  Staging s;\n"
+      "  .pe0 { .top = t; .base = { count: N }; s = top0 + base0; }\n"
+    )
+    vs = same["stagings"]["s"]
+    self.assertEqual(input_agu_count(same["passes"][0], vs["pe"] & 3, vs["unit"], "s", vs["line"]), ("name", "N"))
+    _, mixed = self.run_extended("  Staging s;\n  .pe0 { .top = { count: N }; .base = { count: 4 }; s = top0 + base0; }\n")
+    vm = mixed["stagings"]["s"]
+    with self.assertRaisesRegex(ValueError, "combines non-constant counts"):
+      input_agu_count(mixed["passes"][0], vm["pe"] & 3, vm["unit"], "s", vm["line"])
+    _, empty = self.run_extended("  Staging s;\n  .pe0 { s = top1; }\n")
+    ve = empty["stagings"]["s"]
+    with self.assertRaisesRegex(ValueError, "has no input AGU"):
+      input_agu_count(empty["passes"][0], ve["pe"] & 3, ve["unit"], "s", ve["line"])
 
