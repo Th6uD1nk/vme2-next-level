@@ -41,9 +41,28 @@ volatile Buffer out3[16] = { 0 };
   .store { .transfer = dst; .scope = global; }
 }
 
+.kernel pipeFourPass pipeline {
+  Transfer tc = { memory: in2, count: 15 }, td = { memory: in3, count: 15 };
+  Transfer dst = { memory: out1, count: 15 };
+  .load { .transfer = tc; .scope = global; .offsets { .top0 = 0; } }
+  .load { .transfer = td; .scope = global; .offsets { .top1 = 0; } }
+  .flow {
+    .count = 15;
+    Slot stage[2];
+    stage[0] = (top0 & 0x3f) + 3;
+    stage[1] = (top1 >> 1) + 5;
+    .slot = stage[0] + stage[1];
+    .slot = slot * 2;
+    for i in 0..19 { .slot = slot + 1; }
+    .slot = slot + stage[0];
+  }
+  .store { .transfer = dst; .scope = global; }
+}
+
 void meLibOnProcess(void) {
-  @kernel pipeSlotDag config | exec {
+  @kernel pipeSlotDag config | exec, pipeFourPass config | exec {
     meCoreMemcpy((void*)&vmeDebugBuffers[0], (void*)out0, 64);
+    meCoreMemcpy((void*)&vmeDebugBuffers[16], (void*)out1, 64);
   }
   while (1) meCounter += 1;
 }
