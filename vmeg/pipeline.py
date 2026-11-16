@@ -353,3 +353,34 @@ def try_place_with_delays(op, pes, in_pass, next_id):
   in_pass.clear()
   in_pass.update(saved_in)
   return False
+
+
+def live_exports(pes, out_id, pending, ops_map):
+  needed = {out_id}
+  for pid in pending:
+    needed.update(ref[1] for _, ref in op_refs(ops_map[pid]) if isinstance(ref, tuple))
+  return {op["id"] for pe in pes for op in (pe["primary"], pe["secondary"]) if op is not None and op["id"] in needed}
+
+
+def evict_pass_ops(root_id, pes, ops_map):
+  dead = {root_id}
+  changed = True
+  while changed:
+    changed = False
+    live = [op for pe in pes for op in (pe["primary"], pe["secondary"]) if op is not None and op["id"] not in dead]
+    used = {ref[1] for op in live for _, ref in op_refs(op) if isinstance(ref, tuple)}
+    for op in live:
+      deps = [ref[1] for _, ref in op_refs(op) if isinstance(ref, tuple)]
+      if any(d in dead for d in deps) or (op.get("delay") and op["id"] not in used):
+        dead.add(op["id"])
+        changed = True
+  kept = []
+  for pe in pes:
+    pri = None if pe["primary"]["id"] in dead else pe["primary"]
+    sec = None if pe["secondary"] is None or pe["secondary"]["id"] in dead else pe["secondary"]
+    if pri is None and sec is not None:
+      pri, sec = sec, None
+    if pri is not None:
+      kept.append({"primary": pri, "secondary": sec})
+  pes[:] = kept
+  return [oid for oid in dead if oid in ops_map]
