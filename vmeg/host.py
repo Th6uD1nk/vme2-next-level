@@ -340,6 +340,10 @@ def kernel_actions(name, actions, mode="direct", built=False, args="", memory=No
     load = [f"vmeLibLoadCustomContext({'(void*)' + memory if memory else name + 'Context'});"]
   else:
     load = [f"{name}({args});"]
+  if mode == "pipeline":
+    if set(actions) != {"config", "exec"}:
+      raise ValueError(f"{name}: pipeline kernels must be called with config | exec")
+    return load
   if "async" in actions:
     if "config" not in actions:
       return ["vmeLibTrigger();"]

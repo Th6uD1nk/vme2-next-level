@@ -551,6 +551,15 @@ def transfer_calls(name, transfer, targets):
   return [line for destination in transfer_destinations(targets) for line in (f"{name}({transfer['memory']}, {destination}{arguments});", wait_marker(name))]
 
 
+def retarget_store(record, bank, half):
+  transfer, shared, assignments = record.pop("_retarget")
+  function = record["function"]
+  targets = [("base", bank, ("num", 0x400 if half else 0))]
+  record["calls"] = shared_transfer_calls(function, shared, targets, transfer["type"], assignments) if shared else transfer_calls(function, transfer, targets) if function else None
+  record["lines"] = transfer_lines(transfer, targets, "store")
+  record["links"] = transfer_links(transfer, targets)
+
+
 def transfer_links(transfer, targets):
   words = transfer["kind"].words(transfer)
   return [("SPAD" if buffer is None else f"{buffer.upper()}_{slot}", words, offset_text(offset), transfer["memory"], transfer["kind"].extended) for buffer, slot, offset in targets or [(None, 0, ("num", 0))]]
@@ -867,6 +876,8 @@ def emit_statement(statement, env, lines, state):
     definition = shared_transfer_function(transfer["type"], kind) if shared else transfer_function(function, transfer, kind) if function else None
     calls = shared_transfer_calls(function, shared, targets, transfer["type"], assignments) if shared else transfer_calls(function, transfer, targets) if function else None
     record = {"function": function, "definition": definition, "calls": calls, "kind": kind, "scope": items.get("scope", ("name", "local"))[1], "memory": transfer["memory"], "line": statement[-1], "lines": transfer_lines(transfer, targets, kind), "links": transfer_links(transfer, targets), "auto_store": auto_store}
+    if auto_store:
+      record["_retarget"] = (transfer, shared, assignments)
     state[kind + "s"].append(record)
     state["sequence"].append(record)
   elif kind in ("transferdecl", "declaredtransfer"):
@@ -1318,6 +1329,13 @@ def run_statements(statements, macros=None, owner=None, compat=None, extended=Fa
     if state["active_pass"] is None and statement[0] in ("regs", "icn"):
       state["active_pass"] = next((p for s in statements[i + 1:] if (p := target_pass(s, env, limit)) is not None), 0)
     emit(statement, env, lines, state)
+  if pipeline and state["flow"] is not None:
+    from vmeg.pipeline import compile_pipeline
+    lines, (out_bank, out_half) = compile_pipeline(state, env)
+    for store in state["stores"]:
+      if store.get("auto_store"):
+        retarget_store(store, out_bank, out_half)
+    return lines, state
   resolve_write_routing(state["passes"][0])
   return lines, state
 
@@ -1384,7 +1402,11 @@ def build_kernel(text, block, compat):
   statements = declared_statements(text, start) + parse_body(Parser(text, toks, limit, options == ["extended"], options == ["pipeline"]))
   if not options:
     raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: kernel '{name}' needs the option direct or memory")
-  _, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"], options == ["pipeline"])
+  lines, state = run_statements(statements, known_macros(text, start), name, compat, options == ["extended"], options == ["pipeline"])
+  if "pipeline" in options:
+    if state["flow"] is None:
+      raise ValueError(f"line {text.count(chr(10), 0, start) + 1}: pipeline kernel '{name}' needs a .flow block")
+    return name, options, lines, state
   resolve_cross_stagings(state)
   active = [pass_state for pass_state in state["passes"] if pass_active(pass_state)] or [state["passes"][0]]
   finalized = [finalize_pass(state, pass_state) for pass_state in active]
@@ -1469,5 +1491,6 @@ def generate(text, block, warnings=None, compat=None):
     build = f"void {name}Build(void* vmegMemory{', ' + signature if signature else ''}) {{\n" + "".join(f"  {line}\n" for line in head + lines + tail) + "}\n"
     keep = f"void* {name}({signature or 'void* param'}) {{\n  static u32 vmegContext[VME_CONTEXT_WORD_COUNT] __attribute__((aligned(64)));\n  {name}Build(vmegContext{', ' + names if names else ''});\n  return vmegContext;\n}}\n"
     return build + keep + f"void* {name}Context;"
-  body = "".join(f"  {line}\n" for line in ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"] + lines)
+  prelude = [] if "pipeline" in options else ["volatile u32 VME_BASE_ADDR = VME_DATAPATH_BASE;"]
+  body = "".join(f"  {line}\n" for line in prelude + lines)
   return f"void {name}({signature}) {{\n{body}}}"
