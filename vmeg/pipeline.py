@@ -1,5 +1,5 @@
 from vmeg.expr import fold
-from vmeg.kernel import base_name, emit_statement, resolve_var, source_ref
+from vmeg.kernel import base_name, emit_statement, resolve_var, source_ref, unrolled
 from vmeg.operations import OPERATIONS
 from vmeg.parser import BUFFER_NAME
 from vmeg.pattern import rebuild
@@ -97,3 +97,19 @@ def apply_flow_statement(stmt, ctx, state):
     state["slots"][key] = flow_step(key, stmt[2], ctx, state, line)
   elif kind == "flowslot":
     ctx["cursor"] = flow_step(None, stmt[1], ctx, state, line)
+
+
+def expand_flow(state, env):
+  if state["flow"] is None:
+    raise ValueError("pipeline kernel needs a .flow block")
+  ctx = {"count": None, "cursor": None, "steps": [], "inputs": set(), "env": dict(env)}
+  queue = list(state["flow"][1])
+  while queue:
+    stmt = queue.pop(0)
+    if stmt[0] == "for":
+      queue[:0] = unrolled(stmt, ctx["env"])
+      continue
+    apply_flow_statement(stmt, ctx, state)
+  if ctx["count"] is None or ctx["cursor"] is None:
+    raise ValueError(f"line {state['flow'][-1]}: .flow needs .count and at least one .slot assignment")
+  return {"count": ctx["count"], "steps": ctx["steps"], "inputs": sorted(ctx["inputs"]), "output": ctx["cursor"][1]}
