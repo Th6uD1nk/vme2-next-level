@@ -27,6 +27,7 @@ An attribute is a named member of a kernel. It starts with a dot. Its content is
 |---|---|---|
 | `.kernel name mode { }` | a kernel | [The kernel](kernel.md) |
 | `.pe0 { }` to `.pe3 { }` (`.pe7` in `extended`) | a processing element | [Processing elements](pe.md) |
+| `.flow { }` | the operations of a `pipeline` kernel (`.count`, `.slot`) | [3.2.4](kernel.md#324-pipeline) |
 | `.load { }`, `.store { }` | a DMAC transfer | [Transfers](transfers.md) |
 | `.offsets { }` | the scratchpad offsets of a transfer | [Transfers](transfers.md) |
 
@@ -43,12 +44,13 @@ The member of an attribute can also be written after it: `.pe0.top = t;` is the 
 
 ## 2.2 Variables
 
-A variable has a type and starts with no dot. `Agu`, `Transfer` and `Int` are declared with `=`; `Staging` has no initializer. The fields of an initializer are separated from their value with `:`.
+A variable has a type and starts with no dot. `Agu`, `Transfer` and `Int` are declared with `=`; `Staging` has no initializer; `Slot` (in `pipeline` kernels) can be declared with or without `=`. The fields of an initializer are separated from their value with `:`.
 
 | Type | Declares | Example |
 |---|---|---|
 | `Agu` | an address generator | `Agu t = { count: 15 };` |
 | `Staging` | a result kept in the pe | `Staging s;` |
+| `Slot` | a named result in a `pipeline` kernel | `Slot tap = top0 + 1;` |
 | `Transfer` | a DMAC transfer | `Transfer in = { memory: a, count: 15 };` |
 | `Int` | a number known at compile time | `Int n = 16 - 1;` |
 
@@ -75,7 +77,7 @@ Int n = 1, m = n + 1;
 
 ### 2.2.2 Names
 
-`Agu`, `Staging`, `Transfer` and `Int` share one set of names: a name is declared once, whatever its type. A variable is declared before the statement that uses it, in the kernel or in the block where it is used.
+`Agu`, `Staging`, `Slot`, `Transfer` and `Int` share one set of names: a name is declared once, whatever its type. A variable is declared before the statement that uses it, in the kernel or in the block where it is used. `Slot` variables can be declared in the body of a `pipeline` kernel or inside its `.flow` block (`Slot s;` then `s = …;`, or `Slot s = …;`), and each `Slot` (or `Slot` array element `s[i]`) is set once before it is read.
 
 ### 2.2.3 The @declare block
 
@@ -125,7 +127,7 @@ Transfer in[2] = { { memory: bufA, count: 7 }, { memory: bufB, count: 15 } };
 
 **Rules:**
 
-- `Staging` arrays are declared with no initializer (`Staging s[4];`).
+- `Staging` and `Slot` arrays are declared with no initializer (`Staging s[4];`, `Slot stage[4];`).
 - `Int`, `Agu` and `Transfer` arrays can be initialized at declaration with a comma-separated list enclosed in braces `{ ... }`.
 - An array can also be declared without initializers and initialized element by element (`a[0] = 10;`, `t[0] = { count: 15 };`, `in[0] = { memory: bufA, count: 7 };`).
 - An initializer list cannot contain more items than the declared size `N` ([2.9](#29-errors)).
@@ -141,7 +143,7 @@ An access by index starts with no dot (`pe[p]`, `top[t]`, `base[b]`, or an eleme
 | `pe[1].top = t;` | `.pe1.top = t;` |
 | `top[2] = 8;` in a `.offsets` | `.top2 = 8;` (`0` to `3`, or `0` to `7` in `extended`) |
 | `.spad[2] = top0 + 1;` | redirect write to `base2` (`0` to `3`) and add `2 * 2048` to write `offset` |
-| `s[p]` | element `p` of Staging array `s` |
+| `s[p]` | element `p` of Staging or Slot array `s` |
 | `a[p]` | element `p` of Int array `a` |
 | `t[p]` | element `p` of Agu array `t` |
 | `in[p]` | element `p` of Transfer array `in` |

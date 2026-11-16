@@ -39,9 +39,9 @@ The body of a kernel is the same across `direct`, `memory` and `extended` (excep
 
 | | `direct` | `memory` | `extended` | `pipeline` |
 |---|---|---|---|---|
-| The registers are written | in the VME | in a context in RAM, which is then sent to the VME | in the VME across up to two chained passes | in the VME across 1 to N passes in balanced 2-pass pairs |
+| The registers are written | in the VME | in a context in RAM, which is then sent to the VME | in the VME across up to two passes | in the VME across as many passes as needed |
 | The VME gets them | when the kernel is called with `config` | when the context is sent, by `config` after `build` | when called with `config`, chaining Pass 1 and Pass 2 automatically | when called with `config \| exec`, running all passes automatically |
-| A register that the kernel does not write | keeps its value | is 0: a loaded context replaces all the registers | keeps its value, while Pass 1 registers unused in Pass 2 are reset to 0 between passes | is reset to 0 between passes when unused in the next pass |
+| A register that the kernel does not write | keeps its value | is 0: a loaded context replaces all the registers | keeps its value, while Pass 1 registers unused in Pass 2 are reset to 0 between passes | is set by `vmegc` for each pass |
 
 ```c
 .kernel add direct {
@@ -87,8 +87,8 @@ A pipeline kernel schedules a dataflow graph inside a single `.flow { … }` blo
 }
 ```
 - `.flow` requires `.count = N` (`0` to `1023`, up to 1024 words) and at least one `.slot = expr;` statement (`slot` reads the previous `.slot`; `Slot` variables and `Slot` arrays hold named intermediates).
-- `vmegc` packs operations into `PRIMARY` and `SECONDARY` FUs across `pe0`..`pe3`, synthesizes mode-4 read/write AGUs (`cyc: auto`), ping-pongs cross-pass values between low (`0x000`) and high (`0x400`) `base` halves, and emits balanced 2-pass pairs (`vmeLibStart()` .. `vmeLibFinishAsync()`).
-- Manual `Agu`, `Staging`, `.pe0`..`.pe7`, `pe[i]`, `.regs`, `.params` and `icn` are rejected in `pipeline` mode, and `.store` has no `.offsets` (`vmegc` targets the final `.slot` buffer and half automatically).
+- `vmegc` places the operations, sets the AGUs and routes the results across passes by itself.
+- `Agu`, `Staging`, `.pe0`..`.pe7`, `pe[i]`, `.regs`, `.params` and `icn` are not used in a `pipeline` kernel, and `.store` takes no `.offsets` (`vmegc` stores the final `.slot` result automatically).
 
 ## 3.3 Body
 
