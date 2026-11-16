@@ -415,3 +415,23 @@ def finalize_flow_pass(pes, out_id, pending, ops_map, pass_id):
     for _, ref in op_refs(op):
       (imports if isinstance(ref, tuple) else inputs).add(ref[1] if isinstance(ref, tuple) else ref)
   return {"pass_id": pass_id, "pes": pes, "operations": pass_ops, "exports": pass_exports, "imports": sorted(imports - pass_ids), "inputs": sorted(inputs)}
+
+
+def schedule_flow(flow):
+  ops_map = {op["id"]: op for op in flow["operations"]}
+  pending = [op["id"] for op in flow["operations"]]
+  pass_of, passes, next_id = {}, [], [len(flow["operations"])]
+  while pending:
+    pes, in_pass, next_pending = [], {}, []
+    for pid in pending:
+      op = ops_map[pid]
+      deps = [ref[1] for _, ref in op_refs(op) if isinstance(ref, tuple)]
+      if not (all(d in pass_of or d in in_pass for d in deps) and try_place_with_delays(op, pes, in_pass, next_id)):
+        next_pending.append(pid)
+    rec = finalize_flow_pass(pes, flow["output"], next_pending, ops_map, len(passes))
+    for op in rec["operations"]:
+      if op["id"] in ops_map:
+        pass_of[op["id"]] = rec["pass_id"]
+    passes.append(rec)
+    pending = next_pending
+  return {"count": flow["count"], "inputs": flow["inputs"], "output": flow["output"], "passes": passes}
