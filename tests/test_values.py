@@ -814,7 +814,7 @@ class ExtendedStagingTest(unittest.TestCase):
       "}\n@kernel ext config | exec\nvoid f() { }\n"
     )
     out = render(text, find_blocks(text), "t.vmeg.c")
-    p1, sep, p2 = out.partition("  _vmeLibFinish();\n  _vmeLibStart();\n")
+    p1, sep, p2 = out.partition("  vmeLibProcessAsync();\n  _vmeLibStart();\n")
     self.assertTrue(sep)
     self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(9));", p1)
     self.assertIn("vme_icn(SWEN, fu_on(0b1000));", p1)
@@ -826,14 +826,16 @@ class ExtendedStagingTest(unittest.TestCase):
     self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x400, vme_cyc(6));", p2)
     self.assertIn("vme_icn(AGU_BASE, 0x55545550);", p2)
     self.assertIn("vme_icn(SWEN, fu_on(0b0000));", p2)
+    self.assertIn("  vmeLibStart();\n  ext();\n  vmeLibProcessAsync();\n  vmeLibFinishAsync();\n", p2)
 
   def test_single_pass_extended_and_explicit_write_auto_staging(self):
     single = ".kernel s extended {\n  .pe4 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = top4; }\n}\n@kernel s config | exec\nvoid f() { }\n"
     out_single = render(single, find_blocks(single), "s.vmeg.c")
-    self.assertNotIn("_vmeLibFinish", out_single)
+    self.assertNotIn("_vmeLibStart", out_single)
     self.assertIn("vme_pe0(agu_top(MODE), VME_DEF_MODE, 0x400);", out_single)
     self.assertIn("vme_icn(AGU_TOP, 0x55505554);", out_single)
+    self.assertIn("  vmeLibStart();\n  s();\n  vmeLibProcessAsync();\n  vmeLibFinishAsync();\n", out_single)
     explicit = ".kernel e extended {\n  Staging s;\n  .pe0 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; s = top0; }\n  .pe4 { .top = { count: 4 }; .write = { count: 4, cyc: auto }; .spad = top4 + s; }\n}\n@kernel e config | exec\nvoid f() { }\n"
     out_exp = render(explicit, find_blocks(explicit), "e.vmeg.c")
-    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(6));", out_exp.partition("_vmeLibFinish")[0])
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(6));", out_exp.partition("vmeLibProcessAsync")[0])
 

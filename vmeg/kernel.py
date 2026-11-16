@@ -1370,7 +1370,7 @@ def build_kernel(text, block, compat):
   resolve_cross_stagings(state)
   active = [pass_state for pass_state in state["passes"] if pass_active(pass_state)] or [state["passes"][0]]
   finalized = [finalize_pass(state, pass_state) for pass_state in active]
-  lines = finalized[0] + ["_vmeLibFinish();", "_vmeLibStart();"] + register_delta(active[0], active[1]) if len(active) == 2 else finalized[0]
+  lines = finalized[0] + ["vmeLibProcessAsync();", "_vmeLibStart();"] + register_delta(active[0], active[1]) if len(active) == 2 else finalized[0]
   return name, options, lines, state
 
 

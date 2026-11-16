@@ -345,7 +345,8 @@ def kernel_actions(name, actions, mode="direct", built=False, args="", memory=No
       return ["vmeLibTrigger();"]
     return [ASYNC_START] + load + ["vmeLibProcessAsync();", ASYNC_END]
   if len(set(actions)) == 2:
-    return ["vmeLibStart();"] + load + ["vmeLibFinish();"]
+    finish = ["vmeLibProcessAsync();", "vmeLibFinishAsync();"] if mode == "extended" else ["vmeLibFinish();"]
+    return ["vmeLibStart();"] + load + finish
   if actions[0] == "config":
     return load if mode == "memory" else ["vmeLibSetFlow(VME_DEFAULT);"] + load
   return ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
