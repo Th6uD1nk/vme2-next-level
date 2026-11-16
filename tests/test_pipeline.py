@@ -96,6 +96,37 @@ class PipelineFlowExpansionTest(unittest.TestCase):
     self.assertEqual(expand_kernel(".kernel p pipeline { .flow { .count = 0; .slot = top0; } }\n")["count"], 0)
     self.assertEqual(expand_kernel(".kernel p pipeline { .flow { .count = 1023; .slot = top3; } }\n")["count"], 1023)
 
+  def test_expand_flow_rejects_invalid_flow_slots_counts_and_vars(self):
+    decl = "volatile Buffer buf[4];\n@declare { Agu a[1]; Staging g; Transfer t = { memory: buf, count: 1 }; }\n"
+    cases = [
+      (".kernel p pipeline { Int x = 1; }\n", "pipeline kernel needs a .flow block"),
+      (".kernel p pipeline { .flow { .count = 1; .slot = top0; } .flow { .count = 1; .slot = top0; } }\n", "duplicate .flow block"),
+      (".kernel p pipeline { .flow { .slot = top0; } }\n", ".flow needs .count and at least one .slot assignment"),
+      (".kernel p pipeline { .flow { .count = 1; } }\n", ".flow needs .count and at least one .slot assignment"),
+      (".kernel p pipeline { .flow { .count = 1; .count = 2; .slot = top0; } }\n", "duplicate .count in .flow"),
+      (".kernel p pipeline { .flow { .count = -1; .slot = top0; } }\n", ".count in .flow must be a number from 0 to 1023"),
+      (".kernel p pipeline { .flow { .count = 1024; .slot = top0; } }\n", ".count in .flow must be a number from 0 to 1023"),
+      (".kernel p pipeline { .flow { .count = top0; .slot = top0; } }\n", ".count in .flow must be a number from 0 to 1023"),
+      (".kernel p pipeline { Slot slot; }\n", "slot is reserved in a pipeline kernel"),
+      (".kernel p pipeline { Slot s = top0; }\n", "Slot assignment must be inside .flow"),
+      (".kernel p pipeline { .flow { .count = 1; .slot = slot + 1; } }\n", "'slot' is read before any .slot assignment"),
+      (".kernel p pipeline { .flow { .count = 1; slot = top0; .slot = top0; } }\n", "unknown Slot variable 'slot'"),
+      (".kernel p pipeline { Slot s; .flow { .count = 1; .slot = s; } }\n", "the Slot variable 's' is read before it is set"),
+      (".kernel p pipeline { Slot s; .flow { .count = 1; s = top0; s = top1; .slot = s; } }\n", "the Slot variable 's' is already set"),
+      (".kernel p pipeline { Slot s; .flow { .count = 1; .slot = s[0]; } }\n", "'s' is not an array"),
+      (".kernel p pipeline { Slot a[2]; .flow { .count = 1; .slot = a; } }\n", "'a' is an array, write a[...]"),
+      (".kernel p pipeline { Slot a[2]; .flow { .count = 1; .slot = a[2]; } }\n", "a[2]: index out of range (0 to 1)"),
+      (".kernel p pipeline { .flow { .count = 1; .slot = top4; } }\n", "top4 is out of range (top0 to top3, base0 to base3)"),
+      (".kernel p pipeline { .flow { .count = 1; .slot = missing; } }\n", "unknown variable 'missing' in .flow"),
+      (".kernel p pipeline { .flow { .count = 1; .slot = missing[0]; } }\n", "unknown array 'missing' in .flow"),
+      (decl + ".kernel p pipeline { .flow { .count = 1; .slot = a[0]; } }\n", "'a' is an Agu variable and cannot be used in .flow"),
+      (decl + ".kernel p pipeline { .flow { .count = 1; .slot = g; } }\n", "'g' is a Staging variable and cannot be used in .flow"),
+      (decl + ".kernel p pipeline { .flow { .count = 1; .slot = t; } }\n", "'t' is a Transfer variable and cannot be used in .flow"),
+    ]
+    for source, expected in cases:
+      with self.subTest(source=source), self.assertRaisesRegex(ValueError, re.escape(expected)):
+        expand_kernel(source)
+
 
 if __name__ == "__main__":
   unittest.main()
