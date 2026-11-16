@@ -1,5 +1,5 @@
 from vmeg.expr import fold
-from vmeg.kernel import ROUTING_NAMES, base_name, check_arguments, constant, emit_statement, generate_agu, new_pass_state, new_state, place, resolve_idle_routing, resolve_var, source_ref, swen_mask, unrolled
+from vmeg.kernel import ROUTING_NAMES, base_name, check_arguments, constant, emit_statement, generate_agu, new_pass_state, new_state, place, register_delta, resolve_idle_routing, resolve_var, source_ref, swen_mask, unrolled
 from vmeg.operations import FUNCTIONS, OPERATIONS, OPERATORS
 from vmeg.parser import BUFFER_NAME, Parser, buffer_ref, parse_expr
 from vmeg.pattern import rebuild
@@ -597,6 +597,31 @@ def build_pipeline_pass(pass_rec, alloc, load_offsets, count, state=None, line=1
   resolve_idle_routing(ps)
   for slot, nibbles in ps["routing"].items():
     ps["lines"].append(f"vme_icn({ROUTING_NAMES[slot]}, 0x{sum(nibble << 4 * i for i, nibble in enumerate(nibbles)):08x});")
-  if ps["secondary"]:
-    ps["lines"].append(f"vme_icn(SWEN, fu_on(0b{swen_mask(ps['secondary']):04b}));")
+  ps["lines"].append(f"vme_icn(SWEN, fu_on(0b{swen_mask(ps['secondary']):04b}));")
   return ps
+
+
+def emit_pipeline_sequence(passes):
+  lines, prev = [], None
+  for i in range(0, len(passes), 2):
+    pair = passes[i:i + 2]
+    lines.append("vmeLibStart();")
+    lines.extend(pair[0]["lines"] if prev is None else register_delta(prev, pair[0]))
+    lines.append("vmeLibProcessAsync();")
+    if len(pair) == 2:
+      lines.append("_vmeLibStart();")
+      lines.extend(register_delta(pair[0], pair[1]))
+      lines.append("vmeLibProcessAsync();")
+    lines.append("vmeLibFinishAsync();")
+    prev = pair[-1]
+  return lines
+
+
+def compile_pipeline(state, env):
+  flow = expand_flow(state, env)
+  flat = flatten_flow(flow, state.get("compat"))
+  sched = schedule_flow(flat)
+  alloc = assign_flow_buffers(sched, state["loads"])
+  built = [build_pipeline_pass(p, alloc["alloc"], alloc["load_offsets"], alloc["count"], state, state["flow"][-1]) for p in alloc["passes"]]
+  state["passes"] = built
+  return emit_pipeline_sequence(built), alloc["output_buffer"]
