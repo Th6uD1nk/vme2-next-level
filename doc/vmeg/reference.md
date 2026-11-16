@@ -36,7 +36,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | Element | Section |
 |---|---|
 | `.name { }`, `.name = value;`, `.pe0.top = t;` | [2.1](language.md#21-attributes) |
-| `Agu`, `Staging`, `Transfer`, `Int` | [2.2](language.md#22-variables) |
+| `Agu`, `Staging`, `Slot`, `Transfer`, `Int` | [2.2](language.md#22-variables) |
 | `Agu(2)`, `Transfer(Words)`, `Buffer(Q8.8)`, `Buffer("Q8.8")` | [2.2](language.md#22-variables) |
 | `a, b` (several declarations at once) | [2.2.1](language.md#221-declaring-several-at-once) |
 | `@declare { }` | [2.2.3](language.md#223-the-declare-block) |
@@ -53,7 +53,8 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | Element | Section |
 |---|---|
 | `.kernel name mode { }` | [3.1](kernel.md#31-header) |
-| `direct`, `memory`, `extended` | [3.2](kernel.md#32-modes) |
+| `direct`, `memory`, `extended`, `pipeline` | [3.2](kernel.md#32-modes) |
+| `.flow { }`, `.count`, `.slot`, `slot`, `Slot` | [3.2.4](kernel.md#324-pipeline) |
 | statements of the body | [3.3.1](kernel.md#331-statements) |
 | `.params { }` | [3.3.4](kernel.md#334-parameters) |
 | `icn xpcr = …, skew = …;` | [3.4](kernel.md#34-interconnect-registers) |

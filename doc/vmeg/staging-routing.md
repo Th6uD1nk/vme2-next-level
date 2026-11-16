@@ -60,6 +60,7 @@ Agu t = { count: 15 };
 - By default the result of a pe leaves on its write AGU into its own `base` buffer. Writing `.spad[n] = …;` redirects the result of a pe to `base[n]` and automatically adds `n * 2048` to that pe's write AGU `offset` ([5.2](pe.md#52-what-a-block-holds)).
 - When a kernel binds fewer than four buffers, `vmegc` automatically routes the unused buffers so active transfers do not overwrite idle banks.
 - In an `extended` kernel, `pe0`..`pe3` read and write the low scratchpad halves (`0` to `1023`), while `pe4`..`pe7` automatically receive `+ 0x400` on their `.top`, `.base` and `.write` AGUs to target the high halves (`1024` to `2047`). Reads of low-half buffers `top0`..`top3` or `base0`..`base3` from Pass 2 stay in the low half (`+ 0`).
+- In a `pipeline` kernel ([3.2.4](kernel.md#324-pipeline)), `vmegc` routes `.slot` and `Slot` values across operations and passes automatically, preserving any `base` buffers loaded with `.load` and connecting the final `.slot` output to `.store`.
 - The result of a pe leaves on its write AGU. A result kept in a `Staging` variable stays in the pe.
 - The registers of the interconnect that are written by hand are `xpcr` and `skew` ([3.4](kernel.md#34-interconnect-registers)).
 
