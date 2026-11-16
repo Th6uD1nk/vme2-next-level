@@ -57,9 +57,9 @@ def constant(expr, what):
   return expr[1]
 
 
-def resolve_staging_value(key, value):
+def resolve_staging_value(key, value, label="Staging"):
   if value is None:
-    raise ValueError(f"the Staging variable '{key}' is read before it is set")
+    raise ValueError(f"the {label} variable '{key}' is read before it is set")
   if isinstance(value, tuple):
     if value[0] == "cross_back":
       raise ValueError(f"the Staging variable '{key}' is set in pe{value[1]} and cannot be read in pe{value[2]} (different pass)")
@@ -69,10 +69,10 @@ def resolve_staging_value(key, value):
   return value
 
 
-def source_ref(expr, stagings, limit=3):
+def source_ref(expr, stagings, limit=3, label="Staging"):
   if expr[0] == "name":
     if expr[1] in stagings:
-      return resolve_staging_value(expr[1], stagings[expr[1]])
+      return resolve_staging_value(expr[1], stagings[expr[1]], label)
     if f"{expr[1]}[0]" in stagings:
       raise ValueError(f"'{expr[1]}' is an array, write {expr[1]}[...]")
   if expr[0] == "index" and expr[1] not in ("top", "base"):
@@ -85,7 +85,7 @@ def source_ref(expr, stagings, limit=3):
       if key not in stagings:
         size = sum(1 for name in stagings if name.startswith(expr[1] + "["))
         raise ValueError(f"{key}: index out of range (0 to {size - 1})")
-      return resolve_staging_value(key, stagings[key])
+      return resolve_staging_value(key, stagings[key], label)
   return buffer_ref(expr, limit)
 
 
@@ -581,7 +581,7 @@ def base_name(target):
 
 
 def check_name_free(name, kind, state, env):
-  stores = {"Agu": (state["agus"], "an Agu"), "Staging": (state["stagings"], "a Staging"), "Transfer": (state["transfers"], "a Transfer")}
+  stores = {"Agu": (state["agus"], "an Agu"), "Staging": (state["stagings"], "a Staging"), "Transfer": (state["transfers"], "a Transfer"), "Slot": (state["slots"], "a Slot")}
   array_kind = state["arrays"].get(name, {}).get("kind")
   if kind == "Int":
     if (name in env and name not in state["macros"]) or array_kind == "Int":
@@ -616,7 +616,7 @@ def resolve_var(target, env, state):
       size = state["arrays"][name]["size"]
       if not 0 <= index[1] < size:
         raise ValueError(f"{name}[{index[1]}]: index out of range (0 to {size - 1})")
-    elif name in state["stagings"] or name in state["agus"] or name in state["transfers"] or (name in env and name not in state["macros"]):
+    elif name in state["stagings"] or name in state["agus"] or name in state["transfers"] or name in state["slots"] or (name in env and name not in state["macros"]):
       raise ValueError(f"'{name}' is not an array")
     return f"{name}[{index[1]}]"
   if target in state["arrays"]:
@@ -814,6 +814,17 @@ def emit_statement(statement, env, lines, state):
   elif kind == "stagingdecl":
     for key in declare_keys(statement[1], "Staging", env, state):
       state["stagings"][key] = {}
+  elif kind == "slotdecl":
+    if base_name(statement[1]) == "slot":
+      raise ValueError("slot is reserved in a pipeline kernel")
+    for key in declare_keys(statement[1], "Slot", env, state):
+      state["slots"][key] = None
+  elif kind == "slotset":
+    raise ValueError("Slot assignment must be inside .flow")
+  elif kind == "flow":
+    if state["flow"] is not None:
+      raise ValueError("duplicate .flow block in pipeline kernel")
+    state["flow"] = statement
   elif kind in ("load", "store"):
     items = dict(statement[1])
     if "transfer" not in items:
@@ -1022,7 +1033,7 @@ def pass_for(state, pe=0):
 
 def new_state(macros=None, owner=None, compat=None, extended=False, pipeline=False):
   passes = [new_pass_state(0, (0,)), new_pass_state(4, (1,))] if extended else [new_pass_state(0)]
-  state = {"owner": owner, "extended": extended, "pipeline": pipeline, "macros": set(macros or ()), "agus": {}, "stagings": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "passes": passes, "active_pass": None}
+  state = {"owner": owner, "extended": extended, "pipeline": pipeline, "macros": set(macros or ()), "agus": {}, "stagings": {}, "slots": {}, "transfers": {}, "arrays": {}, "loads": [], "stores": [], "sequence": [], "warnings": [], "compat": compat, "operations": [], "params": None, "flow": None, "passes": passes, "active_pass": None}
   state.update(passes[0])
   return state
 
