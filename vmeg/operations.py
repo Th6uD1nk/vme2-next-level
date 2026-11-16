@@ -661,6 +661,14 @@ OPERATIONS = {
 
 OPERATIONS = dict(sorted(OPERATIONS.items(), key=lambda entry: entry[1]["opcode"]))
 
+K_SHIFT_OPERATIONS = frozenset({"add", "bak_shr", "sub", "add_cst", "neg_ofb", "mul", "mul_cst", "mul_vec", "mac", "acc"})
+
+ROUNDED_OPERATIONS = frozenset({"add", "sub", "mul", "mul_cst", "mul_vec"})
+
+for _kind, _specification in OPERATIONS.items():
+  _specification["k_shift"] = _kind in K_SHIFT_OPERATIONS
+  _specification["k_round"] = _kind in ROUNDED_OPERATIONS
+
 check_patterns(OPERATIONS)
 
 FAT_FALLBACKS = {
