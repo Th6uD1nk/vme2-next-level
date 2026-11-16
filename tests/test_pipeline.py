@@ -1,8 +1,10 @@
 import os, re, sys, unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.parser import declare_statements, kernel_statements
+from vmeg.registry import check_calls, needed_prototypes, project_registry
 
 def parse_kernel(source):
   block = next(item for item in find_blocks(source) if item[0] == "kernel")
@@ -42,6 +44,30 @@ class PipelineParserTest(unittest.TestCase):
       declare_statements("@declare { Slot s; }\n", find_blocks("@declare { Slot s; }\n")[0])
     shared = "@declare { Agu a = { count: 3 }; Transfer t = { memory: buf, count: 3 }; }\n.kernel p pipeline {\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n  .flow { .count = 3; .slot = top0 + 1; }\n}\n"
     self.assertEqual([item[0] for item in parse_kernel(shared)[1]], ["agudecl", "declaredtransfer", "load", "flow"])
+
+
+class PipelineRegistryAndListingTest(unittest.TestCase):
+  def test_registry_prototypes_calls_and_listing_for_pipeline_kernel(self):
+    kernel_src = (
+      "volatile Buffer a[16], out[16];\n@emulate \"pipe\"\n.kernel p pipeline {\n"
+      "  Transfer in0 = { memory: a, count: 15 }, dst = { memory: out, count: 15 };\n"
+      "  .load { .transfer = in0; .scope = global; .offsets { .top0 = 0; } }\n"
+      "  .flow { .count = 15; .slot = top0 + 1; }\n  .store { .transfer = dst; .scope = global; }\n}\n"
+    )
+    caller_src = "@kernel p config | exec\nvoid run(void) { }\n"
+    reg = project_registry([("p.vmeg.c", kernel_src), ("c.vmeg.c", caller_src)])
+    entry = reg["kernels"]["p"][0]
+    self.assertEqual((entry["mode"], entry["direct"]), ("pipeline", True))
+    self.assertTrue(entry["stores"][0]["auto_store"])
+    self.assertEqual(entry["stores"][0]["links"], [("BASE_0", 16, "", "out", False)])
+    self.assertEqual(needed_prototypes(reg, "c.vmeg.c"), ["void p();"])
+    check_calls(reg)
+    with self.assertRaisesRegex(ValueError, "kernel 'p' is never called"):
+      check_calls(project_registry([("p.vmeg.c", kernel_src)]))
+    listed = format_listing(emulations(kernel_src), [])
+    self.assertIn("kernel p (pipeline,", listed)
+    self.assertIn("BASE_0  16 words  to out", listed)
+    self.assertNotIn("<--", listed)
 
 
 if __name__ == "__main__":
