@@ -543,3 +543,32 @@ def emit_pipeline_agus(pass_rec, alloc, load_offsets, count, ps, line=1):
     off = (info["bank"] * 2048 if pass_rec["extended_write"] else 0) + (0x400 if info["half"] else 0)
     params = [("count", ("num", count))] + ([("offset", ("num", off))] if off else []) + [("cyc", ("num", 3 + 3 * op["depth"]))]
     ps["lines"].extend(generate_agu(("target", ("num", pe), "write"), ("params", params), {}, ps, len(ps["lines"]), line, 4))
+
+
+def pipeline_physical_op(op, in_pass_loc, alloc):
+  resolved = dict(op)
+  for key in ("front", "back", "source"):
+    ref = resolved.get(key)
+    if isinstance(ref, tuple):
+      oid = ref[1]
+      if oid in in_pass_loc:
+        dpe, dunit = in_pass_loc[oid]
+        resolved[key] = f"STAGING_{dpe if dunit == 'primary' else 4 + dpe}"
+      else:
+        resolved[key] = f"BASE_{alloc[oid][0]}"
+  return resolved
+
+
+def pipeline_fullrange_write(exports_alloc):
+  writers = {info["bank"]: (pe, info["half"]) for pe, info in exports_alloc.items()}
+  idle = min(set(range(4)) - {pe for pe, _ in writers.values()}, default=0)
+  low, high = [], []
+  for bank in range(4):
+    if bank not in writers:
+      low.append(12 | idle)
+      high.append(idle if bank == 0 else (12 | idle))
+    else:
+      pe, half = writers[bank]
+      low.append((8 | pe) if half == 0 else (12 | pe))
+      high.append(pe if bank == 0 else ((12 | pe) if half == 0 else (8 | pe)))
+  return low + high
