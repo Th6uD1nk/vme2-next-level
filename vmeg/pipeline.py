@@ -1,4 +1,5 @@
-from vmeg.kernel import source_ref
+from vmeg.expr import fold
+from vmeg.kernel import base_name, emit_statement, resolve_var, source_ref
 from vmeg.operations import OPERATIONS
 from vmeg.parser import BUFFER_NAME
 from vmeg.pattern import rebuild
@@ -67,3 +68,32 @@ def resolve_flow_expr(expr, slots, cursor, inputs, state, line):
       raise ValueError(f"line {line}: {name} is out of range (top0 to top3, base0 to base3)")
     raise ValueError(f"line {line}: unknown {'array' if kind == 'index' else 'variable'} '{name}' in .flow")
   return rebuild(expr, lambda child: resolve_flow_expr(child, slots, cursor, inputs, state, line))
+
+
+def flow_step(target, expr, ctx, state, line):
+  resolved = resolve_flow_expr(fold(expr, ctx["env"]), state["slots"], ctx["cursor"], ctx["inputs"], state, line)
+  ref = ("pipe_ref", len(ctx["steps"]))
+  ctx["steps"].append({"id": ref[1], "target": target, "expr": resolved, "line": line})
+  return ref
+
+
+def apply_flow_statement(stmt, ctx, state):
+  kind, line = stmt[0], stmt[-1]
+  if kind in ("int", "elemset", "slotdecl"):
+    emit_statement(stmt, ctx["env"], [], state)
+  elif kind == "flowcount":
+    if ctx["count"] is not None:
+      raise ValueError(f"line {line}: duplicate .count in .flow")
+    val = fold(stmt[1], ctx["env"])
+    if val[0] != "num" or not 0 <= val[1] <= 1023:
+      raise ValueError(f"line {line}: .count in .flow must be a number from 0 to 1023")
+    ctx["count"] = val[1]
+  elif kind == "slotset":
+    key = resolve_var(stmt[1], ctx["env"], state)
+    if key not in state["slots"]:
+      raise ValueError(f"line {line}: unknown Slot variable '{base_name(stmt[1])}'")
+    if state["slots"][key] is not None:
+      raise ValueError(f"line {line}: the Slot variable '{key}' is already set")
+    state["slots"][key] = flow_step(key, stmt[2], ctx, state, line)
+  elif kind == "flowslot":
+    ctx["cursor"] = flow_step(None, stmt[1], ctx, state, line)
