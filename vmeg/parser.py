@@ -731,6 +731,43 @@ def parse_for(p, inner=None):
   return ("for", var, low, high, step, parse_block_items(p, inner or parse_statement))
 
 
+FLOW_HANDLERS = {
+  "Int": parse_int_declaration,
+  "Slot": parse_slot_declaration,
+  "for": lambda p: parse_for(p, parse_flow_statement),
+}
+
+
+def parse_flow_statement(p):
+  tok = p.peek()
+  line = p.text.count("\n", 0, tok[2]) + 1
+  if tok[0] == "ident":
+    if tok[1] in FLOW_HANDLERS:
+      return FLOW_HANDLERS[tok[1]](p) + (line,)
+    if tok[1] in PIPELINE_FORBIDDEN:
+      p.error(PIPELINE_FORBIDDEN[tok[1]], tok)
+    if tok[1] == "Transfer":
+      p.error("Transfer declarations must be outside .flow", tok)
+    head, target = "slotset", (parse_declared_name(p),)
+  elif tok[0] == "punct" and tok[1] == ".":
+    p.i += 1
+    field = p.ident()
+    if field not in ("count", "slot"):
+      p.error(f"unknown attribute '.{field}' of .flow (.count, .slot)", tok)
+    head, target = f"flow{field}", ()
+  else:
+    p.error(f"unknown statement '{tok[1]}' in .flow", tok)
+  p.expect("=")
+  expr = parse_expr(p)
+  p.expect(";")
+  return (head, *target, expr, line)
+
+
+def parse_flow(p):
+  p.expect("{")
+  return ("flow", parse_block_items(p, parse_flow_statement))
+
+
 def parse_params_definition(p):
   if p.accept(";"):
     return ("paramsdef", [])
@@ -868,6 +905,11 @@ def parse_statement(p):
       return parse_element_assignment(p) + (line,)
   if tok[0] == "punct" and tok[1] == ".":
     following = p.toks[p.i + 1] if p.i + 1 < len(p.toks) else None
+    if following is not None and following[0] == "ident" and following[1] == "flow" and not p.in_call:
+      if not p.pipeline:
+        p.error(".flow is only allowed in a pipeline kernel", following)
+      p.i += 2
+      return parse_flow(p) + (line,)
     if following is not None and following[0] == "ident" and p.pipeline and (PE_NAME.match(following[1]) or following[1] in ("regs", "params", "pe")):
       p.error(f".{following[1]} is not allowed in a pipeline kernel", following)
     if following is not None and following[0] == "ident" and PE_NAME.match(following[1]):
