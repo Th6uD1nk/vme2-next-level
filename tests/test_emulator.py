@@ -9,6 +9,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from vmee.agu import stream_at
+from vmee.dmac import DMAC_MEMORY_ADDRESS
 from vmee.extract import array_declarations, host_main, host_program
 from vmee.fu import execute, fu_operands, opcode_entry
 from vmee.host import build_program, run_program
@@ -1129,6 +1130,32 @@ class ExtendedKernelE2ETest(unittest.TestCase):
     for b in range(4):
       expected = [100 * (b + 1) + k + (b + 1) * (k + 2) for k in range(16)]
       self.assertEqual([emu.scratchpad.read(BASE_OFFSET + b * BUFFER_WORDS + 1024 + k) for k in range(16)], expected)
+
+
+class PipelineE2ETest(unittest.TestCase):
+  def run_pipe(self, body, extra_bufs="", extra_loads=""):
+    src = (
+      f"volatile Buffer a[8] = {{ 10, 11, 12, 13, 14, 15, 16, 17 }}, out[8];\n{extra_bufs}@emulate \"p\"\n.kernel p pipeline {{\n"
+      f"  Transfer ta = {{ memory: a, count: 7 }}, tout = {{ memory: out, count: 7 }};\n"
+      f"  .load {{ .transfer = ta; .scope = global; .offsets {{ .top0 = 0; }} }}\n{extra_loads}"
+      f"  .flow {{\n    .count = 7;\n{body}\n  }}\n  .store {{ .transfer = tout; .scope = global; }}\n}}\n@kernel p config | exec\nvoid run(void) {{ }}\n"
+    )
+    emu = run_emulation(src, "p")
+    return emu, emu.get_memory(emu.dmac[DMAC_MEMORY_ADDRESS], 8)
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_slot_dag_logic_shift_and_two_pass_emulate(self):
+    extra = "volatile Buffer b[8] = { 2, 4, 6, 8, 10, 12, 14, 16 };\n"
+    loads_b = "  Transfer tb = { memory: b, count: 7 };\n  .load { .transfer = tb; .scope = global; .offsets { .base0 = 0; } }\n"
+    body = "    Slot tap = (base0 & 0xff) >> 1;\n    .slot = top0 + tap;\n" + "".join("    .slot = slot + 1;\n" for _ in range(7)) + "    .slot = slot + tap;"
+    emu, got = self.run_pipe(body, extra, loads_b)
+    self.assertEqual(got, [10 + k + (k + 1) + 7 + (k + 1) for k in range(8)])
+    self.assertEqual([emu.scratchpad.read(BASE_OFFSET + k) for k in range(8)], [2 * (k + 1) for k in range(8)])
+
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_four_pass_pingpong_2x2_and_store_emulate(self):
+    _, got = self.run_pipe("    .slot = top0 + 1;\n" + "".join("    .slot = slot + 1;\n" for _ in range(24)))
+    self.assertEqual(got, [10 + k + 25 for k in range(8)])
 
 
 if __name__ == "__main__":
