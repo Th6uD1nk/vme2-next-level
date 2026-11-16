@@ -5,7 +5,7 @@ from vmee.listing import emulations, format_listing
 from vmeg.blocks import find_blocks, kernel_mode
 from vmeg.kernel import emit_statement, new_env, new_state
 from vmeg.parser import declare_statements, kernel_statements
-from vmeg.pipeline import apply_sat_op, build_table_op, compile_shift_op, emit_pipeline_op, evict_pass_ops, expand_flow, finalize_flow_pass, find_free_pe, flatten_flow, flow_operand, live_exports, lower_child_op, lower_flow_call, op_refs, place_in_pass, try_place_with_delays, unpack_compound, unpack_cond, unwrap_round
+from vmeg.pipeline import apply_sat_op, assign_flow_buffers, build_table_op, compile_shift_op, emit_pipeline_op, evict_pass_ops, expand_flow, finalize_flow_pass, find_free_pe, flatten_flow, flow_operand, live_exports, lower_child_op, lower_flow_call, op_refs, place_in_pass, try_place_with_delays, unpack_compound, unpack_cond, unwrap_round
 from vmeg.registry import check_calls, needed_prototypes, project_registry
 from vmeg.selector import choose_opcode
 from vmegc import render
@@ -396,6 +396,32 @@ class PipelineCodegenTest(unittest.TestCase):
           delta = fn.partition("_vmeLibStart();")[2]
           self.assertIn("vme_pe3(vme_fu(PRIMARY), 0);", delta)
           self.assertIn("vme_icn(SWEN, fu_on(0b0000));", delta)
+
+  def test_reservations_cross_bank_spill_and_limits(self):
+    out = self.render_pipe("    Slot s0 = base0 + 1;\n    .slot = top0 + 2;\n" + "".join("    .slot = slot + 1;\n" for _ in range(6)) + "    .slot = slot + s0 + base0;", ".top0 = 0; .base0 = 0;")
+    self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, 0x800, vme_cyc(6));", out)
+    wr_hex = int(re.search(r"vme_icn\(AGU_WRITE, (0x[0-9a-f]+)\);", out).group(1), 16)
+    nibbles = [(wr_hex >> 4 * i) & 0xf for i in range(8)]
+    self.assertTrue(all((n & 0xc) != 0x4 for n in nibbles) and not (nibbles[4] & 8))
+    self.assertIn("pToutStore(out, VME_BASE_BUFF1_WOFF + 0x400);", out)
+    sched = {"count": 511, "inputs": ["TOP_0"], "output": 0, "passes": [{"pass_id": 0, "inputs": ["TOP_0"], "imports": [], "pes": [{"pe": 0, "export": 0}]}]}
+    with self.assertRaisesRegex(ValueError, "exceed a 1024-word half"):
+      assign_flow_buffers(sched, [{"links": [("TOP_0", 512, "600", "a", False)]}])
+    full_loads = [{"links": [(f"BASE_{b}", 1500, "", f"m{b}", False) for b in range(4)]}]
+    with self.assertRaisesRegex(ValueError, "more than 8 scratchpad half-buffers"):
+      assign_flow_buffers(sched, full_loads)
+
+  def test_pipeline_errors_and_linear_selector(self):
+    no_flow = ".kernel p pipeline { Int x = 1; }\n@kernel p config | exec\nvoid r(void) { }\n"
+    with self.assertRaisesRegex(ValueError, "needs a .flow block"):
+      render(no_flow, find_blocks(no_flow), "t.vmeg.c")
+    bad_act = "volatile Buffer a[4];\n.kernel p pipeline { Transfer t = { memory: a, count: 3 }; .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } } .flow { .count = 3; .slot = top0 + 1; } }\n@kernel p config\nvoid r(void) { }\n"
+    with self.assertRaisesRegex(ValueError, "must be called with config | exec"):
+      render(bad_act, find_blocks(bad_act), "t.vmeg.c")
+    tree = ("name", "top0")
+    for _ in range(25):
+      tree = ("bin", "+", tree, ("num", 1))
+    self.assertEqual(choose_opcode(tree, "minimal")[0], "add_cst")
 
 
 if __name__ == "__main__":
