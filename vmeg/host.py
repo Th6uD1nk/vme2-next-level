@@ -134,8 +134,13 @@ MEMORY_WORDS = "VME_CONTEXT_WORD_COUNT"
 
 def check_buffers(text, toks, blocks):
   depth = 0
+  bi = 0
   for i, (kind, value, start, _) in enumerate(toks):
-    if any(b[1] <= start < b[3] for b in blocks):
+    if value not in ("(", ")", "Buffer", "Memory"):
+      continue
+    while bi < len(blocks) and blocks[bi][3] <= start:
+      bi += 1
+    if bi < len(blocks) and blocks[bi][1] <= start:
       continue
     if kind == "punct" and value == "(":
       depth += 1
