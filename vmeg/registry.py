@@ -62,17 +62,20 @@ def pointer_definitions(path, text):
   ]
 
 
-def kernel_definitions(path, text):
+def kernel_definitions(path, text, wanted=None):
   found = []
   for block in find_blocks(text):
     if block[0] != "kernel":
       continue
+    name = kernel_name(text, block)
+    if wanted is not None and name not in wanted:
+      continue
     statements = kernel_statements(text, block, {})
     mode = kernel_mode(text, block)
     direct = mode in ("direct", "extended", "pipeline")
-    loads, stores = kernel_transfers(statements, known_macros(text, block[1]), kernel_name(text, block), mode == "extended", mode == "pipeline") if mode else ([], [])
+    loads, stores = kernel_transfers(statements, known_macros(text, block[1]), name, mode == "extended", mode == "pipeline") if mode else ([], [])
     found.append({
-      "name": kernel_name(text, block),
+      "name": name,
       "path": path,
       "line": text.count("\n", 0, block[1]) + 1,
       "mode": mode,
@@ -101,7 +104,7 @@ def call_definitions(path, text):
   ]
 
 
-def project_registry(sources):
+def project_registry(sources, wanted_kernels=None):
   arrays = {}
   kernels = {}
   calls = []
@@ -109,7 +112,7 @@ def project_registry(sources):
   for path, text in sources:
     try:
       array_list = array_definitions(path, text) + pointer_definitions(path, text)
-      kernel_list = kernel_definitions(path, text)
+      kernel_list = kernel_definitions(path, text, wanted_kernels)
       calls += call_definitions(path, text)
       block_transfers += block_definitions(path, text)
     except ValueError as e:

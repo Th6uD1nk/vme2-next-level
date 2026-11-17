@@ -267,7 +267,7 @@ INCLUDES = '#include <cstdlib>\n#include <fstream>\n#include <sstream>\n#include
 
 def host_main(text, identifier):
   emulation = chosen_emulation(text, identifier)
-  registry = project_registry([("", text)])
+  registry = project_registry([("", text)], set(emulation["kernels"]))
   steps = list(zip(emulation["steps"], emulation["pairs"], emulation["memories"], emulation["after"]))
   blocks = "".join(
     f"  if (all || step >= {index}) {{\n    hwTraceMuted() = step > {index};\n" + "".join(f"    {call}\n" for call in kernel_lines(registry, name, actions, pairs, memory) + written) + "  }\n"
