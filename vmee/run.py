@@ -3,26 +3,26 @@ import re
 import tempfile
 
 from vmee.extract import chosen_emulation, host_program
-from vmee.listing import emulations
+from vmee.listing import emulation_ids
 from vmee.host import build_program, run_program
 from vmee.machine import Emulator
 from vmee.trace import replay
 
 
 def choose_source(sources, identifier):
-  having = [(path, text) for path, text in sources if any(emulation["id"] == identifier for emulation in emulations(text))]
+  having = [(path, text) for path, text in sources if identifier in emulation_ids(text)]
   if len(having) == 1:
     return having[0]
   if len(having) > 1:
     raise ValueError(f"the @emulate \"{identifier}\" is in {' and '.join(path for path, _ in having)}")
   if len(sources) == 1:
     chosen_emulation(sources[0][1], identifier)
-  known = ", ".join(emulation["id"] for _, text in sources for emulation in emulations(text))
+  known = ", ".join(id_ for _, text in sources for id_ in emulation_ids(text))
   raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in these files'})")
 
 
 def variant_id(sources, identifier, index):
-  ids = [emulation["id"] for _, text in sources for emulation in emulations(text)]
+  ids = [id_ for _, text in sources for id_ in emulation_ids(text)]
   suffix = re.compile(re.escape(identifier) + r"((?:_\d+)+)")
   variants = [match.group(1)[1:].replace("_", ",") for match in (suffix.fullmatch(other) for other in ids) if match]
   if identifier in ids:

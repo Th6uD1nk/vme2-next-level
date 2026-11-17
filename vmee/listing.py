@@ -97,14 +97,23 @@ def emulation_entry(text, blocks, id_, steps, first, last, local, pairs=None, me
 
 
 @lru_cache(maxsize=16)
-def emulations(text):
+def emulation_ids(text):
+  return [list(tokens(text[b[1]:b[2]]))[2][1][1:-1] for b in find_blocks(text) if b[0] in ("emulate", "emulate-block")]
+
+
+@lru_cache(maxsize=16)
+def emulations(text, wanted=None):
   blocks = find_blocks(text)
   found = []
   for k, block in enumerate(blocks):
+    if block[0] in ("emulate", "emulate-block"):
+      id_ = list(tokens(text[block[1]:block[2]]))[2][1][1:-1]
+      if wanted is not None and id_ != wanted:
+        continue
     if block[0] == "emulate":
       kernel = blocks[k + 1]
       name = kernel_name(text, kernel)
-      entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], [(name, ())], text.count("\n", 0, kernel[1]) + 1, text.count("\n", 0, kernel[3] - 1) + 1, declared_names(text, blocks, name)["local"])
+      entry = emulation_entry(text, blocks, id_, [(name, ())], text.count("\n", 0, kernel[1]) + 1, text.count("\n", 0, kernel[3] - 1) + 1, declared_names(text, blocks, name)["local"])
       found.append(dict(entry, form="mark"))
     elif block[0] == "emulate-block":
       close = next(other for other in blocks[k + 1:] if other[0] == "emulate-block-end")
@@ -119,7 +128,7 @@ def emulations(text):
       memories = [kept[other[1]][i] if i < len(kept[other[1]]) and kept[other[1]][i] != "auto" else None for other in inside for i in range(len(decorator_calls(text, other)))]
       function = enclosing_function_tokens(text, block[1])
       local = set().union(*(visible_buffer_names(function, other[1]) for other in inside))
-      entry = emulation_entry(text, blocks, list(tokens(text[block[1]:block[2]]))[2][1][1:-1], steps, text.count("\n", 0, block[1]) + 1, text.count("\n", 0, close[3] - 1) + 1, local, pairs, memories, sequences, after, bodies)
+      entry = emulation_entry(text, blocks, id_, steps, text.count("\n", 0, block[1]) + 1, text.count("\n", 0, close[3] - 1) + 1, local, pairs, memories, sequences, after, bodies)
       found.append(dict(entry, form="block", at=block[1]))
   return found
 

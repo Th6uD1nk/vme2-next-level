@@ -1,6 +1,6 @@
 import re
 
-from vmee.listing import defines, emulations
+from vmee.listing import defines, emulation_ids, emulations
 from vmeg.blocks import decorator_names, find_blocks, kernel_name
 from vmeg.host import BUFFER_TYPE, enclosing_function_tokens, function_tokens, kernel_lines, memory_edits
 from vmeg.kernel import TRANSFER_STRUCTS, TRANSFER_TYPES, base_name, declare_transfers, generate, transfer_initializer
@@ -12,10 +12,9 @@ from vmeg.vmecalls import finish_calls
 
 
 def chosen_emulation(text, identifier):
-  found = emulations(text)
-  chosen = [emulation for emulation in found if emulation["id"] == identifier]
+  chosen = emulations(text, identifier)
   if not chosen:
-    known = ", ".join(emulation["id"] for emulation in found)
+    known = ", ".join(emulation_ids(text))
     raise ValueError(f"no @emulate with the id '{identifier}' ({known if known else 'there is no @emulate in this file'})")
   return chosen[0]
 
