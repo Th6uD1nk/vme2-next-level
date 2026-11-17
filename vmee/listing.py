@@ -21,11 +21,20 @@ def global_buffer_names(text):
   return frozenset(file_buffer_names(list(tokens(text))))
 
 
+@lru_cache(maxsize=8)
+def decorators_by_kernel(text):
+  found = {}
+  for block in find_blocks(text):
+    if block[0] == "decorator":
+      for name in decorator_names(text, block):
+        found.setdefault(name, []).append(block)
+  return found
+
+
 def declared_names(text, blocks, kernel):
   local = set()
-  for block in blocks:
-    if block[0] == "decorator" and kernel in decorator_names(text, block):
-      local |= function_buffer_names(text, block)
+  for block in decorators_by_kernel(text).get(kernel, ()):
+    local |= function_buffer_names(text, block)
   return {"global": global_buffer_names(text), "local": local}
 
 
