@@ -220,21 +220,25 @@ def host_source(text, identifier, others=(), compat=None, uses=()):
     "static void vmegLoadArrays(const char* path) {\n"
     + (
       f"  static const struct {{ const char* name; u32* data; u32 words; }} arrays[] = {{ {entries} }};\n"
-      "  std::ifstream file(path);\n"
-      "  std::string line;\n"
-      "  while (std::getline(file, line)) {\n"
-      "    std::istringstream words(line);\n"
-      "    std::string name;\n"
-      "    words >> name;\n"
+      "  FILE* file = fopen(path, \"r\");\n"
+      "  if (!file) return;\n"
+      "  char token[256];\n"
+      "  while (fscanf(file, \"%255s\", token) == 1) {\n"
+      "    u32* data = 0;\n"
+      "    u32 words = 0;\n"
       "    for (unsigned i = 0; i < sizeof(arrays) / sizeof(arrays[0]); i++) {\n"
-      "      std::string token;\n"
-      "      for (u32 k = 0; name == arrays[i].name && k < arrays[i].words && (words >> token); k++) {\n"
-      "        if (token != \"-\") {\n"
-      "          arrays[i].data[k] = (u32)strtoul(token.c_str(), 0, 16);\n"
-      "        }\n"
-      "      }\n"
+      "      if (strcmp(token, arrays[i].name) == 0) { data = arrays[i].data; words = arrays[i].words; break; }\n"
       "    }\n"
-      "  }\n" if declared else ""
+      "    int c;\n"
+      "    for (u32 k = 0; (c = fgetc(file)) != EOF && c != '\\n' && c != '\\r'; ) {\n"
+      "      if (c == ' ' || c == '\\t') continue;\n"
+      "      ungetc(c, file);\n"
+      "      if (fscanf(file, \"%255s\", token) != 1) break;\n"
+      "      if (data && k < words && strcmp(token, \"-\") != 0) data[k] = (u32)strtoul(token, 0, 16);\n"
+      "      k++;\n"
+      "    }\n"
+      "  }\n"
+      "  fclose(file);\n" if declared else ""
     )
     + "}"
   )
@@ -262,7 +266,7 @@ def host_source(text, identifier, others=(), compat=None, uses=()):
   return finish_calls("\n\n".join(parts) + "\n")
 
 
-INCLUDES = '#include <cstdlib>\n#include <fstream>\n#include <sstream>\n#include <string>\n#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
+INCLUDES = '#include <cstdio>\n#include <cstdlib>\n#include <cstring>\n#include "hw-trace.h"\n#include "me-core-mapper.h"\n#include <me-core-mapper/vme-lib.h>\n#include <me-core-mapper/vme-fu-opcodes.h>\n'
 
 
 def host_main(text, identifier):
