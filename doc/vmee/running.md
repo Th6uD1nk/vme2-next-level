@@ -85,6 +85,7 @@ followed by the same lines for `BASE 1` to `BASE 3`.
 - The RAM starts as an image of zeros. A word that no array and no earlier `.store` has written reads 0. The local eDRAM of the Media Engine is the first 4 MB of the addresses (2 MB on the phat, 4 MB on the slim, the larger size is used): the words never written there are read with no message, and above `0x400000` with the warning of [1.9](#19-errors). An address is taken on its 29 low bits, so `0x40000000` and `0x0` are the same word.
 - The kernel is built into a small host program with `g++ -m32` and the library of the submodule `me-core-mapper`. `--run` needs `g++` with 32 bit support, and the submodule must not be empty (`git submodule update --init me-core-mapper`).
 - The host program is run once for each call, and the events it writes are played by the emulator, one call after the other. Each run is stopped after 60 seconds.
+- `--verbose` prints progress notifications (`extracting`, `building with g++`, `running`) on standard error.
 
 ## 1.3 Several files
 

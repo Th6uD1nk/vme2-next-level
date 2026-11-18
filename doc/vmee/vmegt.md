@@ -62,6 +62,7 @@ vmegt --pspdev /path/to/pspdev --host /path/to/host0 FILE.vmeg.cpp
 | `--buffers-start` | 0 | first word of the window of the buffers |
 | `--buffers-words` | 32 | number of words of the window of the buffers |
 | `--use` | none | `pointer=array` pair given to vmeh and to the emulator, can be repeated |
+| `--verbose` | off | prints step-by-step progress notifications (`building`, `resetting PSP`, `running on PSP`, `waiting for log.txt`, `checking against vmee`) on standard error |
 
 `--buffers-start`, `--buffers-words` and `--use` are the options of vmeh ([window of the buffers](running.md#14-the-window-of-the-buffers)).
 
