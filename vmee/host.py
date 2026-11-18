@@ -1,6 +1,8 @@
+import hashlib
 import os
 import shutil
 import subprocess
+import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIBRARY = os.path.join(ROOT, "me-core-mapper")
@@ -18,6 +20,41 @@ def library_folder():
   return LIBRARY
 
 
+def cache_key(library):
+  h = hashlib.sha256()
+  h.update("\0".join(COMPILER_FLAGS).encode())
+  for base in (library, NATIVE):
+    for root, dirs, files in os.walk(base):
+      dirs[:] = sorted(d for d in dirs if d != ".git")
+      for name in sorted(files):
+        path = os.path.join(root, name)
+        h.update(os.path.relpath(path, ROOT).encode() + b"\0")
+        with open(path, "rb") as f:
+          h.update(f.read())
+  return h.hexdigest()
+
+
+def cached_objects(library):
+  bucket = os.path.join(tempfile.gettempdir(), "vmee-obj-cache", cache_key(library))
+  objects = (os.path.join(bucket, "emu-me-core-mapper.o"), os.path.join(bucket, "vme-lib.o"))
+  if all(os.path.isfile(path) for path in objects):
+    return objects
+  os.makedirs(bucket, exist_ok=True)
+  with tempfile.TemporaryDirectory(dir=bucket) as staging:
+    os.symlink(library, os.path.join(staging, "me-core-mapper"))
+    for original, name in SUBSTITUTES:
+      shutil.copy(os.path.join(NATIVE, original), os.path.join(staging, name))
+    shutil.copy(os.path.join(library, "vme-lib.c"), staging)
+    sources = (os.path.join(NATIVE, "emu-me-core-mapper.cpp"), os.path.join(staging, "vme-lib.c"))
+    for src, dst in zip(sources, objects):
+      tmp = os.path.join(staging, os.path.basename(dst))
+      done = subprocess.run(["g++", *COMPILER_FLAGS, "-I" + staging, "-I" + NATIVE, "-c", src, "-o", tmp], capture_output=True, text=True)
+      if done.returncode:
+        raise ValueError(f"the host library does not build:\n{done.stderr.rstrip()}")
+      os.replace(tmp, dst)
+  return objects
+
+
 def build_program(source, folder):
   library = library_folder()
   if shutil.which("g++") is None:
@@ -25,12 +62,11 @@ def build_program(source, folder):
   os.symlink(library, os.path.join(folder, "me-core-mapper"))
   for original, name in SUBSTITUTES:
     shutil.copy(os.path.join(NATIVE, original), os.path.join(folder, name))
-  shutil.copy(os.path.join(library, "vme-lib.c"), folder)
   program = os.path.join(folder, "program.cpp")
   with open(program, "w", encoding="utf-8") as f:
     f.write(source)
   executable = os.path.join(folder, "program")
-  command = ["g++", *COMPILER_FLAGS, "-I" + folder, "-I" + NATIVE, program, os.path.join(NATIVE, "emu-me-core-mapper.cpp"), os.path.join(folder, "vme-lib.c"), "-o", executable]
+  command = ["g++", *COMPILER_FLAGS, "-I" + folder, "-I" + NATIVE, program, "-x", "none", *cached_objects(library), "-o", executable]
   done = subprocess.run(command, capture_output=True, text=True)
   if done.returncode:
     raise ValueError(f"the host program does not build:\n{done.stderr.rstrip()}")
