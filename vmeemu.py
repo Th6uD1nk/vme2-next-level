@@ -40,6 +40,7 @@ def main(argv=None):
   parser.add_argument("--trace")
   parser.add_argument("--compat", choices=["fat"])
   parser.add_argument("--use", action="append", default=[])
+  parser.add_argument("--verbose", action="store_true")
   args = parser.parse_args(argv)
   if (args.kernel is not None or args.full) and not args.list:
     parser.error("--kernel and --full go with --list")
@@ -79,7 +80,7 @@ def main(argv=None):
       path, text = choose_source(sources, args.run)
       where = path
       others = [other for other_path, other in sources if other_path != path]
-      emulator = run_emulation(text, args.run, args.trace, others, args.compat, uses)
+      emulator = run_emulation(text, args.run, args.trace, others, args.compat, uses, verbose=args.verbose)
     else:
       emulator = Emulator()
       replay(emulator, text)

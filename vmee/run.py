@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import tempfile
 
 from vmee.extract import chosen_emulation, host_program
@@ -62,14 +63,19 @@ def arrays_text(emulator, table):
   return "".join(line + "\n" for line in lines)
 
 
-def run_emulation(text, identifier, trace_path=None, others=(), compat=None, uses=()):
+def run_emulation(text, identifier, trace_path=None, others=(), compat=None, uses=(), verbose=False):
+  note = (lambda msg: print(f"vmeemu: {msg}", file=sys.stderr, flush=True)) if verbose else (lambda msg: None)
   steps = len(chosen_emulation(text, identifier)["steps"])
   emulator = Emulator()
   traces = []
   with tempfile.TemporaryDirectory() as folder:
-    executable = build_program(host_program(text, identifier, others, compat, uses), folder)
+    note(f"extracting {identifier}")
+    program = host_program(text, identifier, others, compat, uses)
+    note("building with g++")
+    executable = build_program(program, folder)
     path = os.path.join(folder, "arrays.txt")
     arguments = ()
+    note(f"running ({steps} step{'s' if steps != 1 else ''})")
     for step in range(steps):
       trace = run_program(executable, (str(step), *arguments))
       traces.append(trace)
