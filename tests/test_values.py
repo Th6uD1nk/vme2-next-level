@@ -839,3 +839,38 @@ class ExtendedStagingTest(unittest.TestCase):
     out_exp = render(explicit, find_blocks(explicit), "e.vmeg.c")
     self.assertIn("vme_pe0(agu_write(MODE), VME_DEF_MODE, vme_cyc(6));", out_exp.partition("vmeLibProcessAsync")[0])
 
+
+class ReadAguCycTest(unittest.TestCase):
+  def test_read_cyc_and_auto_on_top_and_base_in_modes_4_and_2(self):
+    text = (
+      ".kernel k direct {\n"
+      "  Staging s0, s1;\n"
+      "  Agu(2) b = { count: 7, inner0: { count: 3, step: 1 }, repeat: true, cyc: 1 + 2 };\n"
+      "  .pe0 { .top = { count: 7, cyc: 2 }; s0 = top0 + 1; }\n"
+      "  .pe1 { .base = b; s1 = s0 + base1; }\n"
+      "  .pe2 { .top = { count: 7, cyc: auto }; .write = { count: 7, cyc: auto }; .spad = s1 + top2; }\n"
+      "}\n@kernel k config | exec\nvoid f() { }\n"
+    )
+    out = render(text, find_blocks(text), "r.vmeg.c")
+    self.assertIn("vme_pe0(agu_top(MODE), VME_DEF_MODE, vme_cyc(2));", out)
+    self.assertIn("vme_pe1(agu_base(MODE), agu_mode(2), vme_cyc(3));", out)
+    self.assertIn("vme_pe2(agu_top(MODE), VME_DEF_MODE, vme_cyc(6));", out)
+    self.assertIn("vme_pe2(agu_write(MODE), VME_DEF_MODE, vme_cyc(0xc));", out)
+
+  def test_read_cyc_auto_missing_read_error_and_shared_warning(self):
+    missing = ".kernel m direct {\n  .pe0 { .top = { count: 3, cyc: auto }; .spad = 1; }\n}\n@kernel m config | exec\nvoid f() { }\n"
+    with self.assertRaisesRegex(ValueError, "pe0.top: cyc auto needs a read of top0"):
+      render(missing, find_blocks(missing), "m.vmeg.c")
+    shared = (
+      ".kernel s direct {\n"
+      "  Staging a;\n"
+      "  Agu t = { count: 3, cyc: auto };\n"
+      "  .pe0 { .top = t; a = top0 + 1; }\n"
+      "  .pe1 { .top = t; .write = { count: 3, cyc: auto }; .spad = a + top1; }\n"
+      "}\n@kernel s config | exec\nvoid f() { }\n"
+    )
+    warnings = []
+    out = generate(shared, find_blocks(shared)[0], warnings)
+    self.assertIn("vme_pe0(agu_top(MODE), VME_DEF_MODE, vme_cyc(0));", out)
+    self.assertTrue(any("pe1 shares the top Agu 't' with pe0" in msg for _, msg in warnings))
+
