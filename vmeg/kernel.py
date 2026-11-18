@@ -307,7 +307,7 @@ def generate_agu(target, params, env, pass_state, at, line, mode=4):
       if key != "cyc":
         raise ValueError(f"pe{label}.{agu}: auto is only for cyc")
       values[key] = AUTO
-      pass_state["autos"].append({"pe": pe, "expr": value, "env": env, "at": at, "line": line})
+      pass_state["autos"].append({"pe": pe, "agu": agu, "expr": value, "env": env, "at": at, "line": line})
       continue
     folded = full_value(value, env)
     if key in ("reverse", "repeat", "sync"):
@@ -693,10 +693,12 @@ def place(state, lines, pe, operations, line, pass_state=None):
       mux = f"vme_mux(NONE, {phys_ref(source)})"
       reads = (operation["source"],) if operation["source"] else ()
     target.setdefault("unit_reads", {}).setdefault((pe, number), set()).update(reads)
+    in_depth = max([depth] + [depths.get(ref, 0) for ref in reads])
     for ref in reads:
       if not ref.startswith("STAGING"):
         target["reads"].setdefault(ref, line)
-    depth = max([depth] + [depths.get(ref, 0) for ref in reads]) + 1
+        target["read_depths"].setdefault(ref, in_depth)
+    depth = in_depth + 1
     sat = "" if operation["sat"] is None else f", fu_sat({operation['sat']})"
     if operation.get("shift"):
       sat += f", {operation['shift']}"
@@ -1022,6 +1024,7 @@ def new_pass_state(pe_offset=0, halves=(0, 1)):
     "reads": {},
     "outputs": {},
     "depths": {},
+    "read_depths": {},
     "autos": [],
     "icn": set(),
     "swen_raw": False,
@@ -1248,11 +1251,19 @@ def resolve_cross_stagings(state):
 def resolve_auto(lines, pass_state, root=None):
   for pending in pass_state["autos"]:
     pe = pending["pe"]
+    agu = pending["agu"]
     label = pass_state["pe_offset"] + pe
-    if pe not in pass_state["depths"]:
-      raise ValueError(f"line {pending['line']}: pe{label}.write: cyc auto needs an operation in pe{label}")
+    if agu == "write":
+      if pe not in pass_state["depths"]:
+        raise ValueError(f"line {pending['line']}: pe{label}.write: cyc auto needs an operation in pe{label}")
+      delay = 3 + 3 * pass_state["depths"][pe]
+    else:
+      ref = f"{agu.upper()}_{label}"
+      if ref not in pass_state["read_depths"]:
+        raise ValueError(f"line {pending['line']}: pe{label}.{agu}: cyc auto needs a read of {agu}{label}")
+      delay = 3 * pass_state["read_depths"][ref]
     env = dict(pending["env"])
-    env["auto"] = ("num", 3 + 3 * pass_state["depths"][pe])
+    env["auto"] = ("num", delay)
     lines[pending["at"]] = lines[pending["at"]].replace(AUTO, to_c(full_value(pending["expr"], env)))
   check_shared_auto(pass_state, root)
 
