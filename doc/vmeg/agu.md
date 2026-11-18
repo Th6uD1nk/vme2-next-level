@@ -44,7 +44,7 @@ The parameters of the mode 4, the default mode.
 | `inner0` | yes | yes | an inner range ([4.2.2](#422-inner0)) |
 | `reverse` | yes | yes | the order of the words is inverted |
 | `repeat` | yes | no | the inner range is repeated ([4.2.3](#423-read-agus)) |
-| `cyc` | no | yes | a delay in cycles ([4.2.4](#424-write-agus)) |
+| `cyc` | yes | yes | a delay in cycles ([4.2.3](#423-read-agus), [4.2.4](#424-write-agus)) |
 | `bubbles` | no | yes | words of zero before the data ([4.2.4](#424-write-agus)) |
 | `sync` | no | yes | the data can be read by an operation of the same run ([4.2.4](#424-write-agus)) |
 
@@ -98,6 +98,7 @@ Agu cycled = { count: 15, inner0: { count: 3, step: 1 }, repeat: true };
 **Rules:**
 
 - The `mat4x4-mul-batch` sample reads a matrix of 16 words this way, again and again while the vectors go by.
+- A read AGU (`.top` or `.base`) also accepts `cyc` (0 to 255, expression, or `auto` / `auto ± shift`). It delays the start of the read stream by `cyc` cycles (`i = cycle - cyc`); before `cyc`, it holds the last word read by that AGU from the previous run (`0` on the first run), and after `count` it holds the last word of the stream. `cyc: auto` resolves to `3 * depth`, aligning the read stream with the upstream `Staging` operand at that operation.
 
 ### 4.2.4 Write AGUs
 
@@ -131,7 +132,7 @@ Agu d = { count: 15, cyc: auto + shift };
 
 **Rules:**
 
-- `auto` is only accepted in the `cyc` of a write AGU. The pe that owns the AGU needs an operation that leaves it; when an Agu variable is shared, it is the first pe that binds it. `vmegc` warns when another pe that shares it needs a different delay ([7.3](staging-routing.md#73-warnings)).
+- `auto` is accepted in the `cyc` of read AGUs (`3 * depth`, aligned with the upstream `Staging` operand) and write AGUs (`3 + 3 * depth`). The pe (or buffer for `.top` / `.base`) that owns the AGU needs a matching operation or read; when an Agu variable is shared, it follows the first pe that binds it, and `vmegc` warns when another pe that shares it needs a different delay ([7.3](staging-routing.md#73-warnings)).
 
 ### 4.2.5 The mode 2
 
@@ -148,7 +149,8 @@ Agu(2) w = { offset: 4, count: 15, step: 2, cyc: 6, bubbles: 2, sync: true };
 | `inner0` | yes | yes | the ring: `inner0: { count: 3, step: 1 }`, as in [4.2.2](#422-inner0) |
 | `reverse` | yes | yes | as in [4.2.1](#421-common-parameters) |
 | `repeat` | yes | no | the ring token: the ring is read again and again |
-| `cyc`, `bubbles`, `sync` | no | yes | as in [4.2.4](#424-write-agus) |
+| `cyc` | yes | yes | as in [4.2.3](#423-read-agus) and [4.2.4](#424-write-agus) |
+| `bubbles`, `sync` | no | yes | as in [4.2.4](#424-write-agus) |
 
 **Explanation of the code above:**
 
@@ -243,6 +245,7 @@ The parameters of an `Agu` variable are checked when a pe binds it, so the messa
 | [4.2.4](#424-write-agus) | `pe0.write: the bubbles 5000 are outside 0 to 4095` | `bubbles` out of range |
 | [4.2.4](#424-write-agus) | `pe0.write: auto is only for cyc` | `auto` in a parameter other than `cyc` |
 | [4.2.4](#424-write-agus) | `auto is reserved for the cyc of a write AGU` | an `Int` named `auto` |
+| [4.2.3](#423-read-agus) | `pe0.top: cyc auto needs a read of top0` | `cyc: auto` on a read AGU whose buffer is not read |
 | [4.2.4](#424-write-agus) | `pe0.write: cyc auto needs an operation in pe0` | `cyc: auto` on a pe without an operation that leaves it |
 | [4.3](#43-binding-an-agu-to-a-pe) | `unknown Agu variable 'zzz'` | `.top = zzz;` with a name that is not an `Agu` |
 | [4.3](#43-binding-an-agu-to-a-pe) | `pe0.top is already set at line N` | the same AGU kind set twice in a pe |

@@ -67,7 +67,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | `count`, `offset`, `step`, `reverse` | [4.2.1](agu.md#421-common-parameters) |
 | `inner0` | [4.2.2](agu.md#422-inner0) |
 | `repeat` | [4.2.3](agu.md#423-read-agus) |
-| `cyc`, `auto`, `bubbles`, `sync` | [4.2.4](agu.md#424-write-agus) |
+| `cyc`, `auto`, `bubbles`, `sync` | [4.2.3](agu.md#423-read-agus), [4.2.4](agu.md#424-write-agus) |
 | `Agu(2)` | [4.2.5](agu.md#425-the-mode-2) |
 | `.top`, `.base`, `.write` | [4.3](agu.md#43-binding-an-agu-to-a-pe) |
 | an `Agu` shared by several pes | [4.3.1](agu.md#431-sharing-an-agu) |
