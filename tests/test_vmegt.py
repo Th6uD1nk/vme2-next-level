@@ -91,6 +91,19 @@ class CheckTest(unittest.TestCase):
     self.assertEqual(code, 1)
     self.assertEqual(out.splitlines(), ["first: mismatch: BASE_0 word 0: PSP 0x00000007, emulator 0x00000000"])
 
+  def test_verbose_prints_progress_notifications_on_stderr(self):
+    from vmegt.run import say
+    blocks = "\n\n".join(f"Buffer: BASE {pe}\n0x00000000, 0x00000000, 0x00000000, 0x00000000," for pe in range(4))
+    good = f"=== kernel first ===\n{blocks}\n\n=== summary ===\nfirst: done\n"
+    code, _, err = run_vmegt(SOURCE, "first", "--check", "--reuse-log", "--log", "@file:good.log", "--buffers-words", "4", "--verbose", files={"good.log": good})
+    self.assertEqual(code, 0)
+    self.assertEqual(err.splitlines(), ["vmegt: checking against vmee"])
+    buf = io.StringIO()
+    with contextlib.redirect_stderr(buf):
+      say(False, "hidden")
+      say(True, "resetting PSP")
+    self.assertEqual(buf.getvalue().splitlines(), ["vmegt: resetting PSP"])
+
 
 if __name__ == "__main__":
   unittest.main()

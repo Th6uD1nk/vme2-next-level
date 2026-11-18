@@ -1,12 +1,14 @@
 import contextlib
 import io
 import os
+import shutil
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from vmeemu import main as vmeemu_main
 from vmegc import main
 
 SOURCE = (
@@ -104,6 +106,21 @@ class OperationsListTest(unittest.TestCase):
       code = main(["--ops"])
     self.assertEqual(code, 0)
     self.assertIn("0x030: a + b + c", out.getvalue().splitlines())
+
+
+class VmeemuVerboseTest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_verbose_prints_progress_notifications_on_stderr(self):
+    src = "@emulate \"v\"\n.kernel k direct {\n  .pe0 { .top = { count: 3 }; .write = { count: 3, cyc: auto }; .spad = top0 + 1; }\n}\n@kernel k config | exec\nvoid run(void) { }\n"
+    with tempfile.TemporaryDirectory() as folder:
+      path = os.path.join(folder, "v.vmeg.c")
+      with open(path, "w") as f:
+        f.write(src)
+      err = io.StringIO()
+      with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+        code = vmeemu_main(["--verbose", "--run", "v", "--buffers-words", "4", path])
+    self.assertEqual(code, 0)
+    self.assertEqual(err.getvalue().splitlines(), ["vmeemu: extracting v", "vmeemu: building with g++", "vmeemu: running (1 step)"])
 
 
 if __name__ == "__main__":
