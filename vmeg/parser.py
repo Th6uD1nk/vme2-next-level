@@ -13,13 +13,13 @@ RAW_ICN = ("swen", "top", "base", "write")
 
 AGU_PARAMS = {
   4: {
-    "top": ("count", "offset", "step", "inner0", "reverse", "repeat"),
-    "base": ("count", "offset", "step", "inner0", "reverse", "repeat"),
+    "top": ("count", "offset", "step", "inner0", "reverse", "repeat", "cyc"),
+    "base": ("count", "offset", "step", "inner0", "reverse", "repeat", "cyc"),
     "write": ("count", "offset", "step", "inner0", "reverse", "cyc", "bubbles", "sync"),
   },
   2: {
-    "top": ("count", "offset", "step", "inner0", "reverse", "repeat"),
-    "base": ("count", "offset", "step", "inner0", "reverse", "repeat"),
+    "top": ("count", "offset", "step", "inner0", "reverse", "repeat", "cyc"),
+    "base": ("count", "offset", "step", "inner0", "reverse", "repeat", "cyc"),
     "write": ("count", "offset", "step", "inner0", "reverse", "cyc", "bubbles", "sync"),
   },
 }
