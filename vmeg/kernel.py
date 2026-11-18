@@ -929,7 +929,7 @@ def emit_statement(statement, env, lines, state):
       variable["owners"][owner] = phys
       target["lines"].extend(generate_agu(("target", ("num", phys), slot), variable["params"], env, target, len(target["lines"]), statement[-1], variable["mode"]))
     if any(key == "cyc" and has_auto(value) for key, value in variable["params"][1]):
-      target["sharers"].setdefault(ref, []).append((phys, statement[-1]))
+      target["sharers"].setdefault(ref, []).append((slot, phys, statement[-1]))
     if slot == "write":
       record_write(target, phys, variable["owners"][owner], ref, statement[-1])
     else:
@@ -1062,10 +1062,16 @@ def new_env(macros=None):
 def check_shared_auto(pass_state, root=None):
   offset = pass_state["pe_offset"]
   for name, sharers in pass_state["sharers"].items():
-    owner = sharers[0][0]
-    for pe, line in sharers[1:]:
-      if pe in pass_state["depths"] and pass_state["depths"][pe] != pass_state["depths"][owner]:
-        warn(root or pass_state, line, f"pe{offset + pe} shares the write Agu '{name}' with pe{offset + owner} but its operations need another delay, cyc: auto follows pe{offset + owner}")
+    slot, owner, _ = sharers[0]
+    depths = pass_state["depths"] if slot == "write" else pass_state["read_depths"]
+    key = (lambda pe: pe) if slot == "write" else (lambda pe: f"{slot.upper()}_{offset + pe}")
+    owner_key = key(owner)
+    if owner_key not in depths:
+      continue
+    for _, pe, line in sharers[1:]:
+      pe_key = key(pe)
+      if pe_key in depths and depths[pe_key] != depths[owner_key]:
+        warn(root or pass_state, line, f"pe{offset + pe} shares the {slot} Agu '{name}' with pe{offset + owner} but its operations need another delay, cyc: auto follows pe{offset + owner}")
 
 
 def resolve_write_routing(state):
