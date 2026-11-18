@@ -14,6 +14,7 @@ class Emulator:
     self.memory = {}
     self.staging = [[0] * STAGING_WORDS for _ in range(STAGING_COUNT)]
     self.cycles = 0
+    self.last_reads = {}
     self.warnings = []
 
   def locate(self, address):
@@ -124,6 +125,9 @@ class Emulator:
         staging = pe + FU_KINDS[kind]
         previous = self.staging_read(staging, slot - 1) if cycle else None
         self.staging_write(staging, slot, execute(fu, back, front, a, b, previous, state))
+    if self.cycles:
+      for key in list(cache):
+        self.last_reads[key] = stream_at(self, key[0], key[1], self.cycles - 1, cache, synced)
 
   def active_writes(self):
     items = []

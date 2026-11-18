@@ -188,22 +188,30 @@ def stream_offsets(registers, kind, buffer, warn=lambda message: None):
   return result
 
 
+def stream_cyc(registers, kind, buffer):
+  found = read_view(registers, kind, buffer)
+  return 0 if found is None else found[1]["cyc"]
+
+
 def stream_at(emulator, kind, buffer, cycle, cache, synced=None):
   if cycle < 0:
     raise ValueError(f"cycle {cycle} is before the start of the run")
   key = (kind, buffer)
   if key not in cache:
     offsets = stream_offsets(emulator.active, kind, buffer, emulator.warn)
-    cache[key] = (offsets, None if offsets is None else emulator.read_words(offsets), stream_ring(emulator.active, kind, buffer))
-  offsets, stream, ring = cache[key]
+    cache[key] = (offsets, None if offsets is None else emulator.read_words(offsets), stream_ring(emulator.active, kind, buffer), stream_cyc(emulator.active, kind, buffer))
+  offsets, stream, ring, cyc = cache[key]
   if stream is None:
     return 0
+  if cycle < cyc:
+    return signed32(getattr(emulator, "last_reads", {}).get(key, 0))
+  step = cycle - cyc
   if ring:
-    index = cycle % len(stream)
-  elif cycle >= len(stream):
+    index = step % len(stream)
+  elif step >= len(stream):
     return signed32(stream[-1])
   else:
-    index = cycle
+    index = step
   if synced is not None and offsets[index] is not None:
     word = synced(offsets[index], cycle)
     if word is not None:
