@@ -2,7 +2,13 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
+
+
+def say(verbose, message):
+  if verbose:
+    print(f"vmegt: {message}", file=sys.stderr, flush=True)
 
 
 def find_pspsh(pspdev, pspsh=None):
@@ -20,7 +26,8 @@ def shell(pspsh, port, work, command, limit):
   return True
 
 
-def reset(pspsh, port, work, reset_wait):
+def reset(pspsh, port, work, reset_wait, verbose=False):
+  say(verbose, "resetting PSP")
   shell(pspsh, port, work, "reset", 20)
   time.sleep(reset_wait)
 
@@ -39,16 +46,18 @@ def read_log(path, timeout):
   return None
 
 
-def run_kernel(pspsh, port, host, work, program, identifier, reset_wait, timeout, retries):
+def run_kernel(pspsh, port, host, work, program, identifier, reset_wait, timeout, retries, verbose=False):
   name = f"gk_{re.sub(r'[^A-Za-z0-9_]', '_', identifier)}.prx"
   shutil.copyfile(program, os.path.join(host, name))
   log_path = os.path.join(host, "log.txt")
   for _ in range(retries + 1):
     if os.path.exists(log_path):
       os.remove(log_path)
+    say(verbose, f"running {identifier} on PSP")
     shell(pspsh, port, work, f"./{name}", 60)
+    say(verbose, f"waiting for log.txt ({identifier})")
     text = read_log(log_path, timeout)
-    reset(pspsh, port, work, reset_wait)
+    reset(pspsh, port, work, reset_wait, verbose)
     if text is not None:
       return text
   return None
