@@ -1148,5 +1148,43 @@ class PipelineE2ETest(unittest.TestCase):
     self.assertEqual(got, [10 + k + 25 for k in range(8)])
 
 
+class ReadAguCycE2ETest(unittest.TestCase):
+  @unittest.skipUnless(shutil.which("g++"), "g++ is needed to build the host program")
+  def test_read_cyc_auto_offsets_mode2_and_last_reads_hold(self):
+    src = (
+      "volatile Buffer a[8] = { 10, 11, 12, 13, 14, 15, 16, 17 };\n"
+      "volatile Buffer b[8] = { 100, 101, 102, 103, 104, 105, 106, 107 };\n"
+      "volatile Buffer out1[8], out2[8];\n"
+      ".kernel k1 direct {\n"
+      "  Transfer ta = { memory: a, count: 7 }, tb = { memory: b, count: 7 }, to = { memory: out1, count: 7 };\n"
+      "  .load { .transfer = ta; .scope = global; .offsets { .top0 = 0; .top2 = 0; } }\n"
+      "  .load { .transfer = tb; .scope = global; .offsets { .base1 = 0; } }\n"
+      "  Staging s0, s1;\n"
+      "  Agu(2) r = { count: 7, offset: 2, inner0: { count: 1, step: 1 }, repeat: true, cyc: 3 };\n"
+      "  .pe0 { .top = { count: 7 }; s0 = top0 + 1; }\n"
+      "  .pe1 { .base = r; s1 = s0 + base1; }\n"
+      "  .pe2 { .top = { count: 7, offset: -2, cyc: auto }; .write = { count: 7, cyc: auto }; .spad = s1 + top2; }\n"
+      "  .store { .transfer = to; .scope = global; .offsets { .base2 = 0; } }\n"
+      "}\n"
+      ".kernel k2 direct {\n"
+      "  Transfer ta = { memory: a, count: 7 }, to = { memory: out2, count: 7 };\n"
+      "  .load { .transfer = ta; .scope = global; .offsets { .top2 = 0; } }\n"
+      "  .pe2 { .top = { count: 7, offset: 1, cyc: 3 }; .write = { count: 7, cyc: auto }; .spad = top2 + 0; }\n"
+      "  .store { .transfer = to; .scope = global; .offsets { .base2 = 0; } }\n"
+      "}\n"
+      "void run(void) {\n"
+      "  @emulate \"read_cyc\" {\n"
+      "    @kernel k1 config | exec { }\n"
+      "    @kernel k2 config | exec { }\n"
+      "  }\n"
+      "}\n"
+    )
+    emu = run_emulation(src, "read_cyc")
+    base_ring = [102, 103, 102, 103, 102, 103, 102, 103]
+    top2_neg = [0, 0, 10, 11, 12, 13, 14, 15]
+    self.assertEqual([emu.scratchpad.read(BASE_OFFSET + 2 * BUFFER_WORDS + k) for k in range(8)], [15, 15, 15, 11, 12, 13, 14, 15])
+    self.assertEqual(emu.get_memory(emu.dmac[DMAC_MEMORY_ADDRESS] - 64, 8), [(10 + k + 1) + base_ring[k] + top2_neg[k] for k in range(8)])
+
+
 if __name__ == "__main__":
   unittest.main()
