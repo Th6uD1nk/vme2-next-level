@@ -4,3 +4,6 @@
 [submodule "me-vme-samples"]
 	path = me-vme-samples
 	url = https://github.com/mcidclan/psp-virtual-mobile-engine-ext
+[submodule "me-injected-syscall"]
+	path = me-injected-syscall
+	url = https://github.com/mcidclan/psp-media-engine-mist
