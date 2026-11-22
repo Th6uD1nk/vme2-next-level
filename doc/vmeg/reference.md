@@ -146,7 +146,7 @@ The syntax and the technical elements of vmeg, with the section that describes e
 | Element | Section |
 |---|---|
 | `@kernel name actions` above a function | [10.1](calling.md#101-the-call-of-a-kernel) |
-| `build`, `config`, `exec`, `async` | [10.2](calling.md#102-the-actions) |
+| `build`, `config`, `exec`, `async`, `clear` | [10.2](calling.md#102-the-actions) |
 | `config \| exec` | [10.3](calling.md#103-several-actions-in-one-call) |
 | `@kernel a …, b …` | [10.4](calling.md#104-several-kernels-in-one-call) |
 | uploads and downloads | [10.5](calling.md#105-uploads-and-downloads-around-the-run) |

@@ -49,6 +49,7 @@ After the name of the kernel, the call gives what to do with it. An action is on
 | `config` | writes the kernel to the VME: a `direct` kernel writes its registers, a `memory` kernel loads its memory config, which a `build` made before. It does not run it. |
 | `exec` | starts the run of the kernel that is configured and waits for its end. |
 | `async` | starts the run and does not wait for its end. |
+| `clear` | resets the VME datapath state before the first pass of a `direct`, `extended` or `pipeline` kernel. |
 
 ```c
 @kernel add config
@@ -67,6 +68,7 @@ void go(void) {
 **Rules:**
 
 - `build` is for a `memory` kernel. For a `direct` kernel it is an error ([10.6](#106-errors)).
+- `clear` is for a `direct`, `extended` or `pipeline` kernel. For a `memory` kernel it is an error ([10.6](#106-errors)).
 - The `config` of a `memory` kernel loads the memory config that a `build` made earlier. It never builds one: the kernel must be built by a `build` somewhere in the project, otherwise it is an error ([10.6](#106-errors)). `build | config` does both in one call. The order is yours: the `build` has to run before the `config`.
 - `exec` and `async` run what the VME holds: the kernel must have been configured before, by a `config` of this call or of an earlier one.
 - With `async` the results are not ready when the call returns. A kernel that has a `.store` cannot be called with `async` alone ([10.6](#106-errors)).
@@ -85,6 +87,7 @@ void run(void) {
 | Call | What it does |
 |---|---|
 | `config \| exec` | configures the kernel, runs it and waits for its end |
+| `config \| exec \| clear` | clears the datapath before the first pass, then configures, runs and waits |
 | `config \| async` | configures the kernel and starts the run without waiting for its end. Calls of this kind that follow each other are one series: the end is awaited once, after the last one |
 | `build \| config` | builds the context of a `memory` kernel, then loads it |
 | `build \| config \| exec` | builds the context, loads it, runs the kernel and waits for its end |
@@ -161,9 +164,10 @@ The messages start with `line N:`, left out here.
 |---|---|---|
 | [10.1](#101-the-call-of-a-kernel) | `kernel 'k' is never called, add a function marked with @kernel k config \| exec or a block @kernel k config \| exec { ... }` | a kernel that no function and no block calls |
 | [10.1](#101-the-call-of-a-kernel) | `@kernel refers to an unknown kernel 'zz' (kernels: k)` | a name in the call that is not a kernel of the project. The message lists the kernels, or says that there is none |
-| [10.2](#102-the-actions) | `expected build, config, exec or async after the kernel name` | a kernel name with no action after it |
+| [10.2](#102-the-actions) | `expected build, config, exec, async or clear after the kernel name` | a kernel name with no action after it |
 | [10.2](#102-the-actions) | `expected an action after \|` | a word after `\|` that is not an action |
 | [10.2](#102-the-actions) | `build is for a memory kernel, kernel 'k' is direct` | `build` on a `direct` kernel |
+| [10.2](#102-the-actions) | `clear is for a direct, extended or pipeline kernel, kernel 'k' is memory` | `clear` on a `memory` kernel |
 | [10.2](#102-the-actions) | `async does not wait for the end of the run, the .store of kernel 'k' would read unfinished data` | `async` alone on a kernel that has a `.store` |
 | [10.3](#103-several-actions-in-one-call) | `exec and async are two different executions, they cannot be combined` | `exec` and `async` in the same call of a kernel |
 | [10.1](#101-the-call-of-a-kernel) | `the kernel 'k' needs the parameter n, write the call as a block with a .params` | a kernel that declares parameters, called above a function (the message lists all the ones that are missing) |
