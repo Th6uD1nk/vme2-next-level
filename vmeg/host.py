@@ -209,6 +209,8 @@ def check_decorators(text, blocks, registry):
         raise ValueError(f"line {line}: kernel '{name}' needs the option direct or memory")
       if "build" in actions and known[name][0]["mode"] != "memory":
         raise ValueError(f"line {line}: build is for a memory kernel, kernel '{name}' is {known[name][0]['mode']}")
+      if "clear" in actions and known[name][0]["mode"] == "memory":
+        raise ValueError(f"line {line}: clear is for a direct, extended or pipeline kernel, kernel '{name}' is memory")
       if "config" in actions and known[name][0]["mode"] == "memory" and not any(name == call["name"] and "build" in call["actions"] for call in registry["calls"]):
         raise ValueError(f"line {line}: kernel '{name}' is configured but never built, add a build")
       if "async" in actions and "config" not in actions and known[name][0]["stores"]:
@@ -341,6 +343,10 @@ def kernel_actions(name, actions, mode="direct", built=False, args="", memory=No
     made = [f"{name}Context = {name}({args or 0});"] if memory is None else [f"{name}Build((void*){memory}{', ' + args if args else ''});"]
     rest = tuple(action for action in actions if action != "build")
     return made + kernel_actions(name, rest, mode, True, args, memory) if rest else made
+  clear = ["vmeLibSetFlow(8);", "meLibSync();"] if "clear" in actions else []
+  actions = tuple(action for action in actions if action != "clear")
+  if not actions:
+    return clear
   if mode == "memory":
     load = [f"vmeLibLoadCustomContext({'(void*)' + memory if memory else name + 'Context'});"]
   else:
@@ -348,17 +354,17 @@ def kernel_actions(name, actions, mode="direct", built=False, args="", memory=No
   if mode == "pipeline":
     if set(actions) != {"config", "exec"}:
       raise ValueError(f"{name}: pipeline kernels must be called with config | exec")
-    return load
+    return clear + load
   if "async" in actions:
     if "config" not in actions:
-      return ["vmeLibTrigger();"]
-    return [ASYNC_START] + load + ["vmeLibProcessAsync();", ASYNC_END]
+      return clear + ["vmeLibTrigger();"]
+    return clear + [ASYNC_START] + load + ["vmeLibProcessAsync();", ASYNC_END]
   if len(set(actions)) == 2:
     finish = ["vmeLibProcessAsync();", "vmeLibFinishAsync();"] if mode == "extended" else ["vmeLibFinish();"]
-    return ["vmeLibStart();"] + load + finish
+    return clear + ["vmeLibStart();"] + load + finish
   if actions[0] == "config":
-    return load if mode == "memory" else ["vmeLibSetFlow(VME_DEFAULT);"] + load
-  return ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
+    return load if mode == "memory" else clear + ["vmeLibSetFlow(VME_DEFAULT);"] + load
+  return clear + ["vmeLibTrigger();", "meCoreDMACPrimWaitVMEFinish();"]
 
 
 def kernel_mode(registry, name):
@@ -372,7 +378,7 @@ def kernel_arguments(registry, name, pairs):
 
 def kernel_lines(registry, name, actions, pairs=(), memory=None):
   args = kernel_arguments(registry, name, pairs)
-  if actions == ("build",):
+  if set(actions) <= {"build", "clear"}:
     return kernel_actions(name, actions, kernel_mode(registry, name), False, args, memory)
   return kernel_uploads(registry, name) + kernel_actions(name, actions, kernel_mode(registry, name), False, args, memory) + kernel_downloads(registry, name)
 
