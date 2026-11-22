@@ -389,7 +389,7 @@ class KernelBlockTest(unittest.TestCase):
   def test_bad_kernel_block_is_an_error_with_its_line(self):
     cases = {
       "void f() {\n  @kernel {\n  }\n}\n": "line 2: expected a kernel name",
-      "void f() {\n  @kernel k;\n}\n": "line 2: expected build, config, exec or async after the kernel name",
+      "void f() {\n  @kernel k;\n}\n": "line 2: expected build, config, exec, async or clear after the kernel name",
       "void f() {\n  @kernel nope config | exec {\n  }\n}\n": "line 2: @kernel refers to an unknown kernel 'nope'",
       ".kernel k {\n}\nvoid f() {\n  @kernel k config | exec {\n  }\n}\n": "line 1: kernel 'k' needs the option direct or memory",
       ".kernel k direct memory {\n}\nvoid f() {\n  @kernel k config | exec {\n  }\n}\n": "line 1: a kernel is either direct or memory, not both",
@@ -399,6 +399,55 @@ class KernelBlockTest(unittest.TestCase):
         with self.assertRaises(ValueError) as caught:
           render(text, find_blocks(text), "x.vmeg.c")
         self.assertIn(message, str(caught.exception))
+
+  def test_clear_emits_set_flow_8_before_first_pass_on_direct_extended_and_pipeline(self):
+    direct = (
+      ".kernel k direct {\n}\n"
+      "void f() {\n  @kernel k config | exec | clear {\n  }\n}\n"
+    )
+    out = render(direct, find_blocks(direct), "x.vmeg.c")
+    self.assertIn("vmeLibSetFlow(8);\n    meLibSync();\n    vmeLibStart();\n    k();", out)
+
+    extended = (
+      ".kernel k extended {\n"
+      "  Agu r = { count: 3 };\n"
+      "  Agu w = { count: 3, cyc: auto };\n"
+      "  Staging a, b;\n"
+      "  .pe0 { .top = r; a = top0; }\n"
+      "  .pe4 { .write = w; b = a; .spad = b; }\n"
+      "}\n"
+      "void f() {\n  @kernel k config | exec | clear {\n  }\n}\n"
+    )
+    out = render(extended, find_blocks(extended), "x.vmeg.c")
+    self.assertIn("vmeLibSetFlow(8);\n    meLibSync();\n    vmeLibStart();\n    k();", out)
+    self.assertEqual(out.count("vmeLibSetFlow(8);"), 1)
+
+    pipeline = (
+      "volatile Buffer g[4];\n"
+      ".kernel k pipeline {\n"
+      "  Transfer t = { memory: g, count: 3 };\n"
+      "  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n"
+      "  .flow {\n"
+      "    .count = 3;\n"
+      "    Slot s = top0 + 1;\n"
+      "    .slot = s;\n"
+      "  }\n"
+      "  .store { .transfer = t; .scope = global; }\n"
+      "}\n"
+      "void f() {\n  @kernel k config | exec | clear {\n  }\n}\n"
+    )
+    out = render(pipeline, find_blocks(pipeline), "x.vmeg.c")
+    self.assertIn("vmeLibSetFlow(8);\n    meLibSync();\n    k();", out)
+    self.assertEqual(out.count("vmeLibSetFlow(8);"), 1)
+
+  def test_clear_is_rejected_on_memory_kernel(self):
+    text = (
+      ".kernel k memory {\n}\n"
+      "void f() {\n  @kernel k build | config | exec | clear {\n  }\n}\n"
+    )
+    with self.assertRaises(ValueError) as caught:
+      render(text, find_blocks(text), "x.vmeg.c")
+    self.assertIn("clear is for a direct, extended or pipeline kernel, kernel 'k' is memory", str(caught.exception))
 
 
 KERNEL = ".kernel k direct {\n  Transfer t = { memory: g, count: 3 };\n  .load { .transfer = t; .scope = global; .offsets { .top0 = 0; } }\n}\n"
