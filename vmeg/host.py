@@ -343,7 +343,7 @@ def kernel_actions(name, actions, mode="direct", built=False, args="", memory=No
     made = [f"{name}Context = {name}({args or 0});"] if memory is None else [f"{name}Build((void*){memory}{', ' + args if args else ''});"]
     rest = tuple(action for action in actions if action != "build")
     return made + kernel_actions(name, rest, mode, True, args, memory) if rest else made
-  clear = ["vmeLibSetFlow(8);", "meLibSync();"] if "clear" in actions else []
+  clear = ["vmeLibSetFlow(2);", "vmeLibSetFlow(8);", "vmeLibSetFlow(3);", "meLibSync();"] if "clear" in actions else []
   actions = tuple(action for action in actions if action != "clear")
   if not actions:
     return clear
